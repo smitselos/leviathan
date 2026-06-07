@@ -8,12 +8,6 @@ const PALETTE = {
   peach: '#c97b5a', soft: '#faf6ea', border: '#e8dfc4', muted: '#aeaeb8',
 };
 
-const SECTIONS = [
-  { key: 'keimena', label: 'Κείμενα', icon: '📄' },
-  { key: 'biblia', label: 'Βιβλία', icon: '📕' },
-  { key: 'diktya', label: 'Δίκτυα', icon: '🕸️' },
-];
-
 // Φόρτωση του Google Picker script (μία φορά)
 function loadPickerApi() {
   return new Promise((resolve, reject) => {
@@ -34,10 +28,12 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
+  const [rootId, setRootId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [active, setActive] = useState('keimena');
-  const [viewing, setViewing] = useState(null); // {id,name}
+  const [openFolder, setOpenFolder] = useState(null); // {id,name} ή null = λίστα φακέλων
+  const [viewing, setViewing] = useState(null);
   const [busy, setBusy] = useState('');
   const uploadRef = useRef(null);
 
@@ -47,19 +43,70 @@ export default function Home() {
     if (session?.error === 'RefreshAccessTokenError') signOut({ callbackUrl: '/login' });
   }, [status, session, router]);
 
-  const loadFiles = useCallback(async () => {
+  // Φόρτωση φακέλων + αρχείων
+  const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/registry');
-      const d = await r.json();
-      setFiles(Array.isArray(d.files) ? d.files : []);
+      const [rf, rr] = await Promise.all([
+        fetch('/api/folders'),
+        fetch('/api/registry'),
+      ]);
+      const df = await rf.json();
+      const dr = await rr.json();
+      setRootId(df.rootId || null);
+      setFolders(Array.isArray(df.folders) ? df.folders : []);
+      setFiles(Array.isArray(dr.files) ? dr.files : []);
     } catch (e) { /* noop */ }
     setLoading(false);
   }, []);
 
-  useEffect(() => { if (status === 'authenticated') loadFiles(); }, [status, loadFiles]);
+  useEffect(() => { if (status === 'authenticated') loadAll(); }, [status, loadAll]);
 
-  // Καταχώριση αρχείων στο μητρώο
+  // ── Φάκελοι ──────────────────────────────────────────────
+  const addFolder = async () => {
+    const name = prompt('Όνομα νέου φακέλου:');
+    if (!name || !name.trim()) return;
+    setBusy('folder');
+    try {
+      const r = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) { alert(d.error || 'Σφάλμα δημιουργίας φακέλου'); }
+      else { setFolders(d.folders); if (d.rootId) setRootId(d.rootId); }
+    } catch (e) { alert('Σφάλμα: ' + e.message); }
+    setBusy('');
+  };
+
+  const removeFolder = async (folder) => {
+    const choice = prompt(
+      `Διαγραφή του φακέλου «${folder.name}».\n\n` +
+      `Πληκτρολόγησε:\n` +
+      `  1 = αφαίρεση μόνο από τη λίστα (τα αρχεία μένουν στο Drive)\n` +
+      `  2 = διαγραφή και από το Google Drive (φάκελος + περιεχόμενα στον κάδο)\n\n` +
+      `(Άκυρο για ακύρωση)`,
+      '1'
+    );
+    if (choice !== '1' && choice !== '2') return;
+    setBusy('folder');
+    try {
+      const r = await fetch('/api/folders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: folder.id, deleteFromDrive: choice === '2' }),
+      });
+      const d = await r.json();
+      if (d.folders) setFolders(d.folders);
+      // αφαίρεση από το τοπικό state των αρχείων αυτού του φακέλου
+      setFiles((prev) => prev.filter((f) => f.folderId !== folder.id));
+      if (openFolder?.id === folder.id) setOpenFolder(null);
+    } catch (e) { alert('Σφάλμα: ' + e.message); }
+    setBusy('');
+  };
+
+  // ── Καταχώριση αρχείων στο μητρώο ────────────────────────
   const registerFiles = async (items) => {
     const r = await fetch('/api/registry', {
       method: 'POST',
@@ -70,8 +117,9 @@ export default function Home() {
     if (d.files) setFiles(d.files);
   };
 
-  // ── Google Picker: επιλογή υπαρχόντων αρχείων ──
+  // ── Google Picker (επιλογή υπαρχόντων) → στον τρέχοντα φάκελο ──
   const openPicker = async () => {
+    if (!openFolder) return;
     try {
       setBusy('picker');
       await loadPickerApi();
@@ -87,7 +135,7 @@ export default function Home() {
         .setCallback(async (data) => {
           if (data.action === window.google.picker.Action.PICKED) {
             const items = (data.docs || []).map((doc) => ({
-              id: doc.id, name: doc.name, mimeType: doc.mimeType, category: active,
+              id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: openFolder.id,
             }));
             if (items.length) await registerFiles(items);
           }
@@ -96,21 +144,25 @@ export default function Home() {
         .build();
       picker.setVisible(true);
     } catch (e) {
-      alert('Σφάλμα Picker: ' + e.message);
+      alert('Σφάλμα Picker: ' + e.message + '\n\n(Συμβουλή: αν χρησιμοποιείς Safari, ίσως χρειάζεται να επιτρέψεις cookies τρίτων. Εναλλακτικά, χρησιμοποίησε το «Ανέβασμα αρχείου».)');
       setBusy('');
     }
   };
 
-  // ── Ανέβασμα από συσκευή (απευθείας στο Drive του χρήστη) ──
+  // ── Ανέβασμα από συσκευή → μέσα στον τρέχοντα φάκελο ──────
   const onUpload = async (e) => {
     const list = Array.from(e.target.files || []);
     e.target.value = '';
-    if (!list.length) return;
+    if (!list.length || !openFolder) return;
     setBusy('upload');
     try {
       const added = [];
       for (const file of list) {
-        const metadata = { name: file.name, mimeType: file.type || 'application/octet-stream' };
+        const metadata = {
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          parents: [openFolder.id], // ← μπαίνει ΜΕΣΑ στον φάκελο
+        };
         const form = new FormData();
         form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
         form.append('file', file);
@@ -119,7 +171,7 @@ export default function Home() {
           { method: 'POST', headers: { Authorization: 'Bearer ' + session.accessToken }, body: form }
         );
         const doc = await res.json();
-        if (doc.id) added.push({ id: doc.id, name: doc.name, mimeType: doc.mimeType, category: active });
+        if (doc.id) added.push({ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: openFolder.id });
       }
       if (added.length) await registerFiles(added);
     } catch (err) {
@@ -129,9 +181,17 @@ export default function Home() {
   };
 
   const removeFile = async (id) => {
-    if (!confirm('Αφαίρεση από τη λίστα; (Το αρχείο παραμένει στο Google Drive σου)')) return;
+    const choice = prompt(
+      'Αφαίρεση αρχείου.\n\n' +
+      '  1 = αφαίρεση μόνο από τη λίστα (μένει στο Drive)\n' +
+      '  2 = διαγραφή και από το Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)',
+      '1'
+    );
+    if (choice !== '1' && choice !== '2') return;
     const r = await fetch('/api/registry', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, deleteFromDrive: choice === '2' }),
     });
     const d = await r.json();
     if (d.files) setFiles(d.files);
@@ -141,7 +201,8 @@ export default function Home() {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: PALETTE.bg, color: PALETTE.deep, fontFamily: 'sans-serif' }}>Φόρτωση…</div>;
   }
 
-  const shown = files.filter((f) => f.category === active);
+  const filesInOpen = openFolder ? files.filter((f) => f.folderId === openFolder.id) : [];
+  const countFor = (fid) => files.filter((f) => f.folderId === fid).length;
 
   return (
     <div style={{ minHeight: '100vh', background: PALETTE.bg, fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif', color: PALETTE.text }}>
@@ -158,46 +219,84 @@ export default function Home() {
       </header>
 
       <main style={{ maxWidth: 860, margin: '0 auto', padding: '20px' }}>
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-          {SECTIONS.map((s) => (
-            <button key={s.key} onClick={() => setActive(s.key)}
-              style={{ ...btn(active === s.key ? 'solid' : 'outline'), display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>{s.icon}</span>{s.label}
-              <span style={{ fontSize: 11, opacity: 0.7 }}>({files.filter((f) => f.category === s.key).length})</span>
-            </button>
-          ))}
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 14 }}>
+          <button onClick={() => setOpenFolder(null)} style={{ ...btn('ghost'), fontWeight: openFolder ? 400 : 700 }}>
+            🗂️ Οι φάκελοί μου
+          </button>
+          {openFolder && (
+            <>
+              <span style={{ color: PALETTE.muted }}>›</span>
+              <strong>{openFolder.name}</strong>
+            </>
+          )}
         </div>
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-          <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>
-            {busy === 'picker' ? '…' : '➕ Επιλογή από Drive'}
-          </button>
-          <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>
-            {busy === 'upload' ? 'Ανέβασμα…' : '⬆️ Ανέβασμα αρχείου'}
-          </button>
-          <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display: 'none' }} />
-        </div>
+        {/* ── ΟΘΟΝΗ 1: Λίστα φακέλων ── */}
+        {!openFolder && (
+          <>
+            <div style={{ marginBottom: 18 }}>
+              <button onClick={addFolder} disabled={!!busy} style={btn('solid')}>
+                {busy === 'folder' ? '…' : '➕ Προσθήκη φακέλου'}
+              </button>
+            </div>
 
-        {/* List */}
-        {loading ? (
-          <div style={{ color: PALETTE.muted, padding: 24, textAlign: 'center' }}>Φόρτωση…</div>
-        ) : shown.length === 0 ? (
-          <div style={{ color: PALETTE.muted, padding: 40, textAlign: 'center', background: PALETTE.soft, borderRadius: 14, border: `1px dashed ${PALETTE.border}` }}>
-            Κανένα αρχείο εδώ ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα».
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {shown.map((f) => (
-              <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: PALETTE.card, border: `1px solid ${PALETTE.border}`, borderRadius: 12, padding: '12px 14px' }}>
-                <span style={{ fontSize: 18 }}>{SECTIONS.find((s) => s.key === f.category)?.icon || '📄'}</span>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                <button onClick={() => setViewing(f)} style={btn('mini')}>Άνοιγμα</button>
-                <button onClick={() => removeFile(f.id)} style={{ ...btn('mini'), color: PALETTE.peach, borderColor: PALETTE.peach }}>✕</button>
+            {loading ? (
+              <div style={{ color: PALETTE.muted, padding: 24, textAlign: 'center' }}>Φόρτωση…</div>
+            ) : folders.length === 0 ? (
+              <div style={{ color: PALETTE.muted, padding: 40, textAlign: 'center', background: PALETTE.soft, borderRadius: 14, border: `1px dashed ${PALETTE.border}` }}>
+                Δεν υπάρχουν φάκελοι ακόμη. Πάτησε «Προσθήκη φακέλου» για να ξεκινήσεις.
               </div>
-            ))}
-          </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {folders.map((fld) => (
+                  <div key={fld.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: PALETTE.card, border: `1px solid ${PALETTE.border}`, borderRadius: 12, padding: '12px 14px' }}>
+                    <span style={{ fontSize: 20 }}>📁</span>
+                    <button onClick={() => setOpenFolder(fld)} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: PALETTE.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {fld.name}
+                    </button>
+                    <span style={{ fontSize: 12, color: PALETTE.muted }}>{countFor(fld.id)} αρχεία</span>
+                    <button onClick={() => setOpenFolder(fld)} style={btn('mini')}>Άνοιγμα</button>
+                    <button onClick={() => removeFolder(fld)} style={{ ...btn('mini'), color: PALETTE.peach, borderColor: PALETTE.peach }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── ΟΘΟΝΗ 2: Μέσα σε φάκελο ── */}
+        {openFolder && (
+          <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+              <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>
+                {busy === 'picker' ? '…' : '➕ Επιλογή από Drive'}
+              </button>
+              <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>
+                {busy === 'upload' ? 'Ανέβασμα…' : '⬆️ Ανέβασμα αρχείου'}
+              </button>
+              <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display: 'none' }} />
+            </div>
+
+            {loading ? (
+              <div style={{ color: PALETTE.muted, padding: 24, textAlign: 'center' }}>Φόρτωση…</div>
+            ) : filesInOpen.length === 0 ? (
+              <div style={{ color: PALETTE.muted, padding: 40, textAlign: 'center', background: PALETTE.soft, borderRadius: 14, border: `1px dashed ${PALETTE.border}` }}>
+                Κανένα αρχείο σε αυτόν τον φάκελο. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα».
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {filesInOpen.map((f) => (
+                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: PALETTE.card, border: `1px solid ${PALETTE.border}`, borderRadius: 12, padding: '12px 14px' }}>
+                    <span style={{ fontSize: 18 }}>📄</span>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                    <button onClick={() => setViewing(f)} style={btn('mini')}>Άνοιγμα</button>
+                    <button onClick={() => removeFile(f.id)} style={{ ...btn('mini'), color: PALETTE.peach, borderColor: PALETTE.peach }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 
