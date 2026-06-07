@@ -393,7 +393,7 @@ export default function Home() {
 
               {/* Stat cards */}
               {isMobile ? (
-                <div style={{ position:'relative', marginBottom:24, paddingBottom: Math.max(0,(statConfig.length-1)*10+10) }}>
+                <div style={{ position:'relative', marginBottom:24, paddingBottom: Math.max(0,(statConfig.length-1)*55) }}>
                   {statConfig.map((s, i) => {
                     const p = PALETTE[s.tone];
                     const isActive = statActive === s.view;
@@ -407,24 +407,32 @@ export default function Home() {
                         }}
                         style={{
                           background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
-                          borderRadius:16, padding: isActive ? '16px 18px 20px' : '12px 16px', cursor:'pointer',
-                          marginBottom: isActive ? 12 : -42,
+                          borderRadius:22, padding:'20px 22px', cursor:'pointer',
+                          minHeight: isActive ? 160 : 130,
+                          marginBottom: isActive ? 14 : -80,
                           position:'relative', zIndex: isActive ? 100 : (statConfig.length - i),
-                          boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.06)',
-                          transform: isActive ? 'translateY(-10px) scale(1.03)' : (isBehind ? 'scale(0.95)' : 'none'),
-                          opacity: isBehind ? 0.4 : 1,
-                          filter: isBehind ? 'brightness(0.85)' : 'none',
+                          boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.16)' : '0 2px 8px rgba(0,0,0,0.06)',
+                          transform: isActive ? 'translateY(-8px) scale(1.02)' : (isBehind ? 'scale(0.97)' : 'none'),
+                          opacity: isBehind ? 0.55 : 1,
+                          filter: isBehind ? 'brightness(0.92)' : 'none',
                           transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
                         }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          <div style={{ width:36, height:36, borderRadius:10, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:14, fontWeight:700, color:p.text }}>{s.label}</div>
-                            <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{s.sub}</div>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:13, fontWeight:500, color:p.text, marginBottom:10 }}>{s.label}</div>
+                            <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:6 }}>
+                              <span style={{ fontSize:38, fontWeight:700, lineHeight:1, color:p.text, letterSpacing:'-0.02em' }}>{s.value}</span>
+                              <span style={{ fontSize:14, color:p.text, opacity:0.6 }}>αρχεία</span>
+                            </div>
+                            <div style={{ fontSize:12, color:p.text, opacity:0.55 }}>{s.sub}</div>
                           </div>
-                          <div style={{ fontSize:22, fontWeight:700, color:p.text }}>{s.value}</div>
-                          {isActive && <span style={{ fontSize:12, color:p.deep, fontWeight:700, background:p.accent, padding:'4px 10px', borderRadius:8, marginLeft:4 }}>→</span>}
+                          <div style={{ width:44, height:44, borderRadius:14, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
                         </div>
+                        {isActive && (
+                          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:12 }}>
+                            <span style={{ fontSize:13, color:p.deep, fontWeight:700 }}>Προβολή →</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -461,13 +469,12 @@ export default function Home() {
 
                 {isMobile ? (
                   /* ── Wallet-style cards (mobile) ── */
-                  <div style={{ position:'relative', paddingBottom: Math.max(0,(folders.length-1)*10+10) }}>
+                  <div style={{ position:'relative', paddingBottom: Math.max(0,(folders.length-1)*50) }}>
                     {folders.map((fld, i) => {
                       const p = PALETTE[TONES[i % TONES.length]];
                       const isActive = walletActive === fld.id;
-                      const hasActive = walletActive !== null;
-                      const isAbove = hasActive && !isActive && folders.findIndex(f=>f.id===walletActive) > i;
-                      const isBehind = hasActive && !isActive;
+                      const isBehind = walletActive !== null && !isActive;
+                      const desc = fld.description || (countFor(fld.id) + ' αρχεία');
                       return (
                         <div key={fld.id} className="wallet-card"
                           onClick={(e) => {
@@ -477,40 +484,32 @@ export default function Home() {
                           }}
                           style={{
                             background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}`,
-                            borderRadius:16, padding: isActive ? '18px 18px 24px' : '14px 16px', cursor:'pointer',
-                            marginBottom: isActive ? 14 : -48,
+                            borderRadius:22, padding:'20px 22px', cursor:'pointer',
+                            minHeight: isActive ? 130 : 100,
+                            marginBottom: isActive ? 14 : -60,
                             position:'relative',
                             zIndex: isActive ? 100 : (folders.length - i),
-                            boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.06)',
-                            transform: isActive ? 'translateY(-12px) scale(1.03)' : (isBehind ? 'scale(0.95)' : 'none'),
-                            opacity: isBehind ? 0.4 : 1,
-                            filter: isBehind ? 'brightness(0.85)' : 'none',
+                            boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.16)' : '0 2px 8px rgba(0,0,0,0.06)',
+                            transform: isActive ? 'translateY(-8px) scale(1.02)' : (isBehind ? 'scale(0.97)' : 'none'),
+                            opacity: isBehind ? 0.55 : 1,
+                            filter: isBehind ? 'brightness(0.92)' : 'none',
                             transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
                           }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <div style={{ width:36, height:36, borderRadius:10, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                            <div style={{ width:44, height:44, borderRadius:14, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
                             <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:15, fontWeight:700, color:p.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fld.name}</div>
-                              <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{countFor(fld.id)} αρχεία</div>
+                              <div style={{ fontSize:17, fontWeight:700, color:p.text, marginBottom:4 }}>{fld.name}</div>
+                              <div style={{ fontSize:13, color:p.text, opacity:0.55, lineHeight:1.4 }}>{desc}</div>
                             </div>
-                            {isActive
-                              ? <span style={{ fontSize:12, color:p.deep, fontWeight:700, background:p.accent, padding:'4px 12px', borderRadius:8 }}>Άνοιγμα →</span>
-                              : <span style={{ fontSize:12, color:p.deep, opacity:0.5 }}>›</span>
-                            }
+                            {isActive && (
+                              <span style={{ fontSize:13, color:p.deep, fontWeight:700, flexShrink:0 }}>Άνοιγμα →</span>
+                            )}
                           </div>
-                          {isActive && (
-                            <div style={{ marginTop:10, display:'flex', gap:6, flexWrap:'wrap' }}>
-                              {files.filter(f=>f.folderId===fld.id).slice(0,3).map(f=>(
-                                <span key={f.id} style={{ fontSize:11, color:p.text, opacity:0.6, background:'rgba(255,255,255,0.35)', padding:'2px 8px', borderRadius:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>📄 {f.name}</span>
-                              ))}
-                              {countFor(fld.id) > 3 && <span style={{ fontSize:11, color:p.text, opacity:0.45 }}>+{countFor(fld.id)-3}</span>}
-                            </div>
-                          )}
                         </div>
                       );
                     })}
-                    {/* Νέος φάκελος — μικρό link */}
-                    <div onClick={addFolder} style={{ textAlign:'center', padding:'10px 0', marginTop: Math.max(0, folders.length * 10 + 46) }}>
+                    {/* Νέος φάκελος */}
+                    <div onClick={addFolder} style={{ textAlign:'center', padding:'12px 0', marginTop: Math.max(0, folders.length * 50 - (folders.length-1)*60 + 20) }}>
                       <span style={{ fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', opacity:0.6 }}>{busy==='folder' ? 'Δημιουργία…' : '＋ Νέος φάκελος'}</span>
                     </div>
                   </div>
