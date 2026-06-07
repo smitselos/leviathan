@@ -1,13 +1,12 @@
 // pages/api/registry.js
-// GET    → λίστα αρχείων του χρήστη (από το μητρώο στο Drive του)
-// POST   → προσθήκη αρχείου/-ων στο μητρώο  body: { files:[{id,name,category,mimeType}] }
-// DELETE → αφαίρεση από το μητρώο (ΔΕΝ διαγράφει το αρχείο από το Drive) body: { id }
+// GET    → { folders, files }  (όλα τα περιεχόμενα του μητρώου)
+// POST   → προσθήκη αρχείων    body:{ files:[{id,name,mimeType,folderId}] }
+// DELETE → αφαίρεση αρχείου     body:{ id, deleteFromDrive:bool }
+//          Αν deleteFromDrive=true, το αρχείο πάει στον κάδο του Drive.
 
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive, loadRegistry, saveRegistry } from '../../lib/drive';
-
-const CATEGORIES = ['keimena', 'biblia', 'diktya'];
+import { getDrive, loadRegistry, saveRegistry, trashDriveFile } from '../../lib/drive';
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -19,7 +18,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const reg = await loadRegistry(drive);
-      return res.status(200).json({ files: reg.files });
+      return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
 
     if (req.method === 'POST') {
@@ -32,28 +31,30 @@ export default async function handler(req, res) {
 
       for (const f of incoming) {
         if (!f.id || !f.name) continue;
-        const category = CATEGORIES.includes(f.category) ? f.category : 'keimena';
         byId.set(f.id, {
           id: f.id,
           name: f.name,
-          category,
           mimeType: f.mimeType || null,
+          folderId: f.folderId || null,
           addedAt: byId.get(f.id)?.addedAt || Date.now(),
         });
       }
 
       reg.files = Array.from(byId.values());
       await saveRegistry(drive, reg);
-      return res.status(200).json({ files: reg.files });
+      return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
 
     if (req.method === 'DELETE') {
-      const { id } = req.body || {};
+      const { id, deleteFromDrive } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       reg.files = reg.files.filter((f) => f.id !== id);
+      if (deleteFromDrive) {
+        try { await trashDriveFile(drive, id); } catch (e) { /* ignore */ }
+      }
       await saveRegistry(drive, reg);
-      return res.status(200).json({ files: reg.files });
+      return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
