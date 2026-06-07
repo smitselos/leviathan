@@ -65,6 +65,7 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [walletActive, setWalletActive] = useState(null);
+  const [statActive, setStatActive] = useState(null);
   const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -234,7 +235,7 @@ export default function Home() {
   };
 
   // ── Navigation helpers ──
-  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); };
+  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
@@ -391,24 +392,63 @@ export default function Home() {
               </div>
 
               {/* Stat cards */}
-              <div style={{ ...S.statsGrid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit,minmax(240px,1fr))', gap: isMobile ? 10 : 14, marginBottom: isMobile ? 24 : 40 }}>
-                {statConfig.map((s) => {
-                  const p = PALETTE[s.tone];
-                  return (
-                    <div key={s.view} className="ch" onClick={() => setActiveView(s.view)}
-                      style={{ ...S.statCard, cursor:'pointer', minHeight: isMobile ? 80 : 140, padding: isMobile ? '14px 16px' : '22px 24px', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
-                      <div style={S.statInner}>
-                        <div>
-                          <div style={{ ...S.statLabel, color:p.text, marginBottom: isMobile ? 4 : 12, fontSize: isMobile ? 12 : 13 }}>{s.label}</div>
-                          <div style={{ ...S.statVal, color:p.text, fontSize: isMobile ? 28 : 42 }}>{s.value}</div>
-                          {!isMobile && <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>}
+              {isMobile ? (
+                <div style={{ position:'relative', marginBottom:24, paddingBottom: Math.max(0,(statConfig.length-1)*10+10) }}>
+                  {statConfig.map((s, i) => {
+                    const p = PALETTE[s.tone];
+                    const isActive = statActive === s.view;
+                    const isBehind = statActive !== null && !isActive;
+                    return (
+                      <div key={s.view} className="wallet-card"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isActive) { setActiveView(s.view); setStatActive(null); }
+                          else setStatActive(s.view);
+                        }}
+                        style={{
+                          background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
+                          borderRadius:16, padding: isActive ? '16px 18px 20px' : '12px 16px', cursor:'pointer',
+                          marginBottom: isActive ? 12 : -42,
+                          position:'relative', zIndex: isActive ? 100 : (statConfig.length - i),
+                          boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.06)',
+                          transform: isActive ? 'translateY(-10px) scale(1.03)' : (isBehind ? 'scale(0.95)' : 'none'),
+                          opacity: isBehind ? 0.4 : 1,
+                          filter: isBehind ? 'brightness(0.85)' : 'none',
+                          transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
+                        }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div style={{ width:36, height:36, borderRadius:10, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:14, fontWeight:700, color:p.text }}>{s.label}</div>
+                            <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{s.sub}</div>
+                          </div>
+                          <div style={{ fontSize:22, fontWeight:700, color:p.text }}>{s.value}</div>
+                          {isActive && <span style={{ fontSize:12, color:p.deep, fontWeight:700, background:p.accent, padding:'4px 10px', borderRadius:8, marginLeft:4 }}>→</span>}
                         </div>
-                        <div style={{ ...S.statIcon, background:p.accent, color:p.deep, width: isMobile ? 36 : 44, height: isMobile ? 36 : 44 }}>{s.icon}</div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ ...S.statsGrid, gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:14, marginBottom:40 }}>
+                  {statConfig.map((s) => {
+                    const p = PALETTE[s.tone];
+                    return (
+                      <div key={s.view} className="ch" onClick={() => setActiveView(s.view)}
+                        style={{ ...S.statCard, cursor:'pointer', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                        <div style={S.statInner}>
+                          <div>
+                            <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
+                            <div style={{ ...S.statVal, color:p.text }}>{s.value}</div>
+                            <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
+                          </div>
+                          <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Φάκελοι */}
               <section style={{ marginBottom: isMobile ? 24 : 44 }}>
