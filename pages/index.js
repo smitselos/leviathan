@@ -232,7 +232,7 @@ export default function Home() {
     // optimistic local bump + server record
     setFiles((p) => p.map((x) => x.id === f.id ? { ...x, openCount:(x.openCount||0)+1, openedAt: Date.now() } : x));
     fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
-    if (isMobile) { window.open('/viewer/' + f.id, '_blank'); return; }
+    if (isMobile) { window.open('/api/file/' + f.id, '_blank'); return; }
     setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
   };
 
@@ -771,29 +771,86 @@ export default function Home() {
 
 // ── Λίστα αρχείων (κοινό component) ──
 function FileList({ files, loading, empty, onOpen, onRemove, onFav, showFolder, folders, compact }) {
+  const [expanded, setExpanded] = useState(null);
   if (loading) return <div style={S.empty}>Φόρτωση…</div>;
   if (!files || files.length === 0) return <div style={{ ...S.empty, background:PALETTE.cream.bgSoft, borderRadius:14, border:`1px dashed ${PALETTE.cream.accent}` }}>{empty}</div>;
   const folderName = (id) => folders?.find((f)=>f.id===id)?.name;
+  const actionBtn = { display:'flex', flexDirection:'column', alignItems:'center', gap:3, background:'none', border:'none', padding:'10px 8px', color:PALETTE.peach.deep, fontSize:10, fontWeight:500, minWidth:52, borderRadius:10, cursor:'pointer' };
+  const actionBtnOff = { ...actionBtn, opacity:0.30 };
   return (
     <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8 }}>
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim();
+        const isExp = compact && expanded === f.id;
         return (
-          <div key={f.id} style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, background:'#fff', border:'1px solid #ebebeb', borderRadius: compact ? 10 : 12, padding: compact ? '10px 10px' : '12px 14px' }}>
-            <button onClick={(e)=>onFav(f.id,e)} title={f.favorite?'Αφαίρεση από αγαπημένα':'Προσθήκη στα αγαπημένα'}
-              style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
-            {!compact && <span style={{ fontSize:18 }}>📄</span>}
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</div>
-              <div style={{ display:'flex', alignItems:'center', gap: compact ? 4 : 5, marginTop: compact ? 2 : 4, flexWrap:'wrap' }}>
-                {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
-                {tags.slice(0, compact ? 2 : tags.length).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-                {compact && tags.length > 2 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-2}</span>}
-                {hasComment && <span style={{ fontSize:10, color:'#aeaeb8' }}>💬</span>}
+          <div key={f.id} style={{
+            background: isExp ? PALETTE.peach.bgSoft : '#fff',
+            border: isExp ? `1.5px solid ${PALETTE.peach.accent}` : '1px solid #ebebeb',
+            borderRadius: isExp ? 18 : (compact ? 10 : 12),
+            overflow:'hidden',
+            transition:'all 0.3s ease',
+            boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
+          }}>
+            {/* ── File row ── */}
+            <div
+              onClick={() => { if (compact) setExpanded(isExp ? null : f.id); }}
+              style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor: compact ? 'pointer' : 'default' }}>
+              <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
+                style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
+              {!compact && <span style={{ fontSize:18 }}>📄</span>}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</div>
+                <div style={{ display:'flex', alignItems:'center', gap: compact ? 4 : 5, marginTop: compact ? 2 : 4, flexWrap:'wrap' }}>
+                  {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
+                  {tags.slice(0, compact ? 2 : tags.length).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                  {compact && tags.length > 2 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-2}</span>}
+                  {hasComment && <span style={{ fontSize:10, color:'#aeaeb8' }}>💬</span>}
+                </div>
               </div>
+              <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
+              {!compact && <button onClick={()=>onRemove(f.id)} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
-            <button onClick={()=>onOpen(f)} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
-            {!compact && <button onClick={()=>onRemove(f.id)} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
+
+            {/* ── Expanded action card (mobile only) ── */}
+            {isExp && (
+              <div style={{ padding:'0 10px 14px' }}>
+                {/* Comment preview */}
+                {hasComment && (
+                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
+                    💬 {f.comment.length > 100 ? f.comment.slice(0,100)+'…' : f.comment}
+                  </div>
+                )}
+                {/* Tags */}
+                {tags.length > 0 && (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2 }}>
+                    {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                  </div>
+                )}
+                {/* Action icons row */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0' }}>
+                  <button style={actionBtnOff} disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    <span>Student</span>
+                  </button>
+                  <button style={actionBtnOff} disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                    <span>Live</span>
+                  </button>
+                  <button style={actionBtnOff} disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    <span>Σχόλια</span>
+                  </button>
+                  <button style={actionBtnOff} disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    <span>Σύνδεση</span>
+                  </button>
+                  <button style={actionBtnOff} disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Επεξεργασία</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       })}
