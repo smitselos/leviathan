@@ -1,12 +1,9 @@
 // pages/api/registry.js
 // GET    → { folders, files }
-// POST   → προσθήκη/ενημέρωση αρχείων
-//          body:{ files:[{id,name,mimeType,folderId, tags?, comment?}] }
-//          Αν το αρχείο υπάρχει ήδη, ενημερώνονται μόνο τα πεδία που δόθηκαν
-//          (διατηρούνται tags/comment αν δεν σταλούν).
-// PATCH  → ενημέρωση μεταδεδομένων ενός αρχείου
-//          body:{ id, tags?, comment? }
-// DELETE → αφαίρεση αρχείου  body:{ id, deleteFromDrive:bool }
+// POST   → προσθήκη/ενημέρωση αρχείων  body:{ files:[{id,name,mimeType,folderId,...}] }
+// PATCH  → ενημέρωση ενός αρχείου       body:{ id, tags?, comment?, favorite?, recordOpen? }
+//          recordOpen:true → openCount++ και openedAt=now (για Πρόσφατα/Δημοφιλή)
+// DELETE → αφαίρεση αρχείου             body:{ id, deleteFromDrive:bool }
 
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
@@ -27,8 +24,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const incoming = Array.isArray(req.body?.files) ? req.body.files : [];
-      if (!incoming.length)
-        return res.status(400).json({ error: 'No files provided' });
+      if (!incoming.length) return res.status(400).json({ error: 'No files provided' });
 
       const reg = await loadRegistry(drive);
       const byId = new Map(reg.files.map((f) => [f.id, f]));
@@ -43,6 +39,9 @@ export default async function handler(req, res) {
           folderId: f.folderId || prev.folderId || null,
           tags: Array.isArray(f.tags) ? f.tags : (prev.tags || []),
           comment: typeof f.comment === 'string' ? f.comment : (prev.comment || ''),
+          favorite: typeof f.favorite === 'boolean' ? f.favorite : (prev.favorite || false),
+          openCount: prev.openCount || 0,
+          openedAt: prev.openedAt || null,
           addedAt: prev.addedAt || Date.now(),
         });
       }
@@ -53,13 +52,18 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, tags, comment } = req.body || {};
+      const { id, tags, comment, favorite, recordOpen } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       const idx = reg.files.findIndex((f) => f.id === id);
       if (idx === -1) return res.status(404).json({ error: 'File not found' });
       if (Array.isArray(tags)) reg.files[idx].tags = tags;
       if (typeof comment === 'string') reg.files[idx].comment = comment;
+      if (typeof favorite === 'boolean') reg.files[idx].favorite = favorite;
+      if (recordOpen) {
+        reg.files[idx].openCount = (reg.files[idx].openCount || 0) + 1;
+        reg.files[idx].openedAt = Date.now();
+      }
       await saveRegistry(drive, reg);
       return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
@@ -69,9 +73,7 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       reg.files = reg.files.filter((f) => f.id !== id);
-      if (deleteFromDrive) {
-        try { await trashDriveFile(drive, id); } catch (e) { /* ignore */ }
-      }
+      if (deleteFromDrive) { try { await trashDriveFile(drive, id); } catch (e) {} }
       await saveRegistry(drive, reg);
       return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
