@@ -69,6 +69,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [mobileZoom, setMobileZoom] = useState(1);
   const [busy, setBusy] = useState('');
   const uploadRef = useRef(null);
 
@@ -231,7 +232,8 @@ export default function Home() {
     // optimistic local bump + server record
     setFiles((p) => p.map((x) => x.id === f.id ? { ...x, openCount:(x.openCount||0)+1, openedAt: Date.now() } : x));
     fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
-    setViewing(f); setShowMetaPanel(false); setTagInput('');
+    if (isMobile) { window.open('/viewer/' + f.id, '_blank'); return; }
+    setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
   };
 
   // ── Navigation helpers ──
@@ -673,10 +675,15 @@ export default function Home() {
         isMobile ? (
           /* ── Mobile: fullscreen viewer with action bar ── */
           <div style={{ position:'fixed', inset:0, background:'#fff', zIndex:200, display:'flex', flexDirection:'column' }}>
-            {/* Top bar: filename */}
+            {/* Top bar: filename + zoom */}
             <div style={{ display:'flex', alignItems:'center', padding:'8px 12px', borderBottom:'1px solid #ebebeb', gap:8, flexShrink:0 }}>
               <button onClick={()=>setViewing(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#444', padding:'4px' }}>←</button>
               <strong style={{ fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, color:'#1a1a1a' }}>{viewing.name}</strong>
+              <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+                <button onClick={()=>setMobileZoom(z=>Math.max(0.3,z-0.1))} style={S.zoomBtn}>−</button>
+                <span style={{ fontSize:11, color:'#6b6b80', minWidth:32, textAlign:'center', cursor:'pointer' }} onClick={()=>setMobileZoom(1)}>{Math.round(mobileZoom*100)}%</span>
+                <button onClick={()=>setMobileZoom(z=>Math.min(2,z+0.1))} style={S.zoomBtn}>+</button>
+              </div>
               <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Νέα καρτέλα">↗</button>
             </div>
             {/* Action toolbar */}
@@ -698,8 +705,18 @@ export default function Home() {
                 <span>Σύνδεση</span>
               </button>
             </div>
-            {/* File content */}
-            <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', width:'100%' }} title={viewing.name} />
+            {/* File content — fit-to-width via transform scale */}
+            <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', position:'relative' }}>
+              <iframe src={'/api/file/'+viewing.id}
+                style={{
+                  border:'none', display:'block',
+                  width: (100/mobileZoom)+'%',
+                  height: (100/mobileZoom)+'%',
+                  transform: 'scale('+mobileZoom+')',
+                  transformOrigin:'0 0',
+                }}
+                title={viewing.name} />
+            </div>
           </div>
         ) : (
           /* ── Desktop: modal viewer ── */
@@ -843,4 +860,5 @@ const S = {
   delBtnSm:{ width:26, height:26, borderRadius:7, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   cpLabel:{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 },
   mobileAction:{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, background:'none', border:'none', cursor:'pointer', padding:'6px 10px', color:PALETTE.peach.deep, fontSize:10, fontWeight:500, minWidth:50 },
+  zoomBtn:{ background:'#1a1a1a', color:'#fff', border:'none', width:26, height:26, borderRadius:8, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' },
 };
