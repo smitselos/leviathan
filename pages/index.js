@@ -392,154 +392,164 @@ export default function Home() {
               </div>
 
               {/* Stat cards */}
-              {isMobile ? (
-                <div style={{ position:'relative', marginBottom:24, paddingBottom: Math.max(0,(statConfig.length-1)*55) }}>
-                  {statConfig.map((s, i) => {
-                    const p = PALETTE[s.tone];
-                    const isActive = statActive === s.view;
-                    const isBehind = statActive !== null && !isActive;
+              {isMobile ? (()=>{
+                /* ── Unified wallet renderer (ίδιος αλγόριθμος με παλιό ΛΕΒΙΑΘΑΝ) ── */
+                const renderWallet = (items) => {
+                  const expandedIdx = items.findIndex(i => i.view === (i.type==='stat' ? statActive : walletActive));
+                  const hasExpanded = expandedIdx >= 0;
+
+                  return items.map((item, idx) => {
+                    const p = PALETTE[item.tone];
+                    const activeId = item.type==='stat' ? statActive : walletActive;
+                    const isExpanded = activeId === item.view;
+                    const isBefore = hasExpanded && idx < expandedIdx;
+                    const isAfter = hasExpanded && idx > expandedIdx;
+
+                    let mt = idx === 0 ? 0 : -36;
+                    let ty = 0;
+                    if (isExpanded)     { mt = idx===0 ? 0 : 16; ty = -8; }
+                    else if (isBefore)  { mt = idx===0 ? 0 : -48; ty = -4; }
+                    else if (isAfter)   { mt = -48; ty = 40; }
+
+                    const cardClick = () => {
+                      if (isExpanded) {
+                        if (item.type==='stat') { setStatActive(null); setActiveView(item.view); }
+                        else { setWalletActive(null); openFolderView(item); }
+                      } else {
+                        if (item.type==='stat') setStatActive(item.view);
+                        else setWalletActive(item.view);
+                      }
+                    };
+
                     return (
-                      <div key={s.view} className="wallet-card"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isActive) { setActiveView(s.view); setStatActive(null); }
-                          else setStatActive(s.view);
-                        }}
+                      <div key={item.view} className="wallet-card" onClick={cardClick}
                         style={{
-                          background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
-                          borderRadius:22, padding:'20px 22px', cursor:'pointer',
-                          minHeight: isActive ? 160 : 130,
-                          marginBottom: isActive ? 14 : -80,
-                          position:'relative', zIndex: isActive ? 100 : (statConfig.length - i),
-                          boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.16)' : '0 2px 8px rgba(0,0,0,0.06)',
-                          transform: isActive ? 'translateY(-8px) scale(1.02)' : (isBehind ? 'scale(0.97)' : 'none'),
-                          opacity: isBehind ? 0.55 : 1,
-                          filter: isBehind ? 'brightness(0.92)' : 'none',
-                          transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
+                          position:'relative',
+                          zIndex: isExpanded ? 50 : (isBefore ? idx : hasExpanded ? idx : idx+1),
+                          marginTop: mt,
+                          borderRadius:22, cursor:'pointer',
+                          padding: item.type==='stat' ? '20px 22px' : '22px 24px',
+                          minHeight: item.type==='stat' ? 115 : 120,
+                          background:`linear-gradient(135deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
+                          boxShadow: isExpanded
+                            ? '0 14px 44px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.12)'
+                            : hasExpanded && !isExpanded
+                              ? '0 1px 4px rgba(0,0,0,0.06)'
+                              : '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+                          transition: 'all 0.4s cubic-bezier(0.34,1.4,0.64,1)',
+                          transform: `translateY(${ty}px) scale(${isExpanded ? 1.03 : hasExpanded ? 0.96 : 1})`,
+                          opacity: hasExpanded && !isExpanded ? 0.65 : 1,
+                          display:'flex', flexDirection:'column',
                         }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                          <div style={{ flex:1 }}>
-                            <div style={{ fontSize:13, fontWeight:500, color:p.text, marginBottom:10 }}>{s.label}</div>
-                            <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:6 }}>
-                              <span style={{ fontSize:38, fontWeight:700, lineHeight:1, color:p.text, letterSpacing:'-0.02em' }}>{s.value}</span>
-                              <span style={{ fontSize:14, color:p.text, opacity:0.6 }}>αρχεία</span>
+                        {item.type === 'stat' ? (
+                          <>
+                            <div style={S.statInner}>
+                              <div style={{ flex:1 }}>
+                                <div style={{ fontSize:13, fontWeight:500, color:p.text, opacity:0.75, marginBottom:12 }}>{item.label}</div>
+                                <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:6 }}>
+                                  <span style={{ fontSize:36, fontWeight:700, lineHeight:1, color:p.text }}>{item.value}</span>
+                                  <span style={{ fontSize:14, color:p.text, opacity:0.6 }}>αρχεία</span>
+                                </div>
+                                <div style={{ fontSize:12, color:p.text, opacity:0.55 }}>{item.sub}</div>
+                              </div>
+                              <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon}</div>
                             </div>
-                            <div style={{ fontSize:12, color:p.text, opacity:0.55 }}>{s.sub}</div>
-                          </div>
-                          <div style={{ width:44, height:44, borderRadius:14, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
-                        </div>
-                        {isActive && (
-                          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:12 }}>
-                            <span style={{ fontSize:13, color:p.deep, fontWeight:700 }}>Προβολή →</span>
+                            {isExpanded && (
+                              <div style={{ textAlign:'right', marginTop:6 }}>
+                                <span style={{ fontSize:12, fontWeight:600, color:p.deep }}>Προβολή →</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                            <div style={{ width:42, height:42, borderRadius:12, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:16, fontWeight:700, color:p.text, marginBottom:2 }}>{item.name}</div>
+                              <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
+                            </div>
+                            {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>Άνοιγμα →</span>}
                           </div>
                         )}
                       </div>
                     );
-                  })}
-                </div>
-              ) : (
-                <div style={{ ...S.statsGrid, gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:14, marginBottom:40 }}>
-                  {statConfig.map((s) => {
-                    const p = PALETTE[s.tone];
-                    return (
-                      <div key={s.view} className="ch" onClick={() => setActiveView(s.view)}
-                        style={{ ...S.statCard, cursor:'pointer', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
-                        <div style={S.statInner}>
-                          <div>
-                            <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
-                            <div style={{ ...S.statVal, color:p.text }}>{s.value}</div>
-                            <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
-                          </div>
-                          <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
-                        </div>
+                  });
+                };
+
+                const statsItems = statConfig.map(s => ({ type:'stat', ...s }));
+                const folderItems = folders.map((fld, i) => ({
+                  type:'folder', view: fld.id, id: fld.id, name: fld.name,
+                  desc: fld.description || (countFor(fld.id) + ' αρχεία'),
+                  tone: TONES[i % TONES.length],
+                  // pass folder object for openFolderView
+                  ...fld,
+                }));
+
+                return (
+                  <>
+                    <div style={{ position:'relative', marginBottom:28, paddingBottom:8 }}>
+                      {renderWallet(statsItems)}
+                    </div>
+                    <section style={{ marginBottom:24 }}>
+                      <h2 style={{ ...S.secTitle, marginBottom:12, fontSize:15 }}>Οι φάκελοί μου</h2>
+                      <div style={{ position:'relative', marginBottom:8, paddingBottom:8 }}>
+                        {renderWallet(folderItems)}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Φάκελοι */}
-              <section style={{ marginBottom: isMobile ? 24 : 44 }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: isMobile ? 12 : 18 }}>
-                  <h2 style={{ ...S.secTitle, marginBottom:0, fontSize: isMobile ? 15 : 17 }}>Οι φάκελοί μου</h2>
-                  {isMobile && walletActive && (
-                    <button onClick={(e)=>{e.stopPropagation();setWalletActive(null);}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:'#aeaeb8' }}>✕ Κλείσιμο</button>
-                  )}
-                </div>
-
-                {isMobile ? (
-                  /* ── Wallet-style cards (mobile) ── */
-                  <div style={{ position:'relative', paddingBottom: Math.max(0,(folders.length-1)*50) }}>
-                    {folders.map((fld, i) => {
-                      const p = PALETTE[TONES[i % TONES.length]];
-                      const isActive = walletActive === fld.id;
-                      const isBehind = walletActive !== null && !isActive;
-                      const desc = fld.description || (countFor(fld.id) + ' αρχεία');
+                      <div onClick={addFolder} style={{ textAlign:'center', padding:'8px 0' }}>
+                        <span style={{ fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', opacity:0.6 }}>{busy==='folder' ? 'Δημιουργία…' : '＋ Νέος φάκελος'}</span>
+                      </div>
+                    </section>
+                  </>
+                );
+              })()
+              ) : (
+                /* ═══ DESKTOP: Stats + Folders grid ═══ */
+                <>
+                  <div style={{ ...S.statsGrid, gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:14, marginBottom:40 }}>
+                    {statConfig.map((s) => {
+                      const p = PALETTE[s.tone];
                       return (
-                        <div key={fld.id} className="wallet-card"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isActive) { openFolderView(fld); setWalletActive(null); }
-                            else setWalletActive(fld.id);
-                          }}
-                          style={{
-                            background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}`,
-                            borderRadius:22, padding:'20px 22px', cursor:'pointer',
-                            minHeight: isActive ? 130 : 100,
-                            marginBottom: isActive ? 14 : -60,
-                            position:'relative',
-                            zIndex: isActive ? 100 : (folders.length - i),
-                            boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.16)' : '0 2px 8px rgba(0,0,0,0.06)',
-                            transform: isActive ? 'translateY(-8px) scale(1.02)' : (isBehind ? 'scale(0.97)' : 'none'),
-                            opacity: isBehind ? 0.55 : 1,
-                            filter: isBehind ? 'brightness(0.92)' : 'none',
-                            transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
-                          }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                            <div style={{ width:44, height:44, borderRadius:14, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:17, fontWeight:700, color:p.text, marginBottom:4 }}>{fld.name}</div>
-                              <div style={{ fontSize:13, color:p.text, opacity:0.55, lineHeight:1.4 }}>{desc}</div>
+                        <div key={s.view} className="ch" onClick={() => setActiveView(s.view)}
+                          style={{ ...S.statCard, cursor:'pointer', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                          <div style={S.statInner}>
+                            <div>
+                              <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
+                              <div style={{ ...S.statVal, color:p.text }}>{s.value}</div>
+                              <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
                             </div>
-                            {isActive && (
-                              <span style={{ fontSize:13, color:p.deep, fontWeight:700, flexShrink:0 }}>Άνοιγμα →</span>
-                            )}
+                            <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
                           </div>
                         </div>
                       );
                     })}
-                    {/* Νέος φάκελος */}
-                    <div onClick={addFolder} style={{ textAlign:'center', padding:'12px 0', marginTop: Math.max(0, folders.length * 50 - (folders.length-1)*60 + 20) }}>
-                      <span style={{ fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', opacity:0.6 }}>{busy==='folder' ? 'Δημιουργία…' : '＋ Νέος φάκελος'}</span>
-                    </div>
                   </div>
-                ) : (
-                  /* ── Grid cards (desktop) ── */
-                  <div style={S.cardsGrid}>
-                    {folders.map((fld, i) => {
-                      const p = PALETTE[TONES[i % TONES.length]];
-                      return (
-                        <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
-                          style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
-                          <div style={S.folderTop}>
-                            <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
+                  <section style={{ marginBottom:44 }}>
+                    <h2 style={S.secTitle}>Οι φάκελοί μου</h2>
+                    <div style={S.cardsGrid}>
+                      {folders.map((fld, i) => {
+                        const p = PALETTE[TONES[i % TONES.length]];
+                        return (
+                          <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
+                            style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
+                            <div style={S.folderTop}>
+                              <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
+                            </div>
+                            <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
+                            <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
+                            <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
+                              <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                            </div>
                           </div>
-                          <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
-                          <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
-                          <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
-                            <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <div className="ch" onClick={addFolder}
-                      style={{ ...S.folderCard, background:'transparent', border:`1.5px dashed ${PALETTE.cream.accent}`, alignItems:'center', justifyContent:'center', textAlign:'center', color:PALETTE.cream.accent, minHeight:120 }}>
-                      <div style={{ fontSize:22, lineHeight:1, marginBottom:4, opacity:0.7 }}>＋</div>
-                      <div style={{ fontSize:12, fontWeight:500, opacity:0.7 }}>{busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}</div>
+                        );
+                      })}
+                      <div className="ch" onClick={addFolder}
+                        style={{ ...S.folderCard, background:'transparent', border:`1.5px dashed ${PALETTE.cream.accent}`, alignItems:'center', justifyContent:'center', textAlign:'center', color:PALETTE.cream.accent, minHeight:120 }}>
+                        <div style={{ fontSize:22, lineHeight:1, marginBottom:4, opacity:0.7 }}>＋</div>
+                        <div style={{ fontSize:12, fontWeight:500, opacity:0.7 }}>{busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}</div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </section>
+                  </section>
+                </>
+              )}
 
               {/* Πρόσφατα / Δημοφιλή */}
               {(recentFiles.length > 0 || popularFiles.length > 0) && (
