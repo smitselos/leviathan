@@ -64,7 +64,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [walletExpanded, setWalletExpanded] = useState(false);
+  const [walletActive, setWalletActive] = useState(null);
   const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -234,8 +234,8 @@ export default function Home() {
   };
 
   // ── Navigation helpers ──
-  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); };
-  const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); };
+  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); };
+  const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
     setOpenFolder({ id: appsFolderId, name: 'Εφαρμογές', isApps: true });
@@ -316,7 +316,7 @@ export default function Home() {
         .del-h:hover{background:#fde8e8!important;color:#dc2626!important;border-color:#f5c6c6!important;}
         .tag-chip:hover .tag-x{opacity:1!important;}
         input:focus,textarea:focus{border-color:#c97b5a!important;outline:none;box-shadow:0 0 0 3px rgba(201,123,90,0.12)!important;}
-        .wallet-card{transition:margin-bottom 0.35s cubic-bezier(.4,0,.2,1),transform 0.25s ease,box-shadow 0.25s ease;}
+        .wallet-card{transition:all 0.35s cubic-bezier(.4,0,.2,1);}
         .wallet-card:active{transform:scale(0.97)!important;}
         .btm-item{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 0;min-width:0;flex:1;}
         .btm-item svg{width:20px;height:20px;}
@@ -363,14 +363,14 @@ export default function Home() {
           <button className="btm-item" onClick={goHome} style={{ color: activeView==='home'?'#ececec':'#8e8ea0' }}>
             {Icon.home}<span style={{ fontSize:10 }}>Αρχική</span>
           </button>
+          <button className="btm-item" style={{ color:'#8e8ea0', opacity:0.35 }}>
+            {Icon.net}<span style={{ fontSize:10 }}>Δίκτυα</span>
+          </button>
           <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
-          <button className="btm-item" onClick={()=>setActiveView('favorites')} style={{ color: activeView==='favorites'?'#ececec':'#8e8ea0' }}>
-            {Icon.star}<span style={{ fontSize:10 }}>Αγαπημένα</span>
-          </button>
-          <button className="btm-item" onClick={()=>setActiveView('tagSearch')} style={{ color: activeView==='tagSearch'?'#ececec':'#8e8ea0' }}>
-            {Icon.search}<span style={{ fontSize:10 }}>Αναζήτηση</span>
+          <button className="btm-item" style={{ color:'#8e8ea0', opacity:0.35 }}>
+            {Icon.student}<span style={{ fontSize:10 }}>Student</span>
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
             {Icon.logout}<span style={{ fontSize:10 }}>Έξοδος</span>
@@ -414,27 +414,38 @@ export default function Home() {
               <section style={{ marginBottom: isMobile ? 24 : 44 }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: isMobile ? 12 : 18 }}>
                   <h2 style={{ ...S.secTitle, marginBottom:0, fontSize: isMobile ? 15 : 17 }}>Οι φάκελοί μου</h2>
-                  {isMobile && folders.length > 1 && (
-                    <button onClick={()=>setWalletExpanded(!walletExpanded)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:PALETTE.cream.deep, fontWeight:600 }}>
-                      {walletExpanded ? 'Στοίβα ▲' : 'Ανάπτυξη ▼'}
-                    </button>
+                  {isMobile && walletActive && (
+                    <button onClick={(e)=>{e.stopPropagation();setWalletActive(null);}} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:'#aeaeb8' }}>✕ Κλείσιμο</button>
                   )}
                 </div>
 
                 {isMobile ? (
                   /* ── Wallet-style cards (mobile) ── */
-                  <div style={{ position:'relative', paddingBottom: walletExpanded ? 0 : Math.max(0,(folders.length-1)*10+10) }}>
+                  <div style={{ position:'relative', paddingBottom: Math.max(0,(folders.length-1)*10+10) }}>
                     {folders.map((fld, i) => {
                       const p = PALETTE[TONES[i % TONES.length]];
-                      const collapsed = !walletExpanded && i < folders.length - 1;
+                      const isActive = walletActive === fld.id;
+                      const hasActive = walletActive !== null;
+                      const isAbove = hasActive && !isActive && folders.findIndex(f=>f.id===walletActive) > i;
+                      const isBehind = hasActive && !isActive;
                       return (
-                        <div key={fld.id} className="wallet-card" onClick={() => openFolderView(fld)}
+                        <div key={fld.id} className="wallet-card"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isActive) { openFolderView(fld); setWalletActive(null); }
+                            else setWalletActive(fld.id);
+                          }}
                           style={{
                             background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}`,
-                            borderRadius:16, padding:'14px 16px', cursor:'pointer',
-                            marginBottom: walletExpanded ? 10 : -52,
-                            position:'relative', zIndex: folders.length - i,
-                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                            borderRadius:16, padding: isActive ? '18px 18px 24px' : '14px 16px', cursor:'pointer',
+                            marginBottom: isActive ? 14 : -48,
+                            position:'relative',
+                            zIndex: isActive ? 100 : (folders.length - i),
+                            boxShadow: isActive ? '0 12px 36px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.06)',
+                            transform: isActive ? 'translateY(-12px) scale(1.03)' : (isBehind ? 'scale(0.95)' : 'none'),
+                            opacity: isBehind ? 0.4 : 1,
+                            filter: isBehind ? 'brightness(0.85)' : 'none',
+                            transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
                           }}>
                           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                             <div style={{ width:36, height:36, borderRadius:10, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
@@ -442,13 +453,24 @@ export default function Home() {
                               <div style={{ fontSize:15, fontWeight:700, color:p.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fld.name}</div>
                               <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{countFor(fld.id)} αρχεία</div>
                             </div>
-                            <span style={{ fontSize:12, color:p.deep, fontWeight:600 }}>→</span>
+                            {isActive
+                              ? <span style={{ fontSize:12, color:p.deep, fontWeight:700, background:p.accent, padding:'4px 12px', borderRadius:8 }}>Άνοιγμα →</span>
+                              : <span style={{ fontSize:12, color:p.deep, opacity:0.5 }}>›</span>
+                            }
                           </div>
+                          {isActive && (
+                            <div style={{ marginTop:10, display:'flex', gap:6, flexWrap:'wrap' }}>
+                              {files.filter(f=>f.folderId===fld.id).slice(0,3).map(f=>(
+                                <span key={f.id} style={{ fontSize:11, color:p.text, opacity:0.6, background:'rgba(255,255,255,0.35)', padding:'2px 8px', borderRadius:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>📄 {f.name}</span>
+                              ))}
+                              {countFor(fld.id) > 3 && <span style={{ fontSize:11, color:p.text, opacity:0.45 }}>+{countFor(fld.id)-3}</span>}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                     {/* Νέος φάκελος — μικρό link */}
-                    <div onClick={addFolder} style={{ textAlign:'center', padding:'10px 0', marginTop: walletExpanded ? 4 : Math.max(0, folders.length * 10 + 46) }}>
+                    <div onClick={addFolder} style={{ textAlign:'center', padding:'10px 0', marginTop: Math.max(0, folders.length * 10 + 46) }}>
                       <span style={{ fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', opacity:0.6 }}>{busy==='folder' ? 'Δημιουργία…' : '＋ Νέος φάκελος'}</span>
                     </div>
                   </div>
