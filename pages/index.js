@@ -62,7 +62,9 @@ export default function Home() {
   const [appsFolderId, setAppsFolderId] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [walletExpanded, setWalletExpanded] = useState(false);
   const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -79,11 +81,19 @@ export default function Home() {
   // Αναζήτηση με ετικέτες
   const [searchTags, setSearchTags] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const [folderSearch, setFolderSearch] = useState('');
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
     if (session?.error === 'RefreshAccessTokenError') signOut({ callbackUrl: '/login' });
   }, [status, session, router]);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -225,7 +235,7 @@ export default function Home() {
 
   // ── Navigation helpers ──
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); };
-  const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); };
+  const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); };
   const openApps = () => {
     if (!appsFolderId) return;
     setOpenFolder({ id: appsFolderId, name: 'Εφαρμογές', isApps: true });
@@ -275,6 +285,10 @@ export default function Home() {
   else if (activeView === 'folder' && openFolder) {
     viewFiles = files.filter((f) => f.folderId === openFolder.id);
     if (activeTagFilter) viewFiles = viewFiles.filter((f)=>(f.tags||[]).includes(activeTagFilter));
+    if (folderSearch.trim()) {
+      const q = folderSearch.toLowerCase();
+      viewFiles = viewFiles.filter((f) => f.name.toLowerCase().includes(q) || (f.tags||[]).some((t)=>t.toLowerCase().includes(q)));
+    }
   }
   const tagsInFolder = openFolder ? [...new Set(files.filter((f)=>f.folderId===openFolder.id).flatMap((f)=>f.tags||[]))].sort() : [];
 
@@ -299,11 +313,17 @@ export default function Home() {
         .ch:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.04)!important;}
         .nav-h:hover{background:rgba(255,255,255,0.06)!important;color:#ececec!important;}
         .ri-h:hover{background:#fcf0e5!important;}
+        .del-h:hover{background:#fde8e8!important;color:#dc2626!important;border-color:#f5c6c6!important;}
         .tag-chip:hover .tag-x{opacity:1!important;}
         input:focus,textarea:focus{border-color:#c97b5a!important;outline:none;box-shadow:0 0 0 3px rgba(201,123,90,0.12)!important;}
+        .wallet-card{transition:margin-bottom 0.35s cubic-bezier(.4,0,.2,1),transform 0.25s ease,box-shadow 0.25s ease;}
+        .wallet-card:active{transform:scale(0.97)!important;}
+        .btm-item{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 0;min-width:0;flex:1;}
+        .btm-item svg{width:20px;height:20px;}
       `}</style>
 
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar (desktop only) ── */}
+      {!isMobile && (
       <aside style={{ ...S.sidebar, width: sidebarCollapsed ? 70 : 260 }}>
         <div style={S.sidebarHeader}>
           {!sidebarCollapsed && <strong style={{ color:'#ececec', fontSize:15 }}>📚 ΛΕΒΙΑΘΑΝ</strong>}
@@ -335,33 +355,55 @@ export default function Home() {
           </div>
         </div>
       </aside>
+      )}
+
+      {/* ── Bottom Bar (mobile only) ── */}
+      {isMobile && (
+        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:58, background:'#1a1a1a', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:150, borderTop:'1px solid rgba(255,255,255,0.08)', paddingBottom:'env(safe-area-inset-bottom,0)' }}>
+          <button className="btm-item" onClick={goHome} style={{ color: activeView==='home'?'#ececec':'#8e8ea0' }}>
+            {Icon.home}<span style={{ fontSize:10 }}>Αρχική</span>
+          </button>
+          <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
+            {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
+          </button>
+          <button className="btm-item" onClick={()=>setActiveView('favorites')} style={{ color: activeView==='favorites'?'#ececec':'#8e8ea0' }}>
+            {Icon.star}<span style={{ fontSize:10 }}>Αγαπημένα</span>
+          </button>
+          <button className="btm-item" onClick={()=>setActiveView('tagSearch')} style={{ color: activeView==='tagSearch'?'#ececec':'#8e8ea0' }}>
+            {Icon.search}<span style={{ fontSize:10 }}>Αναζήτηση</span>
+          </button>
+          <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
+            {Icon.logout}<span style={{ fontSize:10 }}>Έξοδος</span>
+          </button>
+        </nav>
+      )}
 
       {/* ── Main ── */}
-      <main style={{ ...S.main, marginLeft: sidebarCollapsed ? 70 : 260 }}>
-        <div style={S.container}>
+      <main style={{ ...S.main, marginLeft: isMobile ? 0 : (sidebarCollapsed ? 70 : 260), paddingBottom: isMobile ? 68 : 0 }}>
+        <div style={{ ...S.container, padding: isMobile ? '16px 12px' : '24px 16px' }}>
 
           {/* HOME */}
           {activeView === 'home' && (
             <>
-              <div style={{ marginBottom:32 }}>
-                <h1 style={S.welcomeTitle}>Γεια σου, {userName}! 👋</h1>
-                <p style={S.welcomeSub}>Ας συνεχίσουμε από εκεί που σταματήσαμε</p>
+              <div style={{ marginBottom: isMobile ? 20 : 32 }}>
+                <h1 style={{ ...S.welcomeTitle, fontSize: isMobile ? 20 : 26 }}>Γεια σου, {userName}! 👋</h1>
+                <p style={{ ...S.welcomeSub, fontSize: isMobile ? 13 : 14 }}>Ας συνεχίσουμε από εκεί που σταματήσαμε</p>
               </div>
 
               {/* Stat cards */}
-              <div style={S.statsGrid}>
+              <div style={{ ...S.statsGrid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit,minmax(240px,1fr))', gap: isMobile ? 10 : 14, marginBottom: isMobile ? 24 : 40 }}>
                 {statConfig.map((s) => {
                   const p = PALETTE[s.tone];
                   return (
                     <div key={s.view} className="ch" onClick={() => setActiveView(s.view)}
-                      style={{ ...S.statCard, cursor:'pointer', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                      style={{ ...S.statCard, cursor:'pointer', minHeight: isMobile ? 80 : 140, padding: isMobile ? '14px 16px' : '22px 24px', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
                       <div style={S.statInner}>
                         <div>
-                          <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
-                          <div style={{ ...S.statVal, color:p.text }}>{s.value}</div>
-                          <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
+                          <div style={{ ...S.statLabel, color:p.text, marginBottom: isMobile ? 4 : 12, fontSize: isMobile ? 12 : 13 }}>{s.label}</div>
+                          <div style={{ ...S.statVal, color:p.text, fontSize: isMobile ? 28 : 42 }}>{s.value}</div>
+                          {!isMobile && <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>}
                         </div>
-                        <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
+                        <div style={{ ...S.statIcon, background:p.accent, color:p.deep, width: isMobile ? 36 : 44, height: isMobile ? 36 : 44 }}>{s.icon}</div>
                       </div>
                     </div>
                   );
@@ -369,38 +411,78 @@ export default function Home() {
               </div>
 
               {/* Φάκελοι */}
-              <section style={S.section}>
-                <h2 style={S.secTitle}>Οι φάκελοί μου</h2>
-                <div style={S.cardsGrid}>
-                  {folders.map((fld, i) => {
-                    const p = PALETTE[TONES[i % TONES.length]];
-                    return (
-                      <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
-                        style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
-                        <div style={S.folderTop}>
-                          <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
-                          <button onClick={(e)=>{e.stopPropagation();removeFolder(fld);}} title="Διαγραφή φακέλου" style={S.delBtnSm}>✕</button>
-                        </div>
-                        <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
-                        <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
-                        <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
-                          <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {/* Κάρτα νέου φακέλου */}
-                  <div className="ch" onClick={addFolder}
-                    style={{ ...S.folderCard, background:'#fff', border:`2px dashed ${PALETTE.cream.accent}`, alignItems:'center', justifyContent:'center', textAlign:'center', color:PALETTE.cream.deep }}>
-                    <div style={{ fontSize:34, lineHeight:1, marginBottom:8 }}>＋</div>
-                    <div style={{ fontSize:14, fontWeight:700 }}>{busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}</div>
-                  </div>
+              <section style={{ marginBottom: isMobile ? 24 : 44 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: isMobile ? 12 : 18 }}>
+                  <h2 style={{ ...S.secTitle, marginBottom:0, fontSize: isMobile ? 15 : 17 }}>Οι φάκελοί μου</h2>
+                  {isMobile && folders.length > 1 && (
+                    <button onClick={()=>setWalletExpanded(!walletExpanded)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:PALETTE.cream.deep, fontWeight:600 }}>
+                      {walletExpanded ? 'Στοίβα ▲' : 'Ανάπτυξη ▼'}
+                    </button>
+                  )}
                 </div>
+
+                {isMobile ? (
+                  /* ── Wallet-style cards (mobile) ── */
+                  <div style={{ position:'relative', paddingBottom: walletExpanded ? 0 : Math.max(0,(folders.length-1)*10+10) }}>
+                    {folders.map((fld, i) => {
+                      const p = PALETTE[TONES[i % TONES.length]];
+                      const collapsed = !walletExpanded && i < folders.length - 1;
+                      return (
+                        <div key={fld.id} className="wallet-card" onClick={() => openFolderView(fld)}
+                          style={{
+                            background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}`,
+                            borderRadius:16, padding:'14px 16px', cursor:'pointer',
+                            marginBottom: walletExpanded ? 10 : -52,
+                            position:'relative', zIndex: folders.length - i,
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                          }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            <div style={{ width:36, height:36, borderRadius:10, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:15, fontWeight:700, color:p.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fld.name}</div>
+                              <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{countFor(fld.id)} αρχεία</div>
+                            </div>
+                            <span style={{ fontSize:12, color:p.deep, fontWeight:600 }}>→</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Νέος φάκελος — μικρό link */}
+                    <div onClick={addFolder} style={{ textAlign:'center', padding:'10px 0', marginTop: walletExpanded ? 4 : Math.max(0, folders.length * 10 + 46) }}>
+                      <span style={{ fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', opacity:0.6 }}>{busy==='folder' ? 'Δημιουργία…' : '＋ Νέος φάκελος'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Grid cards (desktop) ── */
+                  <div style={S.cardsGrid}>
+                    {folders.map((fld, i) => {
+                      const p = PALETTE[TONES[i % TONES.length]];
+                      return (
+                        <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
+                          style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
+                          <div style={S.folderTop}>
+                            <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
+                          </div>
+                          <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
+                          <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
+                          <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
+                            <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="ch" onClick={addFolder}
+                      style={{ ...S.folderCard, background:'transparent', border:`1.5px dashed ${PALETTE.cream.accent}`, alignItems:'center', justifyContent:'center', textAlign:'center', color:PALETTE.cream.accent, minHeight:120 }}>
+                      <div style={{ fontSize:22, lineHeight:1, marginBottom:4, opacity:0.7 }}>＋</div>
+                      <div style={{ fontSize:12, fontWeight:500, opacity:0.7 }}>{busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}</div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* Πρόσφατα / Δημοφιλή */}
               {(recentFiles.length > 0 || popularFiles.length > 0) && (
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:44 }}>
+                <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20, marginBottom: isMobile ? 24 : 44 }}>
                   <section>
                     <h2 style={{ ...S.secTitle, display:'flex', alignItems:'center', gap:8 }}>{Icon.clock} Πρόσφατα</h2>
                     <div style={S.recentList}>
@@ -435,15 +517,16 @@ export default function Home() {
           {/* FOLDER VIEW */}
           {activeView === 'folder' && openFolder && (
             <>
-              <div style={S.pageHeader}>
-                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
-                <h1 style={S.pageTitle}>{openFolder.name}</h1>
-              </div>
-              <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
-                <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>{busy==='picker'?'…':'➕ Επιλογή από Drive'}</button>
-                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>{busy==='upload'?'Ανέβασμα…':'⬆️ Ανέβασμα αρχείου'}</button>
+              <div style={{ ...S.pageHeader, gap: isMobile ? 8 : 14 }}>
+                <button onClick={goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
+                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{openFolder.name}</h1>
+                <div style={{ flex:1 }} />
+                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Drive">{busy==='picker'?'…':'➕ Drive'}</button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα αρχείου">{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
+              <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
+                style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:13, background:'#fff', marginBottom:12 }} />
               {tagsInFolder.length > 0 && (
                 <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:16, flexWrap:'wrap' }}>
                   <span style={{ fontSize:12, color:'#6b6b80' }}>Φίλτρο:</span>
@@ -452,7 +535,7 @@ export default function Home() {
                   })}
                 </div>
               )}
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} compact={isMobile} />
             </>
           )}
 
@@ -467,11 +550,11 @@ export default function Home() {
                 Ανέβασε ή επίλεξε εφαρμογές (π.χ. διαδραστικά HTML, κουίζ). Αποθηκεύονται χωριστά και δεν εμφανίζονται στους φακέλους σου.
               </p>
               <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
-                <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>{busy==='picker'?'…':'➕ Επιλογή από Drive'}</button>
-                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>{busy==='upload'?'Ανέβασμα…':'⬆️ Ανέβασμα εφαρμογής'}</button>
+                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='picker'?'…':'➕ Drive'}</button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} compact={isMobile} />
             </>
           )}
 
@@ -484,7 +567,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} showFolder folders={folders} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} showFolder folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -507,7 +590,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} showFolder folders={folders} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} showFolder folders={folders} compact={isMobile} />}
             </>
           )}
 
@@ -516,19 +599,19 @@ export default function Home() {
 
       {/* Viewer modal — 80% / 90% με πάνελ */}
       {viewing && (
-        <div onClick={() => setViewing(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'3vh 0' }}>
-          <div onClick={(e)=>e.stopPropagation()} style={{ background:'#fff', borderRadius:16, width: showMetaPanel?'90vw':'80vw', height:'94vh', display:'flex', flexDirection:'column', overflow:'hidden', transition:'width 0.18s ease' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', gap:10 }}>
-              <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <div onClick={() => setViewing(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding: isMobile ? 0 : '3vh 0' }}>
+          <div onClick={(e)=>e.stopPropagation()} style={{ background:'#fff', borderRadius: isMobile ? 0 : 16, width: isMobile ? '100vw' : (showMetaPanel?'90vw':'80vw'), height: isMobile ? '100vh' : '94vh', display:'flex', flexDirection:'column', overflow:'hidden', transition:'width 0.18s ease' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding: isMobile ? '8px 10px' : '10px 14px', borderBottom:'1px solid #ebebeb', gap:8 }}>
+              <strong style={{ fontSize: isMobile ? 12 : 14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                 <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
-                <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Ετικέτες & Σχόλια">🏷️</button>
+                {!isMobile && <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Ετικέτες & Σχόλια">🏷️</button>}
                 <button onClick={()=>setViewing(null)} style={S.closeBtn} title="Κλείσιμο">✕</button>
               </div>
             </div>
-            <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+            <div style={{ flex:1, display:'flex', overflow:'hidden', flexDirection: isMobile ? 'column' : 'row' }}>
               <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
-              {showMetaPanel && (
+              {showMetaPanel && !isMobile && (
                 <div style={{ width:300, flexShrink:0, borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
                     <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια</span>
@@ -565,29 +648,30 @@ export default function Home() {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, showFolder, folders }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, showFolder, folders, compact }) {
   if (loading) return <div style={S.empty}>Φόρτωση…</div>;
   if (!files || files.length === 0) return <div style={{ ...S.empty, background:PALETTE.cream.bgSoft, borderRadius:14, border:`1px dashed ${PALETTE.cream.accent}` }}>{empty}</div>;
   const folderName = (id) => folders?.find((f)=>f.id===id)?.name;
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8 }}>
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim();
         return (
-          <div key={f.id} style={{ display:'flex', alignItems:'center', gap:12, background:'#fff', border:'1px solid #ebebeb', borderRadius:12, padding:'12px 14px' }}>
+          <div key={f.id} style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, background:'#fff', border:'1px solid #ebebeb', borderRadius: compact ? 10 : 12, padding: compact ? '10px 10px' : '12px 14px' }}>
             <button onClick={(e)=>onFav(f.id,e)} title={f.favorite?'Αφαίρεση από αγαπημένα':'Προσθήκη στα αγαπημένα'}
-              style={{ background:'none', border:'none', cursor:'pointer', fontSize:17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
-            <span style={{ fontSize:18 }}>📄</span>
+              style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
+            {!compact && <span style={{ fontSize:18 }}>📄</span>}
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</div>
-              <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4, flexWrap:'wrap' }}>
-                {showFolder && folderName(f.folderId) && <span style={{ fontSize:10.5, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
-                {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10.5, padding:'1px 7px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-                {hasComment && <span style={{ fontSize:11, color:'#aeaeb8' }}>💬</span>}
+              <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</div>
+              <div style={{ display:'flex', alignItems:'center', gap: compact ? 4 : 5, marginTop: compact ? 2 : 4, flexWrap:'wrap' }}>
+                {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
+                {tags.slice(0, compact ? 2 : tags.length).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                {compact && tags.length > 2 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-2}</span>}
+                {hasComment && <span style={{ fontSize:10, color:'#aeaeb8' }}>💬</span>}
               </div>
             </div>
-            <button onClick={()=>onOpen(f)} style={btn('mini')}>Άνοιγμα</button>
-            <button onClick={()=>onRemove(f.id)} style={S.delBtn} title="Διαγραφή">✕</button>
+            <button onClick={()=>onOpen(f)} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
+            {!compact && <button onClick={()=>onRemove(f.id)} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
           </div>
         );
       })}
@@ -650,7 +734,7 @@ const S = {
   pageTitle:{ fontSize:22, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.015em' },
   iconBtn:{ width:34, height:34, borderRadius:9, border:'1.5px solid #e0e0e0', background:'#f4f4f4', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' },
   closeBtn:{ width:34, height:34, borderRadius:9, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' },
-  delBtn:{ width:30, height:30, borderRadius:8, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+  delBtn:{ width:30, height:30, borderRadius:8, border:'1.5px solid #e0d0d0', background:'transparent', color:'#c0a0a0', cursor:'pointer', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   delBtnSm:{ width:26, height:26, borderRadius:7, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   cpLabel:{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 },
 };
