@@ -501,7 +501,7 @@ export default function Home() {
                   </>
                 );
               })()
-              ) : (
+              : (
                 /* ═══ DESKTOP: Stats + Folders grid ═══ */
                 <>
                   <div style={{ ...S.statsGrid, gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:14, marginBottom:40 }}>
