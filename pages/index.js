@@ -3,25 +3,45 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
+// ── Energy Insights palette (από το παλιό ΛΕΒΙΑΘΑΝ) ──
 const PALETTE = {
-  bg: '#f5f0e1', card: '#fff', text: '#3d3a2e', deep: '#8a7d4a',
-  peach: '#c97b5a', peachSoft: '#fdf0e4', soft: '#faf6ea', border: '#e8dfc4', muted: '#aeaeb8',
+  cream:   { bg:'#f7f3e8', bgSoft:'#fcf9f0', accent:'#e9e0c8', text:'#3d3a2e', deep:'#8a7d4a' },
+  peach:   { bg:'#fae0cc', bgSoft:'#fdf0e4', accent:'#f0c4a0', text:'#5c3826', deep:'#c97b5a' },
+  mustard: { bg:'#f0e4a8', bgSoft:'#f8f0c8', accent:'#d9be52', text:'#4a3f1a', deep:'#a68a2e' },
 };
+const TONES = ['cream', 'peach', 'mustard'];
 
 const SUGGESTED_TAGS = [
-  'Γλώσσα', 'Λογοτεχνία', 'Ιστορία', 'Αρχαία', 'Λατινικά',
-  'Έκθεση', 'Γραμματική', 'Λεξιλόγιο', 'Ανάλυση', 'Αξιολόγηση',
-  'Α΄ Λυκείου', 'Β΄ Λυκείου', 'Γ΄ Λυκείου',
+  'Γλώσσα','Λογοτεχνία','Ιστορία','Αρχαία','Λατινικά',
+  'Έκθεση','Γραμματική','Λεξιλόγιο','Ανάλυση','Αξιολόγηση',
+  'Α΄ Λυκείου','Β΄ Λυκείου','Γ΄ Λυκείου',
 ];
 const TAG_COLORS = [
-  { bg: '#ede9fe', text: '#6d28d9' }, { bg: '#dcfce7', text: '#15803d' },
-  { bg: '#fef3c7', text: '#b45309' }, { bg: '#dbeafe', text: '#1d4ed8' },
-  { bg: '#fce7f3', text: '#9d174d' }, { bg: '#e0f2fe', text: '#0369a1' },
-  { bg: '#f3f4f6', text: '#374151' },
+  { bg:'#ede9fe', text:'#6d28d9' }, { bg:'#dcfce7', text:'#15803d' },
+  { bg:'#fef3c7', text:'#b45309' }, { bg:'#dbeafe', text:'#1d4ed8' },
+  { bg:'#fce7f3', text:'#9d174d' }, { bg:'#e0f2fe', text:'#0369a1' },
+  { bg:'#f3f4f6', text:'#374151' },
 ];
-const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a, c) => a + c.charCodeAt(0), 0)) % TAG_COLORS.length];
+const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
 
-// Φόρτωση του Google Picker script (μία φορά)
+// ── SVG εικονίδια (ίδια με το παλιό) ──
+const Icon = {
+  home:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
+  net:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/><line x1="5" y1="19" x2="19" y2="19"/></svg>,
+  netAdd:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="12" r="9"/></svg>,
+  apps:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  student: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><rect x="1" y="3" width="4" height="4" rx="0.5"/><rect x="1" y="9" width="4" height="4" rx="0.5"/><rect x="1" y="15" width="4" height="4" rx="0.5"/></svg>,
+  logout:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  star:    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  newDoc:  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
+  search:  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
+  folder:  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  clock:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PALETTE.peach.deep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  bolt:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PALETTE.mustard.deep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  collapseL:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+  collapseR:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+};
+
 function loadPickerApi() {
   return new Promise((resolve, reject) => {
     if (window.google?.picker) return resolve();
@@ -29,11 +49,8 @@ function loadPickerApi() {
     const onload = () => window.gapi.load('picker', { callback: resolve });
     if (existing) { onload(); return; }
     const s = document.createElement('script');
-    s.id = 'gapi-script';
-    s.src = 'https://apis.google.com/js/api.js';
-    s.onload = onload;
-    s.onerror = reject;
-    document.body.appendChild(s);
+    s.id = 'gapi-script'; s.src = 'https://apis.google.com/js/api.js';
+    s.onload = onload; s.onerror = reject; document.body.appendChild(s);
   });
 }
 
@@ -43,21 +60,25 @@ export default function Home() {
 
   const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
-  const [rootId, setRootId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [busy, setBusy] = useState('');
   const uploadRef = useRef(null);
 
-  // Ετικέτες & σχόλια
+  // Ετικέτες & σχόλια στο viewer
   const [showMetaPanel, setShowMetaPanel] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [metaSaving, setMetaSaving] = useState(false);
   const [activeTagFilter, setActiveTagFilter] = useState(null);
   const saveTimer = useRef(null);
 
-  // Guard
+  // Αναζήτηση με ετικέτες
+  const [searchTags, setSearchTags] = useState([]);
+  const [searchText, setSearchText] = useState('');
+
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
     if (session?.error === 'RefreshAccessTokenError') signOut({ callbackUrl: '/login' });
@@ -67,369 +88,439 @@ export default function Home() {
     setLoading(true);
     try {
       const [rf, rr] = await Promise.all([fetch('/api/folders'), fetch('/api/registry')]);
-      const df = await rf.json();
-      const dr = await rr.json();
-      setRootId(df.rootId || null);
+      const df = await rf.json(); const dr = await rr.json();
       setFolders(Array.isArray(df.folders) ? df.folders : []);
       setFiles(Array.isArray(dr.files) ? dr.files : []);
-    } catch (e) { /* noop */ }
+    } catch (e) {}
     setLoading(false);
   }, []);
-
   useEffect(() => { if (status === 'authenticated') loadAll(); }, [status, loadAll]);
 
-  // ── Φάκελοι ──────────────────────────────────────────────
+  // ── Φάκελοι ──
   const addFolder = async () => {
     const name = prompt('Όνομα νέου φακέλου:');
     if (!name || !name.trim()) return;
     setBusy('folder');
     try {
-      const r = await fetch('/api/folders', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
-      });
+      const r = await fetch('/api/folders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name.trim() }) });
       const d = await r.json();
-      if (!r.ok) alert(d.error || 'Σφάλμα δημιουργίας φακέλου');
-      else { setFolders(d.folders); if (d.rootId) setRootId(d.rootId); }
+      if (!r.ok) alert(d.error || 'Σφάλμα δημιουργίας φακέλου'); else setFolders(d.folders);
     } catch (e) { alert('Σφάλμα: ' + e.message); }
     setBusy('');
   };
-
   const removeFolder = async (folder) => {
-    const choice = prompt(
-      `Διαγραφή του φακέλου «${folder.name}».\n\n` +
-      `  1 = αφαίρεση μόνο από τη λίστα (τα αρχεία μένουν στο Drive)\n` +
-      `  2 = διαγραφή και από το Google Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)`, '1'
-    );
+    const choice = prompt(`Διαγραφή του φακέλου «${folder.name}».\n\n  1 = αφαίρεση μόνο από τη λίστα (τα αρχεία μένουν στο Drive)\n  2 = διαγραφή και από το Google Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)`, '1');
     if (choice !== '1' && choice !== '2') return;
     setBusy('folder');
     try {
-      const r = await fetch('/api/folders', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: folder.id, deleteFromDrive: choice === '2' }),
-      });
+      const r = await fetch('/api/folders', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: folder.id, deleteFromDrive: choice === '2' }) });
       const d = await r.json();
       if (d.folders) setFolders(d.folders);
       setFiles((prev) => prev.filter((f) => f.folderId !== folder.id));
-      if (openFolder?.id === folder.id) setOpenFolder(null);
+      if (openFolder?.id === folder.id) { setOpenFolder(null); setActiveView('home'); }
     } catch (e) { alert('Σφάλμα: ' + e.message); }
     setBusy('');
   };
 
-  // ── Μητρώο ───────────────────────────────────────────────
+  // ── Μητρώο ──
   const registerFiles = async (items) => {
-    const r = await fetch('/api/registry', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: items }),
-    });
-    const d = await r.json();
-    if (d.files) setFiles(d.files);
+    const r = await fetch('/api/registry', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ files: items }) });
+    const d = await r.json(); if (d.files) setFiles(d.files);
   };
-
-  // ── Ετικέτες & σχόλια (helpers) ──────────────────────────
-  const fileTags = (id) => files.find((f) => f.id === id)?.tags || [];
-  const fileComment = (id) => files.find((f) => f.id === id)?.comment || '';
-
   const patchMeta = async (id, body) => {
     setMetaSaving(true);
     try {
-      const r = await fetch('/api/registry', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...body }),
-      });
-      const d = await r.json();
-      if (d.files) setFiles(d.files);
-    } catch (e) { /* noop */ }
+      const r = await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, ...body }) });
+      const d = await r.json(); if (d.files) setFiles(d.files);
+    } catch (e) {}
     setMetaSaving(false);
   };
 
+  // ── Ετικέτες & σχόλια ──
+  const fileOf = (id) => files.find((f) => f.id === id) || {};
+  const fileTags = (id) => fileOf(id).tags || [];
+  const fileComment = (id) => fileOf(id).comment || '';
   const addTag = (id, tag) => {
-    const t = (tag || '').trim();
-    if (!t) return;
-    const cur = fileTags(id);
-    if (cur.includes(t)) return;
+    const t = (tag||'').trim(); if (!t) return;
+    const cur = fileTags(id); if (cur.includes(t)) return;
     const next = [...cur, t];
-    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tags: next } : f));
-    patchMeta(id, { tags: next });
-    setTagInput('');
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, tags: next } : f));
+    patchMeta(id, { tags: next }); setTagInput('');
   };
-
   const removeTag = (id, tag) => {
     const next = fileTags(id).filter((t) => t !== tag);
-    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tags: next } : f));
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, tags: next } : f));
     patchMeta(id, { tags: next });
   };
-
   const updateComment = (id, value) => {
-    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, comment: value } : f));
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, comment: value } : f));
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => patchMeta(id, { comment: value }), 800);
   };
+  const toggleFavorite = (id, e) => {
+    if (e) e.stopPropagation();
+    const cur = !!fileOf(id).favorite;
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, favorite: !cur } : f));
+    patchMeta(id, { favorite: !cur });
+  };
 
-  // ── Google Picker → στον τρέχοντα φάκελο ─────────────────
+  // ── Picker / Upload (στον τρέχοντα φάκελο) ──
   const openPicker = async () => {
     if (!openFolder) return;
     try {
-      setBusy('picker');
-      await loadPickerApi();
-      const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS)
-        .setIncludeFolders(false)
+      setBusy('picker'); await loadPickerApi();
+      const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS).setIncludeFolders(false)
         .setMimeTypes('application/pdf,application/vnd.google-apps.document,application/vnd.google-apps.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html');
-      const picker = new window.google.picker.PickerBuilder()
-        .addView(view)
+      const picker = new window.google.picker.PickerBuilder().addView(view)
         .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
         .setOAuthToken(session.accessToken)
         .setDeveloperKey(process.env.NEXT_PUBLIC_GOOGLE_API_KEY)
         .setAppId(process.env.NEXT_PUBLIC_GOOGLE_APP_ID)
         .setCallback(async (data) => {
           if (data.action === window.google.picker.Action.PICKED) {
-            const items = (data.docs || []).map((doc) => ({
-              id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: openFolder.id,
-            }));
+            const items = (data.docs || []).map((d) => ({ id:d.id, name:d.name, mimeType:d.mimeType, folderId: openFolder.id }));
             if (items.length) await registerFiles(items);
           }
           setBusy('');
-        })
-        .build();
+        }).build();
       picker.setVisible(true);
-    } catch (e) {
-      alert('Σφάλμα Picker: ' + e.message + '\n\n(Αν χρησιμοποιείς Safari, ίσως χρειάζεται να επιτρέψεις cookies τρίτων. Εναλλακτικά, χρησιμοποίησε το «Ανέβασμα αρχείου».)');
-      setBusy('');
-    }
+    } catch (e) { alert('Σφάλμα Picker: ' + e.message + '\n\n(Αν χρησιμοποιείς Safari, ίσως χρειάζεται να επιτρέψεις cookies τρίτων. Εναλλακτικά, χρησιμοποίησε το «Ανέβασμα αρχείου».)'); setBusy(''); }
   };
-
-  // ── Ανέβασμα → μέσα στον τρέχοντα φάκελο ─────────────────
   const onUpload = async (e) => {
-    const list = Array.from(e.target.files || []);
-    e.target.value = '';
+    const list = Array.from(e.target.files || []); e.target.value = '';
     if (!list.length || !openFolder) return;
     setBusy('upload');
     try {
       const added = [];
       for (const file of list) {
-        const metadata = {
-          name: file.name,
-          mimeType: file.type || 'application/octet-stream',
-          parents: [openFolder.id],
-        };
+        const metadata = { name: file.name, mimeType: file.type || 'application/octet-stream', parents: [openFolder.id] };
         const form = new FormData();
         form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
         form.append('file', file);
-        const res = await fetch(
-          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType',
-          { method: 'POST', headers: { Authorization: 'Bearer ' + session.accessToken }, body: form }
-        );
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType',
+          { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken }, body: form });
         const doc = await res.json();
-        if (doc.id) added.push({ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: openFolder.id });
+        if (doc.id) added.push({ id:doc.id, name:doc.name, mimeType:doc.mimeType, folderId: openFolder.id });
       }
       if (added.length) await registerFiles(added);
-    } catch (err) {
-      alert('Σφάλμα ανεβάσματος: ' + err.message);
-    }
+    } catch (err) { alert('Σφάλμα ανεβάσματος: ' + err.message); }
     setBusy('');
   };
-
   const removeFile = async (id) => {
-    const choice = prompt(
-      'Αφαίρεση αρχείου.\n\n' +
-      '  1 = αφαίρεση μόνο από τη λίστα (μένει στο Drive)\n' +
-      '  2 = διαγραφή και από το Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)', '1'
-    );
+    const choice = prompt('Αφαίρεση αρχείου.\n\n  1 = αφαίρεση μόνο από τη λίστα (μένει στο Drive)\n  2 = διαγραφή και από το Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)', '1');
     if (choice !== '1' && choice !== '2') return;
-    const r = await fetch('/api/registry', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, deleteFromDrive: choice === '2' }),
-    });
-    const d = await r.json();
-    if (d.files) setFiles(d.files);
+    const r = await fetch('/api/registry', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, deleteFromDrive: choice === '2' }) });
+    const d = await r.json(); if (d.files) setFiles(d.files);
   };
 
-  const openViewer = (f) => { setViewing(f); setShowMetaPanel(false); setTagInput(''); };
+  // ── Άνοιγμα αρχείου (καταγραφή open) ──
+  const openViewer = (f) => {
+    setViewing(f); setShowMetaPanel(false); setTagInput('');
+    // optimistic local bump + server record
+    setFiles((p) => p.map((x) => x.id === f.id ? { ...x, openCount:(x.openCount||0)+1, openedAt: Date.now() } : x));
+    fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
+  };
+
+  // ── Navigation helpers ──
+  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); };
+  const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); };
 
   if (status === 'loading' || status === 'unauthenticated') {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: PALETTE.bg, color: PALETTE.deep, fontFamily: 'sans-serif' }}>Φόρτωση…</div>;
+    return <div style={S.loading}>Φόρτωση…</div>;
   }
 
-  let filesInOpen = openFolder ? files.filter((f) => f.folderId === openFolder.id) : [];
-  if (openFolder && activeTagFilter) filesInOpen = filesInOpen.filter((f) => (f.tags || []).includes(activeTagFilter));
+  const userName = session.user?.email?.split('@')[0] || '';
   const countFor = (fid) => files.filter((f) => f.folderId === fid).length;
 
-  // ετικέτες που υπάρχουν στον τρέχοντα φάκελο (για φίλτρο)
-  const tagsInFolder = (() => {
-    if (!openFolder) return [];
-    const set = new Set();
-    files.filter((f) => f.folderId === openFolder.id).forEach((f) => (f.tags || []).forEach((t) => set.add(t)));
-    return [...set].sort();
-  })();
+  // Παράγωγες λίστες
+  const favoriteFiles = files.filter((f) => f.favorite);
+  const newFiles = [...files].sort((a,b)=>(b.addedAt||0)-(a.addedAt||0)).slice(0,10);
+  const recentFiles = files.filter((f)=>f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
+  const popularFiles = files.filter((f)=>(f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
+  const allTags = [...new Set(files.flatMap((f)=>f.tags||[]))].sort();
+
+  // Αναζήτηση
+  const searchResults = files.filter((f) => {
+    if (searchTags.length === 0 && !searchText) return false;
+    const tags = f.tags || [];
+    const okTags = searchTags.length === 0 || searchTags.every((t)=>tags.includes(t));
+    const okText = !searchText || f.name.toLowerCase().includes(searchText.toLowerCase()) || tags.some((t)=>t.toLowerCase().includes(searchText.toLowerCase()));
+    return okTags && okText;
+  });
+
+  const statConfig = [
+    { label:'Αγαπημένα', value:favoriteFiles.length, sub:'Επιλεγμένα αρχεία', view:'favorites', tone:'cream', icon:Icon.star },
+    { label:'Νέα', value:newFiles.length, sub:'Πιο πρόσφατα προστέθηκαν', view:'newFiles', tone:'peach', icon:Icon.newDoc },
+    { label:'Αναζήτηση', value:allTags.length, sub:'Αναζήτηση με ετικέτες', view:'tagSearch', tone:'mustard', icon:Icon.search },
+  ];
+
+  // Λίστα αρχείων προς εμφάνιση σε views
+  let viewFiles = [];
+  if (activeView === 'favorites') viewFiles = favoriteFiles;
+  else if (activeView === 'newFiles') viewFiles = newFiles;
+  else if (activeView === 'folder' && openFolder) {
+    viewFiles = files.filter((f) => f.folderId === openFolder.id);
+    if (activeTagFilter) viewFiles = viewFiles.filter((f)=>(f.tags||[]).includes(activeTagFilter));
+  }
+  const tagsInFolder = openFolder ? [...new Set(files.filter((f)=>f.folderId===openFolder.id).flatMap((f)=>f.tags||[]))].sort() : [];
 
   const vTags = viewing ? fileTags(viewing.id) : [];
   const suggested = SUGGESTED_TAGS.filter((t) => !vTags.includes(t));
 
+  // Disabled sidebar item
+  const NavItem = ({ icon, label, active, disabled, onClick }) => (
+    <button onClick={disabled ? undefined : onClick} className={disabled ? '' : 'nav-h'}
+      style={{ ...S.navItem, ...(active ? S.navActive : {}), ...(disabled ? { opacity:0.32, cursor:'default' } : {}) }}
+      title={disabled ? 'Σύντομα' : label}>
+      <span style={S.navIcon}>{icon}</span>
+      {!sidebarCollapsed && <span style={{ flex:1, textAlign:'left' }}>{label}</span>}
+      {!sidebarCollapsed && disabled && <span style={{ fontSize:9, opacity:0.7 }}>σύντομα</span>}
+    </button>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', background: PALETTE.bg, fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif', color: PALETTE.text }}>
-      <style>{`.tag-chip:hover .tag-x{opacity:1!important;}`}</style>
+    <div style={S.app}>
+      <style>{`
+        *{box-sizing:border-box;}
+        .ch:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.04)!important;}
+        .nav-h:hover{background:rgba(255,255,255,0.06)!important;color:#ececec!important;}
+        .ri-h:hover{background:#fcf0e5!important;}
+        .tag-chip:hover .tag-x{opacity:1!important;}
+        input:focus,textarea:focus{border-color:#c97b5a!important;outline:none;box-shadow:0 0 0 3px rgba(201,123,90,0.12)!important;}
+      `}</style>
 
-      {/* Header */}
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: PALETTE.card, borderBottom: `1px solid ${PALETTE.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 24 }}>📚</span>
-          <strong style={{ fontSize: 17 }}>ΛΕΒΙΑΘΑΝ Cloud</strong>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 12, color: PALETTE.muted }}>{session.user?.email}</span>
-          <button onClick={() => signOut({ callbackUrl: '/login' })} style={btn('ghost')}>Έξοδος</button>
-        </div>
-      </header>
-
-      <main style={{ maxWidth: 860, margin: '0 auto', padding: '20px' }}>
-        {/* Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 14 }}>
-          <button onClick={() => { setOpenFolder(null); setActiveTagFilter(null); }} style={{ ...btn('ghost'), fontWeight: openFolder ? 400 : 700 }}>
-            🗂️ Οι φάκελοί μου
+      {/* ── Sidebar ── */}
+      <aside style={{ ...S.sidebar, width: sidebarCollapsed ? 70 : 260 }}>
+        <div style={S.sidebarHeader}>
+          {!sidebarCollapsed && <strong style={{ color:'#ececec', fontSize:15 }}>📚 ΛΕΒΙΑΘΑΝ</strong>}
+          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} style={S.collapseBtn}>
+            {sidebarCollapsed ? Icon.collapseR : Icon.collapseL}
           </button>
-          {openFolder && (<><span style={{ color: PALETTE.muted }}>›</span><strong>{openFolder.name}</strong></>)}
         </div>
+        <nav style={S.nav}>
+          <NavItem icon={Icon.home} label="Αρχική" active={activeView==='home'} onClick={goHome} />
+          <div style={S.navDiv} />
+          <NavItem icon={Icon.net} label="Δίκτυα Κειμένων" disabled />
+          <NavItem icon={Icon.netAdd} label="Δημιουργία Δικτύου" disabled />
+          <div style={S.navDiv} />
+          <NavItem icon={Icon.apps} label="Εφαρμογές" disabled />
+          <div style={S.navDiv} />
+          <NavItem icon={Icon.student} label="Student" disabled />
+        </nav>
+        <div style={S.sidebarFooter}>
+          <div style={S.userCard}>
+            <div style={S.userAvatar}>{session.user?.email?.charAt(0).toUpperCase()}</div>
+            {!sidebarCollapsed && <div style={S.userInfo}><div style={S.userName}>{userName}</div></div>}
+          </div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-start', marginTop:8, paddingLeft:10, ...(!sidebarCollapsed ? { gap:10 } : {}) }}>
+            <button onClick={() => signOut({ callbackUrl:'/login' })} className="nav-h" title="Αποσύνδεση"
+              style={{ width:30, height:30, borderRadius:'50%', background:'rgba(220,38,38,0.12)', border:'1.5px solid rgba(220,38,38,0.3)', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, padding:0 }}>
+              {Icon.logout}
+            </button>
+            {!sidebarCollapsed && <span style={{ fontSize:11, color:'#dc2626', cursor:'pointer', fontWeight:500 }} onClick={() => signOut({ callbackUrl:'/login' })}>Αποσύνδεση</span>}
+          </div>
+        </div>
+      </aside>
 
-        {/* ΟΘΟΝΗ 1: Λίστα φακέλων */}
-        {!openFolder && (
-          <>
-            <div style={{ marginBottom: 18 }}>
-              <button onClick={addFolder} disabled={!!busy} style={btn('solid')}>
-                {busy === 'folder' ? '…' : '➕ Προσθήκη φακέλου'}
-              </button>
-            </div>
-            {loading ? (
-              <div style={{ color: PALETTE.muted, padding: 24, textAlign: 'center' }}>Φόρτωση…</div>
-            ) : folders.length === 0 ? (
-              <div style={{ color: PALETTE.muted, padding: 40, textAlign: 'center', background: PALETTE.soft, borderRadius: 14, border: `1px dashed ${PALETTE.border}` }}>
-                Δεν υπάρχουν φάκελοι ακόμη. Πάτησε «Προσθήκη φακέλου» για να ξεκινήσεις.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {folders.map((fld) => (
-                  <div key={fld.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: PALETTE.card, border: `1px solid ${PALETTE.border}`, borderRadius: 12, padding: '12px 14px' }}>
-                    <span style={{ fontSize: 20 }}>📁</span>
-                    <button onClick={() => setOpenFolder(fld)} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: PALETTE.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fld.name}</button>
-                    <span style={{ fontSize: 12, color: PALETTE.muted }}>{countFor(fld.id)} αρχεία</span>
-                    <button onClick={() => setOpenFolder(fld)} style={btn('mini')}>Άνοιγμα</button>
-                    <button onClick={() => removeFolder(fld)} style={{ ...btn('mini'), color: PALETTE.peach, borderColor: PALETTE.peach }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+      {/* ── Main ── */}
+      <main style={{ ...S.main, marginLeft: sidebarCollapsed ? 70 : 260 }}>
+        <div style={S.container}>
 
-        {/* ΟΘΟΝΗ 2: Μέσα σε φάκελο */}
-        {openFolder && (
-          <>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-              <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>{busy === 'picker' ? '…' : '➕ Επιλογή από Drive'}</button>
-              <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>{busy === 'upload' ? 'Ανέβασμα…' : '⬆️ Ανέβασμα αρχείου'}</button>
-              <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display: 'none' }} />
-            </div>
-
-            {/* Φίλτρο ετικετών */}
-            {tagsInFolder.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12, color: PALETTE.muted }}>Φίλτρο:</span>
-                {tagsInFolder.map((t) => {
-                  const c = tagColor(t); const on = activeTagFilter === t;
-                  return <button key={t} onClick={() => setActiveTagFilter(on ? null : t)} style={{ border: 'none', cursor: 'pointer', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: on ? 700 : 500, background: on ? c.text : c.bg, color: on ? '#fff' : c.text }}>#{t}</button>;
-                })}
-                {activeTagFilter && <button onClick={() => setActiveTagFilter(null)} style={{ ...btn('ghost'), fontSize: 12 }}>✕ καθαρισμός</button>}
+          {/* HOME */}
+          {activeView === 'home' && (
+            <>
+              <div style={{ marginBottom:32 }}>
+                <h1 style={S.welcomeTitle}>Γεια σου, {userName}! 👋</h1>
+                <p style={S.welcomeSub}>Ας συνεχίσουμε από εκεί που σταματήσαμε</p>
               </div>
-            )}
 
-            {loading ? (
-              <div style={{ color: PALETTE.muted, padding: 24, textAlign: 'center' }}>Φόρτωση…</div>
-            ) : filesInOpen.length === 0 ? (
-              <div style={{ color: PALETTE.muted, padding: 40, textAlign: 'center', background: PALETTE.soft, borderRadius: 14, border: `1px dashed ${PALETTE.border}` }}>
-                {activeTagFilter ? 'Κανένα αρχείο με αυτή την ετικέτα.' : 'Κανένα αρχείο σε αυτόν τον φάκελο. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα».'}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {filesInOpen.map((f) => {
-                  const tags = f.tags || [];
-                  const hasComment = !!(f.comment || '').trim();
+              {/* Stat cards */}
+              <div style={S.statsGrid}>
+                {statConfig.map((s) => {
+                  const p = PALETTE[s.tone];
                   return (
-                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: PALETTE.card, border: `1px solid ${PALETTE.border}`, borderRadius: 12, padding: '12px 14px' }}>
-                      <span style={{ fontSize: 18 }}>📄</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
-                        {(tags.length > 0 || hasComment) && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
-                            {tags.map((t) => { const c = tagColor(t); return <span key={t} style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, background: c.bg, color: c.text }}>#{t}</span>; })}
-                            {hasComment && <span style={{ fontSize: 11, color: PALETTE.muted }}>💬</span>}
-                          </div>
-                        )}
+                    <div key={s.view} className="ch" onClick={() => setActiveView(s.view)}
+                      style={{ ...S.statCard, cursor:'pointer', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                      <div style={S.statInner}>
+                        <div>
+                          <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
+                          <div style={{ ...S.statVal, color:p.text }}>{s.value}</div>
+                          <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
+                        </div>
+                        <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
                       </div>
-                      <button onClick={() => openViewer(f)} style={btn('mini')}>Άνοιγμα</button>
-                      <button onClick={() => removeFile(f.id)} style={{ ...btn('mini'), color: PALETTE.peach, borderColor: PALETTE.peach }}>✕</button>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </>
-        )}
+
+              {/* Φάκελοι */}
+              <section style={S.section}>
+                <h2 style={S.secTitle}>Οι φάκελοί μου</h2>
+                <div style={S.cardsGrid}>
+                  {folders.map((fld, i) => {
+                    const p = PALETTE[TONES[i % TONES.length]];
+                    return (
+                      <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
+                        style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
+                        <div style={S.folderTop}>
+                          <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
+                          <button onClick={(e)=>{e.stopPropagation();removeFolder(fld);}} title="Διαγραφή φακέλου"
+                            style={{ background:'transparent', border:'none', color:p.deep, opacity:0.55, cursor:'pointer', fontSize:16, padding:4 }}>✕</button>
+                        </div>
+                        <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
+                        <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
+                        <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
+                          <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Κάρτα νέου φακέλου */}
+                  <div className="ch" onClick={addFolder}
+                    style={{ ...S.folderCard, background:'#fff', border:`2px dashed ${PALETTE.cream.accent}`, alignItems:'center', justifyContent:'center', textAlign:'center', color:PALETTE.cream.deep }}>
+                    <div style={{ fontSize:34, lineHeight:1, marginBottom:8 }}>＋</div>
+                    <div style={{ fontSize:14, fontWeight:700 }}>{busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}</div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Πρόσφατα / Δημοφιλή */}
+              {(recentFiles.length > 0 || popularFiles.length > 0) && (
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:44 }}>
+                  <section>
+                    <h2 style={{ ...S.secTitle, display:'flex', alignItems:'center', gap:8 }}>{Icon.clock} Πρόσφατα</h2>
+                    <div style={S.recentList}>
+                      {recentFiles.length === 0
+                        ? <div style={S.empty}>Δεν έχεις ανοίξει αρχεία ακόμα</div>
+                        : recentFiles.map((f, idx) => (
+                          <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<recentFiles.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
+                            <span style={{ fontSize:16, flexShrink:0 }}>📄</span>
+                            <div style={S.recentInfo}><div style={S.recentTitle}>{f.name}</div></div>
+                          </div>
+                        ))}
+                    </div>
+                  </section>
+                  <section>
+                    <h2 style={{ ...S.secTitle, display:'flex', alignItems:'center', gap:8 }}>{Icon.bolt} Δημοφιλή</h2>
+                    <div style={S.recentList}>
+                      {popularFiles.length === 0
+                        ? <div style={S.empty}>Άνοιξε μερικά αρχεία για να εμφανιστούν εδώ</div>
+                        : popularFiles.map((f, idx) => (
+                          <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<popularFiles.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
+                            <div style={{ width:24, height:24, borderRadius:8, background:PALETTE.mustard.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:11, fontWeight:700, color:PALETTE.mustard.deep }}>{f.openCount}</div>
+                            <div style={S.recentInfo}><div style={S.recentTitle}>{f.name}</div></div>
+                          </div>
+                        ))}
+                    </div>
+                  </section>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* FOLDER VIEW */}
+          {activeView === 'folder' && openFolder && (
+            <>
+              <div style={S.pageHeader}>
+                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
+                <h1 style={S.pageTitle}>{openFolder.name}</h1>
+              </div>
+              <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
+                <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>{busy==='picker'?'…':'➕ Επιλογή από Drive'}</button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>{busy==='upload'?'Ανέβασμα…':'⬆️ Ανέβασμα αρχείου'}</button>
+                <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
+              </div>
+              {tagsInFolder.length > 0 && (
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:16, flexWrap:'wrap' }}>
+                  <span style={{ fontSize:12, color:'#6b6b80' }}>Φίλτρο:</span>
+                  {tagsInFolder.map((t) => { const c=tagColor(t); const on=activeTagFilter===t;
+                    return <button key={t} onClick={()=>setActiveTagFilter(on?null:t)} style={{ border:'none', cursor:'pointer', borderRadius:999, padding:'3px 10px', fontSize:12, fontWeight:on?700:500, background:on?c.text:c.bg, color:on?'#fff':c.text }}>#{t}</button>;
+                  })}
+                </div>
+              )}
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} />
+            </>
+          )}
+
+          {/* FAVORITES / NEW */}
+          {(activeView === 'favorites' || activeView === 'newFiles') && (
+            <>
+              <div style={S.pageHeader}>
+                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
+                <h1 style={S.pageTitle}>{activeView==='favorites'?'Αγαπημένα':'Νέα'}</h1>
+              </div>
+              <FileList files={viewFiles} loading={loading}
+                empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} showFolder folders={folders} />
+            </>
+          )}
+
+          {/* TAG SEARCH */}
+          {activeView === 'tagSearch' && (
+            <>
+              <div style={S.pageHeader}>
+                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
+                <h1 style={S.pageTitle}>Αναζήτηση με ετικέτες</h1>
+              </div>
+              <input type="search" placeholder="Αναζήτηση σε τίτλο ή ετικέτα…" value={searchText} onChange={(e)=>setSearchText(e.target.value)}
+                style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize:14, background:'#fff', marginBottom:14 }} />
+              {allTags.length > 0 && (
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:18 }}>
+                  {allTags.map((t) => { const c=tagColor(t); const on=searchTags.includes(t);
+                    return <button key={t} onClick={()=>setSearchTags((p)=>p.includes(t)?p.filter(x=>x!==t):[...p,t])}
+                      style={{ border:'none', cursor:'pointer', borderRadius:999, padding:'4px 12px', fontSize:12, fontWeight:on?700:500, background:on?c.text:c.bg, color:on?'#fff':c.text }}>#{t}</button>;
+                  })}
+                </div>
+              )}
+              {(searchTags.length===0 && !searchText)
+                ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} showFolder folders={folders} />}
+            </>
+          )}
+
+        </div>
       </main>
 
-      {/* Viewer modal — πλάτος ~80% */}
+      {/* Viewer modal — 80% / 90% με πάνελ */}
       {viewing && (
-        <div onClick={() => setViewing(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '3vh 0' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: PALETTE.card, borderRadius: 16, width: showMetaPanel ? '90vw' : '80vw', height: '94vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'width 0.18s ease' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${PALETTE.border}`, gap: 10 }}>
-              <strong style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{viewing.name}</strong>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button onClick={() => window.open('/api/file/' + viewing.id, '_blank')}
-                  style={iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
-                <button onClick={() => setShowMetaPanel((p) => !p)}
-                  style={{ ...iconBtn, background: showMetaPanel ? PALETTE.peachSoft : '#f4f4f4', borderColor: showMetaPanel ? PALETTE.peach : '#e0e0e0', color: showMetaPanel ? PALETTE.peach : '#444' }}
-                  title="Ετικέτες & Σχόλια">🏷️</button>
-                <button onClick={() => setViewing(null)} style={closeBtn} title="Κλείσιμο">✕</button>
+        <div onClick={() => setViewing(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'3vh 0' }}>
+          <div onClick={(e)=>e.stopPropagation()} style={{ background:'#fff', borderRadius:16, width: showMetaPanel?'90vw':'80vw', height:'94vh', display:'flex', flexDirection:'column', overflow:'hidden', transition:'width 0.18s ease' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', gap:10 }}>
+              <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
+                <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Ετικέτες & Σχόλια">🏷️</button>
+                <button onClick={()=>setViewing(null)} style={S.closeBtn} title="Κλείσιμο">✕</button>
               </div>
             </div>
-
-            {/* Σώμα: PDF + προαιρετικό πάνελ */}
-            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-              <iframe src={'/api/file/' + viewing.id} style={{ flex: 1, border: 'none', minWidth: 0 }} title={viewing.name} />
-
+            <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+              <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
               {showMetaPanel && (
-                <div style={{ width: 300, flexShrink: 0, borderLeft: `1px solid ${PALETTE.border}`, display: 'flex', flexDirection: 'column', background: PALETTE.soft }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${PALETTE.border}` }}>
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Ετικέτες · Σχόλια</span>
-                    {metaSaving && <span style={{ fontSize: 11, color: PALETTE.peach }}>Αποθήκευση…</span>}
+                <div style={{ width:300, flexShrink:0, borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
+                    <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια</span>
+                    {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
                   </div>
-                  <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
-                    {/* Ετικέτες */}
-                    <div style={{ fontSize: 11, fontWeight: 700, color: PALETTE.deep, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Ετικέτες</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                      {vTags.map((t) => { const c = tagColor(t); return (
-                        <span key={t} className="tag-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: c.bg, color: c.text, borderRadius: 999, padding: '3px 9px', fontSize: 12 }}>
-                          #{t}<span className="tag-x" style={{ cursor: 'pointer', opacity: 0.45, fontSize: 10 }} onClick={() => removeTag(viewing.id, t)}>✕</span>
-                        </span>
+                  <div style={{ flex:1, overflowY:'auto', padding:14 }}>
+                    <div style={S.cpLabel}>Ετικέτες</div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
+                      {vTags.map((t) => { const c=tagColor(t); return (
+                        <span key={t} className="tag-chip" style={{ display:'inline-flex', alignItems:'center', gap:4, background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>#{t}<span className="tag-x" style={{ cursor:'pointer', opacity:0.45, fontSize:10 }} onClick={()=>removeTag(viewing.id,t)}>✕</span></span>
                       ); })}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                      <input type="text" placeholder="Νέα ετικέτα…" value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') addTag(viewing.id, tagInput); }}
-                        style={{ flex: 1, padding: '7px 10px', border: `1px solid ${PALETTE.border}`, borderRadius: 8, fontSize: 13, background: '#fff' }} />
-                      {tagInput.trim() && <button onClick={() => addTag(viewing.id, tagInput)} style={{ ...btn('solid'), padding: '7px 12px' }}>+</button>}
+                    <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+                      <input type="text" placeholder="Νέα ετικέτα…" value={tagInput} onChange={(e)=>setTagInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==='Enter') addTag(viewing.id,tagInput); }}
+                        style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
+                      {tagInput.trim() && <button onClick={()=>addTag(viewing.id,tagInput)} style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>}
                     </div>
-                    <div style={{ fontSize: 11, color: PALETTE.muted, marginBottom: 6 }}>Προτεινόμενες:</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 18 }}>
-                      {suggested.map((t) => { const c = tagColor(t); return (
-                        <span key={t} onClick={() => addTag(viewing.id, t)} style={{ cursor: 'pointer', background: c.bg, color: c.text, borderRadius: 999, padding: '3px 9px', fontSize: 12 }}>+{t}</span>
-                      ); })}
+                    <div style={{ fontSize:11, color:'#aeaeb8', marginBottom:6 }}>Προτεινόμενες:</div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:18 }}>
+                      {suggested.map((t) => { const c=tagColor(t); return <span key={t} onClick={()=>addTag(viewing.id,t)} style={{ cursor:'pointer', background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>+{t}</span>; })}
                     </div>
-                    {/* Σχόλια */}
-                    <div style={{ fontSize: 11, fontWeight: 700, color: PALETTE.deep, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Σχόλια</div>
-                    <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)}
-                      onChange={(e) => updateComment(viewing.id, e.target.value)}
-                      style={{ width: '100%', minHeight: 110, padding: '8px 10px', border: `1px solid ${PALETTE.border}`, borderRadius: 8, fontSize: 13, lineHeight: 1.5, background: '#fff', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                    <div style={S.cpLabel}>Σχόλια</div>
+                    <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
+                      style={{ width:'100%', minHeight:110, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, lineHeight:1.5, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                   </div>
                 </div>
               )}
@@ -441,14 +532,91 @@ export default function Home() {
   );
 }
 
-const iconBtn = { width: 34, height: 34, borderRadius: 9, border: '1.5px solid #e0e0e0', background: '#f4f4f4', cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const closeBtn = { width: 34, height: 34, borderRadius: 9, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+// ── Λίστα αρχείων (κοινό component) ──
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, showFolder, folders }) {
+  if (loading) return <div style={S.empty}>Φόρτωση…</div>;
+  if (!files || files.length === 0) return <div style={{ ...S.empty, background:PALETTE.cream.bgSoft, borderRadius:14, border:`1px dashed ${PALETTE.cream.accent}` }}>{empty}</div>;
+  const folderName = (id) => folders?.find((f)=>f.id===id)?.name;
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+      {files.map((f) => {
+        const tags = f.tags || []; const hasComment = !!(f.comment||'').trim();
+        return (
+          <div key={f.id} style={{ display:'flex', alignItems:'center', gap:12, background:'#fff', border:'1px solid #ebebeb', borderRadius:12, padding:'12px 14px' }}>
+            <button onClick={(e)=>onFav(f.id,e)} title={f.favorite?'Αφαίρεση από αγαπημένα':'Προσθήκη στα αγαπημένα'}
+              style={{ background:'none', border:'none', cursor:'pointer', fontSize:17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
+            <span style={{ fontSize:18 }}>📄</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</div>
+              <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4, flexWrap:'wrap' }}>
+                {showFolder && folderName(f.folderId) && <span style={{ fontSize:10.5, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
+                {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10.5, padding:'1px 7px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                {hasComment && <span style={{ fontSize:11, color:'#aeaeb8' }}>💬</span>}
+              </div>
+            </div>
+            <button onClick={()=>onOpen(f)} style={btn('mini')}>Άνοιγμα</button>
+            <button onClick={()=>onRemove(f.id)} style={{ ...btn('mini'), color:PALETTE.peach.deep, borderColor:PALETTE.peach.deep }}>✕</button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function btn(kind) {
-  const base = { borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 14px', border: '1.5px solid transparent' };
-  if (kind === 'solid') return { ...base, background: PALETTE.deep, color: '#fff' };
-  if (kind === 'outline') return { ...base, background: 'transparent', color: PALETTE.deep, borderColor: PALETTE.deep };
-  if (kind === 'ghost') return { ...base, background: 'transparent', color: PALETTE.text, padding: '6px 10px' };
-  if (kind === 'mini') return { ...base, padding: '5px 10px', fontSize: 12, background: 'transparent', color: PALETTE.deep, border: `1.5px solid ${PALETTE.border}` };
+  const base = { borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', padding:'8px 14px', border:'1.5px solid transparent' };
+  if (kind === 'solid') return { ...base, background:PALETTE.cream.deep, color:'#fff' };
+  if (kind === 'outline') return { ...base, background:'transparent', color:PALETTE.cream.deep, borderColor:PALETTE.cream.deep };
+  if (kind === 'mini') return { ...base, padding:'5px 10px', fontSize:12, background:'transparent', color:PALETTE.cream.deep, border:'1.5px solid #e8dfc4' };
   return base;
 }
+
+const S = {
+  loading:{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f9f9f8', color:PALETTE.cream.deep, fontFamily:'system-ui,-apple-system,sans-serif' },
+  app:{ display:'flex', minHeight:'100vh', maxWidth:'100vw', overflowX:'hidden', background:'#f9f9f8', fontFamily:'ui-sans-serif,system-ui,-apple-system,sans-serif', color:'#1a1a1a' },
+  sidebar:{ position:'fixed', left:0, top:0, bottom:0, background:'#1a1a1a', display:'flex', flexDirection:'column', transition:'width 0.2s ease', zIndex:100, borderRight:'1px solid rgba(255,255,255,0.06)' },
+  sidebarHeader:{ padding:'16px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(255,255,255,0.06)' },
+  collapseBtn:{ background:'transparent', border:'1px solid rgba(255,255,255,0.1)', color:'#8e8ea0', width:28, height:28, borderRadius:6, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' },
+  nav:{ flex:1, padding:8, overflowY:'auto' },
+  navItem:{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'8px 10px', background:'transparent', border:'none', borderRadius:8, color:'#8e8ea0', fontSize:13, cursor:'pointer', marginBottom:1, textAlign:'left' },
+  navActive:{ background:'rgba(255,255,255,0.08)', color:'#ececec' },
+  navIcon:{ flexShrink:0, width:18, display:'flex', alignItems:'center', justifyContent:'center' },
+  navDiv:{ height:1, background:'rgba(255,255,255,0.06)', margin:'8px 4px' },
+  sidebarFooter:{ padding:10, borderTop:'1px solid rgba(255,255,255,0.06)' },
+  userCard:{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', background:'rgba(255,255,255,0.04)', borderRadius:8 },
+  userAvatar:{ width:30, height:30, borderRadius:'50%', background:'#c5b4e3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:500, color:'#1a1a1a', flexShrink:0 },
+  userInfo:{ flex:1, minWidth:0 },
+  userName:{ fontSize:12, color:'#ececec', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' },
+  main:{ flex:1, transition:'margin-left 0.2s ease' },
+  container:{ maxWidth:1280, margin:'0 auto', padding:'24px 16px' },
+  welcomeTitle:{ fontSize:26, fontWeight:600, color:'#1a1a1a', marginBottom:6, letterSpacing:'-0.01em' },
+  welcomeSub:{ fontSize:14, color:'#6b6b80', lineHeight:1.5 },
+  statsGrid:{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:14, marginBottom:40 },
+  statCard:{ borderRadius:22, padding:'22px 24px', border:'none', minHeight:140, transition:'transform 0.2s,box-shadow 0.2s' },
+  statInner:{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, height:'100%' },
+  statLabel:{ fontSize:13, fontWeight:500, marginBottom:12 },
+  statVal:{ fontSize:42, fontWeight:700, lineHeight:1, marginBottom:8, letterSpacing:'-0.02em' },
+  statSub:{ fontSize:12, fontWeight:400, lineHeight:1.4 },
+  statIcon:{ width:44, height:44, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+  section:{ marginBottom:44 },
+  secTitle:{ fontSize:17, fontWeight:600, color:'#1a1a1a', marginBottom:18, letterSpacing:'-0.01em' },
+  cardsGrid:{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:14 },
+  folderCard:{ borderRadius:22, padding:'22px 24px', border:'none', cursor:'pointer', minHeight:170, display:'flex', flexDirection:'column', transition:'transform 0.2s,box-shadow 0.2s' },
+  folderTop:{ marginBottom:14, display:'flex', alignItems:'flex-start', justifyContent:'space-between' },
+  folderIcon:{ width:48, height:48, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center' },
+  folderTitle:{ fontSize:18, fontWeight:700, marginBottom:6, letterSpacing:'-0.015em' },
+  folderDesc:{ fontSize:13, lineHeight:1.55, marginBottom:16, flex:1 },
+  folderFoot:{ display:'flex', justifyContent:'flex-end', paddingTop:14, borderTop:'1px solid' },
+  linkBtn:{ background:'transparent', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' },
+  recentList:{ background:'#fff', borderRadius:16, border:'1px solid #ebebeb', overflow:'hidden' },
+  recentItem:{ display:'flex', alignItems:'center', gap:10, padding:'14px 16px', cursor:'pointer', transition:'background 0.1s' },
+  recentInfo:{ flex:1, minWidth:0 },
+  recentTitle:{ fontSize:12, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
+  empty:{ textAlign:'center', padding:'40px 20px', color:'#aeaeb8', fontSize:13 },
+  pageHeader:{ display:'flex', alignItems:'center', gap:14, marginBottom:20, flexWrap:'wrap' },
+  backBtn:{ background:'#fff', border:'1px solid #ebebeb', color:'#6b6b80', padding:'8px 16px', borderRadius:12, fontSize:13, cursor:'pointer' },
+  pageTitle:{ fontSize:22, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.015em' },
+  iconBtn:{ width:34, height:34, borderRadius:9, border:'1.5px solid #e0e0e0', background:'#f4f4f4', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' },
+  closeBtn:{ width:34, height:34, borderRadius:9, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' },
+  cpLabel:{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 },
+};
