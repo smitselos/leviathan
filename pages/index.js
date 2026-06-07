@@ -228,10 +228,10 @@ export default function Home() {
 
   // ── Άνοιγμα αρχείου (καταγραφή open) ──
   const openViewer = (f) => {
-    setViewing(f); setShowMetaPanel(false); setTagInput('');
     // optimistic local bump + server record
     setFiles((p) => p.map((x) => x.id === f.id ? { ...x, openCount:(x.openCount||0)+1, openedAt: Date.now() } : x));
     fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
+    setViewing(f); setShowMetaPanel(false); setTagInput('');
   };
 
   // ── Navigation helpers ──
@@ -668,51 +668,85 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Viewer modal — 80% / 90% με πάνελ */}
+      {/* Viewer modal */}
       {viewing && (
-        <div onClick={() => setViewing(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding: isMobile ? 0 : '3vh 0' }}>
-          <div onClick={(e)=>e.stopPropagation()} style={{ background:'#fff', borderRadius: isMobile ? 0 : 16, width: isMobile ? '100vw' : (showMetaPanel?'90vw':'80vw'), height: isMobile ? '100vh' : '94vh', display:'flex', flexDirection:'column', overflow:'hidden', transition:'width 0.18s ease' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding: isMobile ? '8px 10px' : '10px 14px', borderBottom:'1px solid #ebebeb', gap:8 }}>
-              <strong style={{ fontSize: isMobile ? 12 : 14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
-              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
-                {!isMobile && <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Ετικέτες & Σχόλια">🏷️</button>}
-                <button onClick={()=>setViewing(null)} style={S.closeBtn} title="Κλείσιμο">✕</button>
+        isMobile ? (
+          /* ── Mobile: fullscreen viewer with action bar ── */
+          <div style={{ position:'fixed', inset:0, background:'#fff', zIndex:200, display:'flex', flexDirection:'column' }}>
+            {/* Top bar: filename */}
+            <div style={{ display:'flex', alignItems:'center', padding:'8px 12px', borderBottom:'1px solid #ebebeb', gap:8, flexShrink:0 }}>
+              <button onClick={()=>setViewing(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#444', padding:'4px' }}>←</button>
+              <strong style={{ fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, color:'#1a1a1a' }}>{viewing.name}</strong>
+              <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Νέα καρτέλα">↗</button>
+            </div>
+            {/* Action toolbar */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 8px', borderBottom:'1px solid #f0f0f0', background:PALETTE.cream.bgSoft, flexShrink:0 }}>
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Student">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                <span>Student</span>
+              </button>
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Live">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                <span>Live</span>
+              </button>
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Σχόλια">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <span>Σχόλια</span>
+              </button>
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Σύνδεση">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                <span>Σύνδεση</span>
+              </button>
+            </div>
+            {/* File content */}
+            <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', width:'100%' }} title={viewing.name} />
+          </div>
+        ) : (
+          /* ── Desktop: modal viewer ── */
+          <div onClick={() => setViewing(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'3vh 0' }}>
+            <div onClick={(e)=>e.stopPropagation()} style={{ background:'#fff', borderRadius:16, width: showMetaPanel?'90vw':'80vw', height:'94vh', display:'flex', flexDirection:'column', overflow:'hidden', transition:'width 0.18s ease' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', gap:10 }}>
+                <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
+                  <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Ετικέτες & Σχόλια">🏷️</button>
+                  <button onClick={()=>setViewing(null)} style={S.closeBtn} title="Κλείσιμο">✕</button>
+                </div>
+              </div>
+              <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+                <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
+                {showMetaPanel && (
+                  <div style={{ width:300, flexShrink:0, borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
+                      <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια</span>
+                      {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
+                    </div>
+                    <div style={{ flex:1, overflowY:'auto', padding:14 }}>
+                      <div style={S.cpLabel}>Ετικέτες</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
+                        {vTags.map((t) => { const c=tagColor(t); return (
+                          <span key={t} className="tag-chip" style={{ display:'inline-flex', alignItems:'center', gap:4, background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>#{t}<span className="tag-x" style={{ cursor:'pointer', opacity:0.45, fontSize:10 }} onClick={()=>removeTag(viewing.id,t)}>✕</span></span>
+                        ); })}
+                      </div>
+                      <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+                        <input type="text" placeholder="Νέα ετικέτα…" value={tagInput} onChange={(e)=>setTagInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==='Enter') addTag(viewing.id,tagInput); }}
+                          style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
+                        {tagInput.trim() && <button onClick={()=>addTag(viewing.id,tagInput)} style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>}
+                      </div>
+                      <div style={{ fontSize:11, color:'#aeaeb8', marginBottom:6 }}>Προτεινόμενες:</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:18 }}>
+                        {suggested.map((t) => { const c=tagColor(t); return <span key={t} onClick={()=>addTag(viewing.id,t)} style={{ cursor:'pointer', background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>+{t}</span>; })}
+                      </div>
+                      <div style={S.cpLabel}>Σχόλια</div>
+                      <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
+                        style={{ width:'100%', minHeight:110, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, lineHeight:1.5, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div style={{ flex:1, display:'flex', overflow:'hidden', flexDirection: isMobile ? 'column' : 'row' }}>
-              <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
-              {showMetaPanel && !isMobile && (
-                <div style={{ width:300, flexShrink:0, borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
-                    <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια</span>
-                    {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
-                  </div>
-                  <div style={{ flex:1, overflowY:'auto', padding:14 }}>
-                    <div style={S.cpLabel}>Ετικέτες</div>
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
-                      {vTags.map((t) => { const c=tagColor(t); return (
-                        <span key={t} className="tag-chip" style={{ display:'inline-flex', alignItems:'center', gap:4, background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>#{t}<span className="tag-x" style={{ cursor:'pointer', opacity:0.45, fontSize:10 }} onClick={()=>removeTag(viewing.id,t)}>✕</span></span>
-                      ); })}
-                    </div>
-                    <div style={{ display:'flex', gap:6, marginBottom:10 }}>
-                      <input type="text" placeholder="Νέα ετικέτα…" value={tagInput} onChange={(e)=>setTagInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==='Enter') addTag(viewing.id,tagInput); }}
-                        style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
-                      {tagInput.trim() && <button onClick={()=>addTag(viewing.id,tagInput)} style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>}
-                    </div>
-                    <div style={{ fontSize:11, color:'#aeaeb8', marginBottom:6 }}>Προτεινόμενες:</div>
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:18 }}>
-                      {suggested.map((t) => { const c=tagColor(t); return <span key={t} onClick={()=>addTag(viewing.id,t)} style={{ cursor:'pointer', background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>+{t}</span>; })}
-                    </div>
-                    <div style={S.cpLabel}>Σχόλια</div>
-                    <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
-                      style={{ width:'100%', minHeight:110, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, lineHeight:1.5, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
-        </div>
+        )
       )}
     </div>
   );
@@ -808,4 +842,5 @@ const S = {
   delBtn:{ width:30, height:30, borderRadius:8, border:'1.5px solid #e0d0d0', background:'transparent', color:'#c0a0a0', cursor:'pointer', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   delBtnSm:{ width:26, height:26, borderRadius:7, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   cpLabel:{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 },
+  mobileAction:{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, background:'none', border:'none', cursor:'pointer', padding:'6px 10px', color:PALETTE.peach.deep, fontSize:10, fontWeight:500, minWidth:50 },
 };
