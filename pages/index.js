@@ -764,6 +764,7 @@ export default function Home() {
 // ── Λίστα αρχείων (κοινό component) ──
 function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, showFolder, folders, compact }) {
   const [expanded, setExpanded] = useState(null);
+  const [commentOpen, setCommentOpen] = useState(null);
   if (loading) return <div style={S.empty}>Φόρτωση…</div>;
   if (!files || files.length === 0) return <div style={{ ...S.empty, background:PALETTE.cream.bgSoft, borderRadius:14, border:`1px dashed ${PALETTE.cream.accent}` }}>{empty}</div>;
   const folderName = (id) => folders?.find((f)=>f.id===id)?.name;
@@ -774,18 +775,16 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim();
         const isExp = compact && expanded === f.id;
+        const isCommentOpen = isExp && commentOpen === f.id;
         return (
           <div key={f.id} style={{
             background: isExp ? PALETTE.peach.bgSoft : '#fff',
             border: isExp ? `1.5px solid ${PALETTE.peach.accent}` : '1px solid #ebebeb',
             borderRadius: isExp ? 18 : (compact ? 10 : 12),
-            overflow:'hidden',
-            transition:'all 0.3s ease',
+            overflow:'hidden', transition:'all 0.3s ease',
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
           }}>
-            {/* ── File row ── */}
-            <div
-              onClick={() => { if (compact) setExpanded(isExp ? null : f.id); }}
+            <div onClick={() => { if (compact) { setExpanded(isExp ? null : f.id); setCommentOpen(null); } }}
               style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor: compact ? 'pointer' : 'default' }}>
               <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
@@ -807,33 +806,19 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
               {!compact && <button onClick={()=>onRemove(f.id)} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
 
-            {/* ── Expanded action card (mobile only) ── */}
             {isExp && (
               <div style={{ padding:'0 10px 14px' }}>
-                {/* Tags */}
                 {tags.length > 0 && (
                   <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2 }}>
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
                 )}
-                {/* Comment — full, scrollable, editable */}
-                <div style={{ marginBottom:10 }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:PALETTE.peach.deep, marginBottom:4, paddingLeft:2 }}>💬 Σχόλια</div>
-                  <textarea
-                    value={f.comment || ''}
-                    onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="Σημειώσεις για το αρχείο…"
-                    style={{
-                      width:'100%', minHeight:80, maxHeight:200, padding:'10px 12px',
-                      border:'1px solid '+PALETTE.peach.accent, borderRadius:12,
-                      fontSize:13, lineHeight:1.6, color:'#3d3a2e',
-                      background:'rgba(255,255,255,0.7)', resize:'vertical',
-                      fontFamily:'inherit', boxSizing:'border-box',
-                    }}
-                  />
-                </div>
-                {/* Action icons row */}
+                {hasComment && !isCommentOpen && (
+                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
+                    💬 {f.comment.length > 80 ? f.comment.slice(0,80)+'…' : f.comment}
+                  </div>
+                )}
+
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0' }}>
                   <button style={actionBtnOff} disabled>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -842,6 +827,11 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
                   <button style={actionBtnOff} disabled>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
                     <span>Live</span>
+                  </button>
+                  <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
+                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    <span>Σχόλια</span>
                   </button>
                   <button style={actionBtnOff} disabled>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -852,6 +842,26 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
                     <span>Επεξεργασία</span>
                   </button>
                 </div>
+
+                {isCommentOpen && (
+                  <div style={{ marginTop:10 }}>
+                    <textarea
+                      value={f.comment || ''}
+                      onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
+                      onClick={(e) => e.stopPropagation()}
+                      placeholder="Σημειώσεις για το αρχείο…"
+                      style={{
+                        width:'100%', padding:'10px 12px',
+                        border:'1px solid '+PALETTE.peach.accent, borderRadius:12,
+                        fontSize:13, lineHeight:1.6, color:'#3d3a2e',
+                        background:'rgba(255,255,255,0.7)', resize:'none',
+                        fontFamily:'inherit', boxSizing:'border-box',
+                        minHeight:60, overflow:'hidden',
+                      }}
+                      ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
