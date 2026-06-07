@@ -10,7 +10,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 import {
   getDrive, loadRegistry, saveRegistry,
-  ensureRootFolder, createFolder, trashDriveFile,
+  ensureRootFolder, ensureAppsFolder, createFolder, trashDriveFile,
 } from '../../lib/drive';
 
 export default async function handler(req, res) {
@@ -23,8 +23,9 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const rootId = await ensureRootFolder(drive);
+      const appsFolderId = await ensureAppsFolder(drive);
       const reg = await loadRegistry(drive);
-      return res.status(200).json({ rootId, folders: reg.folders });
+      return res.status(200).json({ rootId, appsFolderId, folders: reg.folders });
     }
 
     if (req.method === 'POST') {
