@@ -59,6 +59,7 @@ export default function Home() {
   const router = useRouter();
 
   const [folders, setFolders] = useState([]);
+  const [appsFolderId, setAppsFolderId] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -90,6 +91,7 @@ export default function Home() {
       const [rf, rr] = await Promise.all([fetch('/api/folders'), fetch('/api/registry')]);
       const df = await rf.json(); const dr = await rr.json();
       setFolders(Array.isArray(df.folders) ? df.folders : []);
+      setAppsFolderId(df.appsFolderId || null);
       setFiles(Array.isArray(dr.files) ? dr.files : []);
     } catch (e) {}
     setLoading(false);
@@ -224,6 +226,11 @@ export default function Home() {
   // ── Navigation helpers ──
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); };
+  const openApps = () => {
+    if (!appsFolderId) return;
+    setOpenFolder({ id: appsFolderId, name: 'Εφαρμογές', isApps: true });
+    setActiveView('apps'); setActiveTagFilter(null);
+  };
 
   if (status === 'loading' || status === 'unauthenticated') {
     return <div style={S.loading}>Φόρτωση…</div>;
@@ -232,15 +239,18 @@ export default function Home() {
   const userName = session.user?.email?.split('@')[0] || '';
   const countFor = (fid) => files.filter((f) => f.folderId === fid).length;
 
+  // Αρχεία εκτός του φακέλου «Εφαρμογές» (για τις κανονικές λίστες)
+  const normalFiles = files.filter((f) => !appsFolderId || f.folderId !== appsFolderId);
+
   // Παράγωγες λίστες
-  const favoriteFiles = files.filter((f) => f.favorite);
-  const newFiles = [...files].sort((a,b)=>(b.addedAt||0)-(a.addedAt||0)).slice(0,10);
-  const recentFiles = files.filter((f)=>f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
-  const popularFiles = files.filter((f)=>(f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
-  const allTags = [...new Set(files.flatMap((f)=>f.tags||[]))].sort();
+  const favoriteFiles = normalFiles.filter((f) => f.favorite);
+  const newFiles = [...normalFiles].sort((a,b)=>(b.addedAt||0)-(a.addedAt||0)).slice(0,10);
+  const recentFiles = normalFiles.filter((f)=>f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
+  const popularFiles = normalFiles.filter((f)=>(f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
+  const allTags = [...new Set(normalFiles.flatMap((f)=>f.tags||[]))].sort();
 
   // Αναζήτηση
-  const searchResults = files.filter((f) => {
+  const searchResults = normalFiles.filter((f) => {
     if (searchTags.length === 0 && !searchText) return false;
     const tags = f.tags || [];
     const okTags = searchTags.length === 0 || searchTags.every((t)=>tags.includes(t));
@@ -258,6 +268,10 @@ export default function Home() {
   let viewFiles = [];
   if (activeView === 'favorites') viewFiles = favoriteFiles;
   else if (activeView === 'newFiles') viewFiles = newFiles;
+  else if (activeView === 'apps' && openFolder) {
+    viewFiles = files.filter((f) => f.folderId === openFolder.id);
+    if (activeTagFilter) viewFiles = viewFiles.filter((f)=>(f.tags||[]).includes(activeTagFilter));
+  }
   else if (activeView === 'folder' && openFolder) {
     viewFiles = files.filter((f) => f.folderId === openFolder.id);
     if (activeTagFilter) viewFiles = viewFiles.filter((f)=>(f.tags||[]).includes(activeTagFilter));
@@ -303,7 +317,7 @@ export default function Home() {
           <NavItem icon={Icon.net} label="Δίκτυα Κειμένων" disabled />
           <NavItem icon={Icon.netAdd} label="Δημιουργία Δικτύου" disabled />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.apps} label="Εφαρμογές" disabled />
+          <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.student} label="Student" disabled />
         </nav>
@@ -365,8 +379,7 @@ export default function Home() {
                         style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
                         <div style={S.folderTop}>
                           <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
-                          <button onClick={(e)=>{e.stopPropagation();removeFolder(fld);}} title="Διαγραφή φακέλου"
-                            style={{ background:'transparent', border:'none', color:p.deep, opacity:0.55, cursor:'pointer', fontSize:16, padding:4 }}>✕</button>
+                          <button onClick={(e)=>{e.stopPropagation();removeFolder(fld);}} title="Διαγραφή φακέλου" style={S.delBtnSm}>✕</button>
                         </div>
                         <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
                         <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
@@ -440,6 +453,25 @@ export default function Home() {
                 </div>
               )}
               <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} />
+            </>
+          )}
+
+          {/* APPS VIEW */}
+          {activeView === 'apps' && openFolder && (
+            <>
+              <div style={S.pageHeader}>
+                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
+                <h1 style={S.pageTitle}>Εφαρμογές</h1>
+              </div>
+              <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:16 }}>
+                Ανέβασε ή επίλεξε εφαρμογές (π.χ. διαδραστικά HTML, κουίζ). Αποθηκεύονται χωριστά και δεν εμφανίζονται στους φακέλους σου.
+              </p>
+              <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
+                <button onClick={openPicker} disabled={!!busy} style={btn('solid')}>{busy==='picker'?'…':'➕ Επιλογή από Drive'}</button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={btn('outline')}>{busy==='upload'?'Ανέβασμα…':'⬆️ Ανέβασμα εφαρμογής'}</button>
+                <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
+              </div>
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} />
             </>
           )}
 
@@ -555,7 +587,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, showFolder, 
               </div>
             </div>
             <button onClick={()=>onOpen(f)} style={btn('mini')}>Άνοιγμα</button>
-            <button onClick={()=>onRemove(f.id)} style={{ ...btn('mini'), color:PALETTE.peach.deep, borderColor:PALETTE.peach.deep }}>✕</button>
+            <button onClick={()=>onRemove(f.id)} style={S.delBtn} title="Διαγραφή">✕</button>
           </div>
         );
       })}
@@ -618,5 +650,7 @@ const S = {
   pageTitle:{ fontSize:22, fontWeight:700, color:'#1a1a1a', letterSpacing:'-0.015em' },
   iconBtn:{ width:34, height:34, borderRadius:9, border:'1.5px solid #e0e0e0', background:'#f4f4f4', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' },
   closeBtn:{ width:34, height:34, borderRadius:9, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' },
+  delBtn:{ width:30, height:30, borderRadius:8, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+  delBtnSm:{ width:26, height:26, borderRadius:7, border:'none', background:'#dc2626', color:'#fff', cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   cpLabel:{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 },
 };
