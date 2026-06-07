@@ -378,15 +378,17 @@ export default function Home() {
       {/* Viewer modal — πλάτος ~80% */}
       {viewing && (
         <div onClick={() => setViewing(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '3vh 0' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: PALETTE.card, borderRadius: 16, width: '80vw', height: '94vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: PALETTE.card, borderRadius: 16, width: showMetaPanel ? '90vw' : '80vw', height: '94vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'width 0.18s ease' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${PALETTE.border}`, gap: 10 }}>
               <strong style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{viewing.name}</strong>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button onClick={() => window.open('/api/file/' + viewing.id, '_blank')}
+                  style={iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
                 <button onClick={() => setShowMetaPanel((p) => !p)}
                   style={{ ...iconBtn, background: showMetaPanel ? PALETTE.peachSoft : '#f4f4f4', borderColor: showMetaPanel ? PALETTE.peach : '#e0e0e0', color: showMetaPanel ? PALETTE.peach : '#444' }}
                   title="Ετικέτες & Σχόλια">🏷️</button>
-                <button onClick={() => setViewing(null)} style={btn('ghost')}>✕</button>
+                <button onClick={() => setViewing(null)} style={closeBtn} title="Κλείσιμο">✕</button>
               </div>
             </div>
 
@@ -440,6 +442,7 @@ export default function Home() {
 }
 
 const iconBtn = { width: 34, height: 34, borderRadius: 9, border: '1.5px solid #e0e0e0', background: '#f4f4f4', cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const closeBtn = { width: 34, height: 34, borderRadius: 9, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 
 function btn(kind) {
   const base = { borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 14px', border: '1.5px solid transparent' };
