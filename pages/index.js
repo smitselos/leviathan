@@ -599,7 +599,7 @@ export default function Home() {
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
-                style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:13, background:'#fff', marginBottom:12 }} />
+                style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
               <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} compact={isMobile} />
             </>
           )}
@@ -644,7 +644,7 @@ export default function Home() {
                 <h1 style={S.pageTitle}>Αναζήτηση με ετικέτες</h1>
               </div>
               <input type="search" placeholder="Αναζήτηση σε τίτλο ή ετικέτα…" value={searchText} onChange={(e)=>setSearchText(e.target.value)}
-                style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize:14, background:'#fff', marginBottom:14 }} />
+                style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize: isMobile ? 16 : 14, background:'#fff', marginBottom:14 }} />
               {allTags.length > 0 && (
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:18 }}>
                   {allTags.map((t) => { const c=tagColor(t); const on=searchTags.includes(t);
@@ -725,7 +725,7 @@ export default function Home() {
               <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
                 <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
                 {showMetaPanel && (
-                  <div style={{ width:300, flexShrink:0, borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
+                  <div style={{ flex:'0 0 50%', borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
                       <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια</span>
                       {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
@@ -748,7 +748,7 @@ export default function Home() {
                       </div>
                       <div style={S.cpLabel}>Σχόλια</div>
                       <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
-                        style={{ width:'100%', minHeight:110, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, lineHeight:1.5, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+                        style={{ width:'100%', minHeight:200, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                     </div>
                   </div>
                 )}
@@ -771,11 +771,11 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
   const actionBtn = { display:'flex', flexDirection:'column', alignItems:'center', gap:3, background:'none', border:'none', padding:'10px 8px', color:PALETTE.peach.deep, fontSize:10, fontWeight:500, minWidth:52, borderRadius:10, cursor:'pointer' };
   const actionBtnOff = { ...actionBtn, opacity:0.30 };
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8, maxWidth:'100%', overflow:'hidden' }}>
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim();
-        const isExp = compact && expanded === f.id;
-        const isCommentOpen = isExp && commentOpen === f.id;
+        const isExp = expanded === f.id;
+        const isCommentOpen = compact && isExp && commentOpen === f.id;
         return (
           <div key={f.id} style={{
             background: isExp ? PALETTE.peach.bgSoft : '#fff',
@@ -783,9 +783,10 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
             borderRadius: isExp ? 18 : (compact ? 10 : 12),
             overflow:'hidden', transition:'all 0.3s ease',
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
+            maxWidth:'100%', minWidth:0,
           }}>
-            <div onClick={() => { if (compact) { setExpanded(isExp ? null : f.id); setCommentOpen(null); } }}
-              style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor: compact ? 'pointer' : 'default' }}>
+            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); }}
+              style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor:'pointer', minWidth:0 }}>
               <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
               {!compact && <span style={{ fontSize:18 }}>📄</span>}
@@ -803,10 +804,10 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
-              {!compact && <button onClick={()=>onRemove(f.id)} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
+              {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
 
-            {isExp && (
+            {isExp && compact && (
               <div style={{ padding:'0 10px 14px' }}>
                 {tags.length > 0 && (
                   <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2 }}>
@@ -853,7 +854,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
                       style={{
                         width:'100%', padding:'10px 12px',
                         border:'1px solid '+PALETTE.peach.accent, borderRadius:12,
-                        fontSize:13, lineHeight:1.6, color:'#3d3a2e',
+                        fontSize: compact ? 16 : 13, lineHeight:1.6, color:'#3d3a2e',
                         background:'rgba(255,255,255,0.7)', resize:'none',
                         fontFamily:'inherit', boxSizing:'border-box',
                         minHeight:60, overflow:'hidden',
@@ -861,6 +862,25 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, s
                       ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
                     />
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Desktop read-only card */}
+            {isExp && !compact && (
+              <div style={{ padding:'8px 14px 14px', borderTop:'1px solid #f0f0f0', background:PALETTE.cream.bgSoft }}>
+                {tags.length > 0 && (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:8 }}>
+                    {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                  </div>
+                )}
+                {hasComment && (
+                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.7)', borderRadius:10, fontSize:13, color:'#5c3826', lineHeight:1.6, whiteSpace:'pre-wrap' }}>
+                    💬 {f.comment}
+                  </div>
+                )}
+                {!tags.length && !hasComment && (
+                  <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic' }}>Δεν υπάρχουν ετικέτες ή σχόλια.</div>
                 )}
               </div>
             )}
