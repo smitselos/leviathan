@@ -828,12 +828,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
                 {hasComment && !isCommentOpen && !isQuestionsOpen && (
                   <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
-                    💬 {f.comment.split(/\s+/).slice(0,30).join(' ')}{f.comment.split(/\s+/).length > 30 ? '…' : ''}
-                  </div>
-                )}
-                {hasQuestions && !isCommentOpen && !isQuestionsOpen && (
-                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
-                    📝 {f.questions.split(/\s+/).slice(0,30).join(' ')}{f.questions.split(/\s+/).length > 30 ? '…' : ''}
+                    💬 {f.comment.split(/\s+/).slice(0,35).join(' ')}{f.comment.split(/\s+/).length > 35 ? ' …' : ''}
                   </div>
                 )}
 
