@@ -16,6 +16,16 @@ const SUGGESTED_TAGS = [
   'Έκθεση','Γραμματική','Λεξιλόγιο','Ανάλυση','Αξιολόγηση',
   'Α΄ Λυκείου','Β΄ Λυκείου','Γ΄ Λυκείου',
 ];
+const SUGGESTED_URLS = [
+  { name:'Ψηφιακό Σχολείο', url:'https://dschool.edu.gr' },
+  { name:'Φωτόδεντρο', url:'http://photodentro.edu.gr' },
+  { name:'sch.gr', url:'https://www.sch.gr' },
+  { name:'ΕΡΤ', url:'https://www.ert.gr' },
+  { name:'Wikipedia (Ελ.)', url:'https://el.wikipedia.org' },
+  { name:'Λεξικό Τριανταφυλλίδη', url:'http://www.greek-language.gr/greekLang/modern_greek/tools/lexica/triantafyllides/' },
+  { name:'Λεξικό Ακαδημίας Αθηνών', url:'https://www.lexikon.academyofathens.gr' },
+  { name:'Πύλη για την Ελληνική Γλώσσα', url:'http://www.greek-language.gr' },
+];
 const TAG_COLORS = [
   { bg:'#ede9fe', text:'#6d28d9' }, { bg:'#dcfce7', text:'#15803d' },
   { bg:'#fef3c7', text:'#b45309' }, { bg:'#dbeafe', text:'#1d4ed8' },
@@ -628,7 +638,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -647,7 +657,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -1008,45 +1018,64 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
 
                 {/* Συνδέσεις */}
                 {isLinksOpen && (
-                  <div style={{ marginTop:10 }}>
-                    {fLinks.length > 0 ? (
-                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom: compact ? 10 : 0 }}>
+                  <div style={{ marginTop:10 }} onClick={(e)=>e.stopPropagation()}>
+                    {/* Υπάρχουσες συνδέσεις */}
+                    {fLinks.length > 0 && (
+                      <div style={{ display:'flex', flexDirection:'column', gap:5, marginBottom:10 }}>
                         {fLinks.map((lnk, li) => (
                           <div key={li} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'rgba(255,255,255,0.7)', borderRadius:10, border:'1px solid #e8e0c8' }}>
                             <span style={{ fontSize:14, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
-                            <span onClick={(e) => { e.stopPropagation(); if (lnk.type==='url') window.open(lnk.url,'_blank'); else if (onOpen) onOpen({ id:lnk.targetId, name:lnk.name }); }}
+                            <span onClick={() => { if (lnk.type==='url') window.open(lnk.url,'_blank'); else if (onOpen) onOpen({ id:lnk.targetId, name:lnk.name }); }}
                               style={{ flex:1, fontSize:13, color:PALETTE.cream.deep, cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textDecoration:'underline dotted' }}>
                               {lnk.name}
                             </span>
-                            {compact && <button onClick={(e) => { e.stopPropagation(); if (onRemoveLink) onRemoveLink(f.id, li); }} style={{ background:'none', border:'none', color:'#c0a0a0', cursor:'pointer', fontSize:12, fontWeight:700, padding:'2px 4px' }}>✕</button>}
+                            <button onClick={() => { if (onRemoveLink) onRemoveLink(f.id, li); }} style={{ background:'none', border:'none', color:'#c0a0a0', cursor:'pointer', fontSize:12, fontWeight:700, padding:'2px 4px' }}>✕</button>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', marginBottom: compact ? 10 : 0 }}>Δεν υπάρχουν συνδέσεις.</div>
                     )}
-                    {/* Mobile: add links inline */}
-                    {compact && (
-                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:6 }}>
-                        <select onClick={(e)=>e.stopPropagation()} onChange={(e) => { e.stopPropagation(); if (!e.target.value) return; const t = (allFiles||[]).find(x=>x.id===e.target.value); if (t && onAddLink) onAddLink(f.id, { type:'file', targetId:t.id, name:t.name }); e.target.value=''; }}
-                          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:16, background:'#fff' }}>
-                          <option value="">+ Σύνδεση με αρχείο…</option>
-                          {(allFiles||[]).filter(x => x.id !== f.id && !fLinks.some(l=>l.targetId===x.id)).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-                        </select>
-                        <div style={{ display:'flex', gap:6 }}>
-                          <input onClick={(e)=>e.stopPropagation()} value={mLinkUrl} onChange={(e)=>{e.stopPropagation();setMLinkUrl(e.target.value);}} placeholder="URL…"
-                            style={{ flex:2, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:16, background:'#fff' }} />
-                          <input onClick={(e)=>e.stopPropagation()} value={mLinkName} onChange={(e)=>{e.stopPropagation();setMLinkName(e.target.value);}} placeholder="Τίτλος…"
-                            style={{ flex:1, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:16, background:'#fff' }} />
-                          <button onClick={(e) => { e.stopPropagation(); const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
-                            style={{ ...btn('solid'), padding:'8px 12px', flexShrink:0 }}>+</button>
+
+                    {/* Προσθήκη URL */}
+                    <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 }}>Προσθήκη διεύθυνσης</div>
+                    <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+                      <input value={mLinkUrl} onChange={(e)=>setMLinkUrl(e.target.value)} placeholder="URL…"
+                        style={{ flex:2, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize: compact?16:13, background:'#fff' }} />
+                      <input value={mLinkName} onChange={(e)=>setMLinkName(e.target.value)} placeholder="Τίτλος…"
+                        style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize: compact?16:13, background:'#fff' }} />
+                      <button onClick={() => { const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
+                        style={{ ...btn('solid'), padding:'7px 12px', flexShrink:0 }}>+</button>
+                    </div>
+
+                    {/* Δημοφιλείς εκπαιδευτικές διευθύνσεις */}
+                    <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 }}>Εκπαιδευτικοί ιστότοποι</div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
+                      {SUGGESTED_URLS.filter(s => !fLinks.some(l=>l.url===s.url)).map((s) => (
+                        <span key={s.url} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'url', url:s.url, name:s.name }); }}
+                          style={{ cursor:'pointer', background:'#dbeafe', color:'#1d4ed8', borderRadius:999, padding:'3px 10px', fontSize:11, fontWeight:500 }}>
+                          + {s.name}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Αρχεία ανά φάκελο */}
+                    <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 }}>Αρχεία</div>
+                    {(folders||[]).map((fld) => {
+                      const fldFiles = (allFiles||[]).filter(x => x.folderId===fld.id && x.id !== f.id && !fLinks.some(l=>l.targetId===x.id));
+                      if (!fldFiles.length) return null;
+                      return (
+                        <div key={fld.id} style={{ marginBottom:8 }}>
+                          <div style={{ fontSize:11, color:'#8a7d4a', fontWeight:600, marginBottom:4 }}>📁 {fld.name}</div>
+                          <div style={{ display:'flex', flexDirection:'column', gap:3, paddingLeft:8 }}>
+                            {fldFiles.map((af) => (
+                              <span key={af.id} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'file', targetId:af.id, name:af.name }); }}
+                                style={{ cursor:'pointer', fontSize:12, color:PALETTE.cream.deep, padding:'4px 8px', borderRadius:8, background:'rgba(255,255,255,0.6)', border:'1px solid #e8e0c8' }}>
+                                + {af.name}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {/* Desktop: hint */}
-                    {!compact && (
-                      <div style={{ fontSize:11, color:'#aeaeb8', fontStyle:'italic', marginTop:6 }}>Προσθήκη/αφαίρεση συνδέσεων από το modal (🏷️)</div>
-                    )}
+                      );
+                    })}
                   </div>
                 )}
               </div>
