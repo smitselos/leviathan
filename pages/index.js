@@ -102,6 +102,8 @@ export default function Home() {
   const [linkUrlInput, setLinkUrlInput] = useState('');
   const [linkNameInput, setLinkNameInput] = useState('');
   const [modalPickerSection, setModalPickerSection] = useState(null);
+  const [studentUrl, setStudentUrl] = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
@@ -126,7 +128,7 @@ export default function Home() {
     } catch (e) {}
     setLoading(false);
   }, []);
-  useEffect(() => { if (status === 'authenticated') loadAll(); }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') { loadAll(); fetchStudentUrl(); } }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -208,6 +210,26 @@ export default function Home() {
   };
   const openLive = (f) => {
     setLiveFile(f); setActiveLiveTab(0);
+  };
+  const togglePublish = async (id) => {
+    const cur = !!fileOf(id).published;
+    setPublishing(true);
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, published: !cur } : f));
+    try {
+      const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, publish: !cur }) });
+      const d = await r.json();
+      if (d.studentUrl) setStudentUrl(d.studentUrl);
+      if (d.files) setFiles(d.files);
+    } catch (e) {}
+    setPublishing(false);
+  };
+  const fetchStudentUrl = async () => {
+    try {
+      const r = await fetch('/api/publish');
+      const d = await r.json();
+      if (d.studentUrl) { setStudentUrl(d.studentUrl); return d.studentUrl; }
+    } catch (e) {}
+    return studentUrl;
   };
   const toggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
@@ -381,7 +403,7 @@ export default function Home() {
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.student} label="Student" disabled />
+          <NavItem icon={Icon.student} label="Student" onClick={async () => { const url = await fetchStudentUrl(); if (url) window.open(url, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο (κουμπί Student στην κάρτα).'); }} />
         </nav>
         <div style={S.sidebarFooter}>
           <div style={S.userCard}>
@@ -411,7 +433,7 @@ export default function Home() {
           <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
-          <button className="btm-item" style={{ color:'#8e8ea0', opacity:0.35 }}>
+          <button className="btm-item" style={{ color:'#16a34a' }} onClick={async () => { const url = await fetchStudentUrl(); if (url) window.open(url, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο.'); }}>
             {Icon.student}<span style={{ fontSize:10 }}>Student</span>
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
@@ -639,7 +661,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} folders={folders} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -658,7 +680,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} folders={folders} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -671,7 +693,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -694,7 +716,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
             </>
           )}
 
@@ -932,7 +954,7 @@ export default function Home() {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, allFiles, showFolder, folders, compact }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, allFiles, showFolder, folders, compact }) {
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
@@ -950,6 +972,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim();
         const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
+        const isPublished = !!f.published;
         const isExp = expanded === f.id;
         const isCommentOpen = isExp && commentOpen === f.id;
         const isQuestionsOpen = isExp && questionsOpen === f.id;
@@ -977,6 +1000,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
                     {hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
                     {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
+                    {isPublished && <span style={{ fontSize:10, color:'#16a34a' }}>📌</span>}
                   </div>
                 )}
                 {compact && showFolder && folderName(f.folderId) && (
@@ -1001,9 +1025,10 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
 
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0', flexWrap:'wrap', gap: compact ? 2 : 0 }}>
-                  <button style={actionBtnOff} disabled>
+                  <button style={{ ...actionBtn, color: isPublished ? '#fff' : PALETTE.peach.deep, background: isPublished ? '#16a34a' : 'none' }}
+                    onClick={(e) => { e.stopPropagation(); if (onPublish) onPublish(f.id); }}>
                     <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    <span style={{ fontSize: compact?9:undefined }}>Student</span>
+                    <span style={{ fontSize: compact?9:undefined }}>{isPublished ? '📌' : 'Student'}</span>
                   </button>
                   <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
                     onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
