@@ -145,8 +145,7 @@ export default function Home() {
   const patchMeta = async (id, body) => {
     setMetaSaving(true);
     try {
-      const r = await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, ...body }) });
-      const d = await r.json(); if (d.files) setFiles(d.files);
+      await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, ...body }) });
     } catch (e) {}
     setMetaSaving(false);
   };
