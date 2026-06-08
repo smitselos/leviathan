@@ -250,6 +250,8 @@ function MobBtn({ icon, label, active, disabled, onClick }) {
 
 /* ── Styles ── */
 const css = `
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
   @media(max-width:767px){
     .student-main{padding-bottom:70px !important;margin-left:0 !important;max-width:100vw !important;overflow-x:hidden !important;}
     html,body{overflow-x:hidden !important;max-width:100vw !important;}

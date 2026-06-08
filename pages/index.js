@@ -374,6 +374,7 @@ export default function Home() {
     <div style={S.app}>
       <style>{`
         *{box-sizing:border-box;}
+        html,body{margin:0;padding:0;}
         .ch:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.04)!important;}
         .nav-h:hover{background:rgba(255,255,255,0.06)!important;color:#ececec!important;}
         .ri-h:hover{background:#fcf0e5!important;}
