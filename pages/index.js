@@ -86,6 +86,12 @@ export default function Home() {
   const [searchText, setSearchText] = useState('');
   const [folderSearch, setFolderSearch] = useState('');
 
+  // Live & Συνδέσεις
+  const [liveFile, setLiveFile] = useState(null);
+  const [activeLiveTab, setActiveLiveTab] = useState(0);
+  const [linkUrlInput, setLinkUrlInput] = useState('');
+  const [linkNameInput, setLinkNameInput] = useState('');
+
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
     if (session?.error === 'RefreshAccessTokenError') signOut({ callbackUrl: '/login' });
@@ -176,6 +182,21 @@ export default function Home() {
     setFiles((p) => p.map((f) => f.id === id ? { ...f, questions: value } : f));
     if (saveTimerQ.current) clearTimeout(saveTimerQ.current);
     saveTimerQ.current = setTimeout(() => patchMeta(id, { questions: value }), 800);
+  };
+  const fileLinks = (id) => fileOf(id).links || [];
+  const addLink = (id, link) => {
+    const cur = fileLinks(id);
+    const next = [...cur, link];
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, links: next } : f));
+    patchMeta(id, { links: next });
+  };
+  const removeLink = (id, idx) => {
+    const next = fileLinks(id).filter((_, i) => i !== idx);
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, links: next } : f));
+    patchMeta(id, { links: next });
+  };
+  const openLive = (f) => {
+    setLiveFile(f); setActiveLiveTab(0);
   };
   const toggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
@@ -302,6 +323,7 @@ export default function Home() {
   const tagsInFolder = openFolder ? [...new Set(files.filter((f)=>f.folderId===openFolder.id).flatMap((f)=>f.tags||[]))].sort() : [];
 
   const vTags = viewing ? fileTags(viewing.id) : [];
+  const vLinks = viewing ? fileLinks(viewing.id) : [];
   const suggested = SUGGESTED_TAGS.filter((t) => !vTags.includes(t));
 
   // Disabled sidebar item
@@ -606,7 +628,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} compact={isMobile} />
             </>
           )}
 
@@ -625,7 +647,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} compact={isMobile} />
             </>
           )}
 
@@ -638,7 +660,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} showFolder folders={folders} compact={isMobile} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -661,7 +683,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} showFolder folders={folders} compact={isMobile} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
             </>
           )}
 
@@ -733,7 +755,7 @@ export default function Home() {
                 {showMetaPanel && (
                   <div style={{ flex:'0 0 50%', borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
-                      <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια · Ερωτήσεις</span>
+                      <span style={{ fontSize:13, fontWeight:700 }}>Ετικέτες · Σχόλια · Ερωτήσεις · Συνδέσεις</span>
                       {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
                     </div>
                     <div style={{ flex:1, overflowY:'auto', padding:14 }}>
@@ -758,6 +780,28 @@ export default function Home() {
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις</div>
                       <textarea placeholder="π.χ. Α1. Ποια επιχειρήματα χρησιμοποιεί ο συντάκτης;&#10;Β1. Να εντοπίσετε τα γλωσσικά μέσα…" value={fileQuestions(viewing.id)} onChange={(e)=>updateQuestions(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:180, padding:'10px 12px', border:'1px solid '+PALETTE.mustard.accent, borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+
+                      <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
+                      {vLinks.map((lnk, li) => (
+                        <div key={li} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, padding:'6px 10px', background:'#fff', borderRadius:8, border:'1px solid #e8e0c8' }}>
+                          <span style={{ fontSize:14, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
+                          <span style={{ flex:1, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lnk.name}</span>
+                          <button onClick={() => removeLink(viewing.id, li)} style={S.delBtnSm}>✕</button>
+                        </div>
+                      ))}
+                      <select onChange={(e) => { if (!e.target.value) return; const t = normalFiles.find(x=>x.id===e.target.value); if (t) addLink(viewing.id, { type:'file', targetId:t.id, name:t.name }); e.target.value=''; }}
+                        style={{ width:'100%', padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff', marginBottom:6 }}>
+                        <option value="">+ Σύνδεση με αρχείο…</option>
+                        {normalFiles.filter(x => x.id !== viewing.id && !vLinks.some(l=>l.targetId===x.id)).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                      </select>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <input placeholder="URL…" value={linkUrlInput} onChange={(e)=>setLinkUrlInput(e.target.value)}
+                          style={{ flex:2, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
+                        <input placeholder="Τίτλος…" value={linkNameInput} onChange={(e)=>setLinkNameInput(e.target.value)}
+                          style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
+                        <button onClick={() => { const u=linkUrlInput.trim(); if (u) { addLink(viewing.id, { type:'url', url:u, name:linkNameInput.trim()||u }); setLinkUrlInput(''); setLinkNameInput(''); } }}
+                          style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -766,15 +810,82 @@ export default function Home() {
           </div>
         )
       )}
+
+      {/* ── Live modal ── */}
+      {liveFile && (() => {
+        const lLinks = fileLinks(liveFile.id);
+        const curLink = lLinks[activeLiveTab] || null;
+        const curSrc = curLink ? (curLink.type === 'url' ? curLink.url : '/api/file/'+curLink.targetId) : null;
+
+        if (isMobile) return (
+          <div style={{ position:'fixed', inset:0, background:'#fff', zIndex:210, display:'flex', flexDirection:'column' }}>
+            <div style={{ display:'flex', alignItems:'center', padding:'8px 12px', borderBottom:'1px solid #ebebeb', gap:8, flexShrink:0 }}>
+              <button onClick={()=>setLiveFile(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#444', padding:'4px' }}>←</button>
+              <strong style={{ fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, color:'#1a1a1a' }}>{liveFile.name}</strong>
+            </div>
+            <div style={{ display:'flex', gap:4, padding:'6px 10px', overflowX:'auto', borderBottom:'1px solid #f0f0f0', flexShrink:0, background:PALETTE.cream.bgSoft }}>
+              <button onClick={()=>setActiveLiveTab(-1)} style={{ ...btn('mini'), padding:'4px 10px', fontSize:11, background: activeLiveTab===-1?PALETTE.cream.deep:'transparent', color: activeLiveTab===-1?'#fff':PALETTE.cream.deep, whiteSpace:'nowrap', flexShrink:0 }}>📄 Αρχείο</button>
+              {lLinks.map((lnk, i) => (
+                <button key={i} onClick={()=>setActiveLiveTab(i)} style={{ ...btn('mini'), padding:'4px 10px', fontSize:11, background: activeLiveTab===i?PALETTE.cream.deep:'transparent', color: activeLiveTab===i?'#fff':PALETTE.cream.deep, whiteSpace:'nowrap', flexShrink:0 }}>
+                  {lnk.type==='url'?'🌐':'📄'} {lnk.name.length>20?lnk.name.slice(0,20)+'…':lnk.name}
+                </button>
+              ))}
+            </div>
+            <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch' }}>
+              <iframe src={activeLiveTab===-1 ? '/api/file/'+liveFile.id : curSrc} style={{ border:'none', width:'100%', height:'100%', display:'block' }}
+                title={activeLiveTab===-1 ? liveFile.name : (curLink?.name||'')} />
+            </div>
+          </div>
+        );
+
+        return (
+          <div onClick={()=>setLiveFile(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:210, padding:'2vh 0' }}>
+            <div onClick={(e)=>e.stopPropagation()} style={{ background:'#fff', borderRadius:16, width:'96vw', height:'94vh', display:'flex', overflow:'hidden' }}>
+              {/* Αριστερά: κύριο αρχείο */}
+              <div style={{ flex:1, display:'flex', flexDirection:'column', borderRight:'1px solid #ebebeb', minWidth:0 }}>
+                <div style={{ padding:'10px 14px', borderBottom:'1px solid #ebebeb', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+                  <strong style={{ fontSize:14, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>📄 {liveFile.name}</strong>
+                </div>
+                <iframe src={'/api/file/'+liveFile.id} style={{ flex:1, border:'none', minWidth:0 }} title={liveFile.name} />
+              </div>
+              {/* Δεξιά: συνδεδεμένα */}
+              <div style={{ width:'42%', flexShrink:0, display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', flexShrink:0 }}>
+                  <span style={{ fontSize:13, fontWeight:700 }}>Συνδεδεμένα</span>
+                  <button onClick={()=>setLiveFile(null)} style={S.closeBtn}>✕</button>
+                </div>
+                <div style={{ display:'flex', gap:4, padding:'8px 10px', flexWrap:'wrap', borderBottom:'1px solid #ebebeb', flexShrink:0 }}>
+                  {lLinks.map((lnk, i) => (
+                    <button key={i} onClick={()=>setActiveLiveTab(i)}
+                      style={{ ...btn('mini'), padding:'4px 10px', fontSize:11, background: activeLiveTab===i?PALETTE.cream.deep:'transparent', color: activeLiveTab===i?'#fff':PALETTE.cream.deep }}>
+                      {lnk.type==='url'?'🌐':'📄'} {lnk.name.length>25?lnk.name.slice(0,25)+'…':lnk.name}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ flex:1, overflow:'hidden' }}>
+                  {curSrc ? (
+                    <iframe src={curSrc} style={{ width:'100%', height:'100%', border:'none' }} title={curLink?.name||''} />
+                  ) : (
+                    <div style={{ padding:20, textAlign:'center', color:'#aeaeb8', fontSize:13 }}>Επίλεξε μια σύνδεση</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, showFolder, folders, compact }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, allFiles, showFolder, folders, compact }) {
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
+  const [linksOpen, setLinksOpen] = useState(null);
+  const [mLinkUrl, setMLinkUrl] = useState('');
+  const [mLinkName, setMLinkName] = useState('');
   if (loading) return <div style={S.empty}>Φόρτωση…</div>;
   if (!files || files.length === 0) return <div style={{ ...S.empty, background:PALETTE.cream.bgSoft, borderRadius:14, border:`1px dashed ${PALETTE.cream.accent}` }}>{empty}</div>;
   const folderName = (id) => folders?.find((f)=>f.id===id)?.name;
@@ -784,9 +895,11 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
     <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8, maxWidth:'100%', overflow:'hidden' }}>
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim();
+        const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
         const isExp = expanded === f.id;
         const isCommentOpen = isExp && commentOpen === f.id;
         const isQuestionsOpen = isExp && questionsOpen === f.id;
+        const isLinksOpen = isExp && linksOpen === f.id;
         return (
           <div key={f.id} style={{
             background: isExp ? PALETTE.peach.bgSoft : '#fff',
@@ -796,7 +909,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
             maxWidth:'100%', minWidth:0,
           }}>
-            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); }}
+            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setLinksOpen(null); }}
               style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor:'pointer', minWidth:0 }}>
               <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
@@ -806,9 +919,10 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 {!compact && (
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4, flexWrap:'wrap' }}>
                     {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
-                    {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-                    {hasComment && <span style={{ fontSize:10, color:'#aeaeb8' }}>💬</span>}
+                    {tags.slice(0,3).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                    {tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
                     {hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
+                    {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
                   </div>
                 )}
                 {compact && showFolder && folderName(f.folderId) && (
@@ -826,7 +940,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
                 )}
-                {hasComment && !isCommentOpen && !isQuestionsOpen && (
+                {hasComment && !isCommentOpen && !isQuestionsOpen && !isLinksOpen && (
                   <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
                     💬 {f.comment.split(/\s+/).slice(0,35).join(' ')}{f.comment.split(/\s+/).length > 35 ? ' …' : ''}
                   </div>
@@ -837,45 +951,37 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                     <span>Student</span>
                   </button>
-                  <button style={actionBtnOff} disabled>
+                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
+                    onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
+                    disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
                     <span>Live</span>
                   </button>
                   <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); }}>
+                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     <span>Σχόλια</span>
                   </button>
-                  <button style={actionBtnOff} disabled>
+                  <button style={{ ...actionBtn, color: isLinksOpen ? '#fff' : PALETTE.peach.deep, background: isLinksOpen ? PALETTE.peach.deep : 'none' }}
+                    onClick={(e) => { e.stopPropagation(); setLinksOpen(isLinksOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                     <span>Σύνδεση</span>
                   </button>
                   <button style={{ ...actionBtn, color: isQuestionsOpen ? '#fff' : PALETTE.peach.deep, background: isQuestionsOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setCommentOpen(null); }}>
+                    onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setCommentOpen(null); setLinksOpen(null); }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     <span>Ερωτήσεις</span>
                   </button>
                 </div>
 
-                {/* Σχόλια: editable on mobile, read-only on desktop */}
+                {/* Σχόλια */}
                 {isCommentOpen && (
                   <div style={{ marginTop:10 }}>
                     {compact ? (
-                      <textarea
-                        value={f.comment || ''}
-                        onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
-                        onClick={(e) => e.stopPropagation()}
-                        placeholder="Σημειώσεις για το αρχείο…"
-                        style={{
-                          width:'100%', padding:'10px 12px',
-                          border:'1px solid '+PALETTE.peach.accent, borderRadius:12,
-                          fontSize:16, lineHeight:1.6, color:'#3d3a2e',
-                          background:'rgba(255,255,255,0.7)', resize:'none',
-                          fontFamily:'inherit', boxSizing:'border-box',
-                          minHeight:60, overflow:'hidden',
-                        }}
-                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
-                      />
+                      <textarea value={f.comment || ''} onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()} placeholder="Σημειώσεις για το αρχείο…"
+                        style={{ width:'100%', padding:'10px 12px', border:'1px solid '+PALETTE.peach.accent, borderRadius:12, fontSize:16, lineHeight:1.6, color:'#3d3a2e', background:'rgba(255,255,255,0.7)', resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:60, overflow:'hidden' }}
+                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
                     ) : (
                       <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#5c3826', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.peach.accent }}>
                         {(f.comment||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς σχόλια — επεξεργασία από το modal (🏷️)</span>}
@@ -884,29 +990,62 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   </div>
                 )}
 
-                {/* Ερωτήσεις: editable on mobile, read-only on desktop */}
+                {/* Ερωτήσεις */}
                 {isQuestionsOpen && (
                   <div style={{ marginTop:10 }}>
                     {compact ? (
-                      <textarea
-                        value={f.questions || ''}
-                        onChange={(e) => { e.stopPropagation(); if (onQuestions) onQuestions(f.id, e.target.value); }}
-                        onClick={(e) => e.stopPropagation()}
-                        placeholder="Ερωτήσεις, π.χ. Α1. Ποια είναι τα επιχειρήματα…"
-                        style={{
-                          width:'100%', padding:'10px 12px',
-                          border:'1px solid '+PALETTE.mustard.accent, borderRadius:12,
-                          fontSize:16, lineHeight:1.6, color:'#3d3a2e',
-                          background:'rgba(255,255,255,0.7)', resize:'none',
-                          fontFamily:'inherit', boxSizing:'border-box',
-                          minHeight:80, overflow:'hidden',
-                        }}
-                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
-                      />
+                      <textarea value={f.questions || ''} onChange={(e) => { e.stopPropagation(); if (onQuestions) onQuestions(f.id, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()} placeholder="Ερωτήσεις, π.χ. Α1. Ποια είναι τα επιχειρήματα…"
+                        style={{ width:'100%', padding:'10px 12px', border:'1px solid '+PALETTE.mustard.accent, borderRadius:12, fontSize:16, lineHeight:1.6, color:'#3d3a2e', background:'rgba(255,255,255,0.7)', resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:80, overflow:'hidden' }}
+                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
                     ) : (
                       <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#4a3f1a', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.mustard.accent }}>
                         {(f.questions||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς ερωτήσεις — επεξεργασία από το modal (🏷️)</span>}
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Συνδέσεις */}
+                {isLinksOpen && (
+                  <div style={{ marginTop:10 }}>
+                    {fLinks.length > 0 ? (
+                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom: compact ? 10 : 0 }}>
+                        {fLinks.map((lnk, li) => (
+                          <div key={li} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'rgba(255,255,255,0.7)', borderRadius:10, border:'1px solid #e8e0c8' }}>
+                            <span style={{ fontSize:14, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
+                            <span onClick={(e) => { e.stopPropagation(); if (lnk.type==='url') window.open(lnk.url,'_blank'); else if (onOpen) onOpen({ id:lnk.targetId, name:lnk.name }); }}
+                              style={{ flex:1, fontSize:13, color:PALETTE.cream.deep, cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textDecoration:'underline dotted' }}>
+                              {lnk.name}
+                            </span>
+                            {compact && <button onClick={(e) => { e.stopPropagation(); if (onRemoveLink) onRemoveLink(f.id, li); }} style={{ background:'none', border:'none', color:'#c0a0a0', cursor:'pointer', fontSize:12, fontWeight:700, padding:'2px 4px' }}>✕</button>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', marginBottom: compact ? 10 : 0 }}>Δεν υπάρχουν συνδέσεις.</div>
+                    )}
+                    {/* Mobile: add links inline */}
+                    {compact && (
+                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:6 }}>
+                        <select onClick={(e)=>e.stopPropagation()} onChange={(e) => { e.stopPropagation(); if (!e.target.value) return; const t = (allFiles||[]).find(x=>x.id===e.target.value); if (t && onAddLink) onAddLink(f.id, { type:'file', targetId:t.id, name:t.name }); e.target.value=''; }}
+                          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:16, background:'#fff' }}>
+                          <option value="">+ Σύνδεση με αρχείο…</option>
+                          {(allFiles||[]).filter(x => x.id !== f.id && !fLinks.some(l=>l.targetId===x.id)).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                        </select>
+                        <div style={{ display:'flex', gap:6 }}>
+                          <input onClick={(e)=>e.stopPropagation()} value={mLinkUrl} onChange={(e)=>{e.stopPropagation();setMLinkUrl(e.target.value);}} placeholder="URL…"
+                            style={{ flex:2, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:16, background:'#fff' }} />
+                          <input onClick={(e)=>e.stopPropagation()} value={mLinkName} onChange={(e)=>{e.stopPropagation();setMLinkName(e.target.value);}} placeholder="Τίτλος…"
+                            style={{ flex:1, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:16, background:'#fff' }} />
+                          <button onClick={(e) => { e.stopPropagation(); const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
+                            style={{ ...btn('solid'), padding:'8px 12px', flexShrink:0 }}>+</button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Desktop: hint */}
+                    {!compact && (
+                      <div style={{ fontSize:11, color:'#aeaeb8', fontStyle:'italic', marginTop:6 }}>Προσθήκη/αφαίρεση συνδέσεων από το modal (🏷️)</div>
                     )}
                   </div>
                 )}
