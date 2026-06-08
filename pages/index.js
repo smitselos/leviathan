@@ -404,7 +404,7 @@ export default function Home() {
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.student} label="Student" onClick={async () => { const url = await fetchStudentUrl(); if (url) window.open(url, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο (κουμπί Student στην κάρτα).'); }} />
+          <NavItem icon={Icon.student} label="Student" onClick={() => { if (studentUrl) window.open(studentUrl, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο (κουμπί Student στην κάρτα).'); }} />
         </nav>
         <div style={S.sidebarFooter}>
           <div style={S.userCard}>
@@ -434,7 +434,7 @@ export default function Home() {
           <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
-          <button className="btm-item" style={{ color:'#16a34a' }} onClick={async () => { const url = await fetchStudentUrl(); if (url) window.open(url, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο.'); }}>
+          <button className="btm-item" style={{ color:'#16a34a' }} onClick={() => { if (studentUrl) window.open(studentUrl, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο.'); }}>
             {Icon.student}<span style={{ fontSize:10 }}>Student</span>
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
