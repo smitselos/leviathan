@@ -34,6 +34,7 @@ export default async function handler(req, res) {
           comment: typeof f.comment === 'string' ? f.comment : (prev.comment || ''),
           questions: typeof f.questions === 'string' ? f.questions : (prev.questions || ''),
           links: Array.isArray(f.links) ? f.links : (prev.links || []),
+          published: typeof f.published === 'boolean' ? f.published : (prev.published || false),
           favorite: typeof f.favorite === 'boolean' ? f.favorite : (prev.favorite || false),
           openCount: prev.openCount || 0,
           openedAt: prev.openedAt || null,
