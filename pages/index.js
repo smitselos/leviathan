@@ -101,6 +101,7 @@ export default function Home() {
   const [activeLiveTab, setActiveLiveTab] = useState(0);
   const [linkUrlInput, setLinkUrlInput] = useState('');
   const [linkNameInput, setLinkNameInput] = useState('');
+  const [modalPickerSection, setModalPickerSection] = useState(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
@@ -799,19 +800,61 @@ export default function Home() {
                           <button onClick={() => removeLink(viewing.id, li)} style={S.delBtnSm}>✕</button>
                         </div>
                       ))}
-                      <select onChange={(e) => { if (!e.target.value) return; const t = normalFiles.find(x=>x.id===e.target.value); if (t) addLink(viewing.id, { type:'file', targetId:t.id, name:t.name }); e.target.value=''; }}
-                        style={{ width:'100%', padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff', marginBottom:6 }}>
-                        <option value="">+ Σύνδεση με αρχείο…</option>
-                        {normalFiles.filter(x => x.id !== viewing.id && !vLinks.some(l=>l.targetId===x.id)).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-                      </select>
-                      <div style={{ display:'flex', gap:6 }}>
-                        <input placeholder="URL…" value={linkUrlInput} onChange={(e)=>setLinkUrlInput(e.target.value)}
+
+                      <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, margin:'10px 0 6px' }}>Διεύθυνση URL</div>
+                      <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+                        <input placeholder="https://…" value={linkUrlInput} onChange={(e)=>setLinkUrlInput(e.target.value)}
                           style={{ flex:2, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
                         <input placeholder="Τίτλος…" value={linkNameInput} onChange={(e)=>setLinkNameInput(e.target.value)}
                           style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
                         <button onClick={() => { const u=linkUrlInput.trim(); if (u) { addLink(viewing.id, { type:'url', url:u, name:linkNameInput.trim()||u }); setLinkUrlInput(''); setLinkNameInput(''); } }}
                           style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>
                       </div>
+
+                      <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Ιστότοποι</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
+                        {SUGGESTED_URLS.filter(s => !vLinks.some(l=>l.url===s.url)).map((s) => (
+                          <button key={s.url} onClick={() => addLink(viewing.id, { type:'url', url:s.url, name:s.name })}
+                            style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
+                            + {s.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Αρχεία & Εφαρμογές</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
+                        {folders.map((fld) => {
+                          const cnt = normalFiles.filter(x => x.folderId===fld.id && x.id!==viewing.id && !vLinks.some(l=>l.targetId===x.id)).length;
+                          if (!cnt) return null;
+                          const isOpen = modalPickerSection === fld.id;
+                          return (
+                            <button key={fld.id} onClick={() => setModalPickerSection(isOpen ? null : fld.id)}
+                              style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                                border:'2px solid '+(isOpen ? PALETTE.cream.deep : '#e0e0e0'),
+                                background: isOpen ? PALETTE.cream.bgSoft : '#fafafa',
+                                cursor:'pointer', fontSize:13, fontWeight:600,
+                                color: isOpen ? PALETTE.cream.deep : '#555' }}>
+                              📁 {fld.name} <span style={{ fontSize:10 }}>{isOpen?'▾':'▸'}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {modalPickerSection && (()=> {
+                        const fldFiles = normalFiles.filter(x => x.folderId===modalPickerSection && x.id!==viewing.id && !vLinks.some(l=>l.targetId===x.id));
+                        if (!fldFiles.length) return <div style={{ padding:10, color:'#aeaeb8', fontSize:12, textAlign:'center' }}>Κανένα αρχείο</div>;
+                        return (
+                          <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
+                            {fldFiles.map((af) => (
+                              <div key={af.id} onClick={() => addLink(viewing.id, { type:'file', targetId:af.id, name:af.name })}
+                                style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, cursor:'pointer', background:'#fff', border:'1px solid #e8e0c8' }}>
+                                <span style={{ fontSize:14 }}>📄</span>
+                                <span style={{ flex:1, fontSize:13, fontWeight:500, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{af.name}</span>
+                                <span style={{ fontSize:11, color:PALETTE.cream.deep, flexShrink:0 }}>+ Σύνδεση</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -896,6 +939,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
   const [linksOpen, setLinksOpen] = useState(null);
   const [mLinkUrl, setMLinkUrl] = useState('');
   const [mLinkName, setMLinkName] = useState('');
+  const [pickerSection, setPickerSection] = useState(null);
   if (loading) return <div style={S.empty}>Φόρτωση…</div>;
   if (!files || files.length === 0) return <div style={{ ...S.empty, background:PALETTE.cream.bgSoft, borderRadius:14, border:`1px dashed ${PALETTE.cream.accent}` }}>{empty}</div>;
   const folderName = (id) => folders?.find((f)=>f.id===id)?.name;
@@ -956,31 +1000,31 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   </div>
                 )}
 
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0', flexWrap:'wrap', gap: compact ? 2 : 0 }}>
                   <button style={actionBtnOff} disabled>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    <span>Student</span>
+                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    <span style={{ fontSize: compact?9:undefined }}>Student</span>
                   </button>
                   <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
                     onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
                     disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
-                    <span>Live</span>
+                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                    <span style={{ fontSize: compact?9:undefined }}>Live</span>
                   </button>
                   <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    <span>Σχόλια</span>
+                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
+                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    <span style={{ fontSize: compact?9:undefined }}>Σχόλια</span>
                   </button>
                   <button style={{ ...actionBtn, color: isLinksOpen ? '#fff' : PALETTE.peach.deep, background: isLinksOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setLinksOpen(isLinksOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                    <span>Σύνδεση</span>
+                    onClick={(e) => { e.stopPropagation(); setLinksOpen(isLinksOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setPickerSection(null); }}>
+                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    <span style={{ fontSize: compact?9:undefined }}>Σύνδεση</span>
                   </button>
                   <button style={{ ...actionBtn, color: isQuestionsOpen ? '#fff' : PALETTE.peach.deep, background: isQuestionsOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setCommentOpen(null); setLinksOpen(null); }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span>Ερωτήσεις</span>
+                    onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setCommentOpen(null); setLinksOpen(null); setPickerSection(null); }}>
+                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span style={{ fontSize: compact?9:undefined }}>Ερωτήσεις</span>
                   </button>
                 </div>
 
@@ -1018,64 +1062,85 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
 
                 {/* Συνδέσεις */}
                 {isLinksOpen && (
-                  <div style={{ marginTop:10 }} onClick={(e)=>e.stopPropagation()}>
+                  <div style={{ marginTop:10, maxWidth:'100%', overflow:'hidden' }} onClick={(e)=>e.stopPropagation()}>
                     {/* Υπάρχουσες συνδέσεις */}
                     {fLinks.length > 0 && (
-                      <div style={{ display:'flex', flexDirection:'column', gap:5, marginBottom:10 }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:10 }}>
                         {fLinks.map((lnk, li) => (
-                          <div key={li} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'rgba(255,255,255,0.7)', borderRadius:10, border:'1px solid #e8e0c8' }}>
-                            <span style={{ fontSize:14, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
+                          <div key={li} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 10px', background:'rgba(255,255,255,0.7)', borderRadius:10, border:'1px solid #e8e0c8', minWidth:0 }}>
+                            <span style={{ fontSize:13, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
                             <span onClick={() => { if (lnk.type==='url') window.open(lnk.url,'_blank'); else if (onOpen) onOpen({ id:lnk.targetId, name:lnk.name }); }}
-                              style={{ flex:1, fontSize:13, color:PALETTE.cream.deep, cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textDecoration:'underline dotted' }}>
+                              style={{ flex:1, fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textDecoration:'underline dotted', minWidth:0 }}>
                               {lnk.name}
                             </span>
-                            <button onClick={() => { if (onRemoveLink) onRemoveLink(f.id, li); }} style={{ background:'none', border:'none', color:'#c0a0a0', cursor:'pointer', fontSize:12, fontWeight:700, padding:'2px 4px' }}>✕</button>
+                            <button onClick={() => { if (onRemoveLink) onRemoveLink(f.id, li); }}
+                              style={{ background:'none', border:'none', color:'#c0a0a0', cursor:'pointer', fontSize:11, fontWeight:700, padding:'2px 4px', flexShrink:0 }}>✕</button>
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Προσθήκη URL */}
-                    <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 }}>Προσθήκη διεύθυνσης</div>
-                    <div style={{ display:'flex', gap:6, marginBottom:10 }}>
-                      <input value={mLinkUrl} onChange={(e)=>setMLinkUrl(e.target.value)} placeholder="URL…"
-                        style={{ flex:2, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize: compact?16:13, background:'#fff' }} />
-                      <input value={mLinkName} onChange={(e)=>setMLinkName(e.target.value)} placeholder="Τίτλος…"
-                        style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize: compact?16:13, background:'#fff' }} />
-                      <button onClick={() => { const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
-                        style={{ ...btn('solid'), padding:'7px 12px', flexShrink:0 }}>+</button>
+                    {/* URL — πάντα ορατό */}
+                    <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Διεύθυνση URL</div>
+                    <div style={{ display:'flex', flexDirection: compact?'column':'row', gap:6, marginBottom:12 }}>
+                      <input value={mLinkUrl} onChange={(e)=>setMLinkUrl(e.target.value)} placeholder="https://…"
+                        style={{ flex:compact?undefined:2, width:compact?'100%':undefined, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: compact?16:13, background:'#fff', boxSizing:'border-box' }} />
+                      <div style={{ display:'flex', gap:6 }}>
+                        <input value={mLinkName} onChange={(e)=>setMLinkName(e.target.value)} placeholder="Τίτλος…"
+                          style={{ flex:1, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: compact?16:13, background:'#fff', boxSizing:'border-box', minWidth:0 }} />
+                        <button onClick={() => { const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
+                          style={{ ...btn('solid'), padding:'8px 14px', flexShrink:0, fontSize:13 }}>+</button>
+                      </div>
                     </div>
 
-                    {/* Δημοφιλείς εκπαιδευτικές διευθύνσεις */}
-                    <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 }}>Εκπαιδευτικοί ιστότοποι</div>
+                    {/* Γρήγορες επιλογές */}
+                    <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Ιστότοποι</div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
                       {SUGGESTED_URLS.filter(s => !fLinks.some(l=>l.url===s.url)).map((s) => (
-                        <span key={s.url} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'url', url:s.url, name:s.name }); }}
-                          style={{ cursor:'pointer', background:'#dbeafe', color:'#1d4ed8', borderRadius:999, padding:'3px 10px', fontSize:11, fontWeight:500 }}>
+                        <button key={s.url} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'url', url:s.url, name:s.name }); }}
+                          style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
                           + {s.name}
-                        </span>
+                        </button>
                       ))}
                     </div>
 
-                    {/* Αρχεία ανά φάκελο */}
-                    <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 }}>Αρχεία</div>
-                    {(folders||[]).map((fld) => {
-                      const fldFiles = (allFiles||[]).filter(x => x.folderId===fld.id && x.id !== f.id && !fLinks.some(l=>l.targetId===x.id));
-                      if (!fldFiles.length) return null;
+                    {/* Accordion φακέλων */}
+                    <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Αρχεία & Εφαρμογές</div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
+                      {(folders||[]).map((fld) => {
+                        const cnt = (allFiles||[]).filter(x => x.folderId===fld.id && x.id!==f.id && !fLinks.some(l=>l.targetId===x.id)).length;
+                        if (!cnt) return null;
+                        const isOpen = pickerSection === fld.id;
+                        return (
+                          <button key={fld.id} onClick={() => setPickerSection(isOpen ? null : fld.id)}
+                            style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                              border:'2px solid '+(isOpen ? PALETTE.cream.deep : '#e0e0e0'),
+                              background: isOpen ? PALETTE.cream.bgSoft : '#fafafa',
+                              cursor:'pointer', fontSize:compact?12:13, fontWeight:600,
+                              color: isOpen ? PALETTE.cream.deep : '#555' }}>
+                            📁 {fld.name} <span style={{ fontSize:10 }}>{isOpen?'▾':'▸'}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Αρχεία ανοιχτού φακέλου */}
+                    {pickerSection && (()=> {
+                      const fldFiles = (allFiles||[]).filter(x => x.folderId===pickerSection && x.id!==f.id && !fLinks.some(l=>l.targetId===x.id));
+                      if (!fldFiles.length) return <div style={{ padding:10, color:'#aeaeb8', fontSize:12, textAlign:'center' }}>Κανένα αρχείο</div>;
                       return (
-                        <div key={fld.id} style={{ marginBottom:8 }}>
-                          <div style={{ fontSize:11, color:'#8a7d4a', fontWeight:600, marginBottom:4 }}>📁 {fld.name}</div>
-                          <div style={{ display:'flex', flexDirection:'column', gap:3, paddingLeft:8 }}>
-                            {fldFiles.map((af) => (
-                              <span key={af.id} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'file', targetId:af.id, name:af.name }); }}
-                                style={{ cursor:'pointer', fontSize:12, color:PALETTE.cream.deep, padding:'4px 8px', borderRadius:8, background:'rgba(255,255,255,0.6)', border:'1px solid #e8e0c8' }}>
-                                + {af.name}
-                              </span>
-                            ))}
-                          </div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:6 }}>
+                          {fldFiles.map((af) => (
+                            <div key={af.id} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'file', targetId:af.id, name:af.name }); }}
+                              style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, cursor:'pointer', background:'rgba(255,255,255,0.6)', border:'1px solid #e8e0c8' }}>
+                              <span style={{ fontSize:14 }}>📄</span>
+                              <span style={{ flex:1, fontSize:12, fontWeight:500, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>{af.name}</span>
+                              <span style={{ fontSize:11, color:PALETTE.cream.deep, flexShrink:0 }}>+ Σύνδεση</span>
+                            </div>
+                          ))}
                         </div>
                       );
-                    })}
+                    })()}
                   </div>
                 )}
               </div>
