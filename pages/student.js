@@ -67,7 +67,7 @@ export default function StudentPage() {
     setViewing(f);
   };
 
-  const goHome = () => { setViewing(null); setSearch(''); };
+  const goHome = () => { setViewing(null); setSearch(''); loadData(); };
   const goBack = () => { if (hasSession) router.push('/'); else router.push('/login'); };
 
   /* ── Desktop viewer ── */
