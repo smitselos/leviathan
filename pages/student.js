@@ -25,7 +25,6 @@ const Ic = {
 
 export default function StudentPage() {
   const router = useRouter();
-  const { m } = router.query;
   const { data: session } = useSession();
   const hasSession = !!session?.accessToken;
 
@@ -44,17 +43,17 @@ export default function StudentPage() {
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!m) return;
     setLoading(true);
     try {
-      const r = await fetch(`/api/student-manifest?m=${encodeURIComponent(m)}`);
+      const r = await fetch('/api/publish');
       if (!r.ok) throw new Error();
-      setData(await r.json());
-    } catch { setError('Δεν βρέθηκε ή δεν είναι διαθέσιμο.'); }
+      const d = await r.json();
+      setData({ files: d.items || [] });
+    } catch { setError('Δεν βρέθηκαν δημοσιευμένα αρχεία.'); }
     setLoading(false);
-  }, [m]);
+  }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); const iv = setInterval(loadData, 30000); return () => clearInterval(iv); }, [loadData]);
 
   const files = data?.files || [];
   const filtered = useMemo(() => {
@@ -129,7 +128,6 @@ export default function StudentPage() {
 
           {loading && <div style={S.empty}>Φόρτωση…</div>}
           {error && <div style={{ textAlign:'center', padding:60, color:'#dc2626', fontSize:14 }}>{error}</div>}
-          {!loading && !error && !m && <div style={{ textAlign:'center', padding:60, color:'#aeaeb8', fontSize:14 }}>Χρειάζεται σύνδεσμος.</div>}
 
           {data && !loading && (
             <>

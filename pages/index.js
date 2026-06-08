@@ -102,7 +102,7 @@ export default function Home() {
   const [linkUrlInput, setLinkUrlInput] = useState('');
   const [linkNameInput, setLinkNameInput] = useState('');
   const [modalPickerSection, setModalPickerSection] = useState(null);
-  const [studentUrl, setStudentUrl] = useState(null);
+  const [studentUrl, setStudentUrl] = useState('/student');
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function Home() {
     } catch (e) {}
     setLoading(false);
   }, []);
-  useEffect(() => { if (status === 'authenticated') { loadAll(); fetchStudentUrl(); } }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') loadAll(); }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -214,23 +214,24 @@ export default function Home() {
   const togglePublish = async (id) => {
     const cur = !!fileOf(id).published;
     setPublishing(true);
-    setFiles((p) => p.map((f) => f.id === id ? { ...f, published: !cur } : f));
     try {
-      const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, publish: !cur }) });
-      const d = await r.json();
-      if (d.studentUrl) setStudentUrl(d.studentUrl);
-      if (d.files) setFiles(d.files);
+      if (cur) {
+        // Αποδημοσίευση
+        const r = await fetch('/api/publish?key='+encodeURIComponent(id), { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key: id }) });
+        if (r.ok) {
+          setFiles((p) => p.map((f) => f.id === id ? { ...f, published: false } : f));
+        }
+      } else {
+        // Δημοσίευση
+        const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        if (r.ok) {
+          setFiles((p) => p.map((f) => f.id === id ? { ...f, published: true } : f));
+        }
+      }
     } catch (e) {}
     setPublishing(false);
   };
-  const fetchStudentUrl = async () => {
-    try {
-      const r = await fetch('/api/publish');
-      const d = await r.json();
-      if (d.studentUrl) { setStudentUrl(d.studentUrl); return d.studentUrl; }
-    } catch (e) {}
-    return studentUrl;
-  };
+  const fetchStudentUrl = async () => '/student';
   const toggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
     const cur = !!fileOf(id).favorite;
@@ -404,7 +405,7 @@ export default function Home() {
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.student} label="Student" onClick={() => { if (studentUrl) window.open(studentUrl, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο (κουμπί Student στην κάρτα).'); }} />
+          <NavItem icon={Icon.student} label="Student" onClick={() => window.open('/student', '_blank')} />
         </nav>
         <div style={S.sidebarFooter}>
           <div style={S.userCard}>
@@ -434,7 +435,7 @@ export default function Home() {
           <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
-          <button className="btm-item" style={{ color:'#16a34a' }} onClick={() => { if (studentUrl) window.open(studentUrl, '_blank'); else alert('Δημοσίευσε πρώτα κάποιο αρχείο.'); }}>
+          <button className="btm-item" style={{ color:'#16a34a' }} onClick={() => window.open('/student', '_blank')}>
             {Icon.student}<span style={{ fontSize:10 }}>Student</span>
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
