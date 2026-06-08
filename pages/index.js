@@ -785,8 +785,8 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim();
         const isExp = expanded === f.id;
-        const isCommentOpen = compact && isExp && commentOpen === f.id;
-        const isQuestionsOpen = compact && isExp && questionsOpen === f.id;
+        const isCommentOpen = isExp && commentOpen === f.id;
+        const isQuestionsOpen = isExp && questionsOpen === f.id;
         return (
           <div key={f.id} style={{
             background: isExp ? PALETTE.peach.bgSoft : '#fff',
@@ -819,21 +819,21 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
 
-            {isExp && compact && (
-              <div style={{ padding:'0 10px 14px' }}>
+            {isExp && (
+              <div style={{ padding: compact ? '0 10px 14px' : '0 14px 14px', borderTop: compact ? 'none' : '1px solid #f0f0f0', background: compact ? 'transparent' : PALETTE.cream.bgSoft }}>
                 {tags.length > 0 && (
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2 }}>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2, paddingTop: compact ? 0 : 8 }}>
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
                 )}
                 {hasComment && !isCommentOpen && !isQuestionsOpen && (
                   <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
-                    💬 {f.comment.length > 80 ? f.comment.slice(0,80)+'…' : f.comment}
+                    💬 {f.comment.split(/\s+/).slice(0,30).join(' ')}{f.comment.split(/\s+/).length > 30 ? '…' : ''}
                   </div>
                 )}
                 {hasQuestions && !isCommentOpen && !isQuestionsOpen && (
                   <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
-                    📝 {f.questions.length > 80 ? f.questions.slice(0,80)+'…' : f.questions}
+                    📝 {f.questions.split(/\s+/).slice(0,30).join(' ')}{f.questions.split(/\s+/).length > 30 ? '…' : ''}
                   </div>
                 )}
 
@@ -862,68 +862,58 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   </button>
                 </div>
 
+                {/* Σχόλια: editable on mobile, read-only on desktop */}
                 {isCommentOpen && (
                   <div style={{ marginTop:10 }}>
-                    <textarea
-                      value={f.comment || ''}
-                      onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="Σημειώσεις για το αρχείο…"
-                      style={{
-                        width:'100%', padding:'10px 12px',
-                        border:'1px solid '+PALETTE.peach.accent, borderRadius:12,
-                        fontSize: compact ? 16 : 13, lineHeight:1.6, color:'#3d3a2e',
-                        background:'rgba(255,255,255,0.7)', resize:'none',
-                        fontFamily:'inherit', boxSizing:'border-box',
-                        minHeight:60, overflow:'hidden',
-                      }}
-                      ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
-                    />
+                    {compact ? (
+                      <textarea
+                        value={f.comment || ''}
+                        onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Σημειώσεις για το αρχείο…"
+                        style={{
+                          width:'100%', padding:'10px 12px',
+                          border:'1px solid '+PALETTE.peach.accent, borderRadius:12,
+                          fontSize:16, lineHeight:1.6, color:'#3d3a2e',
+                          background:'rgba(255,255,255,0.7)', resize:'none',
+                          fontFamily:'inherit', boxSizing:'border-box',
+                          minHeight:60, overflow:'hidden',
+                        }}
+                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
+                      />
+                    ) : (
+                      <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#5c3826', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.peach.accent }}>
+                        {(f.comment||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς σχόλια — επεξεργασία από το modal (🏷️)</span>}
+                      </div>
+                    )}
                   </div>
                 )}
 
+                {/* Ερωτήσεις: editable on mobile, read-only on desktop */}
                 {isQuestionsOpen && (
                   <div style={{ marginTop:10 }}>
-                    <textarea
-                      value={f.questions || ''}
-                      onChange={(e) => { e.stopPropagation(); if (onQuestions) onQuestions(f.id, e.target.value); }}
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="Ερωτήσεις, π.χ. Α1. Ποια είναι τα επιχειρήματα…"
-                      style={{
-                        width:'100%', padding:'10px 12px',
-                        border:'1px solid '+PALETTE.mustard.accent, borderRadius:12,
-                        fontSize: compact ? 16 : 13, lineHeight:1.6, color:'#3d3a2e',
-                        background:'rgba(255,255,255,0.7)', resize:'none',
-                        fontFamily:'inherit', boxSizing:'border-box',
-                        minHeight:80, overflow:'hidden',
-                      }}
-                      ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
-                    />
+                    {compact ? (
+                      <textarea
+                        value={f.questions || ''}
+                        onChange={(e) => { e.stopPropagation(); if (onQuestions) onQuestions(f.id, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Ερωτήσεις, π.χ. Α1. Ποια είναι τα επιχειρήματα…"
+                        style={{
+                          width:'100%', padding:'10px 12px',
+                          border:'1px solid '+PALETTE.mustard.accent, borderRadius:12,
+                          fontSize:16, lineHeight:1.6, color:'#3d3a2e',
+                          background:'rgba(255,255,255,0.7)', resize:'none',
+                          fontFamily:'inherit', boxSizing:'border-box',
+                          minHeight:80, overflow:'hidden',
+                        }}
+                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
+                      />
+                    ) : (
+                      <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#4a3f1a', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.mustard.accent }}>
+                        {(f.questions||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς ερωτήσεις — επεξεργασία από το modal (🏷️)</span>}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Desktop read-only card */}
-            {isExp && !compact && (
-              <div style={{ padding:'8px 14px 14px', borderTop:'1px solid #f0f0f0', background:PALETTE.cream.bgSoft }}>
-                {tags.length > 0 && (
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:8 }}>
-                    {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-                  </div>
-                )}
-                {hasComment && (
-                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.7)', borderRadius:10, fontSize:13, color:'#5c3826', lineHeight:1.6, whiteSpace:'pre-wrap', marginBottom: hasQuestions ? 8 : 0 }}>
-                    💬 {f.comment}
-                  </div>
-                )}
-                {hasQuestions && (
-                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.7)', borderRadius:10, fontSize:13, color:'#4a3f1a', lineHeight:1.6, whiteSpace:'pre-wrap' }}>
-                    📝 {f.questions}
-                  </div>
-                )}
-                {!tags.length && !hasComment && !hasQuestions && (
-                  <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic' }}>Δεν υπάρχουν ετικέτες, σχόλια ή ερωτήσεις.</div>
                 )}
               </div>
             )}
