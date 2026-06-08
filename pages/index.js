@@ -79,6 +79,7 @@ export default function Home() {
   const [metaSaving, setMetaSaving] = useState(false);
   const [activeTagFilter, setActiveTagFilter] = useState(null);
   const saveTimer = useRef(null);
+  const saveTimerQ = useRef(null);
 
   // Αναζήτηση με ετικέτες
   const [searchTags, setSearchTags] = useState([]);
@@ -174,8 +175,8 @@ export default function Home() {
   const fileQuestions = (id) => fileOf(id).questions || '';
   const updateQuestions = (id, value) => {
     setFiles((p) => p.map((f) => f.id === id ? { ...f, questions: value } : f));
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => patchMeta(id, { questions: value }), 800);
+    if (saveTimerQ.current) clearTimeout(saveTimerQ.current);
+    saveTimerQ.current = setTimeout(() => patchMeta(id, { questions: value }), 800);
   };
   const toggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
