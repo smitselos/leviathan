@@ -120,15 +120,13 @@ export default function LivePage() {
 
       {/* Content */}
       <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-        {/* Single tab views (pdf or specific link) */}
-        {activeTab==='pdf' && !hasLinks && (
+        {/* PDF only (no links) */}
+        {activeTab==='pdf' && (
           <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
         )}
-        {activeTab==='pdf' && hasLinks && (
-          <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
-        )}
+        {/* Single link tab */}
         {hasLinks && links.map((lnk, i) => (
-          activeTab===('link-'+i) ? <iframe key={i} src={lnk.src} style={{ flex:1, border:'none', height:'100%' }} title={lnk.name} allow="fullscreen" /> : null
+          activeTab===('link-'+i) ? <LiveFrame key={i} lnk={lnk} /> : null
         ))}
 
         {/* Split view: left = main file, right = tabbed linked files */}
@@ -147,7 +145,7 @@ export default function LivePage() {
                   ))}
                 </div>
               )}
-              <iframe src={links[splitTab]?.src||links[0]?.src} style={{ flex:1, border:'none', width:'100%' }} title={links[splitTab]?.name||''} allow="fullscreen" />
+              <LiveFrame lnk={links[splitTab]||links[0]} />
             </div>
           </>
         )}
@@ -161,6 +159,28 @@ export default function LivePage() {
         <span>·</span>
         <span style={{ fontFamily:'monospace' }}>{code}</span>
       </div>
+    </div>
+  );
+}
+
+/* ── LiveFrame: iframe για αρχεία Drive, κάρτα για URL ── */
+function LiveFrame({ lnk }) {
+  if (!lnk) return null;
+  // Αρχεία Drive → iframe (PDF preview)
+  if (lnk.type !== 'url') {
+    return <iframe src={lnk.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={lnk.name} allow="fullscreen" />;
+  }
+  // URL → κάρτα με κουμπί (αποφυγή freeze από εξωτερικά sites)
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f5f0e1', padding:24, textAlign:'center' }}>
+      <div style={{ fontSize:48, marginBottom:16 }}>🌐</div>
+      <div style={{ fontSize:16, fontWeight:600, color:'#1a1a1a', marginBottom:6, maxWidth:'90%', overflow:'hidden', textOverflow:'ellipsis' }}>{lnk.name}</div>
+      <div style={{ fontSize:12, color:'#8a7d4a', marginBottom:20, wordBreak:'break-all', maxWidth:'90%' }}>{lnk.url}</div>
+      <button onClick={() => window.open(lnk.url, '_blank', 'noopener')}
+        style={{ padding:'12px 28px', borderRadius:14, border:'none', background:'#1a1a1a', color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer' }}>
+        Άνοιγμα σε νέα καρτέλα ↗
+      </button>
+      <div style={{ fontSize:11, color:'#aeaeb8', marginTop:14 }}>Η ιστοσελίδα ανοίγει σε ξεχωριστή καρτέλα</div>
     </div>
   );
 }
