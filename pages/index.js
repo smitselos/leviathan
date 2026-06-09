@@ -104,6 +104,8 @@ export default function Home() {
   const [modalPickerSection, setModalPickerSection] = useState(null);
   const [studentUrl, setStudentUrl] = useState('/student');
   const [publishing, setPublishing] = useState(false);
+  const [liveSending, setLiveSending] = useState(false);
+  const [liveToast, setLiveToast] = useState(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
@@ -210,7 +212,8 @@ export default function Home() {
   };
   const openLive = async (f) => {
     const fLinks = fileLinks(f.id);
-    if (!fLinks.length) return;
+    if (!fLinks.length || liveSending) return;
+    setLiveSending(true);
     try {
       const r = await fetch('/api/live', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -218,10 +221,13 @@ export default function Home() {
       });
       const d = await r.json();
       if (d.code) {
-        const base = window.location.origin;
-        alert(`● LIVE ενεργό!\n\nΚωδικός: ${d.code}\n\nΟι μαθητές πηγαίνουν στο:\n${base}/live?code=${d.code}\n\nΛήγει σε 2 ώρες.`);
+        const url = `${window.location.origin}/live?code=${d.code}`;
+        try { await navigator.clipboard.writeText(url); } catch (e) {}
+        setLiveToast({ code: d.code, url });
+        setTimeout(() => setLiveToast(null), 8000);
       }
-    } catch (e) { alert('Σφάλμα: ' + e.message); }
+    } catch (e) {}
+    setLiveSending(false);
   };
   const togglePublish = async (id) => {
     const cur = !!fileOf(id).published;
@@ -675,7 +681,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -694,7 +700,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -707,7 +713,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -730,7 +736,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
             </>
           )}
 
@@ -963,12 +969,25 @@ export default function Home() {
           </div>
         );
       })()}
+
+      {/* Live toast */}
+      {liveToast && (
+        <div style={{ position:'fixed', bottom: isMobile ? 70 : 20, left:'50%', transform:'translateX(-50%)', background:'#1a1a1a', color:'#fff', borderRadius:16, padding:'14px 24px', zIndex:500, boxShadow:'0 8px 30px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', alignItems:'center', gap:8, minWidth:280, maxWidth:'90vw' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:'#e8c96a', fontWeight:700, fontSize:12 }}>● LIVE</span>
+            <span style={{ fontSize:14 }}>Κωδικός:</span>
+            <span style={{ fontSize:22, fontWeight:700, letterSpacing:4, fontFamily:'monospace', color:'#e8c96a' }}>{liveToast.code}</span>
+          </div>
+          <div style={{ fontSize:11, color:'#aeaeb8', textAlign:'center' }}>Ο σύνδεσμος αντιγράφηκε · Λήγει σε 2 ώρες</div>
+          <button onClick={() => setLiveToast(null)} style={{ position:'absolute', top:6, right:10, background:'none', border:'none', color:'#666', fontSize:14, cursor:'pointer' }}>✕</button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, allFiles, showFolder, folders, compact }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact }) {
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
@@ -1050,11 +1069,11 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>{isPublished ? '📌' : 'Student'}</span>
                   </button>
-                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
-                    onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
-                    disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
+                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks && !liveSending ? 1 : 0.35 }}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (hasLinks && !liveSending && onLive) onLive(f); }}
+                    disabled={!hasLinks || liveSending} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
-                    <span style={{ fontSize: compact?11:undefined }}>Live</span>
+                    <span style={{ fontSize: compact?11:undefined }}>{liveSending ? '…' : 'Live'}</span>
                   </button>
                   <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
                     onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
