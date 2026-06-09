@@ -1145,7 +1145,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
                     {hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
                     {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
-                    {visIcon {isPublished && <span style={{ fontSize:10, color:'#16a34a' }}>📌</span>}{isPublished && <span style={{ fontSize:10, color:'#16a34a' }}>📌</span>} <span style={{ fontSize:10 }}>{visIcon}</span>}
+                    {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                   </div>
                 )}
                 {compact && showFolder && folderName(f.folderId) && (
@@ -1153,7 +1153,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
                 {compact && (isPublished || hasLinks) && (
                   <div style={{ display:'flex', gap:4, marginTop:2 }}>
-                    {visIcon {isPublished && <span style={{ fontSize:10, color:'#16a34a' }}>📌</span>}{isPublished && <span style={{ fontSize:10, color:'#16a34a' }}>📌</span>} <span style={{ fontSize:10 }}>{visIcon}</span>}
+                    {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                     {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
                   </div>
                 )}
