@@ -1,19 +1,21 @@
 // pages/api/publish.js
-// GET    → { items:[] }  ΔΗΜΟΣΙΟ — χωρίς auth, σερβίρει τα δημοσιευμένα
+// GET    → { items:[] }  ΔΗΜΟΣΙΟ — χωρίς auth, διαβάζει από KV
 // POST   → { ok, key }   auth — δημοσίευση
 // DELETE → { ok }         auth — αποδημοσίευση
-//
-// Αποθήκευση: registry (Drive) + δημόσιο manifest αρχείο (Drive, anyone-with-link)
-// Ανάγνωση: memory cache → Drive manifest (public) → κενό
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 import { getDrive, loadRegistry, saveRegistry } from '../../lib/drive';
+import { createClient } from '@vercel/kv';
 
-/* ── server-side cache ── */
-let publishedCache = null;
-let cacheTime = 0;
-let manifestFileId = null;
-const CACHE_TTL = 120_000; // 2 min
+/* ── KV client ── */
+function getKV() {
+  return createClient({
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
+  });
+}
+
+const KV_KEY = 'published_items';
 
 async function sharePublic(drive, fileId) {
   try { await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } }); } catch (e) {}
@@ -31,83 +33,25 @@ function buildItems(reg) {
     id: f.id, key: f.id, name: f.name,
     tags: f.tags || [], comment: (f.comment || '').slice(0, 300),
     questions: f.questions || '', links: f.links || [],
-    folderId: f.folderId, type: 'pdf',
+    folderId: f.folderId,
   }));
 }
 
-/* ── Write manifest to Drive (public JSON) ── */
-async function writeManifest(drive, reg, items) {
-  const content = JSON.stringify({ items, updatedAt: Date.now() });
-  let mid = reg.studentManifestId;
-  if (mid) {
-    try { await drive.files.update({ fileId: mid, media: { mimeType: 'application/json', body: content } }); return mid; } catch (e) {}
-  }
-  // Create new
-  const created = await drive.files.create({
-    requestBody: { name: '__leviathan_student__.json', mimeType: 'application/json' },
-    media: { mimeType: 'application/json', body: content },
-  });
-  mid = created.data.id;
-  await sharePublic(drive, mid);
-  reg.studentManifestId = mid;
-  return mid;
-}
-
-/* ── Read manifest from public Drive URL (no auth) ── */
-async function readPublicManifest(mid) {
-  if (!mid) return null;
-  try {
-    // Try usercontent URL (most reliable for public files)
-    const url = `https://drive.usercontent.google.com/download?id=${mid}&export=download&confirm=t`;
-    const r = await fetch(url, { redirect: 'follow' });
-    if (!r.ok) return null;
-    const text = await r.text();
-    if (text.startsWith('{') || text.startsWith('[')) return JSON.parse(text);
-    // Fallback: older URL
-    const r2 = await fetch(`https://drive.google.com/uc?id=${mid}&export=download&confirm=t`, { redirect: 'follow' });
-    if (!r2.ok) return null;
-    const t2 = await r2.text();
-    if (t2.startsWith('{') || t2.startsWith('[')) return JSON.parse(t2);
-    return null;
-  } catch (e) { return null; }
-}
-
 export default async function handler(req, res) {
-  /* ── GET: δημόσιο ── */
+  const kv = getKV();
+
+  /* ── GET: δημόσιο, χωρίς auth — διαβάζει από KV ── */
   if (req.method === 'GET') {
-    // 1. Fresh cache
-    if (publishedCache && Date.now() - cacheTime < CACHE_TTL) {
-      return res.status(200).json({ items: publishedCache });
+    try {
+      const items = await kv.get(KV_KEY);
+      return res.status(200).json({ items: items || [] });
+    } catch (e) {
+      console.error('[publish GET]', e.message);
+      return res.status(200).json({ items: [] });
     }
-
-    // 2. Αν υπάρχει session → φόρτωσε από registry
-    const session = await getServerSession(req, res, authOptions);
-    if (session?.accessToken) {
-      try {
-        const drive = getDrive(session.accessToken);
-        const reg = await loadRegistry(drive);
-        publishedCache = buildItems(reg);
-        manifestFileId = reg.studentManifestId || null;
-        cacheTime = Date.now();
-        return res.status(200).json({ items: publishedCache });
-      } catch (e) {}
-    }
-
-    // 3. Χωρίς session → διάβασε public manifest από Drive
-    if (manifestFileId) {
-      const data = await readPublicManifest(manifestFileId);
-      if (data?.items) {
-        publishedCache = data.items;
-        cacheTime = Date.now();
-        return res.status(200).json({ items: data.items });
-      }
-    }
-
-    // 4. Last resort: stale cache ή κενό
-    return res.status(200).json({ items: publishedCache || [] });
   }
 
-  /* ── Auth required ── */
+  /* ── Auth required για POST/DELETE ── */
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Unauthorized' });
   if (session.error) return res.status(401).json({ error: session.error });
@@ -116,6 +60,7 @@ export default async function handler(req, res) {
   try {
     const reg = await loadRegistry(drive);
 
+    /* ── POST: δημοσίευση ── */
     if (req.method === 'POST') {
       const { id } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
@@ -124,18 +69,15 @@ export default async function handler(req, res) {
 
       reg.files[idx].published = true;
       await sharePublic(drive, id);
-
-      const items = buildItems(reg);
-      await writeManifest(drive, reg, items);
       await saveRegistry(drive, reg);
 
-      publishedCache = items;
-      manifestFileId = reg.studentManifestId;
-      cacheTime = Date.now();
+      const items = buildItems(reg);
+      await kv.set(KV_KEY, items);
 
       return res.status(200).json({ ok: true, key: id, items });
     }
 
+    /* ── DELETE: αποδημοσίευση ── */
     if (req.method === 'DELETE') {
       const key = req.query.key || req.body?.key;
       if (!key) return res.status(400).json({ error: 'Missing key' });
@@ -144,13 +86,10 @@ export default async function handler(req, res) {
         reg.files[idx].published = false;
         await unsharePublic(drive, key);
       }
-
-      const items = buildItems(reg);
-      await writeManifest(drive, reg, items);
       await saveRegistry(drive, reg);
 
-      publishedCache = items;
-      cacheTime = Date.now();
+      const items = buildItems(reg);
+      await kv.set(KV_KEY, items);
 
       return res.status(200).json({ ok: true });
     }
