@@ -76,7 +76,10 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [walletActive, setWalletActive] = useState(null);
   const [statActive, setStatActive] = useState(null);
-  const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
+  const [activeView, setActiveView] = useState('home');
+  const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[] });
+  const [networkInviteEmail, setNetworkInviteEmail] = useState('');
+  const [networkLoading, setNetworkLoading] = useState(false); // home | folder | favorites | newFiles | tagSearch
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [mobileZoom, setMobileZoom] = useState(1);
@@ -104,8 +107,6 @@ export default function Home() {
   const [modalPickerSection, setModalPickerSection] = useState(null);
   const [studentUrl, setStudentUrl] = useState('/student');
   const [publishing, setPublishing] = useState(false);
-  const [liveSending, setLiveSending] = useState(false);
-  const [liveToast, setLiveToast] = useState(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
@@ -130,7 +131,7 @@ export default function Home() {
     } catch (e) {}
     setLoading(false);
   }, []);
-  useEffect(() => { if (status === 'authenticated') loadAll(); }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') { loadAll(); fetch('/api/network').then(r=>r.json()).then(d=>setNetworkData(d)).catch(()=>{}); } }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -212,8 +213,7 @@ export default function Home() {
   };
   const openLive = async (f) => {
     const fLinks = fileLinks(f.id);
-    if (!fLinks.length || liveSending) return;
-    setLiveSending(true);
+    if (!fLinks.length) return;
     try {
       const r = await fetch('/api/live', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -221,13 +221,10 @@ export default function Home() {
       });
       const d = await r.json();
       if (d.code) {
-        const url = `${window.location.origin}/live?code=${d.code}`;
-        try { await navigator.clipboard.writeText(url); } catch (e) {}
-        setLiveToast({ code: d.code, url });
-        setTimeout(() => setLiveToast(null), 8000);
+        const base = window.location.origin;
+        alert(`● LIVE ενεργό!\n\nΚωδικός: ${d.code}\n\nΟι μαθητές πηγαίνουν στο:\n${base}/live?code=${d.code}\n\nΛήγει σε 2 ώρες.`);
       }
-    } catch (e) {}
-    setLiveSending(false);
+    } catch (e) { alert('Σφάλμα: ' + e.message); }
   };
   const togglePublish = async (id) => {
     const cur = !!fileOf(id).published;
@@ -317,6 +314,36 @@ export default function Home() {
 
   // ── Navigation helpers ──
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); };
+  const openNetwork = async () => {
+    setActiveView('network');
+    setNetworkLoading(true);
+    try { const r = await fetch('/api/network'); const d = await r.json(); setNetworkData(d); } catch(e) {}
+    setNetworkLoading(false);
+  };
+  const sendInvite = async () => {
+    if (!networkInviteEmail.trim()) return;
+    setNetworkLoading(true);
+    try {
+      const r = await fetch('/api/network', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ toEmail: networkInviteEmail.trim() }) });
+      const d = await r.json();
+      if (d.ok) { setNetworkInviteEmail(''); const r2 = await fetch('/api/network'); setNetworkData(await r2.json()); }
+      else alert(d.error || 'Σφάλμα');
+    } catch(e) {}
+    setNetworkLoading(false);
+  };
+  const respondInvite = async (fromEmail, action) => {
+    try {
+      await fetch('/api/network', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromEmail, action }) });
+      const r = await fetch('/api/network'); setNetworkData(await r.json());
+    } catch(e) {}
+  };
+  const disconnect = async (email) => {
+    if (!confirm(`Αποσύνδεση από τον/την ${email};`)) return;
+    try {
+      await fetch('/api/network', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+      const r = await fetch('/api/network'); setNetworkData(await r.json());
+    } catch(e) {}
+  };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
@@ -379,13 +406,14 @@ export default function Home() {
   const suggested = SUGGESTED_TAGS.filter((t) => !vTags.includes(t));
 
   // Disabled sidebar item
-  const NavItem = ({ icon, label, active, disabled, onClick }) => (
+  const NavItem = ({ icon, label, active, disabled, onClick, badge }) => (
     <button onClick={disabled ? undefined : onClick} className={disabled ? '' : 'nav-h'}
-      style={{ ...S.navItem, ...(active ? S.navActive : {}), ...(disabled ? { opacity:0.32, cursor:'default' } : {}) }}
+      style={{ ...S.navItem, ...(active ? S.navActive : {}), ...(disabled ? { opacity:0.32, cursor:'default' } : {}), position:'relative' }}
       title={disabled ? 'Σύντομα' : label}>
       <span style={S.navIcon}>{icon}</span>
       {!sidebarCollapsed && <span style={{ flex:1, textAlign:'left' }}>{label}</span>}
       {!sidebarCollapsed && disabled && <span style={{ fontSize:9, opacity:0.7 }}>σύντομα</span>}
+      {badge && <span style={{ position:'absolute', top:4, right:sidebarCollapsed?4:8, background:'#dc2626', color:'#fff', borderRadius:'50%', width:16, height:16, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>{badge}</span>}
     </button>
   );
 
@@ -418,8 +446,9 @@ export default function Home() {
         <nav style={S.nav}>
           <NavItem icon={Icon.home} label="Αρχική" active={activeView==='home'} onClick={goHome} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.net} label="Δίκτυα Κειμένων" disabled />
-          <NavItem icon={Icon.netAdd} label="Δημιουργία Δικτύου" disabled />
+          <NavItem icon={Icon.net} label="Δίκτυα" active={activeView==='network'} onClick={openNetwork}
+            badge={networkData.received?.length > 0 ? networkData.received.length : null} />
+          <NavItem icon={Icon.netAdd} label="Νέα Σύνδεση" onClick={openNetwork} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
@@ -681,7 +710,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -700,8 +729,86 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} folders={folders} compact={isMobile} />
             </>
+          )}
+
+          {/* ΔΙΚΤΥΑ */}
+          {activeView === 'network' && (
+            <div style={{ maxWidth:600 }}>
+              <div style={S.pageHeader}>
+                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
+                <h1 style={S.pageTitle}>Δίκτυα</h1>
+              </div>
+
+              {/* Εκκρεμείς προσκλήσεις */}
+              {networkData.received?.length > 0 && (
+                <div style={{ marginBottom:24 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#dc2626', marginBottom:10 }}>
+                    🔔 Εκκρεμείς προσκλήσεις ({networkData.received.length})
+                  </div>
+                  {networkData.received.map(inv => (
+                    <div key={inv.email} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', background:'#fff', borderRadius:14, border:'1px solid #fecaca', marginBottom:8 }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background:'#fee2e2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>👤</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{inv.name || inv.email}</div>
+                        <div style={{ fontSize:11, color:'#6b6b80' }}>{inv.email}</div>
+                      </div>
+                      <button onClick={() => respondInvite(inv.email, 'accept')}
+                        style={{ padding:'6px 14px', borderRadius:10, border:'none', background:'#16a34a', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>✓</button>
+                      <button onClick={() => respondInvite(inv.email, 'reject')}
+                        style={{ padding:'6px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#6b6b80', fontSize:12, cursor:'pointer' }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Νέα πρόσκληση */}
+              <div style={{ marginBottom:24 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Πρόσκληση συναδέλφου</div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input value={networkInviteEmail} onChange={e => setNetworkInviteEmail(e.target.value)}
+                    onKeyDown={e => { if (e.key==='Enter') sendInvite(); }}
+                    placeholder="email@gmail.com" type="email"
+                    style={{ flex:1, padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile?16:13, background:'#fff' }} />
+                  <button onClick={sendInvite} disabled={networkLoading || !networkInviteEmail.trim()}
+                    style={{ ...btn('solid'), padding:'10px 18px', opacity: networkInviteEmail.trim() ? 1 : 0.4 }}>
+                    {networkLoading ? '…' : 'Αποστολή'}
+                  </button>
+                </div>
+                {networkData.sent?.length > 0 && (
+                  <div style={{ marginTop:8, fontSize:11, color:'#aeaeb8' }}>
+                    Αναμένει απάντηση: {networkData.sent.join(', ')}
+                  </div>
+                )}
+              </div>
+
+              {/* Συνδεδεμένοι */}
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>
+                  Συνδέσεις {networkData.connections?.length > 0 && `(${networkData.connections.length})`}
+                </div>
+                {networkLoading && <div style={{ color:'#aeaeb8', fontSize:13 }}>Φόρτωση…</div>}
+                {!networkLoading && networkData.connections?.length === 0 && (
+                  <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση ακόμα.</div>
+                )}
+                {networkData.connections?.map(conn => (
+                  <div key={conn.email} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', background:'#fff', borderRadius:14, border:'1px solid #ebebeb', marginBottom:8 }}>
+                    <div style={{ width:36, height:36, borderRadius:'50%', background:'#dbeafe', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>👤</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{conn.name || conn.email}</div>
+                      <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
+                    </div>
+                    <button onClick={() => window.open(`/student?teacher=${encodeURIComponent(conn.email)}`, '_blank')}
+                      style={{ padding:'6px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                      Υλικό →
+                    </button>
+                    <button onClick={() => disconnect(conn.email)}
+                      style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:12, padding:'4px' }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* FAVORITES / NEW */}
@@ -713,7 +820,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />
             </>
           )}
 
@@ -736,7 +843,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} liveSending={liveSending} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} />}
             </>
           )}
 
@@ -969,25 +1076,12 @@ export default function Home() {
           </div>
         );
       })()}
-
-      {/* Live toast */}
-      {liveToast && (
-        <div style={{ position:'fixed', bottom: isMobile ? 70 : 20, left:'50%', transform:'translateX(-50%)', background:'#1a1a1a', color:'#fff', borderRadius:16, padding:'14px 24px', zIndex:500, boxShadow:'0 8px 30px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', alignItems:'center', gap:8, minWidth:280, maxWidth:'90vw' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ color:'#e8c96a', fontWeight:700, fontSize:12 }}>● LIVE</span>
-            <span style={{ fontSize:14 }}>Κωδικός:</span>
-            <span style={{ fontSize:22, fontWeight:700, letterSpacing:4, fontFamily:'monospace', color:'#e8c96a' }}>{liveToast.code}</span>
-          </div>
-          <div style={{ fontSize:11, color:'#aeaeb8', textAlign:'center' }}>Ο σύνδεσμος αντιγράφηκε · Λήγει σε 2 ώρες</div>
-          <button onClick={() => setLiveToast(null)} style={{ position:'absolute', top:6, right:10, background:'none', border:'none', color:'#666', fontSize:14, cursor:'pointer' }}>✕</button>
-        </div>
-      )}
     </div>
   );
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, allFiles, showFolder, folders, compact }) {
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
@@ -1069,11 +1163,11 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>{isPublished ? '📌' : 'Student'}</span>
                   </button>
-                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks && !liveSending ? 1 : 0.35 }}
-                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (hasLinks && !liveSending && onLive) onLive(f); }}
-                    disabled={!hasLinks || liveSending} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
+                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
+                    onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
+                    disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
-                    <span style={{ fontSize: compact?11:undefined }}>{liveSending ? '…' : 'Live'}</span>
+                    <span style={{ fontSize: compact?11:undefined }}>Live</span>
                   </button>
                   <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
                     onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>

@@ -25,6 +25,7 @@ const Ic = {
 
 export default function StudentPage() {
   const router = useRouter();
+  const { teacher } = router.query;
   const { data: session } = useSession();
   const hasSession = !!session?.accessToken;
 
@@ -45,13 +46,14 @@ export default function StudentPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/publish');
+      const url = teacher ? `/api/publish?email=${encodeURIComponent(teacher)}` : '/api/publish';
+      const r = await fetch(url);
       if (!r.ok) throw new Error();
       const d = await r.json();
       setData({ files: d.items || [] });
     } catch { setError('Δεν βρέθηκαν δημοσιευμένα αρχεία.'); }
     setLoading(false);
-  }, []);
+  }, [teacher]);
 
   useEffect(() => { loadData(); const iv = setInterval(loadData, 30000); return () => clearInterval(iv); }, [loadData]);
 
@@ -126,8 +128,12 @@ export default function StudentPage() {
 
         <div style={S.container}>
           <div style={{ marginBottom:28 }}>
-            <h1 style={{ fontSize:22, fontWeight:600, color:'#1a1a1a', marginBottom:6 }}>Καλώς ήρθες 📚</h1>
-            <p style={{ fontSize:14, color:'#6b6b80', margin:0 }}>Υλικό που έχει δημοσιεύσει ο εκπαιδευτικός</p>
+            <h1 style={{ fontSize:22, fontWeight:600, color:'#1a1a1a', marginBottom:6 }}>
+              {teacher ? `Υλικό: ${teacher.split('@')[0]}` : 'Καλώς ήρθες 📚'}
+            </h1>
+            <p style={{ fontSize:14, color:'#6b6b80', margin:0 }}>
+              {teacher ? `Δημοσιευμένο υλικό του εκπαιδευτικού` : 'Υλικό που έχει δημοσιεύσει ο εκπαιδευτικός'}
+            </p>
           </div>
 
           {loading && <div style={S.empty}>Φόρτωση…</div>}
