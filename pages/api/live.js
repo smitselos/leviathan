@@ -39,36 +39,38 @@ export default async function handler(req, res) {
     const { file, links } = req.body || {};
     if (!file?.id) return res.status(400).json({ error: 'Missing file' });
 
-    const drive = getDrive(session.accessToken);
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    try {
+      const drive = getDrive(session.accessToken);
+      const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Share main file + all linked files publicly
-    await sharePublic(drive, file.id);
-    for (const l of (links || [])) {
-      if (l.targetId) await sharePublic(drive, l.targetId);
+      // Share main file + all linked Drive files publicly (parallel, fire-and-forget errors)
+      const fileIds = [file.id, ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId)];
+      await Promise.allSettled(fileIds.map(id => sharePublic(drive, id)));
+
+      const fileSrc = (id) => `/api/student-file?id=${id}`;
+
+      const liveData = {
+        title: file.name,
+        src: fileSrc(file.id),
+        fileId: file.id,
+        tags: file.tags || [],
+        questions: file.questions || '',
+        links: (links || []).map(l => ({
+          type: l.type, targetId: l.targetId, url: l.url, name: l.name,
+          src: l.type === 'url' ? l.url : fileSrc(l.targetId),
+        })),
+        teacher: session.user?.name || session.user?.email || 'Εκπαιδευτικός',
+        updatedAt: Date.now(),
+      };
+
+      await kv.set(`live:${code}`, liveData, { ex: 14400 });
+      await kv.set(`live_active:${session.user?.email}`, code, { ex: 14400 });
+
+      return res.status(200).json({ ok: true, code });
+    } catch (e) {
+      console.error('[live POST]', e.message);
+      return res.status(500).json({ error: e.message });
     }
-
-    const fileSrc = (id, name) => `/api/student-file?id=${id}`;
-
-    const liveData = {
-      title: file.name,
-      src: fileSrc(file.id, file.name),
-      fileId: file.id,
-      tags: file.tags || [],
-      questions: file.questions || '',
-      links: (links || []).map(l => ({
-        type: l.type, targetId: l.targetId, url: l.url, name: l.name,
-        src: l.type === 'url' ? l.url : fileSrc(l.targetId, l.name),
-        isHtml: l.type !== 'url' && isHtml(l.name),
-      })),
-      teacher: session.user?.name || session.user?.email || 'Εκπαιδευτικός',
-      updatedAt: Date.now(),
-    };
-
-    await kv.set(`live:${code}`, liveData, { ex: 14400 });
-    await kv.set(`live_active:${session.user?.email}`, code, { ex: 14400 });
-
-    return res.status(200).json({ ok: true, code });
   }
 
   if (req.method === 'DELETE') {
