@@ -39,7 +39,8 @@ function buildItems(reg) {
     }));
 }
 
-function filterForVisitor(items, visitorEmail, connections) {
+function filterForVisitor(items, visitorEmail, connections, isOwner) {
+  if (isOwner) return items; // ο ίδιος ο εκπαιδευτικός βλέπει όλα τα δικά του
   return items.filter(item => {
     const v = item.visibility;
     if (v === 'public') return true;
@@ -62,7 +63,8 @@ export default async function handler(req, res) {
         kv.get(KV_KEY(teacherEmail)),
         visitor ? kv.get(`conn:${teacherEmail}`) : Promise.resolve([]),
       ]);
-      const filtered = filterForVisitor(items || [], visitor || null, conns || []);
+      const isOwner = visitor === teacherEmail;
+      const filtered = filterForVisitor(items || [], visitor || null, conns || [], isOwner);
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ items: filtered });
     } catch(e) {
