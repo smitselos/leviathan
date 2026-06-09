@@ -219,7 +219,7 @@ export default function Home() {
       const d = await r.json();
       if (d.code) {
         const base = window.location.origin;
-        alert(`● LIVE ενεργό!\n\nΚωδικός: ${d.code}\n\nΟι μαθητές πηγαίνουν στο:\n${base}/live?code=${d.code}\n\nΛήγει σε 4 ώρες.`);
+        alert(`● LIVE ενεργό!\n\nΚωδικός: ${d.code}\n\nΟι μαθητές πηγαίνουν στο:\n${base}/live?code=${d.code}\n\nΛήγει σε 2 ώρες.`);
       }
     } catch (e) { alert('Σφάλμα: ' + e.message); }
   };
