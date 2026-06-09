@@ -15,7 +15,7 @@ function getKV() {
   });
 }
 
-const KV_KEY = 'published_items';
+const KV_KEY = (email) => email ? `published:${email}` : 'published_items';
 
 async function sharePublic(drive, fileId) {
   try { await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } }); } catch (e) {}
@@ -40,10 +40,11 @@ function buildItems(reg) {
 export default async function handler(req, res) {
   const kv = getKV();
 
-  /* ── GET: δημόσιο, χωρίς auth — διαβάζει από KV ── */
+  /* ── GET: δημόσιο — διαβάζει από KV ── */
   if (req.method === 'GET') {
     try {
-      const items = await kv.get(KV_KEY);
+      const { email } = req.query;
+      const items = await kv.get(KV_KEY(email || null));
       return res.status(200).json({ items: items || [] });
     } catch (e) {
       console.error('[publish GET]', e.message);
@@ -57,6 +58,7 @@ export default async function handler(req, res) {
   if (session.error) return res.status(401).json({ error: session.error });
   const drive = getDrive(session.accessToken);
 
+  const myEmail = session.user?.email;
   try {
     const reg = await loadRegistry(drive);
 
@@ -72,7 +74,11 @@ export default async function handler(req, res) {
       await saveRegistry(drive, reg);
 
       const items = buildItems(reg);
-      await kv.set(KV_KEY, items);
+      // Αποθήκευση και στα δύο keys (backwards compat + email-specific)
+      await Promise.all([
+        kv.set(KV_KEY(null), items),
+        kv.set(KV_KEY(myEmail), items),
+      ]);
 
       return res.status(200).json({ ok: true, key: id, items });
     }
@@ -89,7 +95,10 @@ export default async function handler(req, res) {
       await saveRegistry(drive, reg);
 
       const items = buildItems(reg);
-      await kv.set(KV_KEY, items);
+      await Promise.all([
+        kv.set(KV_KEY(null), items),
+        kv.set(KV_KEY(myEmail), items),
+      ]);
 
       return res.status(200).json({ ok: true });
     }
