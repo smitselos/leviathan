@@ -43,8 +43,13 @@ export default function LivePage() {
   useEffect(() => {
     if (!entered) return;
     fetchSession();
-    const iv = setInterval(fetchSession, 3000);
-    return () => clearInterval(iv);
+    let iv = setInterval(fetchSession, 5000); // 5s αντί 3s — λιγότερο φορτίο
+    const onVis = () => {
+      clearInterval(iv);
+      if (!document.hidden) { fetchSession(); iv = setInterval(fetchSession, 5000); }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
   }, [entered, fetchSession]);
 
   /* ── Code entry ── */
@@ -161,26 +166,12 @@ export default function LivePage() {
   );
 }
 
-/* ── LiveFrame: iframe για Drive αρχεία, κάρτα για URL ── */
+/* ── LiveFrame: όλα σε iframe ── */
 function LiveFrame({ lnk }) {
   if (!lnk) return null;
-  if (lnk.type !== 'url') {
-    return (
-      <iframe src={lnk.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }}
-        title={lnk.name} allow="fullscreen" />
-    );
-  }
-  /* URL: άνοιγμα σε νέα καρτέλα — αποφυγή freeze από frame-busting sites */
   return (
-    <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f5f0e1', padding:24, textAlign:'center', height:'100%' }}>
-      <div style={{ fontSize:48, marginBottom:16 }}>🌐</div>
-      <div style={{ fontSize:16, fontWeight:600, color:'#1a1a1a', marginBottom:6, maxWidth:'80%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lnk.name}</div>
-      <div style={{ fontSize:11, color:'#8a7d4a', marginBottom:24, wordBreak:'break-all', maxWidth:'80%', opacity:0.7 }}>{lnk.url}</div>
-      <button onClick={() => window.open(lnk.url, '_blank', 'noopener')}
-        style={{ padding:'14px 32px', borderRadius:14, border:'none', background:'#1a1a1a', color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer' }}>
-        Άνοιγμα σε νέα καρτέλα ↗
-      </button>
-    </div>
+    <iframe src={lnk.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }}
+      title={lnk.name} allow="fullscreen" />
   );
 }
 
