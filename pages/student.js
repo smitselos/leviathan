@@ -52,7 +52,7 @@ export default function StudentPage() {
       const targetEmail = teacher || myEmail;
       if (!targetEmail) { setLoading(false); return; }
       const params = new URLSearchParams({ email: targetEmail });
-      if (visitorEmail && visitorEmail !== targetEmail) params.set('visitor', visitorEmail);
+      if (visitorEmail) params.set('visitor', visitorEmail);
       const r = await fetch(`/api/publish?${params}`);
       if (!r.ok) throw new Error();
       const d = await r.json();
