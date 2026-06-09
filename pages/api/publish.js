@@ -40,13 +40,16 @@ function buildItems(reg) {
 }
 
 function filterForVisitor(items, visitorEmail, connections, isOwner) {
-  if (isOwner) return items; // ο ίδιος ο εκπαιδευτικός βλέπει όλα τα δικά του
+  if (isOwner) return items;
   return items.filter(item => {
     const v = item.visibility;
     if (v === 'public') return true;
     if (!visitorEmail) return false;
     if (v === 'connections') return connections.includes(visitorEmail);
     if (v?.startsWith('user:')) return v === `user:${visitorEmail}`;
+    if (v?.startsWith('users:')) {
+      try { return JSON.parse(v.slice(6)).includes(visitorEmail); } catch(e) { return false; }
+    }
     return false;
   });
 }
@@ -119,6 +122,9 @@ export default async function handler(req, res) {
         if (visibility === 'public') recipients = conns;
         else if (visibility === 'connections') recipients = conns;
         else if (visibility.startsWith('user:')) recipients = [visibility.replace('user:','')];
+        else if (visibility.startsWith('users:')) {
+          try { recipients = JSON.parse(visibility.slice(6)); } catch(e) { recipients = []; }
+        }
 
         await Promise.all(recipients.map(async recipEmail => {
           const inbox = await kv.get(`inbox:${recipEmail}`) || [];
