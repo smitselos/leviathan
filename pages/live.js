@@ -18,6 +18,7 @@ export default function LivePage() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeTab, setActiveTab] = useState('pdf');
+  const [splitTab, setSplitTab] = useState(0);
 
   useEffect(() => {
     if (router.query.code) { setCode(router.query.code); setEntered(true); }
@@ -33,6 +34,7 @@ export default function LivePage() {
         setSession(data);
         setLastUpdated(data.updatedAt);
         setActiveTab('pdf');
+        setSplitTab(0);
         setError(null);
       }
     } catch (e) {}
@@ -116,28 +118,39 @@ export default function LivePage() {
         </div>
       )}
 
-      {/* Tags & questions */}
-      {((session.tags||[]).length > 0 || (session.questions||'').trim()) && (
-        <div style={{ padding:'6px 16px', background:'#fefdfb', borderBottom:'1px solid #e0e0e0', flexShrink:0, display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
-          {(session.tags||[]).map(t => { const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-          {(session.questions||'').trim() && <span style={{ fontSize:12, color:'#4a3f1a', lineHeight:1.4 }}>📝 {session.questions}</span>}
-        </div>
-      )}
-
       {/* Content */}
       <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-        {/* PDF tab or split left */}
-        {(activeTab==='pdf' || activeTab==='split' || !hasLinks) && (
+        {/* Single tab views (pdf or specific link) */}
+        {activeTab==='pdf' && !hasLinks && (
           <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
         )}
-        {/* Split divider */}
-        {activeTab==='split' && hasLinks && <div style={{ width:3, background:'#333', flexShrink:0 }} />}
-        {/* Link tabs */}
-        {hasLinks && links.map((lnk, i) => {
-          const show = activeTab===('link-'+i) || (activeTab==='split' && i===0);
-          if (!show) return null;
-          return <iframe key={i} src={lnk.src} style={{ flex:1, border:'none', height:'100%' }} title={lnk.name} allow="fullscreen" />;
-        })}
+        {activeTab==='pdf' && hasLinks && (
+          <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
+        )}
+        {hasLinks && links.map((lnk, i) => (
+          activeTab===('link-'+i) ? <iframe key={i} src={lnk.src} style={{ flex:1, border:'none', height:'100%' }} title={lnk.name} allow="fullscreen" /> : null
+        ))}
+
+        {/* Split view: left = main file, right = tabbed linked files */}
+        {activeTab==='split' && hasLinks && (
+          <>
+            <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
+            <div style={{ width:3, background:'#333', flexShrink:0 }} />
+            <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
+              {links.length > 1 && (
+                <div style={{ display:'flex', background:'#111', flexShrink:0 }}>
+                  {links.map((lnk, i) => (
+                    <button key={i} onClick={()=>setSplitTab(i)}
+                      style={{ flex:1, background:'transparent', border:'none', borderBottom: splitTab===i?'2px solid #e8c96a':'2px solid transparent', color: splitTab===i?'#e8c96a':'#8e8ea0', fontSize:12, padding:'8px 4px', cursor:'pointer', fontFamily:'sans-serif', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      {lnk.type==='url'?'🌐':'📄'} {lnk.name.length>20?lnk.name.slice(0,20)+'…':lnk.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <iframe src={links[splitTab]?.src||links[0]?.src} style={{ flex:1, border:'none', width:'100%' }} title={links[splitTab]?.name||''} allow="fullscreen" />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Bottom badge */}
