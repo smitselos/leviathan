@@ -119,22 +119,18 @@ export default function LivePage() {
       )}
 
       {/* Content */}
-      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-        {/* PDF only (no links) */}
+      <div style={{ flex:1, display:'flex', overflow:'hidden', minHeight:0 }}>
         {activeTab==='pdf' && (
-          <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
+          <iframe src={session.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
         )}
-        {/* Single link tab */}
         {hasLinks && links.map((lnk, i) => (
           activeTab===('link-'+i) ? <LiveFrame key={i} lnk={lnk} /> : null
         ))}
-
-        {/* Split view: left = main file, right = tabbed linked files */}
         {activeTab==='split' && hasLinks && (
           <>
-            <iframe src={session.src} style={{ flex:1, border:'none', height:'100%' }} title={session.title} allow="fullscreen" />
+            <iframe src={session.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
             <div style={{ width:3, background:'#333', flexShrink:0 }} />
-            <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
+            <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, minHeight:0, height:'100%' }}>
               {links.length > 1 && (
                 <div style={{ display:'flex', background:'#111', flexShrink:0 }}>
                   {links.map((lnk, i) => (
@@ -145,7 +141,9 @@ export default function LivePage() {
                   ))}
                 </div>
               )}
-              <LiveFrame lnk={links[splitTab]||links[0]} />
+              <div style={{ flex:1, overflow:'hidden', minHeight:0, display:'flex' }}>
+                <LiveFrame lnk={links[splitTab]||links[0]} />
+              </div>
             </div>
           </>
         )}
@@ -163,24 +161,25 @@ export default function LivePage() {
   );
 }
 
-/* ── LiveFrame: iframe για αρχεία Drive, κάρτα για URL ── */
+/* ── LiveFrame: iframe για Drive αρχεία, κάρτα για URL ── */
 function LiveFrame({ lnk }) {
   if (!lnk) return null;
-  // Αρχεία Drive → iframe (PDF preview)
   if (lnk.type !== 'url') {
-    return <iframe src={lnk.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={lnk.name} allow="fullscreen" />;
+    return (
+      <iframe src={lnk.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }}
+        title={lnk.name} allow="fullscreen" />
+    );
   }
-  // URL → κάρτα με κουμπί (αποφυγή freeze από εξωτερικά sites)
+  /* URL: άνοιγμα σε νέα καρτέλα — αποφυγή freeze από frame-busting sites */
   return (
-    <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f5f0e1', padding:24, textAlign:'center' }}>
+    <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f5f0e1', padding:24, textAlign:'center', height:'100%' }}>
       <div style={{ fontSize:48, marginBottom:16 }}>🌐</div>
-      <div style={{ fontSize:16, fontWeight:600, color:'#1a1a1a', marginBottom:6, maxWidth:'90%', overflow:'hidden', textOverflow:'ellipsis' }}>{lnk.name}</div>
-      <div style={{ fontSize:12, color:'#8a7d4a', marginBottom:20, wordBreak:'break-all', maxWidth:'90%' }}>{lnk.url}</div>
+      <div style={{ fontSize:16, fontWeight:600, color:'#1a1a1a', marginBottom:6, maxWidth:'80%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lnk.name}</div>
+      <div style={{ fontSize:11, color:'#8a7d4a', marginBottom:24, wordBreak:'break-all', maxWidth:'80%', opacity:0.7 }}>{lnk.url}</div>
       <button onClick={() => window.open(lnk.url, '_blank', 'noopener')}
-        style={{ padding:'12px 28px', borderRadius:14, border:'none', background:'#1a1a1a', color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer' }}>
+        style={{ padding:'14px 32px', borderRadius:14, border:'none', background:'#1a1a1a', color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer' }}>
         Άνοιγμα σε νέα καρτέλα ↗
       </button>
-      <div style={{ fontSize:11, color:'#aeaeb8', marginTop:14 }}>Η ιστοσελίδα ανοίγει σε ξεχωριστή καρτέλα</div>
     </div>
   );
 }
