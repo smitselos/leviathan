@@ -107,7 +107,7 @@ export default function Home() {
   const [liveSending, setLiveSending] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
   const [visibilityPicker, setVisibilityPicker] = useState(null);
-  const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[] });
+  const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[], inbox:[], unseenCount:0 });
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
   const [networkLoading, setNetworkLoading] = useState(false);
 
@@ -134,7 +134,7 @@ export default function Home() {
     } catch (e) {}
     setLoading(false);
   }, []);
-  useEffect(() => { if (status === 'authenticated') { loadAll(); fetch('/api/network').then(r=>r.json()).then(d=>setNetworkData(d)).catch(()=>{}); } }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); } }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -214,6 +214,9 @@ export default function Home() {
     setFiles((p) => p.map((f) => f.id === id ? { ...f, links: next } : f));
     patchMeta(id, { links: next });
   };
+  const loadNetwork = async () => {
+    try { const r = await fetch('/api/network'); const d = await r.json(); setNetworkData(d); } catch(e) {}
+  };
   const openLive = async (f) => {
     const fLinks = fileLinks(f.id);
     if (!fLinks.length || liveSending) return;
@@ -224,7 +227,7 @@ export default function Home() {
       if (d.code) {
         const url = `${window.location.origin}/live?code=${d.code}`;
         try { await navigator.clipboard.writeText(url); } catch(e) {}
-        setLiveToast({ code: d.code, url });
+        setLiveToast({ code:d.code, url });
         setTimeout(() => setLiveToast(null), 8000);
       }
     } catch(e) {}
@@ -247,26 +250,29 @@ export default function Home() {
   const openNetwork = async () => {
     setActiveView('network');
     setNetworkLoading(true);
-    try { const r = await fetch('/api/network'); const d = await r.json(); setNetworkData(d); } catch(e) {}
+    await loadNetwork();
     setNetworkLoading(false);
   };
   const sendInvite = async () => {
     if (!networkInviteEmail.trim()) return;
     setNetworkLoading(true);
     try {
-      const r = await fetch('/api/network', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ toEmail: networkInviteEmail.trim() }) });
+      const r = await fetch('/api/network', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ toEmail:networkInviteEmail.trim() }) });
       const d = await r.json();
-      if (d.ok) { setNetworkInviteEmail(''); const r2 = await fetch('/api/network'); setNetworkData(await r2.json()); }
+      if (d.ok) { setNetworkInviteEmail(''); await loadNetwork(); }
       else alert(d.error || 'Σφάλμα');
     } catch(e) {}
     setNetworkLoading(false);
   };
   const respondInvite = async (fromEmail, action) => {
-    try { await fetch('/api/network', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromEmail, action }) }); const r = await fetch('/api/network'); setNetworkData(await r.json()); } catch(e) {}
+    try { await fetch('/api/network', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromEmail, action }) }); await loadNetwork(); } catch(e) {}
   };
   const disconnect = async (email) => {
     if (!confirm(`Αποσύνδεση από ${email};`)) return;
-    try { await fetch('/api/network', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); const r = await fetch('/api/network'); setNetworkData(await r.json()); } catch(e) {}
+    try { await fetch('/api/network', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); await loadNetwork(); } catch(e) {}
+  };
+  const markInboxSeen = async (fileId) => {
+    try { await fetch('/api/network', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'seen', fileId }) }); await loadNetwork(); } catch(e) {}
   };
   const toggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
@@ -404,7 +410,7 @@ export default function Home() {
       <span style={S.navIcon}>{icon}</span>
       {!sidebarCollapsed && <span style={{ flex:1, textAlign:'left' }}>{label}</span>}
       {!sidebarCollapsed && disabled && <span style={{ fontSize:9, opacity:0.7 }}>σύντομα</span>}
-      {badge && <span style={{ position:'absolute', top:4, right:sidebarCollapsed?4:8, background:'#dc2626', color:'#fff', borderRadius:'50%', width:16, height:16, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>{badge}</span>}
+      {badge > 0 && <span style={{ position:'absolute', top:4, right:sidebarCollapsed?4:8, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:16, height:16, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px' }}>{badge}</span>}
     </button>
   );
 
@@ -438,7 +444,7 @@ export default function Home() {
           <NavItem icon={Icon.home} label="Αρχική" active={activeView==='home'} onClick={goHome} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.net} label="Δίκτυα" active={activeView==='network'} onClick={openNetwork}
-            badge={networkData.received?.length > 0 ? networkData.received.length : null} />
+            badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
           <NavItem icon={Icon.netAdd} label="Νέα Σύνδεση" onClick={openNetwork} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
@@ -467,8 +473,13 @@ export default function Home() {
           <button className="btm-item" onClick={goHome} style={{ color: activeView==='home'?'#ececec':'#8e8ea0' }}>
             {Icon.home}<span style={{ fontSize:10 }}>Αρχική</span>
           </button>
-          <button className="btm-item" style={{ color:'#8e8ea0', opacity:0.35 }}>
+          <button className="btm-item" onClick={openNetwork} style={{ color: activeView==='network'?'#ececec':'#8e8ea0', position:'relative' }}>
             {Icon.net}<span style={{ fontSize:10 }}>Δίκτυα</span>
+            {((networkData.received?.length||0)+(networkData.unseenCount||0)) > 0 && (
+              <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {(networkData.received?.length||0)+(networkData.unseenCount||0)}
+              </span>
+            )}
           </button>
           <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
@@ -726,38 +737,66 @@ export default function Home() {
 
           {/* ΔΙΚΤΥΑ */}
           {activeView === 'network' && (
-            <div style={{ maxWidth:600 }}>
+            <div style={{ maxWidth:640 }}>
               <div style={S.pageHeader}>
                 <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
                 <h1 style={S.pageTitle}>Δίκτυα</h1>
               </div>
+
+              {/* Εκκρεμείς προσκλήσεις */}
               {networkData.received?.length > 0 && (
-                <div style={{ marginBottom:24 }}>
+                <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'#dc2626', marginBottom:10 }}>🔔 Εκκρεμείς προσκλήσεις ({networkData.received.length})</div>
                   {networkData.received.map(inv => (
                     <div key={inv.email} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', background:'#fff', borderRadius:14, border:'1px solid #fecaca', marginBottom:8 }}>
                       <div style={{ width:36, height:36, borderRadius:'50%', background:'#fee2e2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>👤</div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13, fontWeight:600 }}>{inv.name || inv.email}</div>
+                        <div style={{ fontSize:13, fontWeight:600 }}>{inv.name||inv.email}</div>
                         <div style={{ fontSize:11, color:'#6b6b80' }}>{inv.email}</div>
                       </div>
-                      <button onClick={() => respondInvite(inv.email,'accept')} style={{ padding:'6px 14px', borderRadius:10, border:'none', background:'#16a34a', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>✓</button>
-                      <button onClick={() => respondInvite(inv.email,'reject')} style={{ padding:'6px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#6b6b80', fontSize:12, cursor:'pointer' }}>✕</button>
+                      <button onClick={()=>respondInvite(inv.email,'accept')} style={{ padding:'6px 14px', borderRadius:10, border:'none', background:'#16a34a', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>✓</button>
+                      <button onClick={()=>respondInvite(inv.email,'reject')} style={{ padding:'6px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#6b6b80', fontSize:12, cursor:'pointer' }}>✕</button>
                     </div>
                   ))}
                 </div>
               )}
-              <div style={{ marginBottom:24 }}>
+
+              {/* Νέα πρόσκληση */}
+              <div style={{ marginBottom:20 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Πρόσκληση συναδέλφου</div>
                 <div style={{ display:'flex', gap:8 }}>
                   <input value={networkInviteEmail} onChange={e=>setNetworkInviteEmail(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')sendInvite();}} placeholder="email@gmail.com" type="email"
                     style={{ flex:1, padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:isMobile?16:13, background:'#fff' }} />
                   <button onClick={sendInvite} disabled={networkLoading||!networkInviteEmail.trim()} style={{ ...btn('solid'), padding:'10px 18px', opacity:networkInviteEmail.trim()?1:0.4 }}>{networkLoading?'…':'Αποστολή'}</button>
                 </div>
-                {networkData.sent?.length > 0 && <div style={{ marginTop:8, fontSize:11, color:'#aeaeb8' }}>Αναμένει: {networkData.sent.join(', ')}</div>}
+                {(networkData.sent||[]).length > 0 && <div style={{ marginTop:8, fontSize:11, color:'#aeaeb8' }}>Αναμένει: {networkData.sent.join(', ')}</div>}
               </div>
+
+              {/* Inbox εισερχόμενων αρχείων */}
+              {(networkData.inbox||[]).length > 0 && (
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>
+                    📥 Εισερχόμενα
+                    {networkData.unseenCount > 0 && <span style={{ marginLeft:8, background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{networkData.unseenCount} νέα</span>}
+                  </div>
+                  {networkData.inbox.map((item, i) => (
+                    <div key={item.fileId+i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'#fff', borderRadius:12, border:`1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, marginBottom:8 }}>
+                      <div style={{ flexShrink:0, fontSize:20 }}>📄</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.fileName}</div>
+                        <div style={{ fontSize:11, color:'#6b6b80' }}>από {item.fromName||item.fromEmail} · {new Date(item.sentAt).toLocaleDateString('el-GR')}</div>
+                      </div>
+                      {!item.seen && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:10, fontWeight:700, flexShrink:0 }}>ΝΕΟ</span>}
+                      <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`/student?teacher=${encodeURIComponent(item.fromEmail)}`, '_blank'); }}
+                        style={{ padding:'6px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>Άνοιγμα →</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Συνδέσεις */}
               <div>
-                <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Συνδέσεις {networkData.connections?.length > 0 && `(${networkData.connections.length})`}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Συνδέσεις {(networkData.connections||[]).length > 0 && `(${networkData.connections.length})`}</div>
                 {networkLoading && <div style={{ color:'#aeaeb8', fontSize:13 }}>Φόρτωση…</div>}
                 {!networkLoading && (networkData.connections||[]).length === 0 && <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση ακόμα.</div>}
                 {(networkData.connections||[]).map(conn => (
@@ -1073,22 +1112,20 @@ export default function Home() {
                 </div>
               </button>
             ))}
-            {(networkData.connections||[]).length > 0 && (
-              <>
-                <div style={{ fontSize:11, color:'#aeaeb8', margin:'8px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Συγκεκριμένος χρήστης</div>
-                {networkData.connections.map(conn => (
-                  <button key={conn.email} onClick={()=>setVisibility(visibilityPicker, `user:${conn.email}`)}
-                    style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #ebebeb', background:'#fafafa', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
-                    <span style={{ fontSize:18 }}>👤</span>
-                    <div>
-                      <div style={{ fontSize:13, fontWeight:500, color:'#1a1a1a' }}>{conn.name||conn.email}</div>
-                      <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
-                    </div>
-                  </button>
-                ))}
-              </>
-            )}
-            {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις ακόμα — πήγαινε στα Δίκτυα.</div>}
+            {(networkData.connections||[]).length > 0 && <>
+              <div style={{ fontSize:11, color:'#aeaeb8', margin:'8px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Συγκεκριμένος χρήστης</div>
+              {networkData.connections.map(conn => (
+                <button key={conn.email} onClick={()=>setVisibility(visibilityPicker, `user:${conn.email}`)}
+                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #ebebeb', background:'#fafafa', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
+                  <span style={{ fontSize:18 }}>👤</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500, color:'#1a1a1a' }}>{conn.name||conn.email}</div>
+                    <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
+                  </div>
+                </button>
+              ))}
+            </>}
+            {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις — πήγαινε στα Δίκτυα.</div>}
             <button onClick={()=>setVisibilityPicker(null)} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', marginTop:8, color:'#6b6b80' }}>Ακύρωση</button>
           </div>
         </div>
