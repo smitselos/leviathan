@@ -1,48 +1,49 @@
 // pages/api/publish.js
-// GET    → { items:[] }  δημόσιο — φιλτράρει βάσει visitor email
-// POST   → { ok }        auth — ορίζει visibility αρχείου
-// DELETE → { ok }        auth — αφαιρεί visibility (→ 'none')
+// GET    → { items:[] }  ΔΗΜΟΣΙΟ — χωρίς auth, διαβάζει από KV
+// POST   → { ok, key }   auth — δημοσίευση
+// DELETE → { ok }         auth — αποδημοσίευση
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 import { getDrive, loadRegistry, saveRegistry } from '../../lib/drive';
 import { createClient } from '@vercel/kv';
 
+/* ── KV client ── */
 function getKV() {
-  return createClient({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN });
+  return createClient({
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
+  });
 }
 
-// KV keys
-const pubKey   = (email) => `published:${email}`;   // αρχεία ανά εκπαιδευτικό
-const connKey  = (email) => `conn:${email}`;         // συνδέσεις χρήστη
+const KV_KEY = (email) => email ? `published:${email}` : 'published_items';
 
 async function sharePublic(drive, fileId) {
-  try { await drive.permissions.create({ fileId, requestBody: { role:'reader', type:'anyone' } }); } catch(e) {}
+  try { await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } }); } catch (e) {}
 }
 async function unsharePublic(drive, fileId) {
   try {
-    const p = await drive.permissions.list({ fileId, fields:'permissions(id,type)' });
-    const any = p.data.permissions?.find(x => x.type==='anyone');
+    const p = await drive.permissions.list({ fileId, fields: 'permissions(id,type)' });
+    const any = p.data.permissions?.find(x => x.type === 'anyone');
     if (any) await drive.permissions.delete({ fileId, permissionId: any.id });
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function buildItems(reg) {
-  return reg.files
+  return (reg.files || [])
     .filter(f => f.visibility && f.visibility !== 'none')
     .map(f => ({
       id: f.id, key: f.id, name: f.name,
-      tags: f.tags || [], comment: (f.comment||'').slice(0,300),
+      tags: f.tags || [], comment: (f.comment || '').slice(0, 300),
       questions: f.questions || '', links: f.links || [],
       folderId: f.folderId, visibility: f.visibility,
     }));
 }
 
-// Φιλτράρισμα βάσει επισκέπτη
 function filterForVisitor(items, visitorEmail, connections) {
   return items.filter(item => {
     const v = item.visibility;
-    if (v === 'public') return true;                          // δημόσιο → όλοι
-    if (!visitorEmail) return false;                          // υπόλοιπα χρειάζονται login
+    if (v === 'public') return true;
+    if (!visitorEmail) return false;
     if (v === 'connections') return connections.includes(visitorEmail);
     if (v?.startsWith('user:')) return v === `user:${visitorEmail}`;
     return false;
@@ -58,47 +59,75 @@ export default async function handler(req, res) {
     if (!teacherEmail) return res.status(400).json({ error: 'Missing teacher email' });
     try {
       const [items, conns] = await Promise.all([
-        kv.get(pubKey(teacherEmail)),
-        visitor ? kv.get(connKey(teacherEmail)) : Promise.resolve([]),
+        kv.get(KV_KEY(teacherEmail)),
+        visitor ? kv.get(`conn:${teacherEmail}`) : Promise.resolve([]),
       ]);
-      const allItems = items || [];
-      const teacherConns = conns || [];
-      const filtered = filterForVisitor(allItems, visitor || null, teacherConns);
+      const filtered = filterForVisitor(items || [], visitor || null, conns || []);
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ items: filtered });
     } catch(e) {
-      console.error('[publish GET]', e.message);
       return res.status(200).json({ items: [] });
     }
   }
 
-  /* ── Auth required ── */
+  /* ── Auth required για POST/DELETE ── */
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Unauthorized' });
   if (session.error) return res.status(401).json({ error: session.error });
-  const myEmail = session.user?.email;
   const drive = getDrive(session.accessToken);
+
+  const myEmail = session.user?.email;
+  const myName = session.user?.name || myEmail;
 
   try {
     const reg = await loadRegistry(drive);
 
-    /* ── POST: ορισμός visibility ── */
+    /* ── POST: ορισμός visibility + inbox push ── */
     if (req.method === 'POST') {
       const { id, visibility } = req.body || {};
       if (!id || !visibility) return res.status(400).json({ error: 'Missing data' });
       const idx = reg.files.findIndex(f => f.id === id);
       if (idx === -1) return res.status(404).json({ error: 'Not found' });
 
+      const file = reg.files[idx];
+      const prevVisibility = file.visibility || 'none';
       reg.files[idx].visibility = visibility;
       reg.files[idx].published = visibility !== 'none';
 
-      // Drive sharing: public & connections → public link · user/connections → public link (για proxy)
       if (visibility !== 'none') await sharePublic(drive, id);
       else await unsharePublic(drive, id);
-
       await saveRegistry(drive, reg);
+
       const items = buildItems(reg);
-      await kv.set(pubKey(myEmail), items);
+      await Promise.all([
+        kv.set(KV_KEY(null), items),
+        kv.set(KV_KEY(myEmail), items),
+      ]);
+
+      // Push στο inbox των παραληπτών αν άλλαξε το visibility
+      if (visibility !== prevVisibility && visibility !== 'none') {
+        const inboxEntry = {
+          fileId: id, fileName: file.name,
+          fromEmail: myEmail, fromName: myName,
+          visibility, sentAt: Date.now(), seen: false,
+        };
+        // Βρες ποιοι πρέπει να ειδοποιηθούν
+        const conns = await kv.get(`conn:${myEmail}`) || [];
+        let recipients = [];
+        if (visibility === 'public') recipients = conns;
+        else if (visibility === 'connections') recipients = conns;
+        else if (visibility.startsWith('user:')) recipients = [visibility.replace('user:','')];
+
+        await Promise.all(recipients.map(async recipEmail => {
+          const inbox = await kv.get(`inbox:${recipEmail}`) || [];
+          // Αντικατάστησε αν υπάρχει ήδη το ίδιο αρχείο
+          const filtered = inbox.filter(i => i.fileId !== id);
+          filtered.push(inboxEntry);
+          // Κράτα τα τελευταία 100
+          const trimmed = filtered.sort((a,b)=>b.sentAt-a.sentAt).slice(0,100);
+          await kv.set(`inbox:${recipEmail}`, trimmed, { ex:60*60*24*90 });
+        }));
+      }
 
       return res.status(200).json({ ok: true, items });
     }
@@ -115,14 +144,11 @@ export default async function handler(req, res) {
       }
       await saveRegistry(drive, reg);
       const items = buildItems(reg);
-      await kv.set(pubKey(myEmail), items);
+      await Promise.all([
+        kv.set(KV_KEY(null), items),
+        kv.set(KV_KEY(myEmail), items),
+      ]);
       return res.status(200).json({ ok: true });
-    }
-
-    /* ── GET own: λίστα με visibility για τον εκπαιδευτικό ── */
-    if (req.method === 'GET') {
-      const items = await kv.get(pubKey(myEmail));
-      return res.status(200).json({ items: items || [] });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
