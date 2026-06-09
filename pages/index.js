@@ -445,7 +445,6 @@ export default function Home() {
           <div style={S.navDiv} />
           <NavItem icon={Icon.net} label="Δίκτυα" active={activeView==='network'} onClick={openNetwork}
             badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
-          <NavItem icon={Icon.netAdd} label="Νέα Σύνδεση" onClick={openNetwork} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
