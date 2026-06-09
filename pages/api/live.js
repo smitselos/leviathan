@@ -48,8 +48,7 @@ export default async function handler(req, res) {
       if (l.targetId) await sharePublic(drive, l.targetId);
     }
 
-    const isHtml = (name) => /\.html?$/i.test(name||'');
-    const fileSrc = (id, name) => isHtml(name) ? `/api/student-file?id=${id}` : `https://drive.google.com/file/d/${id}/preview`;
+    const fileSrc = (id, name) => `/api/student-file?id=${id}`;
 
     const liveData = {
       title: file.name,
