@@ -1,27 +1,51 @@
 // pages/api/student-file.js
-// GET ?id=FILE_ID → σερβίρει δημοσιευμένο αρχείο (χωρίς auth)
-// Proxy για αρχεία που είναι shared publicly στο Drive
+// Σερβίρει δημόσιο αρχείο από Drive χωρίς auth
+// PDF/HTML → raw bytes (native browser rendering, ελαφρύ)
+// DOCX/PPTX/XLSX → redirect σε Google Docs Viewer (χωρίς Drive JS)
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return res.status(405).end();
   const { id } = req.query;
-  if (!id) return res.status(400).json({ error: 'Missing id' });
+  if (!id) return res.status(400).end();
+
+  const downloadUrl = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}&confirm=t`;
 
   try {
-    const url = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}&confirm=t`;
-    const r = await fetch(url, { redirect: 'follow' });
-    if (!r.ok) return res.status(404).json({ error: 'File not found' });
+    const r = await fetch(downloadUrl, { redirect: 'follow' });
+    if (!r.ok) return res.status(404).json({ error: 'Not found' });
 
-    const contentType = r.headers.get('content-type') || 'application/octet-stream';
+    const contentType = r.headers.get('content-type') || '';
     const buffer = Buffer.from(await r.arrayBuffer());
 
-    // Αν είναι HTML, σερβίρισέ το ως HTML
-    const isHtml = contentType.includes('text/html') || id.endsWith('.html') || buffer.slice(0, 100).toString().trim().toLowerCase().startsWith('<!doctype') || buffer.slice(0, 100).toString().trim().startsWith('<html');
-    
-    res.setHeader('Content-Type', isHtml ? 'text/html; charset=utf-8' : contentType);
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // Detect type
+    const isPdf = contentType.includes('pdf') || buffer.slice(0,4).toString()==='%PDF';
+    const isHtml = contentType.includes('text/html') || buffer.slice(0,50).toString().toLowerCase().includes('<html') || buffer.slice(0,50).toString().toLowerCase().includes('<!doctype');
+    const isOffice = contentType.includes('officedocument') || contentType.includes('msword') || contentType.includes('ms-excel') || contentType.includes('ms-powerpoint');
+
+    if (isPdf) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Cache-Control', 'public, s-maxage=300');
+      return res.status(200).send(buffer);
+    }
+
+    if (isHtml) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, s-maxage=300');
+      return res.status(200).send(buffer);
+    }
+
+    if (isOffice) {
+      // Google Docs Viewer — πολύ πιο ελαφρύ από Drive preview, δεν χρειάζεται cookies
+      const viewUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(downloadUrl)}`;
+      return res.redirect(302, viewUrl);
+    }
+
+    // Fallback: serve raw
+    res.setHeader('Content-Type', contentType || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, s-maxage=300');
     return res.status(200).send(buffer);
+
   } catch (e) {
     console.error('[student-file]', e.message);
-    return res.status(500).json({ error: 'Failed to fetch file' });
+    return res.status(500).json({ error: 'Failed' });
   }
 }
