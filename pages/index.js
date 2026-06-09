@@ -243,9 +243,7 @@ export default function Home() {
     setVisibilityPicker(null);
   };
   const togglePublish = (id) => {
-    const cur = fileOf(id).visibility || 'none';
-    if (cur !== 'none') setVisibility(id, 'none');
-    else setVisibilityPicker(id);
+    setVisibilityPicker(id); // πάντα άνοιγε picker
   };
   const openNetwork = async () => {
     setActiveView('network');
@@ -1125,7 +1123,18 @@ export default function Home() {
               ))}
             </>}
             {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις — πήγαινε στα Δίκτυα.</div>}
-            <button onClick={()=>setVisibilityPicker(null)} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', marginTop:8, color:'#6b6b80' }}>Ακύρωση</button>
+            <div style={{ height:1, background:'#f0f0f0', margin:'10px 0' }} />
+            {(fileOf(visibilityPicker)?.visibility||'none') !== 'none' && (
+              <button onClick={()=>setVisibility(visibilityPicker, 'none')}
+                style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #fee2e2', background:'#fff', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
+                <span style={{ fontSize:20, flexShrink:0 }}>🔒</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#dc2626' }}>Απόσυρση</div>
+                  <div style={{ fontSize:11, color:'#6b6b80' }}>Αφαίρεση από τη σελίδα Student</div>
+                </div>
+              </button>
+            )}
+            <button onClick={()=>setVisibilityPicker(null)} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Ακύρωση</button>
           </div>
         </div>
       )}
