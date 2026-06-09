@@ -1020,6 +1020,12 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 {compact && showFolder && folderName(f.folderId) && (
                   <div style={{ fontSize:10, color:'#aeaeb8', marginTop:2 }}>📁 {folderName(f.folderId)}</div>
                 )}
+                {compact && (isPublished || hasLinks) && (
+                  <div style={{ display:'flex', gap:4, marginTop:2 }}>
+                    {isPublished && <span style={{ fontSize:10, color:'#16a34a' }}>📌</span>}
+                    {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
+                  </div>
+                )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
@@ -1041,29 +1047,29 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0', flexWrap:'wrap', gap: compact ? 2 : 0 }}>
                   <button style={{ ...actionBtn, color: isPublished ? '#fff' : PALETTE.peach.deep, background: isPublished ? '#16a34a' : 'none' }}
                     onClick={(e) => { e.stopPropagation(); if (onPublish) onPublish(f.id); }}>
-                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    <span style={{ fontSize: compact?9:undefined }}>{isPublished ? '📌' : 'Student'}</span>
+                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    <span style={{ fontSize: compact?11:undefined }}>{isPublished ? '📌' : 'Student'}</span>
                   </button>
                   <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
                     onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
                     disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
-                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
-                    <span style={{ fontSize: compact?9:undefined }}>Live</span>
+                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                    <span style={{ fontSize: compact?11:undefined }}>Live</span>
                   </button>
                   <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
                     onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
-                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    <span style={{ fontSize: compact?9:undefined }}>Σχόλια</span>
+                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    <span style={{ fontSize: compact?11:undefined }}>Σχόλια</span>
                   </button>
                   <button style={{ ...actionBtn, color: isLinksOpen ? '#fff' : PALETTE.peach.deep, background: isLinksOpen ? PALETTE.peach.deep : 'none' }}
                     onClick={(e) => { e.stopPropagation(); setLinksOpen(isLinksOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setPickerSection(null); }}>
-                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                    <span style={{ fontSize: compact?9:undefined }}>Σύνδεση</span>
+                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    <span style={{ fontSize: compact?11:undefined }}>Σύνδεση</span>
                   </button>
                   <button style={{ ...actionBtn, color: isQuestionsOpen ? '#fff' : PALETTE.peach.deep, background: isQuestionsOpen ? PALETTE.peach.deep : 'none' }}
                     onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setCommentOpen(null); setLinksOpen(null); setPickerSection(null); }}>
-                    <svg width={compact?16:18} height={compact?16:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span style={{ fontSize: compact?9:undefined }}>Ερωτήσεις</span>
+                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span style={{ fontSize: compact?11:undefined }}>Ερωτήσεις</span>
                   </button>
                 </div>
 

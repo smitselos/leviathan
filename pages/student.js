@@ -56,11 +56,24 @@ export default function StudentPage() {
   useEffect(() => { loadData(); const iv = setInterval(loadData, 30000); return () => clearInterval(iv); }, [loadData]);
 
   const files = data?.files || [];
+  const [activeTag, setActiveTag] = useState(null);
+
+  // All unique tags with counts
+  const allTags = useMemo(() => {
+    const m = {};
+    files.forEach(f => (f.tags||[]).forEach(t => { m[t] = (m[t]||0) + 1; }));
+    return Object.entries(m).sort((a,b) => b[1]-a[1]);
+  }, [files]);
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return files;
-    const q = search.toLowerCase();
-    return files.filter(f => f.name.toLowerCase().includes(q) || (f.tags||[]).some(t=>t.toLowerCase().includes(q)));
-  }, [files, search]);
+    let result = [...files];
+    if (activeTag) result = result.filter(f => (f.tags||[]).includes(activeTag));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(f => f.name.toLowerCase().includes(q) || (f.tags||[]).some(t=>t.toLowerCase().includes(q)));
+    }
+    return result;
+  }, [files, search, activeTag]);
 
   const openFile = (f) => {
     const isHtml = /\.html?$/i.test(f.name);
@@ -69,7 +82,7 @@ export default function StudentPage() {
     setViewing(f);
   };
 
-  const goHome = () => { setViewing(null); setSearch(''); loadData(); };
+  const goHome = () => { setViewing(null); setSearch(''); setActiveTag(null); loadData(); };
   const goBack = () => { if (hasSession) router.push('/'); else router.push('/login'); };
 
   /* ── Desktop viewer ── */
@@ -139,7 +152,30 @@ export default function StudentPage() {
               {/* Search */}
               {files.length > 0 && (
                 <input type="search" placeholder="Αναζήτηση αρχείου ή ετικέτας…" value={search} onChange={e=>setSearch(e.target.value)}
-                  style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize: isMobile?16:14, background:'#fff', marginBottom:18, boxSizing:'border-box' }} />
+                  style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize: isMobile?16:14, background:'#fff', marginBottom:12, boxSizing:'border-box' }} />
+              )}
+
+              {/* Tag filters */}
+              {allTags.length > 0 && (
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:18 }}>
+                  {activeTag && (
+                    <button onClick={()=>setActiveTag(null)}
+                      style={{ padding:'5px 12px', borderRadius:10, border:'1px solid #ddd', background:'#fff', fontSize:12, cursor:'pointer', color:'#888' }}>
+                      ✕ Όλα
+                    </button>
+                  )}
+                  {allTags.map(([tag, count]) => {
+                    const c = tagColor(tag);
+                    const isActive = activeTag === tag;
+                    return (
+                      <button key={tag} onClick={()=>setActiveTag(isActive ? null : tag)}
+                        style={{ padding:'5px 12px', borderRadius:10, border: isActive ? '2px solid '+c.text : '1px solid #e0e0e0',
+                          background: isActive ? c.bg : '#fafafa', fontSize:12, cursor:'pointer', color: c.text, fontWeight: isActive ? 700 : 500 }}>
+                        #{tag} <span style={{ fontSize:10, opacity:0.6 }}>({count})</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
 
               {files.length === 0 && (
@@ -153,20 +189,26 @@ export default function StudentPage() {
               {/* File list */}
               {filtered.length > 0 && (
                 <div style={{ marginBottom:40 }}>
-                  <div style={{ fontSize:17, fontWeight:600, color:'#1a1a1a', marginBottom:14 }}>Υλικό μαθήματος</div>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                    <div style={{ fontSize:17, fontWeight:600, color:'#1a1a1a' }}>Υλικό μαθήματος</div>
+                    <span style={{ fontSize:12, color:'#aeaeb8' }}>{filtered.length} αρχεία</span>
+                  </div>
                   <div style={{ background:'#fff', borderRadius:18, overflow:'hidden', border:'1px solid #f0f0f0' }}>
                     {filtered.map((f, i) => (
                       <div key={f.id} className="ri-h" onClick={()=>openFile(f)}
-                        style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', cursor:'pointer', borderBottom: i<filtered.length-1 ? '1px solid #f0f0f0' : 'none', transition:'background 0.1s' }}>
-                        <div style={{ width:42, height:42, borderRadius:12, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:18 }}>📄</div>
+                        style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding: isMobile?'14px 12px':'12px 14px', cursor:'pointer', borderBottom: i<filtered.length-1 ? '1px solid #f0f0f0' : 'none', transition:'background 0.1s' }}>
+                        <div style={{ width: isMobile?38:42, height: isMobile?38:42, borderRadius:12, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize: isMobile?16:18 }}>📄</div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1a1a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{f.name}</div>
+                          <div style={{ fontSize: isMobile?13:14, fontWeight:600, color:'#1a1a1a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{f.name}</div>
                           <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginTop:4 }}>
                             {(f.tags||[]).slice(0,3).map(t => { const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                             {(f.tags||[]).length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{f.tags.length-3}</span>}
                           </div>
                         </div>
-                        {!isMobile && <button style={{ background:'transparent', border:'1.5px solid '+PALETTE.cream.deep, borderRadius:10, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', color:PALETTE.cream.deep, flexShrink:0 }}>Άνοιγμα →</button>}
+                        {isMobile
+                          ? <span style={{ fontSize:13, color:PALETTE.cream.deep, fontWeight:700, flexShrink:0 }}>→</span>
+                          : <button style={{ background:'transparent', border:'1.5px solid '+PALETTE.cream.deep, borderRadius:10, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', color:PALETTE.cream.deep, flexShrink:0 }}>Άνοιγμα →</button>
+                        }
                       </div>
                     ))}
                   </div>
