@@ -48,15 +48,19 @@ export default async function handler(req, res) {
       if (l.targetId) await sharePublic(drive, l.targetId);
     }
 
+    const isHtml = (name) => /\.html?$/i.test(name||'');
+    const fileSrc = (id, name) => isHtml(name) ? `/api/student-file?id=${id}` : `https://drive.google.com/file/d/${id}/preview`;
+
     const liveData = {
       title: file.name,
-      src: `https://drive.google.com/file/d/${file.id}/preview`,
+      src: fileSrc(file.id, file.name),
       fileId: file.id,
       tags: file.tags || [],
       questions: file.questions || '',
       links: (links || []).map(l => ({
         type: l.type, targetId: l.targetId, url: l.url, name: l.name,
-        src: l.type === 'url' ? l.url : `https://drive.google.com/file/d/${l.targetId}/preview`,
+        src: l.type === 'url' ? l.url : fileSrc(l.targetId, l.name),
+        isHtml: l.type !== 'url' && isHtml(l.name),
       })),
       teacher: session.user?.name || session.user?.email || 'Εκπαιδευτικός',
       updatedAt: Date.now(),
