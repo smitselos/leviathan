@@ -35,6 +35,7 @@ export default async function handler(req, res) {
           questions: typeof f.questions === 'string' ? f.questions : (prev.questions || ''),
           links: Array.isArray(f.links) ? f.links : (prev.links || []),
           published: typeof f.published === 'boolean' ? f.published : (prev.published || false),
+          visibility: typeof f.visibility === 'string' ? f.visibility : (prev.visibility || 'none'),
           favorite: typeof f.favorite === 'boolean' ? f.favorite : (prev.favorite || false),
           openCount: prev.openCount || 0,
           openedAt: prev.openedAt || null,
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
     if (req.method === 'PATCH') {
-      const { id, tags, comment, questions, links, favorite, recordOpen } = req.body || {};
+      const { id, tags, comment, questions, links, visibility, favorite, recordOpen } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       const idx = reg.files.findIndex((f) => f.id === id);
@@ -55,6 +56,7 @@ export default async function handler(req, res) {
       if (typeof comment === 'string') reg.files[idx].comment = comment;
       if (typeof questions === 'string') reg.files[idx].questions = questions;
       if (Array.isArray(links)) reg.files[idx].links = links;
+      if (typeof visibility === 'string') reg.files[idx].visibility = visibility;
       if (typeof favorite === 'boolean') reg.files[idx].favorite = favorite;
       if (recordOpen) {
         reg.files[idx].openCount = (reg.files[idx].openCount || 0) + 1;
