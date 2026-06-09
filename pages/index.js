@@ -1091,53 +1091,89 @@ export default function Home() {
       )}
 
       {/* Visibility Picker */}
-      {visibilityPicker && (
-        <div onClick={()=>setVisibilityPicker(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'24px 20px', maxWidth:360, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }}>
-            <div style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:6 }}>Ορατό σε…</div>
-            <div style={{ fontSize:12, color:'#6b6b80', marginBottom:20 }}>Ποιος θα βλέπει αυτό το αρχείο στη σελίδα Student;</div>
-            {[
-              { value:'public',      icon:'🌍', label:'Όλοι', desc:'Οποιοσδήποτε έχει τον σύνδεσμο' },
-              { value:'connections', icon:'👥', label:'Συνδέσεις μου', desc:'Μόνο όσοι είναι στο δίκτυό μου' },
-            ].map(opt => (
-              <button key={opt.value} onClick={()=>setVisibility(visibilityPicker, opt.value)}
-                style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'12px 14px', borderRadius:12, border:'1px solid #ebebeb', background:'#fafafa', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
-                <span style={{ fontSize:22, flexShrink:0 }}>{opt.icon}</span>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{opt.label}</div>
-                  <div style={{ fontSize:11, color:'#6b6b80' }}>{opt.desc}</div>
+      {visibilityPicker && (() => {
+        const curFile = fileOf(visibilityPicker);
+        const curV = curFile?.visibility || 'none';
+        // Parse τρέχουσα λίστα χρηστών
+        const curUsers = curV.startsWith('users:') ? (() => { try { return JSON.parse(curV.slice(6)); } catch(e) { return []; } })()
+          : curV.startsWith('user:') ? [curV.slice(5)] : [];
+
+        const toggleUser = (email) => {
+          const next = curUsers.includes(email)
+            ? curUsers.filter(e => e !== email)
+            : [...curUsers, email];
+          if (next.length === 0) setVisibility(visibilityPicker, 'none');
+          else if (next.length === 1) setVisibility(visibilityPicker, `user:${next[0]}`);
+          else setVisibility(visibilityPicker, `users:${JSON.stringify(next)}`);
+        };
+
+        return (
+          <div onClick={()=>setVisibilityPicker(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'24px 20px', maxWidth:360, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', maxHeight:'90vh', overflowY:'auto' }}>
+              <div style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Ορατό σε…</div>
+              <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16 }}>Επίλεξε ποιος θα βλέπει αυτό το αρχείο. Μπορείς να επιλέξεις πολλούς χρήστες.</div>
+
+              {/* Όλοι / Συνδέσεις */}
+              {[
+                { value:'public',      icon:'🌍', label:'Όλοι', desc:'Οποιοσδήποτε έχει τον σύνδεσμο' },
+                { value:'connections', icon:'👥', label:'Συνδέσεις μου', desc:'Μόνο όσοι είναι στο δίκτυό μου' },
+              ].map(opt => {
+                const isActive = curV === opt.value;
+                return (
+                  <button key={opt.value} onClick={()=>setVisibility(visibilityPicker, isActive ? 'none' : opt.value)}
+                    style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'12px 14px', borderRadius:12,
+                      border: isActive ? '2px solid #16a34a' : '1px solid #ebebeb',
+                      background: isActive ? '#f0fdf4' : '#fafafa', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
+                    <span style={{ fontSize:22, flexShrink:0 }}>{opt.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{opt.label}</div>
+                      <div style={{ fontSize:11, color:'#6b6b80' }}>{opt.desc}</div>
+                    </div>
+                    {isActive && <span style={{ fontSize:16, color:'#16a34a', flexShrink:0 }}>✓</span>}
+                  </button>
+                );
+              })}
+
+              {/* Συγκεκριμένοι χρήστες — additive */}
+              {(networkData.connections||[]).length > 0 && <>
+                <div style={{ fontSize:11, color:'#aeaeb8', margin:'10px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>
+                  Συγκεκριμένοι χρήστες {curUsers.length > 0 && <span style={{ background:'#1a1a1a', color:'#fff', borderRadius:999, padding:'1px 7px', fontSize:10 }}>{curUsers.length}</span>}
                 </div>
-              </button>
-            ))}
-            {(networkData.connections||[]).length > 0 && <>
-              <div style={{ fontSize:11, color:'#aeaeb8', margin:'8px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Συγκεκριμένος χρήστης</div>
-              {networkData.connections.map(conn => (
-                <button key={conn.email} onClick={()=>setVisibility(visibilityPicker, `user:${conn.email}`)}
-                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #ebebeb', background:'#fafafa', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
-                  <span style={{ fontSize:18 }}>👤</span>
+                {networkData.connections.map(conn => {
+                  const isSelected = curUsers.includes(conn.email);
+                  return (
+                    <button key={conn.email} onClick={()=>toggleUser(conn.email)}
+                      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12,
+                        border: isSelected ? '2px solid #16a34a' : '1px solid #ebebeb',
+                        background: isSelected ? '#f0fdf4' : '#fafafa', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
+                      <span style={{ fontSize:18 }}>👤</span>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:'#1a1a1a' }}>{conn.name||conn.email}</div>
+                        <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
+                      </div>
+                      {isSelected && <span style={{ fontSize:16, color:'#16a34a', flexShrink:0 }}>✓</span>}
+                    </button>
+                  );
+                })}
+              </>}
+              {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις — πήγαινε στα Δίκτυα.</div>}
+
+              <div style={{ height:1, background:'#f0f0f0', margin:'12px 0 8px' }} />
+              {curV !== 'none' && (
+                <button onClick={()=>setVisibility(visibilityPicker, 'none')}
+                  style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #fee2e2', background:'#fff', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
+                  <span style={{ fontSize:20, flexShrink:0 }}>🔒</span>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:500, color:'#1a1a1a' }}>{conn.name||conn.email}</div>
-                    <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:'#dc2626' }}>Απόσυρση</div>
+                    <div style={{ fontSize:11, color:'#6b6b80' }}>Αφαίρεση από τη σελίδα Student</div>
                   </div>
                 </button>
-              ))}
-            </>}
-            {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις — πήγαινε στα Δίκτυα.</div>}
-            <div style={{ height:1, background:'#f0f0f0', margin:'10px 0' }} />
-            {(fileOf(visibilityPicker)?.visibility||'none') !== 'none' && (
-              <button onClick={()=>setVisibility(visibilityPicker, 'none')}
-                style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #fee2e2', background:'#fff', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
-                <span style={{ fontSize:20, flexShrink:0 }}>🔒</span>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:'#dc2626' }}>Απόσυρση</div>
-                  <div style={{ fontSize:11, color:'#6b6b80' }}>Αφαίρεση από τη σελίδα Student</div>
-                </div>
-              </button>
-            )}
-            <button onClick={()=>setVisibilityPicker(null)} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Ακύρωση</button>
+              )}
+              <button onClick={()=>setVisibilityPicker(null)} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Κλείσιμο</button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -1162,7 +1198,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim();
         const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
         const isPublished = !!(f.published || (f.visibility && f.visibility !== 'none'));
-        const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : f.visibility?.startsWith('user:') ? '👤' : null;
+        const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : (f.visibility?.startsWith('user:') || f.visibility?.startsWith('users:')) ? '👤' : null;
         const isExp = expanded === f.id;
         const isCommentOpen = isExp && commentOpen === f.id;
         const isQuestionsOpen = isExp && questionsOpen === f.id;
