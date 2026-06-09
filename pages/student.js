@@ -63,7 +63,9 @@ export default function StudentPage() {
   }, [files, search]);
 
   const openFile = (f) => {
-    if (isMobile) { window.open(`https://drive.google.com/file/d/${f.id}/preview`, '_blank'); return; }
+    const isHtml = /\.html?$/i.test(f.name);
+    const url = isHtml ? `/api/student-file?id=${f.id}` : `https://drive.google.com/file/d/${f.id}/preview`;
+    if (isMobile) { window.open(url, '_blank'); return; }
     setViewing(f);
   };
 
@@ -72,7 +74,8 @@ export default function StudentPage() {
 
   /* ── Desktop viewer ── */
   if (viewing && !isMobile) {
-    const driveUrl = `https://drive.google.com/file/d/${viewing.id}/preview`;
+    const isHtml = /\.html?$/i.test(viewing.name);
+    const driveUrl = isHtml ? `/api/student-file?id=${viewing.id}` : `https://drive.google.com/file/d/${viewing.id}/preview`;
     return (
       <div style={S.app}>
         <Head><title>{viewing.name} — Student</title></Head>
@@ -84,19 +87,7 @@ export default function StudentPage() {
             <button onClick={goHome} style={{ background:'none', border:'1px solid #ddd', borderRadius:8, padding:'6px 14px', cursor:'pointer', fontSize:13, color:'#444' }}>← Πίσω</button>
             <strong style={{ flex:1, fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'#1a1a1a' }}>{viewing.name}</strong>
           </div>
-          {((viewing.tags||[]).length > 0 || (viewing.questions||'').trim()) && (
-            <div style={{ padding:'10px 16px', borderBottom:'1px solid #f0f0f0', background:'#fefdfb' }}>
-              {(viewing.tags||[]).length > 0 && (
-                <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:(viewing.questions?8:0) }}>
-                  {viewing.tags.map(t => { const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-                </div>
-              )}
-              {(viewing.questions||'').trim() && (
-                <div style={{ fontSize:13, color:'#4a3f1a', lineHeight:1.6, whiteSpace:'pre-wrap' }}>📝 {viewing.questions}</div>
-              )}
-            </div>
-          )}
-          <iframe src={driveUrl} style={{ flex:1, border:'none', width:'100%', display:'block', height:'calc(100vh - 100px)' }} title={viewing.name} allow="fullscreen" />
+          <iframe src={driveUrl} style={{ flex:1, border:'none', width:'100%', display:'block', height:'calc(100vh - 60px)' }} title={viewing.name} allow="fullscreen" />
         </div>
       </div>
     );
