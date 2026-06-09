@@ -208,8 +208,20 @@ export default function Home() {
     setFiles((p) => p.map((f) => f.id === id ? { ...f, links: next } : f));
     patchMeta(id, { links: next });
   };
-  const openLive = (f) => {
-    setLiveFile(f); setActiveLiveTab(0);
+  const openLive = async (f) => {
+    const fLinks = fileLinks(f.id);
+    if (!fLinks.length) return;
+    try {
+      const r = await fetch('/api/live', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: { id: f.id, name: f.name, tags: f.tags || [], questions: f.questions || '' }, links: fLinks }),
+      });
+      const d = await r.json();
+      if (d.code) {
+        const base = window.location.origin;
+        alert(`● LIVE ενεργό!\n\nΚωδικός: ${d.code}\n\nΟι μαθητές πηγαίνουν στο:\n${base}/live?code=${d.code}\n\nΛήγει σε 4 ώρες.`);
+      }
+    } catch (e) { alert('Σφάλμα: ' + e.message); }
   };
   const togglePublish = async (id) => {
     const cur = !!fileOf(id).published;

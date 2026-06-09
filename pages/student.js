@@ -193,7 +193,7 @@ export default function StudentPage() {
       {isMobile && (
         <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'#1a1a1a', display:'flex', justifyContent:'space-around', alignItems:'center', padding:'8px 0 max(8px, env(safe-area-inset-bottom))', zIndex:300, borderTop:'1px solid rgba(255,255,255,0.06)' }}>
           <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>{ goHome(); loadData(); }} />
-          <MobBtn icon={Ic.live} label="Live" disabled />
+          <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')} />
           <MobBtn icon={Ic.back} label="Επιστροφή" disabled={!hasSession} onClick={goBack} />
         </nav>
       )}
@@ -214,7 +214,7 @@ function Sidebar({ open, setOpen, goHome, goBack, hasSession, active }) {
           <span style={S.navIcon}>{Ic.home}</span>{open && 'Αρχική'}
         </button>
         <div style={S.navDiv} />
-        <button style={{ ...S.navItem, opacity:0.35, cursor:'default' }} disabled>
+        <button onClick={()=>window.open('/live','_blank')} style={S.navItem}>
           <span style={S.navIcon}>{Ic.live}</span>{open && 'Live'}
         </button>
         <div style={S.navDiv} />
