@@ -1218,7 +1218,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
               {!compact && <span style={{ fontSize:18 }}>📄</span>}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</div>
+                <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{compact ? (f.name.length > 12 ? f.name.slice(0,12)+'…' : f.name) : (f.name.length > 20 ? f.name.slice(0,20)+'…' : f.name)}</div>
                 {!compact && (
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4, flexWrap:'wrap' }}>
                     {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
@@ -1244,15 +1244,18 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
             </div>
 
             {isExp && (
-              <div style={{ padding: compact ? '0 10px 14px' : '0 14px 14px', borderTop: compact ? 'none' : '1px solid #f0f0f0', background: compact ? 'transparent' : PALETTE.cream.bgSoft }}>
+              <div style={{ padding: compact ? '0 10px 14px' : '0 14px 14px', borderTop: compact ? 'none' : '1px solid #f0f0f0', background: compact ? 'transparent' : PALETTE.cream.bgSoft, maxWidth:'100%', overflow:'hidden', boxSizing:'border-box' }}>
                 {tags.length > 0 && (
                   <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2, paddingTop: compact ? 0 : 8 }}>
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
                 )}
                 {hasComment && !isCommentOpen && !isQuestionsOpen && !isLinksOpen && (
-                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize:12, color:'#5c3826', lineHeight:1.5 }}>
-                    💬 {f.comment.split(/\s+/).slice(0,35).join(' ')}{f.comment.split(/\s+/).length > 35 ? ' …' : ''}
+                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize: compact?11:12, color:'#5c3826', lineHeight:1.5, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word' }}>
+                    💬 {compact
+                      ? (f.comment.length > 80 ? f.comment.slice(0,80)+'…' : f.comment)
+                      : f.comment.split(/\s+/).slice(0,35).join(' ') + (f.comment.split(/\s+/).length > 35 ? ' …' : '')
+                    }
                   </div>
                 )}
 
