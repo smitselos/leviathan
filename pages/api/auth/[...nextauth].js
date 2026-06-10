@@ -1,11 +1,6 @@
 // pages/api/auth/[...nextauth].js
-// Είσοδος με Google. Scope μόνο drive.file (non-sensitive) — χωρίς drive.readonly.
-// Ανοιχτή είσοδος: μπαίνει οποιοσδήποτε με λογαριασμό Google (καμία λίστα ALLOWED_EMAILS).
-// Με ανανέωση access token (refresh) ώστε η πρόσβαση να μη λήγει στη 1 ώρα.
-
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-
 async function refreshAccessToken(token) {
   try {
     const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -32,7 +27,6 @@ async function refreshAccessToken(token) {
     return { ...token, error: 'RefreshAccessTokenError' };
   }
 }
-
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -40,11 +34,9 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          // ΜΟΝΟ drive.file — δίνει πρόσβαση σε αρχεία που δημιουργεί/ανοίγει η εφαρμογή
           scope:
             'openid email profile https://www.googleapis.com/auth/drive.file',
           access_type: 'offline',
-          prompt: 'consent',
         },
       },
     }),
@@ -52,7 +44,6 @@ export const authOptions = {
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   jwt: { maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
-    // Ανοιχτή είσοδος για όλους
     async signIn() {
       return true;
     },
@@ -61,7 +52,7 @@ export const authOptions = {
         return {
           ...token,
           accessToken: account.access_token,
-          refreshToken: account.refresh_token,
+          refreshToken: account.refresh_token || token.refreshToken,
           accessTokenExpires: Date.now() + account.expires_in * 1000,
         };
       }
@@ -79,5 +70,4 @@ export const authOptions = {
   pages: { signIn: '/login', error: '/login' },
   secret: process.env.NEXTAUTH_SECRET,
 };
-
 export default NextAuth(authOptions);
