@@ -347,7 +347,14 @@ export default function Home() {
   };
 
   if (status === 'loading' || status === 'unauthenticated') {
-    return <div style={S.loading}>Φόρτωση…</div>;
+    return (
+      <div style={S.loading}>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <img src="/logo-white.png" alt="Leviathan" style={{ height:'120px', marginBottom:'56px', objectFit:'contain' }} />
+        <div style={S.spinner} />
+        <div style={{ fontSize:'14px', color:'#8e8ea0' }}>Φόρτωση ΛΕΒΙΑΘΑΝ Cloud...</div>
+      </div>
+    );
   }
 
   const userName = session.user?.email?.split('@')[0] || '';
@@ -433,7 +440,7 @@ export default function Home() {
       {!isMobile && (
       <aside style={{ ...S.sidebar, width: sidebarCollapsed ? 70 : 260 }}>
         <div style={S.sidebarHeader}>
-          {!sidebarCollapsed && <strong style={{ color:'#ececec', fontSize:15 }}>📚 ΛΕΒΙΑΘΑΝ</strong>}
+          {!sidebarCollapsed && <img src="/logo-white.png" alt="Leviathan" style={{ height:'86px', objectFit:'contain' }} />}
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} style={S.collapseBtn}>
             {sidebarCollapsed ? Icon.collapseR : Icon.collapseL}
           </button>
@@ -1421,7 +1428,8 @@ function btn(kind) {
 }
 
 const S = {
-  loading:{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f9f9f8', color:PALETTE.cream.deep, fontFamily:'system-ui,-apple-system,sans-serif' },
+  loading:{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#1a1a1a', color:'#ececec', fontFamily:'"Söhne",ui-sans-serif,system-ui,-apple-system,sans-serif' },
+  spinner:{ width:'36px', height:'36px', border:'2px solid rgba(255,255,255,0.12)', borderTop:'2px solid #c5b4e3', borderRadius:'50%', animation:'spin 0.9s linear infinite', marginBottom:'16px' },
   app:{ display:'flex', minHeight:'100vh', maxWidth:'100vw', overflowX:'hidden', background:'#f9f9f8', fontFamily:'ui-sans-serif,system-ui,-apple-system,sans-serif', color:'#1a1a1a' },
   sidebar:{ position:'fixed', left:0, top:0, bottom:0, background:'#1a1a1a', display:'flex', flexDirection:'column', transition:'width 0.2s ease', zIndex:100, borderRight:'1px solid rgba(255,255,255,0.06)' },
   sidebarHeader:{ padding:'16px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(255,255,255,0.06)' },
