@@ -73,6 +73,7 @@ export default function Home() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [minLoadDone, setMinLoadDone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [walletActive, setWalletActive] = useState(null);
   const [statActive, setStatActive] = useState(null);
@@ -115,6 +116,8 @@ export default function Home() {
     if (status === 'unauthenticated') router.replace('/login');
     if (session?.error === 'RefreshAccessTokenError') signOut({ callbackUrl: '/login' });
   }, [status, session, router]);
+
+  useEffect(() => { const t = setTimeout(() => setMinLoadDone(true), 1500); return () => clearTimeout(t); }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -346,7 +349,7 @@ export default function Home() {
     setActiveView('apps'); setActiveTagFilter(null);
   };
 
-  if (status === 'loading' || status === 'unauthenticated') {
+  if (status === 'loading' || status === 'unauthenticated' || !minLoadDone) {
     return (
       <div style={S.loading}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
