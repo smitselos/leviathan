@@ -1202,7 +1202,7 @@ export default function Home() {
 
 // ── Λίστα αρχείων (κοινό component) ──
 function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact, userRole }) {
-  const isTeacherRole = userRole !== 'student';
+  const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
@@ -1247,15 +1247,15 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
                     {tags.slice(0,3).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                     {tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
-                    {hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
-                    {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
+                    {isTeacherRole && hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
+                    {isTeacherRole && hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
                     {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                   </div>
                 )}
                 {compact && showFolder && folderName(f.folderId) && (
                   <div style={{ fontSize:10, color:'#aeaeb8', marginTop:2 }}>📁 {folderName(f.folderId)}</div>
                 )}
-                {compact && (isPublished || hasLinks) && (
+                {compact && isTeacherRole && (isPublished || hasLinks) && (
                   <div style={{ display:'flex', gap:4, marginTop:2 }}>
                     {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                     {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
