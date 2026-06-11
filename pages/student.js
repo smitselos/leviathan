@@ -142,9 +142,18 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
   const openFile = (f) => {
     markSeen(f.id);
     const isHtml = /\.html?$/i.test(f.name);
-    const url = isHtml ? `/api/student-file?id=${f.id}` : `https://drive.google.com/file/d/${f.id}/preview`;
+    const isOffice = /\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    let url;
+    if (isHtml) {
+      url = `/api/student-file?id=${f.id}`;
+    } else if (isOffice) {
+      // Google Docs Viewer — αξιόπιστο για δημόσια αρχεία
+      url = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?id='+f.id+'&export=download')}`;
+    } else {
+      url = `https://drive.google.com/file/d/${f.id}/preview`;
+    }
     if (isMobile) { window.open(url, '_blank'); return; }
-    setViewing(f);
+    setViewing({ ...f, previewUrl: url });
   };
 
   const goHome = () => { setViewing(null); setTab('home'); };
@@ -184,8 +193,7 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
 
   /* ── Desktop viewer ── */
   if (viewing && !isMobile) {
-    const isHtml = /\.html?$/i.test(viewing.name);
-    const driveUrl = isHtml ? `/api/student-file?id=${viewing.id}` : `https://drive.google.com/file/d/${viewing.id}/preview`;
+    const driveUrl = viewing.previewUrl || `https://drive.google.com/file/d/${viewing.id}/preview`;
     return (
       <div style={S.app}>
         <Head><title>{viewing.name} — Student</title></Head>
