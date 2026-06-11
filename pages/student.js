@@ -304,11 +304,12 @@ function StudentView({myEmail,isMobile,router}){
                     <button onClick={sendInvite} disabled={netLoading||!inviteEmail.trim()}
                       style={{padding:'10px 16px',borderRadius:10,border:'none',background:P.cream.deep,color:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',opacity:netLoading?0.5:1}}>Αποστολή</button>
                   </div>
-                  {(network.inbox||[]).length>0&&(
+                  {(network.received||[]).length>0&&(
                     <div style={{marginTop:10}}>
-                      {network.inbox.map(inv=>(
+                      <div style={{fontSize:12,fontWeight:600,color:'#dc2626',marginBottom:6}}>🔔 Εκκρεμείς προσκλήσεις</div>
+                      {network.received.map(inv=>(
                         <div key={inv.email} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:'1px solid #f0f0f0'}}>
-                          <span style={{flex:1,fontSize:12,color:'#6b6b80'}}>{inv.email}</span>
+                          <span style={{flex:1,fontSize:12,color:'#6b6b80'}}>{inv.name||inv.email}</span>
                           <button onClick={()=>acceptInvite(inv.email)} style={{padding:'5px 12px',borderRadius:8,border:'none',background:'#16a34a',color:'#fff',fontSize:11,fontWeight:600,cursor:'pointer'}}>Αποδοχή</button>
                         </div>
                       ))}
