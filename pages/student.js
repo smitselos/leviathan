@@ -294,9 +294,7 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
                               onClick={() => setExpandedIn(isExp ? null : f.id + f.fromEmail)}>
                               <div style={{ width:34, height:34, borderRadius:10, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>📄</div>
                               <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
-                                  onClick={(e) => { e.stopPropagation(); openFile(f); }}
-                                  title="Κλικ για άνοιγμα">{trunc(f.name, 20)}</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name, 20)}</div>
                                 <div style={{ fontSize:11, color:'#8a8a9a', marginTop:1 }}>από {trunc(f.fromName, 25)}</div>
                               </div>
                               {isNew && <span style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b', flexShrink:0 }} />}
