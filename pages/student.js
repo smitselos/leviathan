@@ -25,7 +25,9 @@ const Ic={
 export default function StudentPage({ teacher: ssrTeacher }){
   const router=useRouter();
   const defaultTeacher = process.env.NEXT_PUBLIC_DEFAULT_TEACHER || null;
-  const teacher = router.query.teacher || ssrTeacher || defaultTeacher;
+  const queryTeacher = router.query.teacher || ssrTeacher || null;
+  // defaultTeacher μόνο αν δεν είναι συνδεδεμένος
+  const teacher = queryTeacher || (hasSession ? null : defaultTeacher);
   const {data:session,status}=useSession();
   const hasSession=!!session?.accessToken;
   const myEmail=session?.user?.email||null;
@@ -640,5 +642,5 @@ const S={
 
 // Η σελίδα πρέπει να φορτώνει ΧΩΡΙΣ auth (δημόσια πρόσβαση)
 export async function getServerSideProps(ctx) {
-  return { props: { teacher: ctx.query.teacher || process.env.NEXT_PUBLIC_DEFAULT_TEACHER || null } };
+  return { props: { teacher: ctx.query.teacher || null } };
 }
