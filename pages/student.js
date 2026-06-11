@@ -63,6 +63,8 @@ function PublicView({teacher,isMobile}){
   const [files,setFiles]=useState([]);
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState('');
+  const [expandedPub,setExpandedPub]=useState(null);
+  const [qrFile,setQrFile]=useState(null);
 
   useEffect(()=>{
     if(!teacher)return;
@@ -70,7 +72,6 @@ function PublicView({teacher,isMobile}){
       try{
         const r=await fetch(`/api/publish?email=${encodeURIComponent(teacher)}`);
         const d=await r.json();
-        // Μόνο public αρχεία
         setFiles((d.items||[]).filter(f=>f.visibility==='public'));
       }catch{}
       setLoading(false);
@@ -93,6 +94,11 @@ function PublicView({teacher,isMobile}){
     window.open(url,'_blank');
   };
 
+  const getFileUrl=(f)=>{
+    if(/\.html?$/i.test(f.name))return `${typeof window!=='undefined'?window.location.origin:''}/api/student-file?id=${f.id}`;
+    return `https://drive.google.com/file/d/${f.id}/view`;
+  };
+
   if(!teacher) return(
     <div style={S.page}>
       <div style={{...S.card,maxWidth:420}}>
@@ -106,12 +112,11 @@ function PublicView({teacher,isMobile}){
 
   return(
     <div style={S.app}>
-      <Head><title>Δημόσιο υλικό — ΛΕΒΙΑΘΑΝ</title></Head>
+      <Head><title>ΛΕΒΙΑΘΑΝ</title></Head>
       <style>{css}</style>
       <div style={{flex:1,maxWidth:800,margin:'0 auto',padding:'24px 16px'}}>
         <div style={{textAlign:'center',marginBottom:28}}>
           <img src="/logo.png" alt="Leviathan" style={{height:60,objectFit:'contain',marginBottom:8}}/>
-          <h1 style={{fontSize:20,fontWeight:600,color:'#1a1a1a',marginBottom:4}}>Δημόσιο υλικό</h1>
           <p style={{fontSize:13,color:'#6b6b80'}}>{files.length} αρχεία</p>
         </div>
         {loading&&<div style={S.empty}>Φόρτωση…</div>}
@@ -119,21 +124,50 @@ function PublicView({teacher,isMobile}){
           <input type="search" placeholder="Αναζήτηση…" value={search} onChange={e=>setSearch(e.target.value)}
             style={{width:'100%',padding:'11px 16px',border:'1px solid #ebebeb',borderRadius:14,fontSize:isMobile?16:14,background:'#fff',marginBottom:12,boxSizing:'border-box'}}/>
         )}
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {filtered.map(f=>(
-            <div key={f.id} className="ri-h" onClick={()=>openFile(f)}
-              style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',background:'#fff',borderRadius:14,border:'1px solid #ebebeb',cursor:'pointer'}}>
-              <div style={{width:36,height:36,borderRadius:10,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>📄</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</div>
-                {f.info&&<div style={{fontSize:11,color:P.cream.deep,marginTop:2}}>ℹ️ {trunc(f.info,50)}</div>}
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {filtered.map(f=>{
+            const isExp=expandedPub===f.id;
+            return(
+              <div key={f.id} style={{background:'#fff',border:'1px solid #ebebeb',borderRadius:14,overflow:'hidden',transition:'all 0.15s ease'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',cursor:'pointer'}} onClick={()=>setExpandedPub(isExp?null:f.id)}>
+                  <div style={{width:34,height:34,borderRadius:10,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>📄</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(f.name,25)}</div>
+                  </div>
+                  <span style={{fontSize:11,color:'#aeaeb8',flexShrink:0,transition:'transform 0.15s',transform:isExp?'rotate(180deg)':'none'}}>▼</span>
+                </div>
+                {isExp&&(
+                  <div style={{padding:'0 14px 12px',borderTop:'1px solid rgba(0,0,0,0.04)'}}>
+                    {f.info&&<div style={{fontSize:12,color:P.cream.deep,padding:'8px 0 6px',lineHeight:1.5}}>ℹ️ {f.info}</div>}
+                    <div style={{display:'flex',gap:6,marginTop:6,flexWrap:'wrap',alignItems:'center'}}>
+                      <button onClick={()=>openFile(f)} style={S.openBtn}>Άνοιγμα</button>
+                      <button onClick={()=>window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank')} style={S.miniBtn} title="Λήψη">⬇</button>
+                      <button onClick={()=>setQrFile(f)} style={S.miniBtn} title="QR Code">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <span style={{fontSize:12,color:P.cream.deep,fontWeight:600,flexShrink:0}}>Άνοιγμα →</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {!loading&&files.length===0&&<div style={{textAlign:'center',padding:60}}><div style={{fontSize:48,marginBottom:16}}>📭</div><div style={{fontSize:14,color:'#6b6b80'}}>Δεν υπάρχει δημοσιευμένο υλικό.</div></div>}
       </div>
+
+      {/* QR popup */}
+      {qrFile&&(
+        <div onClick={()=>setQrFile(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 12px 40px rgba(0,0,0,0.15)'}}>
+            <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>QR Code</div>
+            <div style={{fontSize:12,color:'#6b6b80',marginBottom:16,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{qrFile.name}</div>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getFileUrl(qrFile))}`}
+              alt="QR" width={200} height={200} style={{borderRadius:8,border:'1px solid #eee',margin:'0 auto',display:'block'}}/>
+            <p style={{fontSize:11,color:'#aeaeb8',marginTop:12}}>Σκανάρετε με κινητό</p>
+            <button onClick={()=>setQrFile(null)} style={{marginTop:12,padding:'10px 28px',borderRadius:10,border:'none',background:'#1a1a1a',color:'#fff',fontSize:13,fontWeight:600,cursor:'pointer'}}>Κλείσιμο</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
