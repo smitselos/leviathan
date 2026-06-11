@@ -24,10 +24,7 @@ const Ic={
 
 export default function StudentPage({ teacher: ssrTeacher }){
   const router=useRouter();
-  const defaultTeacher = process.env.NEXT_PUBLIC_DEFAULT_TEACHER || null;
-  const queryTeacher = router.query.teacher || ssrTeacher || null;
-  // defaultTeacher μόνο αν δεν είναι συνδεδεμένος
-  const teacher = queryTeacher || (hasSession ? null : defaultTeacher);
+  const teacher = router.query.teacher || ssrTeacher || null;
   const {data:session,status}=useSession();
   const hasSession=!!session?.accessToken;
   const myEmail=session?.user?.email||null;
