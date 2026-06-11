@@ -76,8 +76,9 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
   const [expandedIn, setExpandedIn] = useState(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [netLoading, setNetLoading] = useState(false);
-  const [viewingUser, setViewingUser] = useState(null);  // email of connection whose files we're viewing
-  const [userFiles, setUserFiles] = useState([]);
+  const [viewingUser, setViewingUser] = useState(null);
+  const [userFilesFrom, setUserFilesFrom] = useState([]);  // αρχεία ΑΠΟ αυτόν
+  const [userFilesTo, setUserFilesTo] = useState([]);      // αρχεία ΠΡΟΣ αυτόν
 
   // ── Φόρτωση δεδομένων ──
   const loadAll = useCallback(async () => {
@@ -217,10 +218,15 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
     setViewingUser(email);
     setTab('userFiles');
     try {
-      const r = await fetch(`/api/publish?email=${encodeURIComponent(email)}&visitor=${encodeURIComponent(myEmail)}`);
-      const d = await r.json();
-      setUserFiles(d.items || []);
-    } catch { setUserFiles([]); }
+      const [rFrom, rTo] = await Promise.all([
+        fetch(`/api/publish?email=${encodeURIComponent(email)}&visitor=${encodeURIComponent(myEmail)}`),
+        fetch(`/api/publish?email=${encodeURIComponent(myEmail)}&visitor=${encodeURIComponent(email)}`),
+      ]);
+      const dFrom = await rFrom.json();
+      const dTo = await rTo.json();
+      setUserFilesFrom(dFrom.items || []);
+      setUserFilesTo(dTo.items || []);
+    } catch { setUserFilesFrom([]); setUserFilesTo([]); }
   };
 
   /* ── Desktop viewer ── */
@@ -402,26 +408,40 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
             </>
           )}
 
-          {/* ═══ TAB: FILES FROM USER ═══ */}
+          {/* ═══ TAB: FILES FROM/TO USER ═══ */}
           {tab === 'userFiles' && viewingUser && (
             <>
               <div style={{ marginBottom:20 }}>
                 <button onClick={() => setTab('network')} style={{ background:'none', border:'1px solid #ddd', borderRadius:8, padding:'6px 14px', cursor:'pointer', fontSize:13, color:'#444', marginBottom:10 }}>← Δίκτυα</button>
-                <h1 style={{ fontSize:18, fontWeight:600, color:'#1a1a1a', marginBottom:4 }}>Αρχεία από {viewingUser}</h1>
+                <h1 style={{ fontSize:18, fontWeight:600, color:'#1a1a1a', marginBottom:4 }}>Υλικό με {viewingUser}</h1>
               </div>
-              {userFiles.length === 0 && <div style={S.emptyCol}>Κανένα δημοσιευμένο αρχείο.</div>}
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {userFiles.map((f) => (
+
+              {/* Αρχεία ΑΠΟ αυτόν */}
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:8 }}>📥 Έλαβα από αυτόν</div>
+              {userFilesFrom.length === 0 && <div style={{ ...S.emptyCol, marginBottom:16 }}>Κανένα αρχείο.</div>}
+              <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:24 }}>
+                {userFilesFrom.map((f) => (
                   <div key={f.id} style={{ background:'#fff', border:'1px solid #ebebeb', borderRadius:14, padding:'12px 14px', display:'flex', alignItems:'center', gap:10 }}>
-                    <div style={{ width:36, height:36, borderRadius:10, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📄</div>
+                    <div style={{ width:34, height:34, borderRadius:10, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>📄</div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name, 20)}</div>
                       {f.info && <div style={{ fontSize:11, color:PALETTE.cream.deep, marginTop:2 }}>ℹ️ {trunc(f.info, 40)}</div>}
                     </div>
-                    <button onClick={() => { window.open(`https://drive.google.com/uc?id=${f.id}&export=download`, '_blank'); }}
-                      style={{ ...S.openBtn, background:PALETTE.cream.bg, color:PALETTE.cream.deep, border:'1.5px solid '+PALETTE.cream.accent }}
-                      title="Κατέβασε το αρχείο">💾</button>
                     <button onClick={() => openFile(f)} style={S.openBtn}>Άνοιγμα</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Αρχεία ΠΡΟΣ αυτόν */}
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:8 }}>📤 Έστειλα σε αυτόν</div>
+              {userFilesTo.length === 0 && <div style={S.emptyCol}>Κανένα αρχείο.</div>}
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {userFilesTo.map((f) => (
+                  <div key={f.id} style={{ background:'#fff', border:'1px solid #ebebeb', borderRadius:14, padding:'12px 14px', display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:PALETTE.peach.bgSoft, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>📄</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name, 20)}</div>
+                    </div>
                   </div>
                 ))}
               </div>

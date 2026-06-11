@@ -112,6 +112,7 @@ export default function Home() {
   const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[], inbox:[], unseenCount:0 });
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
   const [networkLoading, setNetworkLoading] = useState(false);
+  const [expandedInbox, setExpandedInbox] = useState(null);
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
   const isTeacher = userRole === 'teacher';
   const isStudent = userRole === 'student';
@@ -797,25 +798,38 @@ export default function Home() {
                 {(networkData.sent||[]).length > 0 && <div style={{ marginTop:8, fontSize:11, color:'#aeaeb8' }}>Αναμένει: {networkData.sent.join(', ')}</div>}
               </div>
 
-              {/* Inbox εισερχόμενων αρχείων */}
+              {/* Inbox εισερχόμενων αρχείων — expandable κάρτες */}
               {(networkData.inbox||[]).length > 0 && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>
                     📥 Εισερχόμενα
                     {networkData.unseenCount > 0 && <span style={{ marginLeft:8, background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{networkData.unseenCount} νέα</span>}
                   </div>
-                  {networkData.inbox.map((item, i) => (
-                    <div key={item.fileId+i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'#fff', borderRadius:12, border:`1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, marginBottom:8 }}>
-                      <div style={{ flexShrink:0, fontSize:20 }}>📄</div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.fileName}</div>
-                        <div style={{ fontSize:11, color:'#6b6b80' }}>από {item.fromName||item.fromEmail} · {new Date(item.sentAt).toLocaleDateString('el-GR')}</div>
+                  {networkData.inbox.map((item, i) => {
+                    const isExp = expandedInbox === item.fileId+i;
+                    return (
+                      <div key={item.fileId+i} style={{ background: !item.seen ? '#fff9ed' : '#fff', border: `1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, borderRadius:14, marginBottom:8, overflow:'hidden', transition:'all 0.15s ease' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', cursor:'pointer' }}
+                          onClick={() => setExpandedInbox(isExp ? null : item.fileId+i)}>
+                          <div style={{ flexShrink:0, fontSize:18 }}>📄</div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.fileName?.length > 20 ? item.fileName.slice(0,20)+'…' : item.fileName}</div>
+                            <div style={{ fontSize:11, color:'#6b6b80' }}>από {item.fromName||item.fromEmail} · {new Date(item.sentAt).toLocaleDateString('el-GR')}</div>
+                          </div>
+                          {!item.seen && <span style={{ width:8, height:8, borderRadius:'50%', background:'#dc2626', flexShrink:0 }} />}
+                          <span style={{ fontSize:11, color:'#aeaeb8', flexShrink:0, transition:'transform 0.15s', transform: isExp ? 'rotate(180deg)' : 'none' }}>▼</span>
+                        </div>
+                        {isExp && (
+                          <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+                            <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`/student?teacher=${encodeURIComponent(item.fromEmail)}`, '_blank'); }}
+                              style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
+                            <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
+                              style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
+                          </div>
+                        )}
                       </div>
-                      {!item.seen && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:10, fontWeight:700, flexShrink:0 }}>ΝΕΟ</span>}
-                      <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`/student?teacher=${encodeURIComponent(item.fromEmail)}`, '_blank'); }}
-                        style={{ padding:'6px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>Άνοιγμα →</button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
