@@ -22,9 +22,9 @@ const Ic={
   user:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
 };
 
-export default function StudentPage(){
+export default function StudentPage({ teacher: ssrTeacher }){
   const router=useRouter();
-  const {teacher}=router.query;
+  const teacher = router.query.teacher || ssrTeacher || null;
   const {data:session,status}=useSession();
   const hasSession=!!session?.accessToken;
   const myEmail=session?.user?.email||null;
@@ -36,9 +36,12 @@ export default function StudentPage(){
 
   useEffect(()=>{
     if(status==='loading')return;
-    if(!hasSession){setRoleLoading(false);setRole(null);return;}
+    if(status==='unauthenticated'||!hasSession){setRoleLoading(false);setRole(null);return;}
     fetch('/api/role').then(r=>r.json()).then(d=>{setRole(d.role||'teacher');setRoleLoading(false);}).catch(()=>{setRole('teacher');setRoleLoading(false);});
   },[hasSession,status]);
+
+  // Χωρίς σύνδεση → δημόσια σελίδα ΑΜΕΣΩΣ (χωρίς αναμονή role)
+  if(status==='unauthenticated'||(!hasSession&&status!=='loading')) return <PublicView teacher={teacher} isMobile={isMobile} />;
 
   if(status==='loading'||roleLoading) return <div style={S.page}><div style={{color:'#6b6b80',fontSize:14}}>Φόρτωση…</div></div>;
 
@@ -599,3 +602,8 @@ const S={
   badge:{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:18,height:18,borderRadius:9,background:'#f59e0b',color:'#fff',fontSize:10,fontWeight:700,padding:'0 5px'},
   badgeStyle:{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:16,height:16,borderRadius:8,background:'#f59e0b',color:'#fff',fontSize:9,fontWeight:700,padding:'0 4px'},
 };
+
+// Η σελίδα πρέπει να φορτώνει ΧΩΡΙΣ auth (δημόσια πρόσβαση)
+export async function getServerSideProps(ctx) {
+  return { props: { teacher: ctx.query.teacher || null } };
+}
