@@ -71,8 +71,9 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [qrFile, setQrFile] = useState(null);        // αρχείο για QR popup
-  const [savingId, setSavingId] = useState(null);     // αρχείο που αποθηκεύεται
+  const [qrFile, setQrFile] = useState(null);
+  const [savingId, setSavingId] = useState(null);
+  const [expandedIn, setExpandedIn] = useState(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [netLoading, setNetLoading] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);  // email of connection whose files we're viewing
@@ -279,33 +280,43 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
                       {unseenCount > 0 && <span style={S.badge}>{unseenCount}</span>}
                     </div>
                     {incoming.length === 0 && <div style={S.emptyCol}>Δεν υπάρχουν εισερχόμενα ακόμη.</div>}
-                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                       {incoming.map((f) => {
                         const isNew = !seenIds.has(f.id);
+                        const isExp = expandedIn === (f.id + f.fromEmail);
                         return (
                           <div key={f.id + f.fromEmail} style={{
                             background: isNew ? '#fff9ed' : '#fff', border: isNew ? '1.5px solid '+PALETTE.cream.accent : '1px solid #ebebeb',
-                            borderRadius:14, padding:'12px 14px', display:'flex', alignItems:'center', gap:10,
+                            borderRadius:14, overflow:'hidden', transition:'all 0.15s ease',
                           }}>
-                            <div style={{ width:36, height:36, borderRadius:10, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📄</div>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name, 20)}</div>
-                              <div style={{ fontSize:11, color:'#8a8a9a', marginTop:2 }}>από {trunc(f.fromName, 25)}</div>
-                              {f.info && <div style={{ fontSize:11, color:PALETTE.cream.deep, marginTop:2 }}>ℹ️ {trunc(f.info, 40)}</div>}
+                            {/* Compact row — tap ανοίγει κάρτα, click στο όνομα ανοίγει αρχείο */}
+                            <div style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', cursor:'pointer' }}
+                              onClick={() => setExpandedIn(isExp ? null : f.id + f.fromEmail)}>
+                              <div style={{ width:34, height:34, borderRadius:10, background:PALETTE.cream.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>📄</div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
+                                  onClick={(e) => { e.stopPropagation(); openFile(f); }}
+                                  title="Κλικ για άνοιγμα">{trunc(f.name, 20)}</div>
+                                <div style={{ fontSize:11, color:'#8a8a9a', marginTop:1 }}>από {trunc(f.fromName, 25)}</div>
+                              </div>
+                              {isNew && <span style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b', flexShrink:0 }} />}
+                              <span style={{ fontSize:11, color:'#aeaeb8', flexShrink:0, transition:'transform 0.15s', transform: isExp ? 'rotate(180deg)' : 'none' }}>▼</span>
                             </div>
-                            {isNew && <span style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b', flexShrink:0 }} />}
-                            <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                              <button onClick={() => setQrFile(f)} style={S.miniBtn} title="QR Code">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="21" y1="14" x2="21" y2="17"/><line x1="14" y1="21" x2="17" y2="21"/><line x1="21" y1="21" x2="21" y2="21.01"/></svg>
-                              </button>
-                              <button onClick={() => saveToMyDrive(f)} disabled={savingId === f.id} style={{ ...S.miniBtn, opacity: savingId === f.id ? 0.4 : 1 }} title="Αποθήκευση στο Drive">
-                                💾
-                              </button>
-                              <button onClick={() => downloadFile(f)} style={S.miniBtn} title="Λήψη αρχείου">
-                                ⬇
-                              </button>
-                              <button onClick={() => openFile(f)} style={S.openBtn}>Άνοιγμα</button>
-                            </div>
+
+                            {/* Expanded — πληροφορίες + κουμπιά */}
+                            {isExp && (
+                              <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
+                                {f.info && <div style={{ fontSize:12, color:PALETTE.cream.deep, padding:'8px 0 6px', lineHeight:1.5 }}>ℹ️ {f.info}</div>}
+                                <div style={{ display:'flex', gap:6, marginTop:6, flexWrap:'wrap', alignItems:'center' }}>
+                                  <button onClick={() => openFile(f)} style={S.openBtn}>Άνοιγμα</button>
+                                  <button onClick={() => downloadFile(f)} style={S.miniBtn} title="Λήψη">⬇</button>
+                                  <button onClick={() => saveToMyDrive(f)} disabled={savingId === f.id} style={{ ...S.miniBtn, opacity: savingId === f.id ? 0.4 : 1 }} title="Αποθήκευση στο Drive">💾</button>
+                                  <button onClick={() => setQrFile(f)} style={S.miniBtn} title="QR Code">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="21" y1="14" x2="21" y2="17"/><line x1="14" y1="21" x2="17" y2="21"/><line x1="21" y1="21" x2="21" y2="21.01"/></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
