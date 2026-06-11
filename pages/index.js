@@ -146,7 +146,10 @@ export default function Home() {
     try {
       const r = await fetch('/api/role');
       const d = await r.json();
-      if (d.role) setUserRole(d.role);
+      if (d.role) {
+        if (d.role === 'student') { router.replace('/student'); return; }
+        setUserRole(d.role);
+      }
     } catch {}
   };
 
