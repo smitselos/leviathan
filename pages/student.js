@@ -71,6 +71,8 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [qrFile, setQrFile] = useState(null);        // αρχείο για QR popup
+  const [savingId, setSavingId] = useState(null);     // αρχείο που αποθηκεύεται
   const [inviteEmail, setInviteEmail] = useState('');
   const [netLoading, setNetLoading] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);  // email of connection whose files we're viewing
@@ -147,13 +149,42 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
     if (isHtml) {
       url = `/api/student-file?id=${f.id}`;
     } else if (isOffice) {
-      // Google Docs Viewer — αξιόπιστο για δημόσια αρχεία
       url = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?id='+f.id+'&export=download')}`;
     } else {
       url = `https://drive.google.com/file/d/${f.id}/preview`;
     }
     if (isMobile) { window.open(url, '_blank'); return; }
     setViewing({ ...f, previewUrl: url });
+  };
+
+  const saveToMyDrive = async (f) => {
+    if (savingId) return;
+    setSavingId(f.id);
+    try {
+      const r = await fetch('/api/save-file', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: f.id, fileName: f.name, info: f.info || '' }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        alert('✅ Αποθηκεύτηκε στο Drive σου!');
+        loadAll(); // ανανέωση λίστας
+      } else {
+        alert('❌ Σφάλμα: ' + (d.error || 'Δοκίμασε ξανά'));
+      }
+    } catch { alert('❌ Σφάλμα σύνδεσης'); }
+    setSavingId(null);
+  };
+
+  const downloadFile = (f) => {
+    markSeen(f.id);
+    window.open(`https://drive.google.com/uc?id=${f.id}&export=download`, '_blank');
+  };
+
+  const getFileUrl = (f) => {
+    const isHtml = /\.html?$/i.test(f.name);
+    if (isHtml) return `${window.location.origin}/api/student-file?id=${f.id}`;
+    return `https://drive.google.com/file/d/${f.id}/view`;
   };
 
   const goHome = () => { setViewing(null); setTab('home'); };
@@ -263,7 +294,18 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
                               {f.info && <div style={{ fontSize:11, color:PALETTE.cream.deep, marginTop:2 }}>ℹ️ {trunc(f.info, 40)}</div>}
                             </div>
                             {isNew && <span style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b', flexShrink:0 }} />}
-                            <button onClick={() => openFile(f)} style={S.openBtn}>Άνοιγμα</button>
+                            <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                              <button onClick={() => setQrFile(f)} style={S.miniBtn} title="QR Code">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="21" y1="14" x2="21" y2="17"/><line x1="14" y1="21" x2="17" y2="21"/><line x1="21" y1="21" x2="21" y2="21.01"/></svg>
+                              </button>
+                              <button onClick={() => saveToMyDrive(f)} disabled={savingId === f.id} style={{ ...S.miniBtn, opacity: savingId === f.id ? 0.4 : 1 }} title="Αποθήκευση στο Drive">
+                                💾
+                              </button>
+                              <button onClick={() => downloadFile(f)} style={S.miniBtn} title="Λήψη αρχείου">
+                                ⬇
+                              </button>
+                              <button onClick={() => openFile(f)} style={S.openBtn}>Άνοιγμα</button>
+                            </div>
                           </div>
                         );
                       })}
@@ -367,6 +409,9 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
                       <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name, 20)}</div>
                       {f.info && <div style={{ fontSize:11, color:PALETTE.cream.deep, marginTop:2 }}>ℹ️ {trunc(f.info, 40)}</div>}
                     </div>
+                    <button onClick={() => { window.open(`https://drive.google.com/uc?id=${f.id}&export=download`, '_blank'); }}
+                      style={{ ...S.openBtn, background:PALETTE.cream.bg, color:PALETTE.cream.deep, border:'1.5px solid '+PALETTE.cream.accent }}
+                      title="Κατέβασε το αρχείο">💾</button>
                     <button onClick={() => openFile(f)} style={S.openBtn}>Άνοιγμα</button>
                   </div>
                 ))}
@@ -376,6 +421,23 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
 
         </div>
       </div>
+
+      {/* QR Code popup */}
+      {qrFile && (
+        <div onClick={() => setQrFile(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center', boxShadow:'0 12px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>QR Code</div>
+            <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{qrFile.name}</div>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getFileUrl(qrFile))}`}
+              alt="QR Code" width={200} height={200}
+              style={{ borderRadius:8, border:'1px solid #eee', margin:'0 auto', display:'block' }}
+            />
+            <p style={{ fontSize:11, color:'#aeaeb8', marginTop:12 }}>Σκανάρετε με κινητό για άνοιγμα</p>
+            <button onClick={() => setQrFile(null)} style={{ marginTop:12, padding:'10px 28px', borderRadius:10, border:'none', background:'#1a1a1a', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Κλείσιμο</button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile bottom nav */}
       {isMobile && (
@@ -692,6 +754,7 @@ const S = {
   empty:{ textAlign:'center', color:'#b0b0b0', padding:32, fontSize:14 },
   emptyCol:{ textAlign:'center', color:'#aeaeb8', padding:32, fontSize:13, background:'#fff', borderRadius:14, border:'1px dashed #e0e0e0' },
   openBtn:{ background:'transparent', border:'1.5px solid '+PALETTE.cream.deep, borderRadius:10, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', color:PALETTE.cream.deep, flexShrink:0 },
+  miniBtn:{ background:PALETTE.cream.bg, border:'1.5px solid '+PALETTE.cream.accent, borderRadius:8, width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:13, flexShrink:0, padding:0 },
   badge:{ display:'inline-flex', alignItems:'center', justifyContent:'center', minWidth:18, height:18, borderRadius:9, background:'#f59e0b', color:'#fff', fontSize:10, fontWeight:700, padding:'0 5px' },
   badgeStyle:{ display:'inline-flex', alignItems:'center', justifyContent:'center', minWidth:16, height:16, borderRadius:8, background:'#f59e0b', color:'#fff', fontSize:9, fontWeight:700, padding:'0 4px' },
 };
