@@ -168,7 +168,7 @@ function StudentView({ myEmail, hasSession, isMobile, router }) {
       });
       const d = await r.json();
       if (d.ok) {
-        alert('✅ Αποθηκεύτηκε στο Drive σου!');
+        alert('✅ Αποθηκεύτηκε στον φάκελο «' + (d.folder || 'Λήψεις') + '»!');
         loadAll(); // ανανέωση λίστας
       } else {
         alert('❌ Σφάλμα: ' + (d.error || 'Δοκίμασε ξανά'));
@@ -664,8 +664,8 @@ function Sidebar({ open, setOpen, goHome, goBack, hasSession, active, unseenCoun
           {open && unseenCount > 0 && tab !== 'home' && <span style={S.badge}>{unseenCount}</span>}
         </button>
         <div style={S.navDiv} />
-        <button onClick={()=>setTab('network')} style={{ ...S.navItem, ...(active==='network'?S.navActive:{}) }}>
-          <span style={S.navIcon}>{Ic.net}</span>{open && 'Δίκτυα'}
+        <button onClick={()=>window.open('/live','_blank')} style={S.navItem}>
+          <span style={S.navIcon}>{Ic.live}</span>{open && 'Live'}
         </button>
         <div style={S.navDiv} />
         {hasSession && (
