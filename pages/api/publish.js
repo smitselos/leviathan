@@ -18,8 +18,21 @@ function getKV() {
 const KV_KEY = (email) => email ? `published:${email}` : 'published_items';
 
 async function sharePublic(drive, fileId) {
-  try { await drive.permissions.create({ fileId, requestBody: { role: 'reader', type: 'anyone' } }); } catch (e) {}
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: 'reader', type: 'anyone' },
+      fields: 'id',
+    });
+    // Ενημέρωσε webViewLink ώστε να λειτουργεί η πρόσβαση
+    const meta = await drive.files.get({ fileId, fields: 'webViewLink,webContentLink' });
+    return meta.data;
+  } catch (e) {
+    console.error('[sharePublic] Error:', e.message);
+    return null;
+  }
 }
+
 async function unsharePublic(drive, fileId) {
   try {
     const p = await drive.permissions.list({ fileId, fields: 'permissions(id,type)' });
@@ -33,9 +46,11 @@ function buildItems(reg) {
     .filter(f => f.visibility && f.visibility !== 'none')
     .map(f => ({
       id: f.id, key: f.id, name: f.name,
-      tags: f.tags || [], comment: (f.comment || '').slice(0, 300),
-      questions: f.questions || '', links: f.links || [],
+      // ΜΟΝΟ πληροφορίες ταξιδεύουν — σχόλια, ερωτήσεις, συνδέσεις μένουν ιδιωτικά
+      info: f.info || '',
       folderId: f.folderId, visibility: f.visibility,
+      publishedAt: f.publishedAt || new Date().toISOString(),
+      mimeType: f.mimeType || '',
     }));
 }
 
@@ -98,9 +113,20 @@ export default async function handler(req, res) {
       const prevVisibility = file.visibility || 'none';
       reg.files[idx].visibility = visibility;
       reg.files[idx].published = visibility !== 'none';
+      reg.files[idx].publishedAt = visibility !== 'none' ? new Date().toISOString() : null;
 
-      if (visibility !== 'none') await sharePublic(drive, id);
-      else await unsharePublic(drive, id);
+      if (visibility !== 'none') {
+        const shareResult = await sharePublic(drive, id);
+        // Αποθήκευσε mimeType αν δεν υπάρχει ήδη
+        if (!reg.files[idx].mimeType) {
+          try {
+            const fm = await drive.files.get({ fileId: id, fields: 'mimeType' });
+            reg.files[idx].mimeType = fm.data.mimeType || '';
+          } catch {}
+        }
+      } else {
+        await unsharePublic(drive, id);
+      }
       await saveRegistry(drive, reg);
 
       const items = buildItems(reg);
@@ -116,7 +142,6 @@ export default async function handler(req, res) {
           fromEmail: myEmail, fromName: myName,
           visibility, sentAt: Date.now(), seen: false,
         };
-        // Βρες ποιοι πρέπει να ειδοποιηθούν
         const conns = await kv.get(`conn:${myEmail}`) || [];
         let recipients = [];
         if (visibility === 'public') recipients = conns;
@@ -128,10 +153,8 @@ export default async function handler(req, res) {
 
         await Promise.all(recipients.map(async recipEmail => {
           const inbox = await kv.get(`inbox:${recipEmail}`) || [];
-          // Αντικατάστησε αν υπάρχει ήδη το ίδιο αρχείο
           const filtered = inbox.filter(i => i.fileId !== id);
           filtered.push(inboxEntry);
-          // Κράτα τα τελευταία 100
           const trimmed = filtered.sort((a,b)=>b.sentAt-a.sentAt).slice(0,100);
           await kv.set(`inbox:${recipEmail}`, trimmed, { ex:60*60*24*90 });
         }));
