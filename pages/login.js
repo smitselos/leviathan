@@ -20,8 +20,8 @@ export default function Login() {
         const d = await r.json();
         if (cancelled) return;
         if (d.role) {
-          // Υπάρχει ρόλος → redirect
-          router.replace('/');
+          // Μαθητής → /student, εκπαιδευτικός → /
+          router.replace(d.role === 'student' ? '/student' : '/');
         } else {
           // Πρώτη φορά → επιλογή ρόλου
           setShowRolePicker(true);
@@ -42,7 +42,7 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role }),
       });
-      router.replace('/');
+      router.replace(role === 'student' ? '/student' : '/');
     } catch {
       alert('Σφάλμα αποθήκευσης ρόλου. Δοκίμασε ξανά.');
       setSaving(false);
