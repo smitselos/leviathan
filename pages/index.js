@@ -91,6 +91,7 @@ export default function Home() {
   const [activeTagFilter, setActiveTagFilter] = useState(null);
   const saveTimer = useRef(null);
   const saveTimerQ = useRef(null);
+  const saveTimerI = useRef(null);
 
   // Αναζήτηση με ετικέτες
   const [searchTags, setSearchTags] = useState([]);
@@ -209,6 +210,12 @@ export default function Home() {
     setFiles((p) => p.map((f) => f.id === id ? { ...f, comment: value } : f));
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => patchMeta(id, { comment: value }), 800);
+  };
+  const fileInfo = (id) => fileOf(id).info || '';
+  const updateInfo = (id, value) => {
+    setFiles((p) => p.map((f) => f.id === id ? { ...f, info: value } : f));
+    if (saveTimerI.current) clearTimeout(saveTimerI.current);
+    saveTimerI.current = setTimeout(() => patchMeta(id, { info: value }), 800);
   };
   const fileQuestions = (id) => fileOf(id).questions || '';
   const updateQuestions = (id, value) => {
@@ -730,7 +737,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
             </>
           )}
 
@@ -749,7 +756,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
             </>
           )}
 
@@ -841,7 +848,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} />
             </>
           )}
 
@@ -864,7 +871,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} />}
             </>
           )}
 
@@ -889,22 +896,26 @@ export default function Home() {
             </div>
             {/* Action toolbar */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 8px', borderBottom:'1px solid #f0f0f0', background:PALETTE.cream.bgSoft, flexShrink:0 }}>
-              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title={isStudent ? 'Μοίρασμα' : 'Student'}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                <span>{isStudent ? 'Μοίρασμα' : 'Student'}</span>
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Πληροφορίες">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>Πληροφ.</span>
               </button>
-              {isTeacher && <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Live">
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Μοίρασμα">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                <span>Μοίρασμα</span>
+              </button>
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Live">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
                 <span>Live</span>
-              </button>}
+              </button>
               <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Σχόλια">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 <span>Σχόλια</span>
               </button>
-              {isTeacher && <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Σύνδεση">
+              <button style={{ ...S.mobileAction, opacity:0.35 }} disabled title="Σύνδεση">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                 <span>Σύνδεση</span>
-              </button>}
+              </button>
             </div>
             {/* File content — fit-to-width via transform scale */}
             <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', position:'relative' }}>
@@ -936,7 +947,7 @@ export default function Home() {
                 {showMetaPanel && (
                   <div style={{ flex:'0 0 50%', borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
-                      <span style={{ fontSize:13, fontWeight:700 }}>{isTeacher ? 'Ετικέτες · Σχόλια · Ερωτήσεις · Συνδέσεις' : 'Ετικέτες · Σχόλια'}</span>
+                      <span style={{ fontSize:13, fontWeight:700 }}>{isTeacher ? 'Ετικέτες · Πληροφορίες · Σχόλια · Ερωτήσεις · Συνδέσεις' : 'Ετικέτες · Πληροφορίες · Σχόλια · Σύνδεση'}</span>
                       {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
                     </div>
                     <div style={{ flex:1, overflowY:'auto', padding:14 }}>
@@ -955,14 +966,17 @@ export default function Home() {
                       <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:18 }}>
                         {suggested.map((t) => { const c=tagColor(t); return <span key={t} onClick={()=>addTag(viewing.id,t)} style={{ cursor:'pointer', background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>+{t}</span>; })}
                       </div>
-                      <div style={S.cpLabel}>Σχόλια</div>
+                      <div style={S.cpLabel}>Πληροφορίες</div>
+                      <textarea placeholder="Πηγή, τίτλος, συγγραφέας…" value={fileInfo(viewing.id)} onChange={(e)=>updateInfo(viewing.id,e.target.value)}
+                        style={{ width:'100%', minHeight:60, padding:'8px 12px', border:'1px solid '+PALETTE.cream.accent, borderRadius:8, fontSize:13, lineHeight:1.5, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+                      <div style={{ ...S.cpLabel, marginTop:18 }}>Σχόλια</div>
                       <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:200, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                       {isTeacher && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις</div>
                       <textarea placeholder="π.χ. Α1. Ποια επιχειρήματα χρησιμοποιεί ο συντάκτης;&#10;Β1. Να εντοπίσετε τα γλωσσικά μέσα…" value={fileQuestions(viewing.id)} onChange={(e)=>updateQuestions(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:180, padding:'10px 12px', border:'1px solid '+PALETTE.mustard.accent, borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} /></>}
 
-                      {isTeacher && <><div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
+                      <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
                       {vLinks.map((lnk, li) => (
                         <div key={li} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, padding:'6px 10px', background:'#fff', borderRadius:8, border:'1px solid #e8e0c8' }}>
                           <span style={{ fontSize:14, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
@@ -1025,7 +1039,6 @@ export default function Home() {
                           </div>
                         );
                       })()}
-                    </>}
                     </div>
                   </div>
                 )}
@@ -1201,10 +1214,11 @@ export default function Home() {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact, userRole }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact, userRole }) {
   const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
+  const [infoOpen, setInfoOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
   const [linksOpen, setLinksOpen] = useState(null);
   const [mLinkUrl, setMLinkUrl] = useState('');
@@ -1218,12 +1232,13 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
   return (
     <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8, maxWidth:'100%', overflow:'hidden' }}>
       {files.map((f) => {
-        const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim();
+        const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim(); const hasInfo = !!(f.info||'').trim();
         const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
         const isPublished = !!(f.published || (f.visibility && f.visibility !== 'none'));
         const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : (f.visibility?.startsWith('user:') || f.visibility?.startsWith('users:')) ? '👤' : null;
         const isExp = expanded === f.id;
         const isCommentOpen = isExp && commentOpen === f.id;
+        const isInfoOpen = isExp && infoOpen === f.id;
         const isQuestionsOpen = isExp && questionsOpen === f.id;
         const isLinksOpen = isExp && linksOpen === f.id;
         return (
@@ -1235,7 +1250,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
             maxWidth:'100%', minWidth:0,
           }}>
-            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setLinksOpen(null); }}
+            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setInfoOpen(null); setQuestionsOpen(null); setLinksOpen(null); }}
               style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor:'pointer', minWidth:0 }}>
               <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
@@ -1247,15 +1262,16 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
                     {tags.slice(0,3).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                     {tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
+                    {hasInfo && <span style={{ fontSize:10, color:'#aeaeb8' }}>ℹ️</span>}
                     {isTeacherRole && hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
-                    {isTeacherRole && hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
+                    {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
                     {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                   </div>
                 )}
                 {compact && showFolder && folderName(f.folderId) && (
                   <div style={{ fontSize:10, color:'#aeaeb8', marginTop:2 }}>📁 {folderName(f.folderId)}</div>
                 )}
-                {compact && isTeacherRole && (isPublished || hasLinks) && (
+                {compact && (isPublished || hasLinks) && (
                   <div style={{ display:'flex', gap:4, marginTop:2 }}>
                     {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                     {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
@@ -1273,43 +1289,58 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
                 )}
-                {hasComment && !isCommentOpen && !isQuestionsOpen && !isLinksOpen && (
-                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize: compact?11:12, color:'#5c3826', lineHeight:1.5, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word' }}>
-                    💬 {compact
-                      ? (f.comment.length > 80 ? f.comment.slice(0,80)+'…' : f.comment)
-                      : f.comment.split(/\s+/).slice(0,35).join(' ') + (f.comment.split(/\s+/).length > 35 ? ' …' : '')
+                {hasInfo && !isInfoOpen && !isCommentOpen && !isQuestionsOpen && !isLinksOpen && (
+                  <div style={{ padding:'6px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize: compact?11:12, color:'#3d3a2e', lineHeight:1.4, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word' }}>
+                    ℹ️ {compact
+                      ? (f.info.length > 60 ? f.info.slice(0,60)+'…' : f.info)
+                      : f.info.split(/\s+/).slice(0,25).join(' ') + (f.info.split(/\s+/).length > 25 ? ' …' : '')
                     }
                   </div>
                 )}
 
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0', flexWrap:'wrap', gap: compact ? 2 : 0 }}>
+                  <button style={{ ...actionBtn, color: isInfoOpen ? '#fff' : PALETTE.cream.deep, background: isInfoOpen ? PALETTE.cream.deep : 'none' }}
+                    onClick={(e) => { e.stopPropagation(); setInfoOpen(isInfoOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
+                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span style={{ fontSize: compact?11:undefined }}>Πληροφορίες</span>
+                  </button>
                   <button style={{ ...actionBtn, color: isPublished ? '#fff' : PALETTE.peach.deep, background: isPublished ? '#16a34a' : 'none' }}
                     onClick={(e) => { e.stopPropagation(); if (onPublish) onPublish(f.id); }}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    <span style={{ fontSize: compact?11:undefined }}>{visIcon || (isTeacherRole ? 'Student' : 'Μοίρασμα')}</span>
+                    <span style={{ fontSize: compact?11:undefined }}>{visIcon || 'Μοίρασμα'}</span>
                   </button>
-                  {isTeacherRole && <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
+                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
                     onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
                     disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>Live</span>
-                  </button>}
+                  </button>
                   <button style={{ ...actionBtn, color: isCommentOpen ? '#fff' : PALETTE.peach.deep, background: isCommentOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
+                    onClick={(e) => { e.stopPropagation(); setCommentOpen(isCommentOpen ? null : f.id); setInfoOpen(null); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>Σχόλια</span>
                   </button>
-                  {isTeacherRole && <button style={{ ...actionBtn, color: isLinksOpen ? '#fff' : PALETTE.peach.deep, background: isLinksOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setLinksOpen(isLinksOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setPickerSection(null); }}>
+                  <button style={{ ...actionBtn, color: isLinksOpen ? '#fff' : PALETTE.peach.deep, background: isLinksOpen ? PALETTE.peach.deep : 'none' }}
+                    onClick={(e) => { e.stopPropagation(); setLinksOpen(isLinksOpen ? null : f.id); setInfoOpen(null); setCommentOpen(null); setQuestionsOpen(null); setPickerSection(null); }}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>Σύνδεση</span>
-                  </button>}
+                  </button>
                   {isTeacherRole && <button style={{ ...actionBtn, color: isQuestionsOpen ? '#fff' : PALETTE.peach.deep, background: isQuestionsOpen ? PALETTE.peach.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setCommentOpen(null); setLinksOpen(null); setPickerSection(null); }}>
+                    onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setInfoOpen(null); setCommentOpen(null); setLinksOpen(null); setPickerSection(null); }}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>Ερωτήσεις</span>
                   </button>}
                 </div>
+
+                {/* Πληροφορίες */}
+                {isInfoOpen && (
+                  <div style={{ marginTop:10 }}>
+                    <textarea value={f.info || ''} onChange={(e) => { e.stopPropagation(); if (onInfo) onInfo(f.id, e.target.value); }}
+                      onClick={(e) => e.stopPropagation()} placeholder="Πηγή, τίτλος, συγγραφέας…"
+                      style={{ width:'100%', padding:'8px 12px', border:'1px solid '+PALETTE.cream.accent, borderRadius:12, fontSize: compact?16:13, lineHeight:1.5, color:'#3d3a2e', background:'rgba(255,255,255,0.7)', resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:44, overflow:'hidden' }}
+                      ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
+                  </div>
+                )}
 
                 {/* Σχόλια */}
                 {isCommentOpen && (
