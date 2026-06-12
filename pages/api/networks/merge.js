@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     }
 
     // ── 2. Σελίδα ερωτήσεων ──────────────────────────────────────────
-    const CODE_ORDER = ['Α', 'Β1', 'Β2', 'Β3', 'Δ'];
+    const CODE_ORDER = ['Α', 'Β1', 'Β2', 'Β3', 'Γ', 'Δ'];
     const allQuestions = network.items
       .flatMap((item) => (item.questions || []).map((q) => ({ ...q })))
       .filter((q) => q.text?.trim())
