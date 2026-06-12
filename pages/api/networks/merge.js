@@ -102,7 +102,7 @@ export default async function handler(req, res) {
 
       const pageWidth = 595;
       const pageHeight = 842;
-      const margin = 85;
+      const margin = 80;
       const lineHeight = 14;
       const maxWidth = pageWidth - margin * 2;
 
@@ -116,20 +116,20 @@ export default async function handler(req, res) {
       y -= lineHeight * 2.5;
 
       // Justified line helper
-      const drawJustifiedLine = (words, size, useFont, isLast) => {
+      const drawJustifiedLine = (words, size, useFont, isLast, xStart, availWidth) => {
+        const startX = xStart || margin;
+        const lineWidth = availWidth || maxWidth;
         if (y < margin + lineHeight) {
           page = mergedPdf.addPage([pageWidth, pageHeight]);
           y = pageHeight - margin;
         }
         if (!words.length) return;
         if (isLast || words.length === 1) {
-          // Τελευταία γραμμή ή μία λέξη → αριστερή στοίχιση
-          page.drawText(words.join(' '), { x: margin, y, size, font: useFont, color: rgb(0, 0, 0) });
+          page.drawText(words.join(' '), { x: startX, y, size, font: useFont, color: rgb(0, 0, 0) });
         } else {
-          // Πλήρης στοίχιση
           const totalWordWidth = words.reduce((sum, w) => sum + useFont.widthOfTextAtSize(w, size), 0);
-          const extraSpace = (maxWidth - totalWordWidth) / (words.length - 1);
-          let cx = margin;
+          const extraSpace = (lineWidth - totalWordWidth) / (words.length - 1);
+          let cx = startX;
           for (const w of words) {
             page.drawText(w, { x: cx, y, size, font: useFont, color: rgb(0, 0, 0) });
             cx += useFont.widthOfTextAtSize(w, size) + extraSpace;
@@ -164,7 +164,6 @@ export default async function handler(req, res) {
 
       for (const q of allQuestions) {
         if (q.code) {
-          // Κωδικός bold
           const prefix = `${q.code}. `;
           const prefixWidth = fontBold.widthOfTextAtSize(prefix, 11);
           if (y < margin + lineHeight) {
@@ -172,7 +171,6 @@ export default async function handler(req, res) {
             y = pageHeight - margin;
           }
           page.drawText(prefix, { x: margin, y, size: 11, font: fontBold, color: rgb(0, 0, 0) });
-          // Κείμενο regular — ξεκινά μετά τον κωδικό στην ίδια γραμμή
           const remainingWidth = maxWidth - prefixWidth;
           const textWords = (q.text || '').split(/\s+/).filter(w => w);
           let firstLineWords = [];
@@ -181,12 +179,15 @@ export default async function handler(req, res) {
             if (font.widthOfTextAtSize(testLine, 11) > remainingWidth && firstLineWords.length > 0) break;
             firstLineWords.push(word);
           }
-          if (firstLineWords.length > 0) {
-            page.drawText(firstLineWords.join(' '), { x: margin + prefixWidth, y, size: 11, font, color: rgb(0, 0, 0) });
-          }
-          y -= lineHeight;
-          // Υπόλοιπο κείμενο justified
           const restWords = textWords.slice(firstLineWords.length);
+          const isLastLine = restWords.length === 0;
+          // Πρώτη γραμμή — justified αν υπάρχει συνέχεια
+          if (firstLineWords.length > 0) {
+            drawJustifiedLine(firstLineWords, 11, font, isLastLine, margin + prefixWidth, remainingWidth);
+          } else {
+            y -= lineHeight;
+          }
+          // Υπόλοιπο κείμενο justified
           if (restWords.length > 0) {
             drawWrappedJustified(restWords.join(' '), 11, font);
           }
