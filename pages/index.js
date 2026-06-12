@@ -48,6 +48,7 @@ function hasAnyQuestions(raw) {
   if (!raw || !String(raw).trim()) return false;
   try { const a = JSON.parse(raw); return Array.isArray(a) && a.some(q => q.text?.trim()); } catch { return !!String(raw).trim(); }
 }
+const trunc = (s, max = 15) => s && s.length > max ? s.slice(0, max) + '…' : s || '';
 
 // ── SVG εικονίδια (ίδια με το παλιό) ──
 const Icon = {
@@ -848,7 +849,7 @@ export default function Home() {
                         : recentFiles.map((f, idx) => (
                           <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<recentFiles.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
                             <span style={{ fontSize:16, flexShrink:0 }}>📄</span>
-                            <div style={S.recentInfo}><div style={S.recentTitle}>{f.name}</div></div>
+                            <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
                           </div>
                         ))}
                     </div>
@@ -861,7 +862,7 @@ export default function Home() {
                         : popularFiles.map((f, idx) => (
                           <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<popularFiles.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
                             <div style={{ width:24, height:24, borderRadius:8, background:PALETTE.mustard.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:11, fontWeight:700, color:PALETTE.mustard.deep }}>{f.openCount}</div>
-                            <div style={S.recentInfo}><div style={S.recentTitle}>{f.name}</div></div>
+                            <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
                           </div>
                         ))}
                     </div>
@@ -1621,7 +1622,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
               {!compact && <span style={{ fontSize:18 }}>📄</span>}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{compact ? (f.name.length > 12 ? f.name.slice(0,12)+'…' : f.name) : (f.name.length > 20 ? f.name.slice(0,20)+'…' : f.name)}</div>
+                <div style={{ fontSize: compact ? 13 : 14, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name, compact ? 15 : 25)}</div>
                 {!compact && (
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4, flexWrap:'wrap' }}>
                     {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
