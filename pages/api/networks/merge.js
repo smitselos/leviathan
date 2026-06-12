@@ -95,7 +95,7 @@ export default async function handler(req, res) {
 
       const pageWidth = 595;
       const pageHeight = 842;
-      const margin = 28;
+      const margin = 85;
       const lineHeight = 14;
       const maxWidth = pageWidth - margin * 2;
 
