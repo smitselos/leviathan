@@ -1,87 +1,103 @@
-# ΛΕΒΙΑΘΑΝ Cloud — νέα έκδοση (drive.file)
+# ΛΕΒΙΑΘΑΝ Cloud
 
-Καθαρή βάση της εφαρμογής, χτισμένη με **Next.js + NextAuth + Google Drive (drive.file)**.
-Κάθε χρήστης μπαίνει με τον δικό του λογαριασμό Google και δουλεύει με το **δικό του** Drive,
-ανεξάρτητα από τους άλλους. Χωρίς λίστα επιτρεπόμενων e-mail — μπαίνει ο καθένας.
-
-## Τι κάνει αυτή η πρώτη έκδοση (MVP)
-
-- Σύνδεση με Google (scope **μόνο** `drive.file` — μη ευαίσθητο, χωρίς CASA).
-- Προσθήκη αρχείων με **Google Picker** (επιλογή υπαρχόντων) ή **ανέβασμα** από τη συσκευή.
-- **Μητρώο** αρχείων αποθηκευμένο ως `leviathan-cloud-data.json` στο Drive του χρήστη
-  (αντί για σάρωση φακέλων — απαραίτητο για το `drive.file`).
-- Κατηγορίες: Κείμενα / Βιβλία / Δίκτυα.
-- Προβολή αρχείου μέσα στην εφαρμογή (PDF, Google Docs/Slides, Office → PDF, HTML).
-- Ανανέωση token (refresh) ώστε η πρόσβαση να μη λήγει στη 1 ώρα.
-
-Τα επόμενα (δίκτυα-builder, σχόλια, ετικέτες, live, σελίδα μαθητή) προστίθενται σταδιακά.
+Πλατφόρμα διαχείρισης και διαμοιρασμού εκπαιδευτικού υλικού.  
+Next.js · NextAuth · Google Drive (drive.file) · Upstash Redis (Vercel KV)
 
 ---
 
-## 1. Google Cloud — ρυθμίσεις (μία φορά)
+## Τι κάνει
 
-Μπορείς να χρησιμοποιήσεις το **ίδιο** project που έχεις ήδη, ή νέο.
+### Εκπαιδευτικός (index.js)
+- **Φάκελοι & αρχεία** — Οργάνωση σε φακέλους, ετικέτες, σχόλια, πληροφορίες, αγαπημένα
+- **Ερωτήσεις** — 6 πεδία ανά αρχείο (Α, Β1, Β2, Β3, Γ, Δ) για δημιουργία κριτηρίων
+- **Δημιουργία Δικτύου** — Σύνθεση κειμένων + ερωτήσεων → ενιαίο PDF στο Drive
+- **Μοίρασμα** — Δημόσιο (ανοιχτή σελίδα), Συνδέσεις, Συγκεκριμένοι χρήστες
+- **Live** — Προβολή αρχείου με 4ψήφιο κωδικό (2ωρο TTL)
+- **Σύνδεση αρχείων** — Εκπαιδευτικοί σύνδεσμοι URL
+- **Δίκτυα χρηστών** — Προσκλήσεις, αποδοχή, εισερχόμενα αρχεία
+- **Εφαρμογές** — Ξεχωριστός φάκελος για HTML apps
+- **QR Code** — Σε κάθε αρχείο για σκανάρισμα από κινητό
 
-1. Στο [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services → Enabled APIs** ενεργοποίησε:
-   - **Google Drive API**
-   - **Google Picker API**
-2. **Credentials → Create credentials → OAuth client ID** → τύπος **Web application**.
-   - Authorized JavaScript origins: `https://ΤΟ-DOMAIN-ΣΟΥ.vercel.app` (και `http://localhost:3000` για τοπικά).
-   - Authorized redirect URIs:
-     - `https://ΤΟ-DOMAIN-ΣΟΥ.vercel.app/api/auth/callback/google`
-     - `http://localhost:3000/api/auth/callback/google`
-   - Κράτα το **Client ID** και **Client secret**.
-3. **Credentials → Create credentials → API key** (αυτό είναι το `NEXT_PUBLIC_GOOGLE_API_KEY` για τον Picker).
-4. Σημείωσε τον **Project number** (Dashboard → Project info) — είναι το `NEXT_PUBLIC_GOOGLE_APP_ID`.
-5. **OAuth consent screen → Audience**: όταν είσαι έτοιμος, πάτησε **Publish app** (Production)
-   ώστε να μπαίνει οποιοσδήποτε. Με `drive.file` η επαλήθευση είναι ελαφριά (χωρίς CASA).
+### Μαθητής (student.js → StudentView)
+- Εισερχόμενα από συνδεδεμένους εκπαιδευτικούς
+- Ανέβασμα & αποστολή αρχείων
+- Αποθήκευση στο Drive
+- QR Code, Λήψη
+- Συνδέσεις / Αποσύνδεση
 
----
+### Δημόσια σελίδα (student.js → PublicView)
+- Πρόσβαση χωρίς login μέσω σύντομου URL: `/s/username`
+- Εμφανίζει μόνο αρχεία με ορατότητα «Δημόσιο»
+- QR Code, Λήψη
 
-## 2. Μεταβλητές περιβάλλοντος
-
-Δες το `.env.example`. Στο **Vercel**: Project → Settings → Environment Variables, πρόσθεσε:
-
-| Μεταβλητή | Τι είναι |
-|---|---|
-| `GOOGLE_CLIENT_ID` | OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | OAuth Client secret |
-| `NEXTAUTH_SECRET` | τυχαία συμβολοσειρά (`openssl rand -base64 32`) |
-| `NEXTAUTH_URL` | `https://ΤΟ-DOMAIN-ΣΟΥ.vercel.app` |
-| `NEXT_PUBLIC_GOOGLE_API_KEY` | Browser API key (για Picker) |
-| `NEXT_PUBLIC_GOOGLE_APP_ID` | Project number |
+### Σελίδα εκπαιδευτικού (student.js → TeacherView)
+- Επισκόπηση δημοσιευμένου υλικού
+- Ένδειξη ορατότητας (Δημόσιο / Συνδέσεις / Συγκεκριμένοι χρήστες)
+- QR Code ανά αρχείο
 
 ---
 
-## 3. Ανέβασμα στο GitHub + Vercel
+## Αρχιτεκτονική
 
-1. Δημιούργησε νέο repo στο GitHub και ανέβασε όλα τα αρχεία αυτού του φακέλου.
-2. Στο [Vercel](https://vercel.com/) → **Add New → Project** → επίλεξε το repo.
-3. Πρόσθεσε τις μεταβλητές περιβάλλοντος (βήμα 2) και πάτησε **Deploy**.
-4. Μετά το πρώτο deploy, βεβαιώσου ότι το `NEXTAUTH_URL` και τα redirect URIs ταιριάζουν
-   με το πραγματικό domain που σου έδωσε το Vercel.
-
----
-
-## 4. Τοπική εκτέλεση (προαιρετικά)
-
-```bash
-npm install
-cp .env.example .env.local   # συμπλήρωσε τις τιμές
-npm run dev
+```
+pages/
+├── index.js          # Κύρια εφαρμογή εκπαιδευτικού
+├── student.js        # PublicView + StudentView + TeacherView
+├── login.js          # Σελίδα σύνδεσης
+├── live.js           # Live προβολή (4ψήφιος κωδικός)
+├── s/[id].js         # Σύντομος σύνδεσμος → PublicView
+├── api/
+│   ├── auth/[...nextauth].js
+│   ├── registry.js   # CRUD αρχείων/φακέλων (Drive JSON)
+│   ├── network.js    # Συνδέσεις χρηστών (KV)
+│   ├── networks.js   # Δίκτυα κειμένων (registry)
+│   ├── networks/merge.js  # Συνένωση PDF + ερωτήσεις
+│   ├── publish.js    # Δημοσιευμένα αρχεία
+│   ├── role.js       # Ρόλος χρήστη
+│   ├── live.js       # Live sessions (KV)
+│   └── ...
+lib/
+└── drive.js          # Google Drive helpers
 ```
 
-Άνοιξε http://localhost:3000
+### Αποθήκευση
+- **Google Drive** — Αρχεία + registry JSON (`__leviathan_registry__.json`) ανά χρήστη
+- **Upstash Redis (Vercel KV)** — Συνδέσεις, προσκλήσεις, inbox, live sessions, δημοσιεύσεις
+
+### Scope
+- `drive.file` — πρόσβαση μόνο σε αρχεία που δημιουργεί ή επιλέγει ο χρήστης
 
 ---
 
-## Σημειώσεις αρχιτεκτονικής
+## Ρύθμιση
 
-- **Γιατί μητρώο και όχι σάρωση φακέλων;** Το `drive.file` δίνει πρόσβαση μόνο σε αρχεία
-  που δημιουργεί ή που διαλέγει ρητά ο χρήστης (μέσω Picker/ανεβάσματος). Δεν μπορεί να
-  «σαρώσει» έναν φάκελο. Γι' αυτό κρατάμε εμείς τη λίστα των αρχείων (file IDs) σε JSON
-  στο Drive του χρήστη.
-- **Το ανέβασμα** γίνεται απευθείας από τον browser στο Drive (multipart upload με το token
-  του χρήστη), ώστε να μην περνά από τις serverless συναρτήσεις του Vercel (αποφυγή ορίου
-  μεγέθους ~4.5MB).
-- **Η αφαίρεση** από τη λίστα ΔΕΝ διαγράφει το αρχείο από το Drive — απλώς το βγάζει από το μητρώο.
+### Google Cloud Console
+1. Ενεργοποίηση: **Google Drive API**, **Google Picker API**
+2. OAuth Client ID (Web) → redirect URI: `https://DOMAIN/api/auth/callback/google`
+3. API Key (για Picker)
+4. OAuth consent → **Production** (drive.file δεν χρειάζεται CASA)
+
+### Μεταβλητές περιβάλλοντος (Vercel)
+
+| Μεταβλητή | Περιγραφή |
+|---|---|
+| `GOOGLE_CLIENT_ID` | OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | OAuth Client Secret |
+| `NEXTAUTH_SECRET` | Τυχαία συμβολοσειρά |
+| `NEXTAUTH_URL` | `https://DOMAIN.vercel.app` |
+| `NEXT_PUBLIC_GOOGLE_API_KEY` | Browser API key |
+| `NEXT_PUBLIC_GOOGLE_APP_ID` | Project number |
+| `KV_REST_API_URL` | Upstash Redis URL |
+| `KV_REST_API_TOKEN` | Upstash Redis token |
+
+### Deploy
+```bash
+npm install
+npm run dev         # τοπικά
+```
+Ή push στο GitHub → Vercel auto-deploy.
+
+### Dependencies
+```
+next, react, react-dom, next-auth, googleapis, @vercel/kv, pdf-lib, @pdf-lib/fontkit
+```
