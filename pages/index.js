@@ -131,6 +131,7 @@ export default function Home() {
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
   const [networkLoading, setNetworkLoading] = useState(false);
   const [expandedInbox, setExpandedInbox] = useState(null);
+  const [inboxFilter, setInboxFilter] = useState(null);
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
 
   // ── Network Builder (Δίκτυα Κειμένων) ──
@@ -505,7 +506,7 @@ export default function Home() {
   };
 
   // ── Navigation helpers ──
-  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); };
+  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
@@ -1138,9 +1139,11 @@ export default function Home() {
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>
                     📥 Εισερχόμενα
-                    {networkData.unseenCount > 0 && <span style={{ marginLeft:8, background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{networkData.unseenCount} νέα</span>}
+                    {inboxFilter && <span style={{ marginLeft:8, fontSize:11, color:PALETTE.cream.deep }}>— από {inboxFilter.split('@')[0]}</span>}
+                    {inboxFilter && <button onClick={()=>setInboxFilter(null)} style={{ marginLeft:6, background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:11 }}>✕</button>}
+                    {networkData.unseenCount > 0 && !inboxFilter && <span style={{ marginLeft:8, background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{networkData.unseenCount} νέα</span>}
                   </div>
-                  {networkData.inbox.map((item, i) => {
+                  {(inboxFilter ? networkData.inbox.filter(i=>i.fromEmail===inboxFilter) : networkData.inbox).map((item, i) => {
                     const isExp = expandedInbox === item.fileId+i;
                     return (
                       <div key={item.fileId+i} style={{ background: !item.seen ? '#fff9ed' : '#fff', border: `1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, borderRadius:14, marginBottom:8, overflow:'hidden', transition:'all 0.15s ease' }}>
@@ -1156,7 +1159,7 @@ export default function Home() {
                         </div>
                         {isExp && (
                           <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                            <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`/student?teacher=${encodeURIComponent(item.fromEmail)}`, '_blank'); }}
+                            <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/file/d/${item.fileId}/preview`, '_blank'); }}
                               style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
                             <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
                               style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
@@ -1180,7 +1183,7 @@ export default function Home() {
                       <div style={{ fontSize:13, fontWeight:600 }}>{conn.name||conn.email}</div>
                       <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
                     </div>
-                    <button onClick={()=>window.open(`/student?teacher=${encodeURIComponent(conn.email)}`, '_blank')} style={{ padding:'6px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Υλικό →</button>
+                    <button onClick={()=>setInboxFilter(inboxFilter===conn.email?null:conn.email)} style={{ padding:'6px 14px', borderRadius:10, border: inboxFilter===conn.email ? '1.5px solid #8a7d4a' : '1px solid #e0e0e0', background: inboxFilter===conn.email ? PALETTE.cream.bgSoft : '#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>{inboxFilter===conn.email ? '✕ Φίλτρο' : 'Υλικό →'}</button>
                     <button onClick={()=>disconnect(conn.email)} style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:12, padding:'4px' }}>✕</button>
                   </div>
                 ))}
