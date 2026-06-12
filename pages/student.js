@@ -570,6 +570,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
                       {f.visibility&&visLabel[f.visibility]&&<span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#f0f0f0',color:'#6b6b80'}}>{visLabel[f.visibility]}</span>}
                       {(f.tags||[]).slice(0,3).map(t=>{const c=tagColor(t);return<span key={t} style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:c.bg,color:c.text}}>#{t}</span>;})}
                     </div>
+                    {f.info&&<div style={{fontSize:11,color:P.cream.deep,marginTop:4,lineHeight:1.4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>ℹ️ {trunc(f.info,isMobile?40:60)}</div>}
                   </div>
                   <button onClick={e=>{e.stopPropagation();setQrFile(f);}} style={{background:'none',border:'1px solid #e0e0e0',borderRadius:8,padding:'5px 7px',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}} title="QR Code">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b80" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>

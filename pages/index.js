@@ -1675,21 +1675,17 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
                 )}
-                {hasInfo && !isInfoOpen && !isCommentOpen && !isQuestionsOpen && !isLinksOpen && (
-                  <div style={{ padding:'6px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:10, fontSize: compact?11:12, color:'#3d3a2e', lineHeight:1.4, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word' }}>
+                {/* Πληροφορίες — σταθερό read-only πλαίσιο */}
+                {hasInfo && (
+                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:8, fontSize: compact?11:12, color:'#3d3a2e', lineHeight:1.5, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word' }}>
                     ℹ️ {compact
-                      ? (f.info.length > 60 ? f.info.slice(0,60)+'…' : f.info)
-                      : f.info.split(/\s+/).slice(0,25).join(' ') + (f.info.split(/\s+/).length > 25 ? ' …' : '')
+                      ? (f.info.length > 80 ? f.info.slice(0,80)+'…' : f.info)
+                      : f.info.split(/\s+/).slice(0,40).join(' ') + (f.info.split(/\s+/).length > 40 ? ' …' : '')
                     }
                   </div>
                 )}
 
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', background:'rgba(255,255,255,0.5)', borderRadius:14, padding:'4px 0', flexWrap:'wrap', gap: compact ? 2 : 0 }}>
-                  <button style={{ ...actionBtn, color: isInfoOpen ? '#fff' : PALETTE.cream.deep, background: isInfoOpen ? PALETTE.cream.deep : 'none' }}
-                    onClick={(e) => { e.stopPropagation(); setInfoOpen(isInfoOpen ? null : f.id); setCommentOpen(null); setQuestionsOpen(null); setLinksOpen(null); setPickerSection(null); }}>
-                    <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                    <span style={{ fontSize: compact?11:undefined }}>Πληροφορίες</span>
-                  </button>
                   <button style={{ ...actionBtn, color: isPublished ? '#fff' : PALETTE.peach.deep, background: isPublished ? '#16a34a' : 'none' }}
                     onClick={(e) => { e.stopPropagation(); if (onPublish) onPublish(f.id); }}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -1717,16 +1713,6 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <span style={{ fontSize: compact?11:undefined }}>Ερωτήσεις</span>
                   </button>}
                 </div>
-
-                {/* Πληροφορίες */}
-                {isInfoOpen && (
-                  <div style={{ marginTop:10 }}>
-                    <textarea value={f.info || ''} onChange={(e) => { e.stopPropagation(); if (onInfo) onInfo(f.id, e.target.value); }}
-                      onClick={(e) => e.stopPropagation()} placeholder="Πηγή, τίτλος, συγγραφέας…"
-                      style={{ width:'100%', padding:'8px 12px', border:'1px solid '+PALETTE.cream.accent, borderRadius:12, fontSize: compact?16:13, lineHeight:1.5, color:'#3d3a2e', background:'rgba(255,255,255,0.7)', resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:44, overflow:'hidden' }}
-                      ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
-                  </div>
-                )}
 
                 {/* Σχόλια */}
                 {isCommentOpen && (
