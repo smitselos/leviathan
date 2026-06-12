@@ -173,15 +173,45 @@ export default async function handler(req, res) {
     // ── 4. Ενημέρωση registry ────────────────────────────────────────
     try {
       const reg = await loadRegistry(drive);
+
+      // 4a. Ενημέρωση network metadata
       if (Array.isArray(reg.networks)) {
         const idx = reg.networks.findIndex((n) => n.id === network.id);
         if (idx >= 0) {
           reg.networks[idx].pdfFileId = pdfFileId;
           reg.networks[idx].pdfFilename = filename;
           reg.networks[idx].updatedAt = Date.now();
-          await saveRegistry(drive, reg);
         }
       }
+
+      // 4b. Καταχώρηση PDF στα αρχεία (ώστε να φαίνεται στον φάκελο)
+      if (!reg.files) reg.files = [];
+      const existingIdx = reg.files.findIndex((f) => f.id === pdfFileId);
+      const fileEntry = {
+        id: pdfFileId,
+        name: filename,
+        mimeType: 'application/pdf',
+        folderId: targetFolder,
+        tags: ['Δίκτυο'],
+        comment: `Δίκτυο: ${network.name}`,
+        questions: '',
+        links: [],
+        published: false,
+        visibility: 'none',
+        favorite: false,
+        openCount: 0,
+        openedAt: null,
+        addedAt: Date.now(),
+      };
+      if (existingIdx >= 0) {
+        // Ενημέρωση υπάρχοντος — κρατάμε tags/comment κ.λπ. αν άλλαξαν
+        reg.files[existingIdx].name = filename;
+        reg.files[existingIdx].mimeType = 'application/pdf';
+      } else {
+        reg.files.push(fileEntry);
+      }
+
+      await saveRegistry(drive, reg);
     } catch (e) {
       // Μη κρίσιμο — το PDF δημιουργήθηκε, απλά δεν ενημερώθηκε το registry
       console.error('Registry update after merge:', e.message);
