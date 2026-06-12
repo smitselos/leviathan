@@ -220,7 +220,7 @@ function StudentView({myEmail,isMobile,router}){
           const r=await fetch(`/api/publish?email=${encodeURIComponent(c.email)}&visitor=${encodeURIComponent(myEmail)}`);
           if(!r.ok)return;
           const d=await r.json();
-          (d.items||[]).forEach(f=>allIn.push({...f,fromEmail:c.email,fromName:c.name||c.email}));
+          (d.items||[]).filter(f=>f.visibility!=='public').forEach(f=>allIn.push({...f,fromEmail:c.email,fromName:c.name||c.email}));
         }catch{}
       }));
       allIn.sort((a,b)=>(b.publishedAt||b.addedAt||'').localeCompare(a.publishedAt||a.addedAt||''));
@@ -491,7 +491,16 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const [activeTag,setActiveTag]=useState(null);
   const [qrFile,setQrFile]=useState(null);
   const getFileUrl=f=>`https://drive.google.com/file/d/${f.id}/view`;
-  const visLabel={'public':'🌐 Όλοι','connections':'👥 Συνδέσεις','specific':'🔒 Συγκεκριμένοι'};
+  const getVisLabel=(v)=>{
+    if(!v||v==='none')return null;
+    if(v==='public')return '🌐 Δημόσιο';
+    if(v==='connections')return '👥 Συνδέσεις';
+    if(v.startsWith('user:'))return '👤 '+v.slice(5).split('@')[0];
+    if(v.startsWith('users:')){
+      try{const arr=JSON.parse(v.slice(6));return '👥 '+arr.map(e=>e.split('@')[0]).join(', ');}catch{return '👥 Πολλοί';}
+    }
+    return null;
+  };
 
   const loadData=useCallback(async()=>{
     setLoading(true);
@@ -567,7 +576,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:isMobile?13:14,fontWeight:600,color:'#1a1a1a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{trunc(f.name,isMobile?15:30)}</div>
                     <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:4,alignItems:'center'}}>
-                      {f.visibility&&visLabel[f.visibility]&&<span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#f0f0f0',color:'#6b6b80'}}>{visLabel[f.visibility]}</span>}
+                      {f.visibility&&getVisLabel(f.visibility)&&<span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#f0f0f0',color:'#6b6b80'}}>{getVisLabel(f.visibility)}</span>}
                       {(f.tags||[]).slice(0,3).map(t=>{const c=tagColor(t);return<span key={t} style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:c.bg,color:c.text}}>#{t}</span>;})}
                     </div>
                     {f.info&&<div style={{fontSize:11,color:P.cream.deep,marginTop:4,lineHeight:1.4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>ℹ️ {trunc(f.info,isMobile?40:60)}</div>}

@@ -1498,7 +1498,7 @@ export default function Home() {
 
               {/* Όλοι / Συνδέσεις */}
               {[
-                { value:'public',      icon:'🌍', label:'Όλοι', desc:'Οποιοσδήποτε έχει τον σύνδεσμο' },
+                { value:'public',      icon:'🌍', label:'Δημόσιο', desc:'Μόνο στη δημόσια σελίδα (χωρίς login)' },
                 { value:'connections', icon:'👥', label:'Συνδέσεις μου', desc:'Μόνο όσοι είναι στο δίκτυό μου' },
               ].map(opt => {
                 const isActive = curV === opt.value;
