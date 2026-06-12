@@ -13,6 +13,7 @@ import fontkit from '@pdf-lib/fontkit';
 import { Readable } from 'stream';
 
 const FONT_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+const FONT_BOLD_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf';
 
 function bufferToStream(buffer) {
   const readable = new Readable();
@@ -23,6 +24,10 @@ function bufferToStream(buffer) {
 
 async function fetchFont() {
   const res = await fetch(FONT_URL);
+  return Buffer.from(await res.arrayBuffer());
+}
+async function fetchBoldFont() {
+  const res = await fetch(FONT_BOLD_URL);
   return Buffer.from(await res.arrayBuffer());
 }
 
@@ -91,7 +96,9 @@ export default async function handler(req, res) {
 
     if (allQuestions.length > 0) {
       const fontBytes = await fetchFont();
+      const boldBytes = await fetchBoldFont();
       const font = await mergedPdf.embedFont(fontBytes);
+      const fontBold = await mergedPdf.embedFont(boldBytes);
 
       const pageWidth = 595;
       const pageHeight = 842;
@@ -102,54 +109,90 @@ export default async function handler(req, res) {
       let page = mergedPdf.addPage([pageWidth, pageHeight]);
       let y = pageHeight - margin;
 
-      // Τίτλος
+      // Τίτλος — bold
       page.drawText('ΕΡΩΤΗΣΕΙΣ', {
-        x: margin, y, size: 16, font, color: rgb(0, 0, 0),
+        x: margin, y, size: 16, font: fontBold, color: rgb(0, 0, 0),
       });
-      y -= lineHeight * 2;
+      y -= lineHeight * 2.5;
 
-      // Word-wrap helper — χειρίζεται και αλλαγές παραγράφου (\n)
-      const drawWrapped = (text, size) => {
+      // Justified line helper
+      const drawJustifiedLine = (words, size, useFont, isLast) => {
+        if (y < margin + lineHeight) {
+          page = mergedPdf.addPage([pageWidth, pageHeight]);
+          y = pageHeight - margin;
+        }
+        if (!words.length) return;
+        if (isLast || words.length === 1) {
+          // Τελευταία γραμμή ή μία λέξη → αριστερή στοίχιση
+          page.drawText(words.join(' '), { x: margin, y, size, font: useFont, color: rgb(0, 0, 0) });
+        } else {
+          // Πλήρης στοίχιση
+          const totalWordWidth = words.reduce((sum, w) => sum + useFont.widthOfTextAtSize(w, size), 0);
+          const extraSpace = (maxWidth - totalWordWidth) / (words.length - 1);
+          let cx = margin;
+          for (const w of words) {
+            page.drawText(w, { x: cx, y, size, font: useFont, color: rgb(0, 0, 0) });
+            cx += useFont.widthOfTextAtSize(w, size) + extraSpace;
+          }
+        }
+        y -= lineHeight;
+      };
+
+      // Word-wrap + justify helper
+      const drawWrappedJustified = (text, size, useFont) => {
         const paragraphs = text.split(/\n/);
         for (let pi = 0; pi < paragraphs.length; pi++) {
           const para = paragraphs[pi].trim();
-          if (!para) {
-            // Κενή γραμμή → απόσταση παραγράφου
-            y -= lineHeight * 0.6;
-            continue;
-          }
-          const words = para.split(' ');
-          let line = '';
+          if (!para) { y -= lineHeight * 0.6; continue; }
+          const words = para.split(/\s+/);
+          let lineWords = [];
           for (const word of words) {
-            const test = line ? `${line} ${word}` : word;
-            if (font.widthOfTextAtSize(test, size) > maxWidth && line) {
-              if (y < margin + lineHeight) {
-                page = mergedPdf.addPage([pageWidth, pageHeight]);
-                y = pageHeight - margin;
-              }
-              page.drawText(line, { x: margin, y, size, font, color: rgb(0, 0, 0) });
-              y -= lineHeight;
-              line = word;
+            const testLine = [...lineWords, word].join(' ');
+            if (useFont.widthOfTextAtSize(testLine, size) > maxWidth && lineWords.length > 0) {
+              drawJustifiedLine(lineWords, size, useFont, false);
+              lineWords = [word];
             } else {
-              line = test;
+              lineWords.push(word);
             }
           }
-          if (line) {
-            if (y < margin + lineHeight) {
-              page = mergedPdf.addPage([pageWidth, pageHeight]);
-              y = pageHeight - margin;
-            }
-            page.drawText(line, { x: margin, y, size, font, color: rgb(0, 0, 0) });
-            y -= lineHeight;
+          if (lineWords.length > 0) {
+            drawJustifiedLine(lineWords, size, useFont, true); // τελευταία γραμμή → αριστερά
           }
-          // Μικρό κενό μεταξύ παραγράφων (εκτός αν είναι η τελευταία)
           if (pi < paragraphs.length - 1) y -= lineHeight * 0.3;
         }
       };
 
       for (const q of allQuestions) {
-        const prefix = q.code ? `${q.code}. ` : '';
-        drawWrapped(`${prefix}${q.text}`, 11);
+        if (q.code) {
+          // Κωδικός bold
+          const prefix = `${q.code}. `;
+          const prefixWidth = fontBold.widthOfTextAtSize(prefix, 11);
+          if (y < margin + lineHeight) {
+            page = mergedPdf.addPage([pageWidth, pageHeight]);
+            y = pageHeight - margin;
+          }
+          page.drawText(prefix, { x: margin, y, size: 11, font: fontBold, color: rgb(0, 0, 0) });
+          // Κείμενο regular — ξεκινά μετά τον κωδικό στην ίδια γραμμή
+          const remainingWidth = maxWidth - prefixWidth;
+          const textWords = (q.text || '').split(/\s+/).filter(w => w);
+          let firstLineWords = [];
+          for (const word of textWords) {
+            const testLine = [...firstLineWords, word].join(' ');
+            if (font.widthOfTextAtSize(testLine, 11) > remainingWidth && firstLineWords.length > 0) break;
+            firstLineWords.push(word);
+          }
+          if (firstLineWords.length > 0) {
+            page.drawText(firstLineWords.join(' '), { x: margin + prefixWidth, y, size: 11, font, color: rgb(0, 0, 0) });
+          }
+          y -= lineHeight;
+          // Υπόλοιπο κείμενο justified
+          const restWords = textWords.slice(firstLineWords.length);
+          if (restWords.length > 0) {
+            drawWrappedJustified(restWords.join(' '), 11, font);
+          }
+        } else {
+          drawWrappedJustified(q.text || '', 11, font);
+        }
         y -= 8;
       }
     }
