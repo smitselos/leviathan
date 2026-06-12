@@ -206,7 +206,11 @@ function StudentView({myEmail,isMobile,router}){
       setSentFiles(allFiles.filter(f=>f.sent));
 
       // Seen IDs
-      setSeenIds(new Set(dReg.seenFiles||[]));
+      setSeenIds(prev => {
+        const merged = new Set(dReg.seenFiles || []);
+        prev.forEach(id => merged.add(id));
+        return merged;
+      });
 
       // Εισερχόμενα
       const conns=dNet.connections||[];

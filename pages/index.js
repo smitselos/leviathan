@@ -33,6 +33,7 @@ const TAG_COLORS = [
   { bg:'#f3f4f6', text:'#374151' },
 ];
 const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
+const newQid = () => Math.random().toString(36).slice(2, 8);
 
 // ── SVG εικονίδια (ίδια με το παλιό) ──
 const Icon = {
@@ -77,7 +78,7 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [walletActive, setWalletActive] = useState(null);
   const [statActive, setStatActive] = useState(null);
-  const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch
+  const [activeView, setActiveView] = useState('home'); // home | folder | favorites | newFiles | tagSearch | netBuilder
   const [openFolder, setOpenFolder] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [mobileZoom, setMobileZoom] = useState(1);
@@ -114,6 +115,18 @@ export default function Home() {
   const [networkLoading, setNetworkLoading] = useState(false);
   const [expandedInbox, setExpandedInbox] = useState(null);
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
+
+  // ── Network Builder (Δίκτυα Κειμένων) ──
+  const [networks, setNetworks] = useState([]);
+  const [currentNetwork, setCurrentNetwork] = useState(null);
+  const [netSaving, setNetSaving] = useState(false);
+  const [netMsg, setNetMsg] = useState('');
+  const [merging, setMerging] = useState(false);
+  const [showNewNetForm, setShowNewNetForm] = useState(false);
+  const [newNetName, setNewNetName] = useState('');
+  const [newNetFolder, setNewNetFolder] = useState('');
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [openAccordions, setOpenAccordions] = useState({});
   const isTeacher = userRole === 'teacher';
   const isStudent = userRole === 'student';
 
@@ -153,7 +166,7 @@ export default function Home() {
     } catch {}
   };
 
-  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadRole(); } }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); } }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -241,6 +254,101 @@ export default function Home() {
   };
   const loadNetwork = async () => {
     try { const r = await fetch('/api/network'); const d = await r.json(); setNetworkData(d); } catch(e) {}
+  };
+
+  // ── Network Builder (Δίκτυα Κειμένων) ─────────────────────────────────
+  const loadNetworks = async () => {
+    try {
+      const r = await fetch('/api/networks');
+      const d = await r.json();
+      const normalized = (d.networks || []).map(n => ({ ...n, items: Array.isArray(n.items) ? n.items : [] }));
+      setNetworks(normalized);
+    } catch (e) { setNetworks([]); }
+  };
+  const saveNetworkData = async (net) => {
+    setNetSaving(true); setNetMsg('');
+    try {
+      const r = await fetch('/api/networks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(net) });
+      const d = await r.json();
+      if (r.ok) { setNetMsg('✓ Αποθηκεύτηκε'); setTimeout(() => setNetMsg(''), 2000); setNetSaving(false); return d.driveFileId; }
+      else setNetMsg('✗ Σφάλμα');
+    } catch { setNetMsg('✗ Σφάλμα'); }
+    setNetSaving(false);
+    return null;
+  };
+  const createNetworkItem = async () => {
+    if (!newNetName.trim() || !newNetFolder) return;
+    const net = { id: Date.now().toString(), name: newNetName.trim(), folderId: newNetFolder, items: [], pdfFileId: null, driveFileId: null };
+    setNewNetName(''); setShowNewNetForm(false);
+    const driveFileId = await saveNetworkData(net);
+    if (!driveFileId) { setNetMsg('✗ Αποτυχία δημιουργίας'); return; }
+    const newNet = { ...net, driveFileId };
+    setNetworks(prev => [newNet, ...prev]);
+    setCurrentNetwork(newNet);
+  };
+  const deleteNetworkItem = async (net) => {
+    if (!confirm(`Διαγραφή δικτύου «${net.name}»;`)) return;
+    if (!net.driveFileId) { setNetworks(prev => prev.filter(n => n.id !== net.id)); if (currentNetwork?.id === net.id) setCurrentNetwork(null); return; }
+    try {
+      await fetch('/api/networks', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: net.id, driveFileId: net.driveFileId }) });
+      setNetworks(prev => prev.filter(n => n.id !== net.id));
+      if (currentNetwork?.id === net.id) setCurrentNetwork(null);
+    } catch { alert('Σφάλμα διαγραφής'); }
+  };
+  const updateNet = (updated) => {
+    const safe = { ...updated, items: Array.isArray(updated.items) ? updated.items : [] };
+    setCurrentNetwork(safe);
+    setNetworks(prev => prev.map(n => n.id === safe.id ? safe : n));
+  };
+  const addFileToNetwork = (file) => {
+    if (!currentNetwork) return;
+    const currentItems = currentNetwork.items || [];
+    if (currentItems.some(i => i.fileId === file.id)) return;
+    // Εισαγωγή ερωτήσεων αν υπάρχουν στα metadata
+    const metaQ = fileQuestions(file.id);
+    const importedQs = metaQ && typeof metaQ === 'string' && metaQ.trim()
+      ? [{ id: newQid(), code: '', text: metaQ.trim() }] : [];
+    const item = { fileId: file.id, name: file.name, questions: importedQs };
+    const updated = { ...currentNetwork, items: [...currentItems, item] };
+    updateNet(updated); saveNetworkData(updated);
+    setOpenAccordions(prev => ({ ...prev, [file.id]: true }));
+  };
+  const removeFromNetwork = (fileId) => {
+    const updated = { ...currentNetwork, items: currentNetwork.items.filter(i => i.fileId !== fileId) };
+    updateNet(updated); saveNetworkData(updated);
+  };
+  const moveNetItem = (idx, dir) => {
+    const items = [...currentNetwork.items]; const target = idx + dir;
+    if (target < 0 || target >= items.length) return;
+    [items[idx], items[target]] = [items[target], items[idx]];
+    const updated = { ...currentNetwork, items };
+    updateNet(updated); saveNetworkData(updated);
+  };
+  const addNetQuestion = (fileId) => {
+    const items = currentNetwork.items.map(item => item.fileId !== fileId ? item : { ...item, questions: [...item.questions, { id: newQid(), code: '', text: '' }] });
+    updateNet({ ...currentNetwork, items });
+  };
+  const updateNetQuestion = (fileId, qid, field, value) => {
+    const items = currentNetwork.items.map(item => item.fileId !== fileId ? item : { ...item, questions: item.questions.map(q => q.id === qid ? { ...q, [field]: value } : q) });
+    updateNet({ ...currentNetwork, items });
+  };
+  const removeNetQuestion = (fileId, qid) => {
+    const items = currentNetwork.items.map(item => item.fileId !== fileId ? item : { ...item, questions: item.questions.filter(q => q.id !== qid) });
+    const updated = { ...currentNetwork, items };
+    updateNet(updated); saveNetworkData(updated);
+  };
+  const saveNetQuestionsNow = () => { if (currentNetwork) saveNetworkData(currentNetwork); };
+  const toggleAccordion = (fileId) => setOpenAccordions(prev => ({ ...prev, [fileId]: !prev[fileId] }));
+  const mergeAndSave = async () => {
+    if (!currentNetwork?.items?.length) { alert('Προσθέστε κείμενα πρώτα.'); return; }
+    setMerging(true); setNetMsg('');
+    try {
+      const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: currentNetwork }) });
+      const d = await r.json();
+      if (r.ok) { const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename }; updateNet(updated); setNetMsg('✓ PDF αποθηκεύτηκε'); }
+      else setNetMsg(`✗ ${d.error || 'Σφάλμα'}`);
+    } catch { setNetMsg('✗ Σφάλμα σύνδεσης'); }
+    setMerging(false); setTimeout(() => setNetMsg(''), 4000);
   };
   const openLive = async (f) => {
     const fLinks = fileLinks(f.id);
@@ -363,7 +471,7 @@ export default function Home() {
   };
 
   // ── Navigation helpers ──
-  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); };
+  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
@@ -472,6 +580,8 @@ export default function Home() {
         </div>
         <nav style={S.nav}>
           <NavItem icon={Icon.home} label="Αρχική" active={activeView==='home'} onClick={goHome} />
+          <NavItem icon={Icon.netAdd} label="Δημιουργία Δικτύου" active={activeView==='netBuilder'}
+            onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.net} label="Δίκτυα" active={activeView==='network'} onClick={openNetwork}
             badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
@@ -501,6 +611,9 @@ export default function Home() {
         <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:58, background:'#1a1a1a', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:150, borderTop:'1px solid rgba(255,255,255,0.08)', paddingBottom:'env(safe-area-inset-bottom,0)' }}>
           <button className="btm-item" onClick={goHome} style={{ color: activeView==='home'?'#ececec':'#8e8ea0' }}>
             {Icon.home}<span style={{ fontSize:10 }}>Αρχική</span>
+          </button>
+          <button className="btm-item" onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} style={{ color: activeView==='netBuilder'?'#ececec':'#8e8ea0' }}>
+            {Icon.netAdd}<span style={{ fontSize:10 }}>Δίκτυο+</span>
           </button>
           <button className="btm-item" onClick={openNetwork} style={{ color: activeView==='network'?'#ececec':'#8e8ea0', position:'relative' }}>
             {Icon.net}<span style={{ fontSize:10 }}>Δίκτυα</span>
@@ -761,6 +874,178 @@ export default function Home() {
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
+            </>
+          )}
+
+          {/* ΔΗΜΙΟΥΡΓΙΑ ΔΙΚΤΥΟΥ ΚΕΙΜΕΝΩΝ */}
+          {activeView === 'netBuilder' && (
+            <>
+              <div style={S.pageHeader}>
+                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
+                <div style={{ flex:1 }}>
+                  <h1 style={S.pageTitle}>Δημιουργία Δικτύου</h1>
+                  <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>Σύνθεση κειμένων + ερωτήσεων → αποθήκευση PDF στο Drive</p>
+                </div>
+                <button onClick={() => setShowNewNetForm(true)} style={{ ...btn('solid'), whiteSpace:'nowrap' }}>+ Νέο Δίκτυο</button>
+              </div>
+
+              {/* Φόρμα δημιουργίας */}
+              {showNewNetForm && (
+                <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:24, padding:18, background:PALETTE.mustard.bgSoft, borderRadius:16, flexWrap:'wrap' }}>
+                  <input autoFocus type="text" placeholder="Όνομα δικτύου…" value={newNetName} onChange={e => setNewNetName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') createNetworkItem(); if (e.key === 'Escape') setShowNewNetForm(false); }}
+                    style={{ flex:1, minWidth:180, padding:'10px 16px', border:'1px solid ' + PALETTE.mustard.accent, borderRadius:10, fontSize:isMobile ? 16 : 14, background:'#fff' }} />
+                  <select value={newNetFolder} onChange={e => setNewNetFolder(e.target.value)}
+                    style={{ padding:'10px 14px', border:'1px solid ' + PALETTE.mustard.accent, borderRadius:10, fontSize:isMobile ? 16 : 13, background:'#fff', color:newNetFolder ? '#1a1a1a' : '#aeaeb8', minWidth:160 }}>
+                    <option value="" disabled>Φάκελος αποθήκευσης…</option>
+                    {folders.map(fld => <option key={fld.id} value={fld.id}>{fld.name}</option>)}
+                  </select>
+                  <button onClick={createNetworkItem} disabled={!newNetName.trim() || !newNetFolder} style={{ ...btn('solid'), background:PALETTE.mustard.deep, opacity:(!newNetName.trim() || !newNetFolder) ? 0.5 : 1 }}>Δημιουργία</button>
+                  <button onClick={() => setShowNewNetForm(false)} style={{ ...btn('outline'), color:'#6b6b80', borderColor:'#e0e0e0' }}>Ακύρωση</button>
+                </div>
+              )}
+
+              {/* Λίστα δικτύων */}
+              {!currentNetwork && (
+                networks.length === 0
+                  ? <div style={{ textAlign:'center', paddingTop:48 }}>
+                      <div style={{ fontSize:48, marginBottom:12 }}>🕸️</div>
+                      <div style={{ color:'#aeaeb8', fontSize:13 }}>Δεν υπάρχουν δίκτυα ακόμα</div>
+                    </div>
+                  : <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      {networks.map(net => {
+                        const fld = folders.find(f => f.id === net.folderId);
+                        return (
+                          <div key={net.id} className="ch" style={{ background:'#fff', borderRadius:16, padding:'16px 20px', border:'1px solid #ebebeb', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:12, flex:1, minWidth:0 }}>
+                              <div style={{ width:40, height:40, borderRadius:12, background:PALETTE.mustard.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                {Icon.net}
+                              </div>
+                              <div>
+                                <div style={{ fontSize:14, fontWeight:600, color:'#1a1a1a', marginBottom:2 }}>{net.name}</div>
+                                <div style={{ fontSize:12, color:'#6b6b80' }}>
+                                  {(net.items || []).length} κείμενα
+                                  {fld && <span style={{ marginLeft:6, color:'#aeaeb8' }}>· {fld.name}</span>}
+                                  {net.pdfFileId && <span style={{ color:PALETTE.mustard.deep, marginLeft:8 }}>· PDF ✓</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                              <button onClick={() => setCurrentNetwork(net)} style={{ ...btn('outline'), color:PALETTE.mustard.deep, borderColor:PALETTE.mustard.deep }}>Επεξεργασία →</button>
+                              {net.pdfFileId && <button onClick={() => window.open('https://drive.google.com/file/d/' + net.pdfFileId + '/view', '_blank')} style={{ ...btn('mini'), color:'#6b6b80' }}>📄 PDF</button>}
+                              <button onClick={() => deleteNetworkItem(net)} style={{ ...btn('mini'), color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+              )}
+
+              {/* Επεξεργασία δικτύου */}
+              {currentNetwork && (
+                <div style={{ display:'flex', gap:16, alignItems:'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
+
+                  {/* Αριστερά — file picker */}
+                  <div style={{ width: isMobile ? '100%' : 320, flexShrink:0, background:PALETTE.cream.bgSoft, borderRadius:16, padding:14, border:'1px solid ' + PALETTE.cream.accent }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>Κείμενα</div>
+                    <input type="search" placeholder="Αναζήτηση τίτλου ή ετικέτας…" value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
+                      style={{ width:'100%', padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile ? 16 : 12, background:'#fff', marginBottom:10, boxSizing:'border-box' }} />
+                    <div style={{ maxHeight: isMobile ? 240 : 'calc(100vh - 380px)', overflowY:'auto', display:'flex', flexDirection:'column', gap:4 }}>
+                      {normalFiles.filter(f => {
+                        if (!pickerSearch) return true;
+                        const q = pickerSearch.toLowerCase();
+                        return (f.name || '').toLowerCase().includes(q) || (f.tags || []).some(t => t.toLowerCase().includes(q));
+                      }).map(file => {
+                        const already = currentNetwork.items.some(i => i.fileId === file.id);
+                        return (
+                          <div key={file.id} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 10px', borderRadius:10, background: already ? PALETTE.mustard.bgSoft : '#fff', border:'1px solid ' + (already ? PALETTE.mustard.accent : '#ebebeb') }}>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:12, fontWeight:600, color:'#1a1a1a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{(file.name || '').length > 20 ? file.name.slice(0, 20) + '…' : file.name}</div>
+                            </div>
+                            {already
+                              ? <span style={{ fontSize:11, color:PALETTE.mustard.deep, flexShrink:0, minWidth:16, textAlign:'center' }}>✓</span>
+                              : <button onClick={() => addFileToNetwork(file)} style={{ background:PALETTE.mustard.deep, border:'none', color:'#fff', width:24, height:24, borderRadius:6, fontSize:14, cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                            }
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Δεξιά — δίκτυο + ερωτήσεις */}
+                  <div style={{ flex:1, minWidth:0, width: isMobile ? '100%' : 'auto' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16, flexWrap:'wrap' }}>
+                      <button onClick={() => setCurrentNetwork(null)} style={S.backBtn}>← Λίστα</button>
+                      <div style={{ flex:1 }}>
+                        <h2 style={{ fontSize:17, fontWeight:600, color:'#1a1a1a', marginBottom:2 }}>{currentNetwork.name}</h2>
+                        <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>
+                          {currentNetwork.items.length} κείμενα
+                          {netSaving && <span style={{ marginLeft:8, color:PALETTE.mustard.deep, fontSize:12 }}>· Αποθήκευση…</span>}
+                          {netMsg && <span style={{ marginLeft:8, color: netMsg.startsWith('✓') ? PALETTE.mustard.deep : '#dc2626', fontSize:12 }}>{netMsg}</span>}
+                        </p>
+                      </div>
+                      <div style={{ display:'flex', gap:8 }}>
+                        {currentNetwork.pdfFileId && <button onClick={() => window.open('https://drive.google.com/file/d/' + currentNetwork.pdfFileId + '/view', '_blank')} style={{ ...btn('mini'), color:'#6b6b80' }}>📄 PDF</button>}
+                        <button onClick={mergeAndSave} disabled={merging || !currentNetwork.items.length}
+                          style={{ ...btn('solid'), background:'#1a1a1a', opacity: (merging || !currentNetwork.items.length) ? 0.6 : 1 }}>
+                          {merging ? '⏳ Δημιουργία…' : `💾 ${currentNetwork.pdfFileId ? 'Ενημέρωση PDF' : 'Αποθήκευση PDF'}`}
+                        </button>
+                      </div>
+                    </div>
+
+                    {currentNetwork.items.length === 0
+                      ? <div style={{ textAlign:'center', padding:48, color:'#aeaeb8', fontSize:13, background:PALETTE.cream.bgSoft, borderRadius:16, border:'2px dashed ' + PALETTE.cream.accent }}>
+                          Πάτησε «+» δίπλα σε ένα κείμενο {isMobile ? 'πάνω' : 'αριστερά'} για να ξεκινήσεις
+                        </div>
+                      : <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                          {currentNetwork.items.map((item, idx) => {
+                            const isOpen = !!openAccordions[item.fileId];
+                            return (
+                              <div key={item.fileId} style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', overflow:'hidden' }}>
+                                {/* Header */}
+                                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderBottom:'1px solid #f0f0f0', background:'#fafaf9' }}>
+                                  <div style={{ width:26, height:26, borderRadius:'50%', background:'#1a1a1a', color:'#fff', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{idx + 1}</div>
+                                  <div style={{ flex:1, fontSize:14, fontWeight:600, color:'#1a1a1a', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                                  <div style={{ display:'flex', gap:5, alignItems:'center', flexShrink:0 }}>
+                                    <button onClick={() => moveNetItem(idx, -1)} disabled={idx === 0} style={{ ...S.iconBtn, width:28, height:28, opacity: idx === 0 ? 0.3 : 1 }}>↑</button>
+                                    <button onClick={() => moveNetItem(idx, 1)} disabled={idx === currentNetwork.items.length - 1} style={{ ...S.iconBtn, width:28, height:28, opacity: idx === currentNetwork.items.length - 1 ? 0.3 : 1 }}>↓</button>
+                                    <button onClick={() => removeFromNetwork(item.fileId)} style={{ ...S.iconBtn, width:28, height:28, color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
+                                  </div>
+                                </div>
+                                {/* Accordion toggle */}
+                                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderBottom: isOpen ? '1px solid #f0f0f0' : 'none', cursor:'pointer', background: isOpen ? PALETTE.mustard.bgSoft : '#fafaf9' }} onClick={() => toggleAccordion(item.fileId)}>
+                                  <span style={{ fontSize:11, fontWeight:700, color:PALETTE.mustard.deep, textTransform:'uppercase', letterSpacing:'0.08em', flex:1 }}>Ερωτήσεις</span>
+                                  <span style={{ fontSize:11, color:'#6b6b80' }}>{item.questions.length} {item.questions.length === 1 ? 'ερώτηση' : 'ερωτήσεις'}</span>
+                                  <span style={{ fontSize:11, color:'#6b6b80', marginLeft:6 }}>{isOpen ? '▲' : '▼'}</span>
+                                </div>
+                                {/* Questions */}
+                                {isOpen && (
+                                  <div style={{ padding:'12px 14px 14px' }}>
+                                    {item.questions.length === 0 && <div style={{ fontSize:13, color:'#aeaeb8', marginBottom:10 }}>Δεν υπάρχουν ερωτήσεις. Πάτησε «+ Ερώτηση».</div>}
+                                    {item.questions.map(q => (
+                                      <div key={q.id} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:8 }}>
+                                        <input type="text" placeholder="Κωδ." value={q.code} onChange={e => updateNetQuestion(item.fileId, q.id, 'code', e.target.value)} onBlur={saveNetQuestionsNow}
+                                          style={{ width:68, flexShrink:0, padding:8, border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, fontWeight:600, textAlign:'center', background:'#fff' }} />
+                                        <textarea rows={3} placeholder="Κείμενο ερώτησης…" value={q.text} onChange={e => updateNetQuestion(item.fileId, q.id, 'text', e.target.value)} onBlur={saveNetQuestionsNow}
+                                          style={{ flex:1, padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, lineHeight:1.6, color:'#1a1a1a', background:PALETTE.cream.bgSoft, resize:'vertical', fontFamily:'inherit' }} />
+                                        <button onClick={() => removeNetQuestion(item.fileId, q.id)} style={{ ...S.delBtn, width:28, height:28, marginTop:4 }}>✕</button>
+                                      </div>
+                                    ))}
+                                    <button onClick={() => addNetQuestion(item.fileId)}
+                                      style={{ background:'transparent', color:PALETTE.mustard.deep, border:'1px dashed ' + PALETTE.mustard.accent, padding:'6px 14px', borderRadius:10, fontSize:12, fontWeight:600, cursor:'pointer', marginTop:4 }}>
+                                      + Ερώτηση
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                    }
+                  </div>
+
+                </div>
+              )}
             </>
           )}
 
