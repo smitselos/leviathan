@@ -34,7 +34,7 @@ const TAG_COLORS = [
 ];
 const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
 const newQid = () => Math.random().toString(36).slice(2, 8);
-const Q_CODES = ['Α1', 'Β1', 'Β2α', 'Β2β', 'Β3α', 'Β3β', 'Γ1', 'Δ1'];
+const Q_CODES = ['Α', 'Β1', 'Β2', 'Β3', 'Δ'];
 function parseQuestions(raw) {
   if (!raw) return Q_CODES.map(code => ({ code, text: '' }));
   try {
@@ -347,8 +347,10 @@ export default function Home() {
     const updated = { ...currentNetwork, items };
     updateNet(updated); saveNetworkData(updated);
   };
-  const addNetQuestion = (fileId) => {
-    const items = currentNetwork.items.map(item => item.fileId !== fileId ? item : { ...item, questions: [...item.questions, { id: newQid(), code: '', text: '' }] });
+  const addNetQuestion = (fileId, code) => {
+    const targetFileId = fileId || (currentNetwork.items[0]?.fileId);
+    if (!targetFileId) return;
+    const items = currentNetwork.items.map(item => item.fileId !== targetFileId ? item : { ...item, questions: [...item.questions, { id: newQid(), code: code || '', text: '' }] });
     updateNet({ ...currentNetwork, items });
   };
   const updateNetQuestion = (fileId, qid, field, value) => {
@@ -1025,50 +1027,61 @@ export default function Home() {
                       ? <div style={{ textAlign:'center', padding:48, color:'#aeaeb8', fontSize:13, background:PALETTE.cream.bgSoft, borderRadius:16, border:'2px dashed ' + PALETTE.cream.accent }}>
                           Πάτησε «+» δίπλα σε ένα κείμενο {isMobile ? 'πάνω' : 'αριστερά'} για να ξεκινήσεις
                         </div>
-                      : <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                          {currentNetwork.items.map((item, idx) => {
-                            const isOpen = !!openAccordions[item.fileId];
-                            return (
-                              <div key={item.fileId} style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', overflow:'hidden' }}>
-                                {/* Header */}
-                                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderBottom:'1px solid #f0f0f0', background:'#fafaf9' }}>
-                                  <div style={{ width:26, height:26, borderRadius:'50%', background:'#1a1a1a', color:'#fff', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{idx + 1}</div>
-                                  <div style={{ flex:1, fontSize:14, fontWeight:600, color:'#1a1a1a', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
-                                  <div style={{ display:'flex', gap:5, alignItems:'center', flexShrink:0 }}>
-                                    <button onClick={() => moveNetItem(idx, -1)} disabled={idx === 0} style={{ ...S.iconBtn, width:28, height:28, opacity: idx === 0 ? 0.3 : 1 }}>↑</button>
-                                    <button onClick={() => moveNetItem(idx, 1)} disabled={idx === currentNetwork.items.length - 1} style={{ ...S.iconBtn, width:28, height:28, opacity: idx === currentNetwork.items.length - 1 ? 0.3 : 1 }}>↓</button>
-                                    <button onClick={() => removeFromNetwork(item.fileId)} style={{ ...S.iconBtn, width:28, height:28, color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
-                                  </div>
-                                </div>
-                                {/* Accordion toggle */}
-                                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderBottom: isOpen ? '1px solid #f0f0f0' : 'none', cursor:'pointer', background: isOpen ? PALETTE.mustard.bgSoft : '#fafaf9' }} onClick={() => toggleAccordion(item.fileId)}>
-                                  <span style={{ fontSize:11, fontWeight:700, color:PALETTE.mustard.deep, textTransform:'uppercase', letterSpacing:'0.08em', flex:1 }}>Ερωτήσεις</span>
-                                  <span style={{ fontSize:11, color:'#6b6b80' }}>{item.questions.length} {item.questions.length === 1 ? 'ερώτηση' : 'ερωτήσεις'}</span>
-                                  <span style={{ fontSize:11, color:'#6b6b80', marginLeft:6 }}>{isOpen ? '▲' : '▼'}</span>
-                                </div>
-                                {/* Questions */}
-                                {isOpen && (
-                                  <div style={{ padding:'12px 14px 14px' }}>
-                                    {item.questions.length === 0 && <div style={{ fontSize:13, color:'#aeaeb8', marginBottom:10 }}>Δεν υπάρχουν ερωτήσεις. Πάτησε «+ Ερώτηση».</div>}
-                                    {item.questions.map(q => (
-                                      <div key={q.id} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:8 }}>
-                                        <input type="text" placeholder="Κωδ." value={q.code} onChange={e => updateNetQuestion(item.fileId, q.id, 'code', e.target.value)} onBlur={saveNetQuestionsNow}
-                                          style={{ width:68, flexShrink:0, padding:8, border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, fontWeight:600, textAlign:'center', background:'#fff' }} />
-                                        <textarea rows={3} placeholder="Κείμενο ερώτησης…" value={q.text} onChange={e => updateNetQuestion(item.fileId, q.id, 'text', e.target.value)} onBlur={saveNetQuestionsNow}
-                                          style={{ flex:1, padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, lineHeight:1.6, color:'#1a1a1a', background:PALETTE.cream.bgSoft, resize:'vertical', fontFamily:'inherit' }} />
-                                        <button onClick={() => removeNetQuestion(item.fileId, q.id)} style={{ ...S.delBtn, width:28, height:28, marginTop:4 }}>✕</button>
-                                      </div>
-                                    ))}
-                                    <button onClick={() => addNetQuestion(item.fileId)}
-                                      style={{ background:'transparent', color:PALETTE.mustard.deep, border:'1px dashed ' + PALETTE.mustard.accent, padding:'6px 14px', borderRadius:10, fontSize:12, fontWeight:600, cursor:'pointer', marginTop:4 }}>
-                                      + Ερώτηση
-                                    </button>
-                                  </div>
-                                )}
+                      : <>
+                          {/* Κείμενα — compact λίστα */}
+                          <div style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', padding:'10px 14px', marginBottom:16 }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Κείμενα ({currentNetwork.items.length})</div>
+                            {currentNetwork.items.map((item, idx) => (
+                              <div key={item.fileId} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderTop: idx > 0 ? '1px solid #f0f0f0' : 'none' }}>
+                                <span style={{ width:22, height:22, borderRadius:'50%', background:'#1a1a1a', color:'#fff', fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{idx + 1}</span>
+                                <span style={{ flex:1, fontSize:13, fontWeight:500, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>{item.name}</span>
+                                <button onClick={() => moveNetItem(idx, -1)} disabled={idx === 0} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, opacity: idx === 0 ? 0.3 : 1 }}>↑</button>
+                                <button onClick={() => moveNetItem(idx, 1)} disabled={idx === currentNetwork.items.length - 1} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, opacity: idx === currentNetwork.items.length - 1 ? 0.3 : 1 }}>↓</button>
+                                <button onClick={() => removeFromNetwork(item.fileId)} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
                               </div>
-                            );
-                          })}
-                        </div>
+                            ))}
+                          </div>
+
+                          {/* Ερωτήσεις — ομαδοποίηση κατά κωδικό */}
+                          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                            {Q_CODES.map(code => {
+                              const grouped = currentNetwork.items.flatMap(item =>
+                                (item.questions || []).filter(q => q.code === code).map(q => ({ ...q, fileId: item.fileId, fileName: item.name }))
+                              );
+                              const isOpen = !!openAccordions['code_' + code];
+                              return (
+                                <div key={code} style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', overflow:'hidden' }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background: isOpen ? PALETTE.mustard.bgSoft : '#fafaf9' }}
+                                    onClick={() => setOpenAccordions(prev => ({ ...prev, ['code_' + code]: !prev['code_' + code] }))}>
+                                    <span style={{ fontSize:15, fontWeight:700, color:PALETTE.mustard.deep, minWidth:28 }}>{code}</span>
+                                    <span style={{ flex:1, fontSize:12, color:'#6b6b80' }}>{grouped.length} {grouped.length === 1 ? 'ερώτηση' : 'ερωτήσεις'}</span>
+                                    <span style={{ fontSize:11, color:'#6b6b80' }}>{isOpen ? '▲' : '▼'}</span>
+                                  </div>
+                                  {isOpen && (
+                                    <div style={{ padding:'10px 14px 14px', borderTop:'1px solid #f0f0f0' }}>
+                                      {grouped.length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', marginBottom:8 }}>Καμία ερώτηση {code}.</div>}
+                                      {grouped.map(q => (
+                                        <div key={q.id} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:8 }}>
+                                          <div style={{ flexShrink:0, minWidth:0, maxWidth:80 }}>
+                                            <div style={{ fontSize:10, color:'#aeaeb8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{q.fileName?.length > 12 ? q.fileName.slice(0, 12) + '…' : q.fileName}</div>
+                                          </div>
+                                          <textarea rows={2} placeholder={`Ερώτηση ${code}…`} value={q.text}
+                                            onChange={e => updateNetQuestion(q.fileId, q.id, 'text', e.target.value)} onBlur={saveNetQuestionsNow}
+                                            style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, lineHeight:1.5, color:'#1a1a1a', background:PALETTE.cream.bgSoft, resize:'vertical', fontFamily:'inherit' }} />
+                                          <button onClick={() => removeNetQuestion(q.fileId, q.id)} style={{ ...S.delBtn, width:26, height:26, marginTop:2 }}>✕</button>
+                                        </div>
+                                      ))}
+                                      <button onClick={() => addNetQuestion(null, code)}
+                                        style={{ background:'transparent', color:PALETTE.mustard.deep, border:'1px dashed ' + PALETTE.mustard.accent, padding:'5px 12px', borderRadius:10, fontSize:11, fontWeight:600, cursor:'pointer', marginTop:4 }}>
+                                        + Ερώτηση {code}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
                     }
                   </div>
 
