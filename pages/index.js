@@ -1763,12 +1763,16 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {/* URL — πάντα ορατό */}
                     <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Διεύθυνση URL</div>
                     <div style={{ display:'flex', flexDirection: compact?'column':'row', gap:6, marginBottom:12 }}>
-                      <input value={mLinkUrl} onChange={(e)=>setMLinkUrl(e.target.value)} placeholder="https://…"
+                      <input value={mLinkUrl} onChange={(e)=>setMLinkUrl(e.target.value)}
+                        onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const u=mLinkUrl.trim(); if(u && onAddLink){ onAddLink(f.id, {type:'url', url:u.startsWith('http')?u:'https://'+u, name:mLinkName.trim()||u}); setMLinkUrl(''); setMLinkName(''); }}}}
+                        placeholder="https://…" onClick={e=>e.stopPropagation()}
                         style={{ flex:compact?undefined:2, width:compact?'100%':undefined, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: compact?16:13, background:'#fff', boxSizing:'border-box' }} />
                       <div style={{ display:'flex', gap:6 }}>
-                        <input value={mLinkName} onChange={(e)=>setMLinkName(e.target.value)} placeholder="Τίτλος…"
+                        <input value={mLinkName} onChange={(e)=>setMLinkName(e.target.value)}
+                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const u=mLinkUrl.trim(); if(u && onAddLink){ onAddLink(f.id, {type:'url', url:u.startsWith('http')?u:'https://'+u, name:mLinkName.trim()||u}); setMLinkUrl(''); setMLinkName(''); }}}}
+                          placeholder="Τίτλος…" onClick={e=>e.stopPropagation()}
                           style={{ flex:1, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: compact?16:13, background:'#fff', boxSizing:'border-box', minWidth:0 }} />
-                        <button onClick={() => { const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
+                        <button onClick={(e) => { e.stopPropagation(); const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u.startsWith('http')?u:'https://'+u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
                           style={{ ...btn('solid'), padding:'8px 14px', flexShrink:0, fontSize:13 }}>+</button>
                       </div>
                     </div>
