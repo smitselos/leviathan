@@ -345,7 +345,12 @@ export default function Home() {
     try {
       const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: currentNetwork }) });
       const d = await r.json();
-      if (r.ok) { const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename }; updateNet(updated); setNetMsg('✓ PDF αποθηκεύτηκε'); }
+      if (r.ok) {
+        const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
+        updateNet(updated);
+        setNetMsg('✓ PDF αποθηκεύτηκε');
+        loadAll(); // ← ξαναφόρτωσε τα αρχεία ώστε το PDF να φανεί στον φάκελο
+      }
       else setNetMsg(`✗ ${d.error || 'Σφάλμα'}`);
     } catch { setNetMsg('✗ Σφάλμα σύνδεσης'); }
     setMerging(false); setTimeout(() => setNetMsg(''), 4000);
