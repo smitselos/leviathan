@@ -272,13 +272,17 @@ function StudentView({myEmail,isMobile,router}){
   // Πρόσκληση / αποδοχή
   const sendInvite=async()=>{
     if(!inviteEmail.trim())return;setNetLoading(true);
-    try{await fetch('/api/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email:inviteEmail.trim()})});setInviteEmail('');const r=await fetch('/api/network');setNetwork(await r.json());}catch{}
+    try{await fetch('/api/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({toEmail:inviteEmail.trim()})});setInviteEmail('');const r=await fetch('/api/network');setNetwork(await r.json());}catch{}
     setNetLoading(false);
   };
   const acceptInvite=async(email)=>{
     setNetLoading(true);
-    try{await fetch('/api/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'accept',email})});const r=await fetch('/api/network');setNetwork(await r.json());}catch{}
+    try{await fetch('/api/network',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fromEmail:email,action:'accept'})});const r=await fetch('/api/network');setNetwork(await r.json());}catch{}
     setNetLoading(false);
+  };
+  const disconnectUser=async(email)=>{
+    if(!confirm(`Αποσύνδεση από ${email};`))return;
+    try{await fetch('/api/network',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const r=await fetch('/api/network');setNetwork(await r.json());}catch{}
   };
 
   // Upload & Send
@@ -357,7 +361,15 @@ function StudentView({myEmail,isMobile,router}){
                     </div>
                   )}
                   {(network.connections||[]).length>0&&(
-                    <div style={{marginTop:8,fontSize:11,color:'#aeaeb8'}}>Συνδέσεις: {network.connections.map(c=>c.name||c.email).join(', ')}</div>
+                    <div style={{marginTop:8}}>
+                      <div style={{fontSize:11,color:'#aeaeb8',marginBottom:4}}>Συνδέσεις:</div>
+                      {network.connections.map(c=>(
+                        <div key={c.email} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
+                          <span style={{flex:1,fontSize:12,color:'#1a1a1a'}}>{c.name||c.email}</span>
+                          <button onClick={()=>disconnectUser(c.email)} style={{background:'none',border:'none',color:'#aeaeb8',cursor:'pointer',fontSize:11,padding:'2px 6px'}}>✕</button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
 
