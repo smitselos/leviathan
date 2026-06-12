@@ -34,7 +34,7 @@ const TAG_COLORS = [
 ];
 const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
 const newQid = () => Math.random().toString(36).slice(2, 8);
-const Q_CODES = ['Α', 'Β1', 'Β2', 'Β3', 'Δ'];
+const Q_CODES = ['Α', 'Β1', 'Β2', 'Β3', 'Γ', 'Δ'];
 function parseQuestions(raw) {
   if (!raw) return Q_CODES.map(code => ({ code, text: '' }));
   try {
