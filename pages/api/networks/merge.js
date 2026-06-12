@@ -79,9 +79,15 @@ export default async function handler(req, res) {
     }
 
     // ── 2. Σελίδα ερωτήσεων ──────────────────────────────────────────
+    const CODE_ORDER = ['Α', 'Β1', 'Β2', 'Β3', 'Δ'];
     const allQuestions = network.items
       .flatMap((item) => (item.questions || []).map((q) => ({ ...q })))
-      .filter((q) => q.text?.trim());
+      .filter((q) => q.text?.trim())
+      .sort((a, b) => {
+        const ia = CODE_ORDER.indexOf(a.code);
+        const ib = CODE_ORDER.indexOf(b.code);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
 
     if (allQuestions.length > 0) {
       const fontBytes = await fetchFont();
