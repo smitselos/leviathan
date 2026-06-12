@@ -102,31 +102,42 @@ export default async function handler(req, res) {
       });
       y -= lineHeight * 2;
 
-      // Word-wrap helper
+      // Word-wrap helper — χειρίζεται και αλλαγές παραγράφου (\n)
       const drawWrapped = (text, size) => {
-        const words = text.split(' ');
-        let line = '';
-        for (const word of words) {
-          const test = line ? `${line} ${word}` : word;
-          if (font.widthOfTextAtSize(test, size) > maxWidth && line) {
+        const paragraphs = text.split(/\n/);
+        for (let pi = 0; pi < paragraphs.length; pi++) {
+          const para = paragraphs[pi].trim();
+          if (!para) {
+            // Κενή γραμμή → απόσταση παραγράφου
+            y -= lineHeight * 0.6;
+            continue;
+          }
+          const words = para.split(' ');
+          let line = '';
+          for (const word of words) {
+            const test = line ? `${line} ${word}` : word;
+            if (font.widthOfTextAtSize(test, size) > maxWidth && line) {
+              if (y < margin + lineHeight) {
+                page = mergedPdf.addPage([pageWidth, pageHeight]);
+                y = pageHeight - margin;
+              }
+              page.drawText(line, { x: margin, y, size, font, color: rgb(0, 0, 0) });
+              y -= lineHeight;
+              line = word;
+            } else {
+              line = test;
+            }
+          }
+          if (line) {
             if (y < margin + lineHeight) {
               page = mergedPdf.addPage([pageWidth, pageHeight]);
               y = pageHeight - margin;
             }
             page.drawText(line, { x: margin, y, size, font, color: rgb(0, 0, 0) });
             y -= lineHeight;
-            line = word;
-          } else {
-            line = test;
           }
-        }
-        if (line) {
-          if (y < margin + lineHeight) {
-            page = mergedPdf.addPage([pageWidth, pageHeight]);
-            y = pageHeight - margin;
-          }
-          page.drawText(line, { x: margin, y, size, font, color: rgb(0, 0, 0) });
-          y -= lineHeight;
+          // Μικρό κενό μεταξύ παραγράφων (εκτός αν είναι η τελευταία)
+          if (pi < paragraphs.length - 1) y -= lineHeight * 0.3;
         }
       };
 
