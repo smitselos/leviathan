@@ -489,6 +489,9 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const [sidebarOpen,setSidebarOpen]=useState(true);
   const [visibilityInfo,setVisibilityInfo]=useState(null);
   const [activeTag,setActiveTag]=useState(null);
+  const [qrFile,setQrFile]=useState(null);
+  const getFileUrl=f=>`https://drive.google.com/file/d/${f.id}/view`;
+  const visLabel={'public':'🌐 Όλοι','connections':'👥 Συνδέσεις','specific':'🔒 Συγκεκριμένοι'};
 
   const loadData=useCallback(async()=>{
     setLoading(true);
@@ -539,7 +542,12 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
       <div className="student-main" style={{...S.main,marginLeft:!isMobile?(sidebarOpen?220:56):0}}>
         {isMobile&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff'}}><span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>ΛΕΒΙΑΘΑΝ</span></div>}
         <div style={S.container}>
-          <div style={{marginBottom:28}}><h1 style={{fontSize:22,fontWeight:600,color:'#1a1a1a',marginBottom:6}}>Δημοσιεύσεις μου 📤</h1><p style={{fontSize:14,color:'#6b6b80',margin:0}}>Υλικό που έχεις δημοσιεύσει</p></div>
+          <div style={{marginBottom:28}}><h1 style={{fontSize:22,fontWeight:600,color:'#1a1a1a',marginBottom:6}}>Δημοσιεύσεις μου 📤</h1><p style={{fontSize:14,color:'#6b6b80',margin:0}}>Υλικό που έχεις δημοσιεύσει</p>
+            <div style={{marginTop:12,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              <button onClick={()=>{const short=myEmail.split('@')[0];const url=`${window.location.origin}/s/${short}`;navigator.clipboard.writeText(url).then(()=>alert('Αντιγράφηκε!\n'+url)).catch(()=>prompt('Σύνδεσμος:',url));}} style={{padding:'8px 16px',borderRadius:10,border:'1.5px solid '+P.cream.accent,background:P.cream.bgSoft,color:P.cream.deep,fontSize:12,fontWeight:600,cursor:'pointer'}}>📋 Αντιγραφή συνδέσμου</button>
+              <span style={{fontSize:11,color:'#aeaeb8'}}>leviathan…/s/{myEmail?myEmail.split('@')[0]:'…'}</span>
+            </div>
+          </div>
           {loading&&<div style={S.empty}>Φόρτωση…</div>}
           {error&&<div style={{textAlign:'center',padding:60,color:'#dc2626',fontSize:14}}>{error}</div>}
           {data&&!loading&&<>
@@ -557,11 +565,15 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
                 <div key={f.id} className="ri-h" onClick={()=>openFile(f)} style={{display:'flex',alignItems:'center',gap:isMobile?10:12,padding:isMobile?'14px 12px':'12px 14px',cursor:'pointer',borderBottom:i<filtered.length-1?'1px solid #f0f0f0':'none'}}>
                   <div style={{width:isMobile?38:42,height:isMobile?38:42,borderRadius:12,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:isMobile?16:18}}>📄</div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:isMobile?13:14,fontWeight:600,color:'#1a1a1a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.name}</div>
-                    <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:4}}>
+                    <div style={{fontSize:isMobile?13:14,fontWeight:600,color:'#1a1a1a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{trunc(f.name,isMobile?15:30)}</div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:4,alignItems:'center'}}>
+                      {f.visibility&&visLabel[f.visibility]&&<span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#f0f0f0',color:'#6b6b80'}}>{visLabel[f.visibility]}</span>}
                       {(f.tags||[]).slice(0,3).map(t=>{const c=tagColor(t);return<span key={t} style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:c.bg,color:c.text}}>#{t}</span>;})}
                     </div>
                   </div>
+                  <button onClick={e=>{e.stopPropagation();setQrFile(f);}} style={{background:'none',border:'1px solid #e0e0e0',borderRadius:8,padding:'5px 7px',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}} title="QR Code">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b80" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                  </button>
                   {isMobile?<span style={{fontSize:13,color:P.cream.deep,fontWeight:700,flexShrink:0}}>→</span>
                     :<button style={{background:'transparent',border:'1.5px solid '+P.cream.deep,borderRadius:10,padding:'6px 14px',fontSize:12,fontWeight:600,cursor:'pointer',color:P.cream.deep}}>Άνοιγμα →</button>}
                 </div>
@@ -571,6 +583,18 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
           </>}
         </div>
       </div>
+      {qrFile&&(
+        <div onClick={()=>setQrFile(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 12px 40px rgba(0,0,0,0.15)'}}>
+            <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>QR Code</div>
+            <div style={{fontSize:12,color:'#6b6b80',marginBottom:16,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{qrFile.name}</div>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getFileUrl(qrFile))}`}
+              alt="QR" width={200} height={200} style={{borderRadius:8,border:'1px solid #eee',margin:'0 auto',display:'block'}}/>
+            <p style={{fontSize:11,color:'#aeaeb8',marginTop:12}}>Σκανάρετε με κινητό</p>
+            <button onClick={()=>setQrFile(null)} style={{marginTop:12,padding:'10px 28px',borderRadius:10,border:'none',background:'#1a1a1a',color:'#fff',fontSize:13,fontWeight:600,cursor:'pointer'}}>Κλείσιμο</button>
+          </div>
+        </div>
+      )}
       {isMobile&&<nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
         <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>{goHome();loadData();}}/>
         <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
