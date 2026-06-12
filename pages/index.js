@@ -714,8 +714,8 @@ export default function Home() {
                           zIndex: isExpanded ? 50 : (isBefore ? idx : hasExpanded ? idx : idx+1),
                           marginTop: mt,
                           borderRadius:22, cursor:'pointer',
-                          padding: item.type==='stat' ? '20px 22px' : '22px 24px',
-                          minHeight: item.type==='stat' ? 115 : 120,
+                          padding: item.type==='stat' ? '20px 22px' : '16px 20px',
+                          minHeight: item.type==='stat' ? 115 : 90,
                           background:`linear-gradient(135deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
                           boxShadow: isExpanded
                             ? '0 14px 44px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.12)'
@@ -1849,7 +1849,7 @@ const S = {
   userName:{ fontSize:12, color:'#ececec', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' },
   main:{ flex:1, transition:'margin-left 0.2s ease' },
   container:{ maxWidth:1280, margin:'0 auto', padding:'24px 16px' },
-  welcomeTitle:{ fontSize:26, fontWeight:600, color:'#1a1a1a', marginBottom:6, letterSpacing:'-0.01em' },
+  welcomeTitle:{ fontSize:26, fontWeight:600, color:'#1a1a1a', margin:'0 0 6px 0', letterSpacing:'-0.01em' },
   welcomeSub:{ fontSize:14, color:'#6b6b80', lineHeight:1.5 },
   statsGrid:{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:14, marginBottom:40 },
   statCard:{ borderRadius:22, padding:'22px 24px', border:'none', minHeight:140, transition:'transform 0.2s,box-shadow 0.2s' },
