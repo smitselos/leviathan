@@ -49,6 +49,8 @@ function hasAnyQuestions(raw) {
   try { const a = JSON.parse(raw); return Array.isArray(a) && a.some(q => q.text?.trim()); } catch { return !!String(raw).trim(); }
 }
 const trunc = (s, max = 15) => s && s.length > max ? s.slice(0, max) + '…' : s || '';
+const getFileUrl = (f) => `https://drive.google.com/file/d/${f.id}/view`;
+const QrIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>;
 
 // ── SVG εικονίδια (ίδια με το παλιό) ──
 const Icon = {
@@ -142,6 +144,7 @@ export default function Home() {
   const [newNetFolder, setNewNetFolder] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
   const [openAccordions, setOpenAccordions] = useState({});
+  const [qrFile, setQrFile] = useState(null);
   const isTeacher = userRole === 'teacher';
   const isStudent = userRole === 'student';
 
@@ -850,6 +853,7 @@ export default function Home() {
                           <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<recentFiles.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
                             <span style={{ fontSize:16, flexShrink:0 }}>📄</span>
                             <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
+                            <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
                           </div>
                         ))}
                     </div>
@@ -863,6 +867,7 @@ export default function Home() {
                           <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<popularFiles.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
                             <div style={{ width:24, height:24, borderRadius:8, background:PALETTE.mustard.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:11, fontWeight:700, color:PALETTE.mustard.deep }}>{f.openCount}</div>
                             <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
+                            <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
                           </div>
                         ))}
                     </div>
@@ -885,7 +890,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />
             </>
           )}
 
@@ -904,7 +909,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />
             </>
           )}
 
@@ -1192,7 +1197,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />
             </>
           )}
 
@@ -1215,7 +1220,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />}
             </>
           )}
 
@@ -1552,6 +1557,20 @@ export default function Home() {
           </div>
         );
       })()}
+
+      {/* QR popup */}
+      {qrFile && (
+        <div onClick={() => setQrFile(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center', boxShadow:'0 12px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>QR Code</div>
+            <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{qrFile.name}</div>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getFileUrl(qrFile))}`}
+              alt="QR" width={200} height={200} style={{ borderRadius:8, border:'1px solid #eee', margin:'0 auto', display:'block' }} />
+            <p style={{ fontSize:11, color:'#aeaeb8', marginTop:12 }}>Σκανάρετε με κινητό</p>
+            <button onClick={() => setQrFile(null)} style={{ marginTop:12, padding:'10px 28px', borderRadius:10, border:'none', background:'#1a1a1a', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Κλείσιμο</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1580,7 +1599,7 @@ function QuestionsFields({ fileId, raw, onChange, compact }) {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact, userRole }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact, userRole, onQr }) {
   const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
@@ -1645,6 +1664,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
+              {onQr && <button onClick={(e)=>{e.stopPropagation();onQr(f);}} style={{ ...btn('mini'), padding: compact ? '4px 6px' : '5px 8px' }} title="QR Code">{QrIcon}</button>}
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
 

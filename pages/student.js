@@ -72,7 +72,7 @@ function PublicView({teacher,isMobile}){
       try{
         const r=await fetch(`/api/publish?email=${encodeURIComponent(teacher)}`);
         const d=await r.json();
-        setFiles((d.items||[]).filter(f=>f.visibility==='public'));
+        setFiles((d.items||[]).filter(f=>f.visibility==='public').sort((a,b)=>(b.publishedAt||b.addedAt||'').localeCompare(a.publishedAt||a.addedAt||'')));
       }catch{}
       setLoading(false);
     })();
@@ -436,6 +436,9 @@ function StudentView({myEmail,isMobile,router}){
                         <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(f.name,20)}</div>
                         <div style={{fontSize:11,color:'#8a8a9a',marginTop:1}}>{f.sentAt?new Date(f.sentAt).toLocaleDateString('el-GR'):''}</div>
                       </div>
+                      <button onClick={()=>setQrFile(f)} style={S.miniBtn} title="QR Code">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                      </button>
                     </div>
                   ))}
                 </div>
