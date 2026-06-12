@@ -34,6 +34,20 @@ const TAG_COLORS = [
 ];
 const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
 const newQid = () => Math.random().toString(36).slice(2, 8);
+const Q_CODES = ['Α1', 'Β1', 'Β2α', 'Β2β', 'Β3α', 'Β3β', 'Γ1', 'Δ1'];
+function parseQuestions(raw) {
+  if (!raw) return Q_CODES.map(code => ({ code, text: '' }));
+  try {
+    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(arr)) return Q_CODES.map(code => ({ code, text: (arr.find(q => q.code === code) || {}).text || '' }));
+  } catch {}
+  return Q_CODES.map((code, i) => ({ code, text: i === 0 ? String(raw) : '' }));
+}
+function serializeQuestions(qArr) { return JSON.stringify(qArr.filter(q => q.text?.trim())); }
+function hasAnyQuestions(raw) {
+  if (!raw || !String(raw).trim()) return false;
+  try { const a = JSON.parse(raw); return Array.isArray(a) && a.some(q => q.text?.trim()); } catch { return !!String(raw).trim(); }
+}
 
 // ── SVG εικονίδια (ίδια με το παλιό) ──
 const Icon = {
@@ -304,10 +318,19 @@ export default function Home() {
     if (!currentNetwork) return;
     const currentItems = currentNetwork.items || [];
     if (currentItems.some(i => i.fileId === file.id)) return;
-    // Εισαγωγή ερωτήσεων αν υπάρχουν στα metadata
+    // Εισαγωγή δομημένων ερωτήσεων
     const metaQ = fileQuestions(file.id);
-    const importedQs = metaQ && typeof metaQ === 'string' && metaQ.trim()
-      ? [{ id: newQid(), code: '', text: metaQ.trim() }] : [];
+    let importedQs = [];
+    try {
+      const parsed = JSON.parse(metaQ);
+      if (Array.isArray(parsed)) {
+        importedQs = parsed.filter(q => q.text?.trim()).map(q => ({ id: newQid(), code: q.code || '', text: q.text }));
+      }
+    } catch {
+      if (metaQ && typeof metaQ === 'string' && metaQ.trim()) {
+        importedQs = [{ id: newQid(), code: '', text: metaQ.trim() }];
+      }
+    }
     const item = { fileId: file.id, name: file.name, questions: importedQs };
     const updated = { ...currentNetwork, items: [...currentItems, item] };
     updateNet(updated); saveNetworkData(updated);
@@ -1280,8 +1303,7 @@ export default function Home() {
                       <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:200, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                       {isTeacher && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις</div>
-                      <textarea placeholder="π.χ. Α1. Ποια επιχειρήματα χρησιμοποιεί ο συντάκτης;&#10;Β1. Να εντοπίσετε τα γλωσσικά μέσα…" value={fileQuestions(viewing.id)} onChange={(e)=>updateQuestions(viewing.id,e.target.value)}
-                        style={{ width:'100%', minHeight:180, padding:'10px 12px', border:'1px solid '+PALETTE.mustard.accent, borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} /></>}
+                      <QuestionsFields fileId={viewing.id} raw={fileQuestions(viewing.id)} onChange={updateQuestions} compact={false} /></>}
 
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
                       {vLinks.map((lnk, li) => (
@@ -1520,6 +1542,29 @@ export default function Home() {
   );
 }
 
+// ── Ερωτήσεις (8 πεδία: Α1, Β1, Β2α, Β2β, Β3α, Β3β, Γ1, Δ1) ──
+function QuestionsFields({ fileId, raw, onChange, compact }) {
+  const items = parseQuestions(raw);
+  const update = (code, text) => {
+    const updated = items.map(q => q.code === code ? { ...q, text } : q);
+    if (onChange) onChange(fileId, serializeQuestions(updated));
+  };
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+      {items.map(q => (
+        <div key={q.code} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+          <span style={{ fontSize:12, fontWeight:700, color:PALETTE.mustard.deep, minWidth:34, paddingTop:7, textAlign:'right', flexShrink:0 }}>{q.code}</span>
+          <textarea value={q.text} onChange={e => { e.stopPropagation(); update(q.code, e.target.value); }}
+            onClick={e => e.stopPropagation()} placeholder={`Ερώτηση ${q.code}…`} rows={q.text ? 2 : 1}
+            style={{ flex:1, padding:'6px 10px', border:'1px solid '+(q.text ? PALETTE.mustard.accent : '#e0e0e0'), borderRadius:8,
+              fontSize: compact ? 16 : 13, lineHeight:1.5, background: q.text ? 'rgba(255,255,255,0.9)' : '#fafafa',
+              resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', minHeight:30 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Λίστα αρχείων (κοινό component) ──
 function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, showFolder, folders, compact, userRole }) {
   const isTeacherRole = userRole === 'teacher';
@@ -1539,7 +1584,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
   return (
     <div style={{ display:'flex', flexDirection:'column', gap: compact ? 6 : 8, maxWidth:'100%', overflow:'hidden' }}>
       {files.map((f) => {
-        const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = !!(f.questions||'').trim(); const hasInfo = !!(f.info||'').trim();
+        const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = hasAnyQuestions(f.questions); const hasInfo = !!(f.info||'').trim();
         const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
         const isPublished = !!(f.published || (f.visibility && f.visibility !== 'none'));
         const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : (f.visibility?.startsWith('user:') || f.visibility?.startsWith('users:')) ? '👤' : null;
@@ -1667,17 +1712,8 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
 
                 {/* Ερωτήσεις */}
                 {isQuestionsOpen && (
-                  <div style={{ marginTop:10 }}>
-                    {compact ? (
-                      <textarea value={f.questions || ''} onChange={(e) => { e.stopPropagation(); if (onQuestions) onQuestions(f.id, e.target.value); }}
-                        onClick={(e) => e.stopPropagation()} placeholder="Ερωτήσεις, π.χ. Α1. Ποια είναι τα επιχειρήματα…"
-                        style={{ width:'100%', padding:'10px 12px', border:'1px solid '+PALETTE.mustard.accent, borderRadius:12, fontSize:16, lineHeight:1.6, color:'#3d3a2e', background:'rgba(255,255,255,0.7)', resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:80, overflow:'hidden' }}
-                        ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
-                    ) : (
-                      <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#4a3f1a', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.mustard.accent }}>
-                        {(f.questions||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς ερωτήσεις — επεξεργασία από το modal (🏷️)</span>}
-                      </div>
-                    )}
+                  <div style={{ marginTop:10 }} onClick={e => e.stopPropagation()}>
+                    <QuestionsFields fileId={f.id} raw={f.questions} onChange={onQuestions} compact={compact} />
                   </div>
                 )}
 
