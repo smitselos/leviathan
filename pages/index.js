@@ -110,6 +110,9 @@ export default function Home() {
   const saveTimer = useRef(null);
   const saveTimerQ = useRef(null);
   const saveTimerI = useRef(null);
+  const saveTimerNetC = useRef(null);
+  const saveTimerNetI = useRef(null);
+  const currentNetRef = useRef(null);
 
   // Αναζήτηση με ετικέτες
   const [searchTags, setSearchTags] = useState([]);
@@ -144,6 +147,7 @@ export default function Home() {
   const [newNetName, setNewNetName] = useState('');
   const [newNetFolder, setNewNetFolder] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
+  const [netTagInput, setNetTagInput] = useState('');
   const [openAccordions, setOpenAccordions] = useState({});
   const [qrFile, setQrFile] = useState(null);
   const isTeacher = userRole === 'teacher';
@@ -162,6 +166,8 @@ export default function Home() {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  useEffect(() => { currentNetRef.current = currentNetwork; }, [currentNetwork]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -280,7 +286,7 @@ export default function Home() {
     try {
       const r = await fetch('/api/networks');
       const d = await r.json();
-      const normalized = (d.networks || []).map(n => ({ ...n, items: Array.isArray(n.items) ? n.items : [] }));
+      const normalized = (d.networks || []).map(n => ({ ...n, items: Array.isArray(n.items) ? n.items : [], tags: Array.isArray(n.tags) ? n.tags : [], comment: n.comment || '', info: n.info || '' }));
       setNetworks(normalized);
     } catch (e) { setNetworks([]); }
   };
@@ -297,7 +303,7 @@ export default function Home() {
   };
   const createNetworkItem = async () => {
     if (!newNetName.trim() || !newNetFolder) return;
-    const net = { id: Date.now().toString(), name: newNetName.trim(), folderId: newNetFolder, items: [], pdfFileId: null, driveFileId: null };
+    const net = { id: Date.now().toString(), name: newNetName.trim(), folderId: newNetFolder, items: [], tags: [], comment: '', info: '', pdfFileId: null, driveFileId: null };
     setNewNetName(''); setShowNewNetForm(false);
     const driveFileId = await saveNetworkData(net);
     if (!driveFileId) { setNetMsg('✗ Αποτυχία δημιουργίας'); return; }
@@ -315,7 +321,7 @@ export default function Home() {
     } catch { alert('Σφάλμα διαγραφής'); }
   };
   const updateNet = (updated) => {
-    const safe = { ...updated, items: Array.isArray(updated.items) ? updated.items : [] };
+    const safe = { ...updated, items: Array.isArray(updated.items) ? updated.items : [], tags: Array.isArray(updated.tags) ? updated.tags : [], comment: updated.comment || '', info: updated.info || '' };
     setCurrentNetwork(safe);
     setNetworks(prev => prev.map(n => n.id === safe.id ? safe : n));
   };
@@ -336,8 +342,22 @@ export default function Home() {
         importedQs = [{ id: newQid(), code: '', text: metaQ.trim() }];
       }
     }
+    // Συγκέντρωση ετικετών, σχολίων, πληροφοριών από το αρχείο
+    const srcTags = fileTags(file.id);
+    const srcComment = fileComment(file.id);
+    const srcInfo = fileInfo(file.id);
+    const mergedTags = [...new Set([...(currentNetwork.tags || []), ...srcTags])];
+    const shortName = (file.name || '').replace(/\.[^.]+$/, '');
+    let mergedComment = currentNetwork.comment || '';
+    if (srcComment.trim()) {
+      mergedComment = mergedComment ? mergedComment + '\n\n' + '▸ ' + shortName + ':\n' + srcComment.trim() : '▸ ' + shortName + ':\n' + srcComment.trim();
+    }
+    let mergedInfo = currentNetwork.info || '';
+    if (srcInfo.trim()) {
+      mergedInfo = mergedInfo ? mergedInfo + '\n\n' + '▸ ' + shortName + ':\n' + srcInfo.trim() : '▸ ' + shortName + ':\n' + srcInfo.trim();
+    }
     const item = { fileId: file.id, name: file.name, questions: importedQs };
-    const updated = { ...currentNetwork, items: [...currentItems, item] };
+    const updated = { ...currentNetwork, items: [...currentItems, item], tags: mergedTags, comment: mergedComment, info: mergedInfo };
     updateNet(updated); saveNetworkData(updated);
     setOpenAccordions(prev => ({ ...prev, [file.id]: true }));
   };
@@ -368,6 +388,34 @@ export default function Home() {
     updateNet(updated); saveNetworkData(updated);
   };
   const saveNetQuestionsNow = () => { if (currentNetwork) saveNetworkData(currentNetwork); };
+  // ── Μεταδεδομένα δικτύου (ετικέτες, σχόλια, πληροφορίες) ──
+  const addNetTag = (tag) => {
+    if (!currentNetwork) return;
+    const t = (tag || '').trim(); if (!t) return;
+    const cur = currentNetwork.tags || [];
+    if (cur.includes(t)) return;
+    const updated = { ...currentNetwork, tags: [...cur, t] };
+    updateNet(updated); saveNetworkData(updated);
+  };
+  const removeNetTag = (tag) => {
+    if (!currentNetwork) return;
+    const updated = { ...currentNetwork, tags: (currentNetwork.tags || []).filter(t => t !== tag) };
+    updateNet(updated); saveNetworkData(updated);
+  };
+  const updateNetComment = (value) => {
+    if (!currentNetwork) return;
+    const updated = { ...currentNetwork, comment: value };
+    updateNet(updated);
+    if (saveTimerNetC.current) clearTimeout(saveTimerNetC.current);
+    saveTimerNetC.current = setTimeout(() => { if (currentNetRef.current) saveNetworkData(currentNetRef.current); }, 800);
+  };
+  const updateNetInfo = (value) => {
+    if (!currentNetwork) return;
+    const updated = { ...currentNetwork, info: value };
+    updateNet(updated);
+    if (saveTimerNetI.current) clearTimeout(saveTimerNetI.current);
+    saveTimerNetI.current = setTimeout(() => { if (currentNetRef.current) saveNetworkData(currentNetRef.current); }, 800);
+  };
   const toggleAccordion = (fileId) => setOpenAccordions(prev => ({ ...prev, [fileId]: !prev[fileId] }));
   const mergeAndSave = async () => {
     if (!currentNetwork?.items?.length) { alert('Προσθέστε κείμενα πρώτα.'); return; }
@@ -921,7 +969,7 @@ export default function Home() {
                 <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
                 <div style={{ flex:1 }}>
                   <h1 style={S.pageTitle}>Δημιουργία Δικτύου</h1>
-                  <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>Σύνθεση κειμένων + ερωτήσεων → αποθήκευση PDF στο Drive</p>
+                  <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>Σύνθεση κειμένων + μεταδεδομένα + ερωτήσεις → αποθήκευση PDF στο Drive</p>
                 </div>
                 <button onClick={() => setShowNewNetForm(true)} style={{ ...btn('solid'), whiteSpace:'nowrap' }}>+ Νέο Δίκτυο</button>
               </div>
@@ -963,6 +1011,9 @@ export default function Home() {
                                 <div style={{ fontSize:12, color:'#6b6b80' }}>
                                   {(net.items || []).length} κείμενα
                                   {fld && <span style={{ marginLeft:6, color:'#aeaeb8' }}>· {fld.name}</span>}
+                                  {(net.tags || []).length > 0 && <span style={{ marginLeft:6, color:'#aeaeb8' }}>· 🏷️{(net.tags || []).length}</span>}
+                                  {(net.comment || '').trim() && <span style={{ marginLeft:4, color:'#aeaeb8' }}>· 💬</span>}
+                                  {(net.info || '').trim() && <span style={{ marginLeft:4, color:'#aeaeb8' }}>· ℹ️</span>}
                                   {net.pdfFileId && <span style={{ color:PALETTE.mustard.deep, marginLeft:8 }}>· PDF ✓</span>}
                                 </div>
                               </div>
@@ -1047,6 +1098,53 @@ export default function Home() {
                                 <button onClick={() => removeFromNetwork(item.fileId)} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
                               </div>
                             ))}
+                          </div>
+
+                          {/* Ετικέτες δικτύου */}
+                          <div style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', padding:'10px 14px', marginBottom:16 }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Ετικέτες</div>
+                            {(currentNetwork.tags || []).length > 0 && (
+                              <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
+                                {(currentNetwork.tags || []).map(t => {
+                                  const c = tagColor(t);
+                                  return <span key={t} style={{ fontSize:11, padding:'3px 10px', borderRadius:999, background:c.bg, color:c.text, display:'inline-flex', alignItems:'center', gap:4, cursor:'pointer' }}
+                                    onClick={() => removeNetTag(t)}>#{t} <span style={{ fontSize:9, opacity:0.6 }}>✕</span></span>;
+                                })}
+                              </div>
+                            )}
+                            <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                              <input type="text" placeholder="Νέα ετικέτα…" value={netTagInput} onChange={e => setNetTagInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter' && netTagInput.trim()) { addNetTag(netTagInput); setNetTagInput(''); } }}
+                                style={{ flex:1, padding:'6px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize: isMobile ? 16 : 12, background:'#fafafa' }} />
+                              <button onClick={() => { if (netTagInput.trim()) { addNetTag(netTagInput); setNetTagInput(''); } }}
+                                style={{ background:PALETTE.mustard.deep, color:'#fff', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', opacity: netTagInput.trim() ? 1 : 0.4 }}>+</button>
+                            </div>
+                            {SUGGESTED_TAGS.filter(t => !(currentNetwork.tags || []).includes(t)).length > 0 && (
+                              <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginTop:8 }}>
+                                {SUGGESTED_TAGS.filter(t => !(currentNetwork.tags || []).includes(t)).slice(0, 8).map(t => (
+                                  <button key={t} onClick={() => addNetTag(t)}
+                                    style={{ fontSize:10, padding:'2px 8px', borderRadius:999, background:'#f3f4f6', color:'#6b6b80', border:'1px solid #e8e8e8', cursor:'pointer' }}>+{t}</button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Πληροφορίες δικτύου */}
+                          <div style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', padding:'10px 14px', marginBottom:16 }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Πληροφορίες</div>
+                            <textarea placeholder="Πηγή, τίτλος, συγγραφέας… (αυτόματη συγκέντρωση από τα κείμενα)" value={currentNetwork.info || ''}
+                              onChange={e => updateNetInfo(e.target.value)}
+                              style={{ width:'100%', padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: isMobile ? 16 : 13, lineHeight:1.6, color:'#3d3a2e',
+                                background:PALETTE.cream.bgSoft, resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', minHeight:60 }} />
+                          </div>
+
+                          {/* Σχόλια δικτύου */}
+                          <div style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', padding:'10px 14px', marginBottom:16 }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Σχόλια</div>
+                            <textarea placeholder="Σημειώσεις, σχόλια… (αυτόματη συγκέντρωση από τα κείμενα)" value={currentNetwork.comment || ''}
+                              onChange={e => updateNetComment(e.target.value)}
+                              style={{ width:'100%', padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: isMobile ? 16 : 13, lineHeight:1.6, color:'#5c3826',
+                                background:PALETTE.peach.bgSoft, resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', minHeight:60 }} />
                           </div>
 
                           {/* Ερωτήσεις — ομαδοποίηση κατά κωδικό */}
