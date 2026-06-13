@@ -12,8 +12,8 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { Readable } from 'stream';
 
-const FONT_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
-const FONT_BOLD_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf';
+const FONT_URL = 'https://raw.githubusercontent.com/ONLYOFFICE/core-fonts/master/crosextra/Carlito-Regular.ttf';
+const FONT_BOLD_URL = 'https://raw.githubusercontent.com/ONLYOFFICE/core-fonts/master/crosextra/Carlito-Bold.ttf';
 
 function bufferToStream(buffer) {
   const readable = new Readable();
@@ -146,8 +146,8 @@ export default async function handler(req, res) {
 
       const pageWidth = 595;
       const pageHeight = 842;
-      const margin = 80;
-      const lineHeight = 20;
+      const margin = 71;
+      const lineHeight = 18;
       const maxWidth = pageWidth - margin * 2;
 
       // Πάντα νέα σελίδα για ερωτήσεις (ασφαλές — δεν ζωγραφίζει σε copied pages)
@@ -210,34 +210,34 @@ export default async function handler(req, res) {
       for (const q of allQuestions) {
         if (q.code) {
           const prefix = `${q.code}. `;
-          const prefixWidth = fontBold.widthOfTextAtSize(prefix, 11);
+          const prefixWidth = fontBold.widthOfTextAtSize(prefix, 12);
           if (y < margin + lineHeight) {
             page = mergedPdf.addPage([pageWidth, pageHeight]);
             y = pageHeight - margin;
           }
-          page.drawText(prefix, { x: margin, y, size: 11, font: fontBold, color: rgb(0, 0, 0) });
+          page.drawText(prefix, { x: margin, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
           const remainingWidth = maxWidth - prefixWidth;
           const textWords = (q.text || '').split(/\s+/).filter(w => w);
           let firstLineWords = [];
           for (const word of textWords) {
             const testLine = [...firstLineWords, word].join(' ');
-            if (font.widthOfTextAtSize(testLine, 11) > remainingWidth && firstLineWords.length > 0) break;
+            if (font.widthOfTextAtSize(testLine, 12) > remainingWidth && firstLineWords.length > 0) break;
             firstLineWords.push(word);
           }
           const restWords = textWords.slice(firstLineWords.length);
           const isLastLine = restWords.length === 0;
           // Πρώτη γραμμή — justified αν υπάρχει συνέχεια
           if (firstLineWords.length > 0) {
-            drawJustifiedLine(firstLineWords, 11, font, isLastLine, margin + prefixWidth, remainingWidth);
+            drawJustifiedLine(firstLineWords, 12, font, isLastLine, margin + prefixWidth, remainingWidth);
           } else {
             y -= lineHeight;
           }
           // Υπόλοιπο κείμενο justified
           if (restWords.length > 0) {
-            drawWrappedJustified(restWords.join(' '), 11, font);
+            drawWrappedJustified(restWords.join(' '), 12, font);
           }
         } else {
-          drawWrappedJustified(q.text || '', 11, font);
+          drawWrappedJustified(q.text || '', 12, font);
         }
         y -= 8;
       }
