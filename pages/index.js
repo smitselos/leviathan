@@ -424,6 +424,22 @@ export default function Home() {
       const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: currentNetwork }) });
       const d = await r.json();
       if (r.ok) {
+        // Συγκέντρωση μεταδεδομένων από όλα τα κείμενα του δικτύου
+        const allTags = [...new Set(currentNetwork.items.flatMap(item => fileTags(item.fileId)))];
+        const allComment = currentNetwork.items
+          .map(item => { const c = fileComment(item.fileId); return c.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + c.trim() : ''; })
+          .filter(Boolean).join('\n\n');
+        const allInfo = currentNetwork.items
+          .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
+          .filter(Boolean).join('\n\n');
+        // Ενημέρωση μεταδεδομένων στο ενιαίο PDF
+        const metaPatch = {};
+        if (allTags.length) metaPatch.tags = allTags;
+        if (allComment) metaPatch.comment = allComment;
+        if (allInfo) metaPatch.info = allInfo;
+        if (Object.keys(metaPatch).length) {
+          await patchMeta(d.pdfFileId, metaPatch);
+        }
         const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
         updateNet(updated);
         setNetMsg('✓ PDF αποθηκεύτηκε');
