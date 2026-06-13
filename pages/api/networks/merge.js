@@ -106,37 +106,9 @@ export default async function handler(req, res) {
       const lineHeight = 20;
       const maxWidth = pageWidth - margin * 2;
 
-      // Χρήση τελευταίας σελίδας αν υπάρχει αρκετός χώρος (≥35% σελίδας)
-      const minSpaceForQuestions = pageHeight * 0.35;
-      const totalPages = mergedPdf.getPageCount();
-      let page;
-      let y;
-
-      if (totalPages > 0) {
-        const lastPage = mergedPdf.getPage(totalPages - 1);
-        const lastH = lastPage.getSize().height;
-        // Ξεκινάμε στο 38% από κάτω — αφήνει 62% για το κείμενο
-        const startY = lastH * 0.38;
-        if (startY > margin + lineHeight * 4) {
-          // Αρκετός χώρος — χρήση τελευταίας σελίδας
-          page = lastPage;
-          y = startY;
-          // Διαχωριστική γραμμή
-          page.drawLine({
-            start: { x: margin, y: y + 16 },
-            end: { x: pageWidth - margin, y: y + 16 },
-            thickness: 0.5,
-            color: rgb(0.7, 0.7, 0.7),
-          });
-        } else {
-          // Δεν χωράει — νέα σελίδα
-          page = mergedPdf.addPage([pageWidth, pageHeight]);
-          y = pageHeight - margin;
-        }
-      } else {
-        page = mergedPdf.addPage([pageWidth, pageHeight]);
-        y = pageHeight - margin;
-      }
+      // Πάντα νέα σελίδα για ερωτήσεις (ασφαλές — δεν ζωγραφίζει σε copied pages)
+      let page = mergedPdf.addPage([pageWidth, pageHeight]);
+      let y = pageHeight - margin;
 
       // Τίτλος — bold
       page.drawText('ΕΡΩΤΗΣΕΙΣ', {
