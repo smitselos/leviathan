@@ -34,24 +34,68 @@ async function fetchBoldFont() {
 /**
  * Κατεβάζει ένα αρχείο από το Drive ως PDF.
  * — Google Docs/Slides/Sheets → export σε PDF
- * — Κανονικά PDF → direct download
+ * — PDF → direct download
+ * — DOCX/PPTX/κ.λπ. → μετατροπή μέσω Google Docs copy → export PDF → διαγραφή copy
  */
 async function getFileAsPdf(drive, fileId) {
-  // Πρώτα δοκίμασε export (λειτουργεί μόνο για Google Workspace αρχεία)
-  try {
+  // 1. Πάρε mimeType
+  const meta = await drive.files.get({ fileId, fields: 'mimeType' });
+  const mime = meta.data.mimeType;
+
+  // 2. Google Workspace → export απευθείας
+  if (mime && mime.startsWith('application/vnd.google-apps.')) {
     const exported = await drive.files.export(
       { fileId, mimeType: 'application/pdf' },
       { responseType: 'arraybuffer' }
     );
     return Buffer.from(exported.data);
-  } catch (_) {
-    // Αν αποτύχει, κατέβασε απευθείας (ήδη PDF ή άλλο binary)
+  }
+
+  // 3. Ήδη PDF → download
+  if (mime === 'application/pdf') {
     const downloaded = await drive.files.get(
       { fileId, alt: 'media' },
       { responseType: 'arraybuffer' }
     );
     return Buffer.from(downloaded.data);
   }
+
+  // 4. DOCX/PPTX/XLS/κ.λπ. → μετατροπή μέσω Google copy
+  const googleMimeMap = {
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'application/vnd.google-apps.document',
+    'application/msword': 'application/vnd.google-apps.document',
+    'application/rtf': 'application/vnd.google-apps.document',
+    'text/plain': 'application/vnd.google-apps.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'application/vnd.google-apps.presentation',
+    'application/vnd.ms-powerpoint': 'application/vnd.google-apps.presentation',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'application/vnd.google-apps.spreadsheet',
+    'application/vnd.ms-excel': 'application/vnd.google-apps.spreadsheet',
+  };
+
+  const googleMime = googleMimeMap[mime];
+  if (googleMime) {
+    const copy = await drive.files.copy({
+      fileId,
+      requestBody: { mimeType: googleMime, name: '__leviathan_temp__' },
+      fields: 'id',
+    });
+    try {
+      const exported = await drive.files.export(
+        { fileId: copy.data.id, mimeType: 'application/pdf' },
+        { responseType: 'arraybuffer' }
+      );
+      return Buffer.from(exported.data);
+    } finally {
+      try { await drive.files.delete({ fileId: copy.data.id }); } catch (_) {}
+    }
+  }
+
+  // 5. Fallback → download ως έχει
+  const downloaded = await drive.files.get(
+    { fileId, alt: 'media' },
+    { responseType: 'arraybuffer' }
+  );
+  return Buffer.from(downloaded.data);
 }
 
 export default async function handler(req, res) {
