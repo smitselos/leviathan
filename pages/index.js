@@ -420,30 +420,36 @@ export default function Home() {
   const mergeAndSave = async () => {
     if (!currentNetwork?.items?.length) { alert('Προσθέστε κείμενα πρώτα.'); return; }
     setMerging(true); setNetMsg('');
+    // ── Συγκέντρωση μεταδεδομένων ΠΡΙΝ τη δημιουργία (τα αρχεία υπάρχουν στο state) ──
+    const allTags = [...new Set(currentNetwork.items.flatMap(item => fileTags(item.fileId)))];
+    const allComment = currentNetwork.items
+      .map(item => { const c = fileComment(item.fileId); return c.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + c.trim() : ''; })
+      .filter(Boolean).join('\n\n');
+    const allInfo = currentNetwork.items
+      .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
+      .filter(Boolean).join('\n\n');
+    const allQuestions = currentNetwork.items.flatMap(item =>
+      (item.questions || []).filter(q => q.text?.trim()).map(q => ({ code: q.code || '', text: q.text }))
+    );
     try {
       const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: currentNetwork }) });
       const d = await r.json();
       if (r.ok) {
-        // Συγκέντρωση μεταδεδομένων από όλα τα κείμενα του δικτύου
-        const allTags = [...new Set(currentNetwork.items.flatMap(item => fileTags(item.fileId)))];
-        const allComment = currentNetwork.items
-          .map(item => { const c = fileComment(item.fileId); return c.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + c.trim() : ''; })
-          .filter(Boolean).join('\n\n');
-        const allInfo = currentNetwork.items
-          .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
-          .filter(Boolean).join('\n\n');
+        const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
+        updateNet(updated);
+        // Φόρτωσε αρχεία ώστε το PDF να εγγραφεί στο μητρώο
+        await loadAll();
         // Ενημέρωση μεταδεδομένων στο ενιαίο PDF
         const metaPatch = {};
         if (allTags.length) metaPatch.tags = allTags;
         if (allComment) metaPatch.comment = allComment;
         if (allInfo) metaPatch.info = allInfo;
+        if (allQuestions.length) metaPatch.questions = JSON.stringify(allQuestions);
         if (Object.keys(metaPatch).length) {
-          await patchMeta(d.pdfFileId, metaPatch);
+          await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.pdfFileId, ...metaPatch }) });
+          await loadAll(); // ξαναφόρτωσε με τα ενημερωμένα μεταδεδομένα
         }
-        const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
-        updateNet(updated);
-        setNetMsg('✓ PDF αποθηκεύτηκε');
-        loadAll(); // ← ξαναφόρτωσε τα αρχεία ώστε το PDF να φανεί στον φάκελο
+        setNetMsg('✓ PDF + μεταδεδομένα αποθηκεύτηκαν');
       }
       else setNetMsg(`✗ ${d.error || 'Σφάλμα'}`);
     } catch { setNetMsg('✗ Σφάλμα σύνδεσης'); }
@@ -1109,6 +1115,9 @@ export default function Home() {
                               <div key={item.fileId} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderTop: idx > 0 ? '1px solid #f0f0f0' : 'none' }}>
                                 <span style={{ width:22, height:22, borderRadius:'50%', background:'#1a1a1a', color:'#fff', fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{idx + 1}</span>
                                 <span style={{ flex:1, fontSize:13, fontWeight:500, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>{item.name}</span>
+                                {fileTags(item.fileId).length > 0 && <span style={{ fontSize:9, color:'#aeaeb8' }}>🏷️</span>}
+                                {fileComment(item.fileId).trim() && <span style={{ fontSize:9, color:'#aeaeb8' }}>💬</span>}
+                                {fileInfo(item.fileId).trim() && <span style={{ fontSize:9, color:'#aeaeb8' }}>ℹ️</span>}
                                 <button onClick={() => moveNetItem(idx, -1)} disabled={idx === 0} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, opacity: idx === 0 ? 0.3 : 1 }}>↑</button>
                                 <button onClick={() => moveNetItem(idx, 1)} disabled={idx === currentNetwork.items.length - 1} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, opacity: idx === currentNetwork.items.length - 1 ? 0.3 : 1 }}>↓</button>
                                 <button onClick={() => removeFromNetwork(item.fileId)} style={{ ...S.iconBtn, width:24, height:24, fontSize:11, color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
