@@ -32,6 +32,7 @@ export default async function handler(req, res) {
           folderId: f.folderId || prev.folderId || null,
           tags: Array.isArray(f.tags) ? f.tags : (prev.tags || []),
           comment: typeof f.comment === 'string' ? f.comment : (prev.comment || ''),
+          info: typeof f.info === 'string' ? f.info : (prev.info || ''),
           questions: typeof f.questions === 'string' ? f.questions : (prev.questions || ''),
           links: Array.isArray(f.links) ? f.links : (prev.links || []),
           published: typeof f.published === 'boolean' ? f.published : (prev.published || false),
@@ -47,13 +48,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
     if (req.method === 'PATCH') {
-      const { id, tags, comment, questions, links, visibility, favorite, recordOpen } = req.body || {};
+      const { id, tags, comment, info, questions, links, visibility, favorite, recordOpen } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       const idx = reg.files.findIndex((f) => f.id === id);
       if (idx === -1) return res.status(404).json({ error: 'File not found' });
       if (Array.isArray(tags)) reg.files[idx].tags = tags;
       if (typeof comment === 'string') reg.files[idx].comment = comment;
+      if (typeof info === 'string') reg.files[idx].info = info;
       if (typeof questions === 'string') reg.files[idx].questions = questions;
       if (Array.isArray(links)) reg.files[idx].links = links;
       if (typeof visibility === 'string') reg.files[idx].visibility = visibility;
