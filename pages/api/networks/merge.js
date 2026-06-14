@@ -129,14 +129,22 @@ export default async function handler(req, res) {
 
     // ── 2. Σελίδα ερωτήσεων ──────────────────────────────────────────
     const CODE_ORDER = ['Α', 'Β1', 'Β2', 'Β3', 'Γ', 'Δ'];
-    const allQuestions = network.items
+    // Φίλτρο: μόνο τσεκαρισμένες ερωτήσεις (αν υπάρχει πεδίο selected)
+    const rawQs = network.items
       .flatMap((item) => (item.questions || []).map((q) => ({ ...q })))
-      .filter((q) => q.text?.trim())
-      .sort((a, b) => {
-        const ia = CODE_ORDER.indexOf(a.code);
-        const ib = CODE_ORDER.indexOf(b.code);
-        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-      });
+      .filter((q) => q.text?.trim());
+    const hasSelection = rawQs.some((q) => typeof q.selected === 'boolean');
+    const filteredQs = hasSelection ? rawQs.filter((q) => q.selected === true) : rawQs;
+    // Ομαδοποίηση: αν υπάρχουν 2× Β1, ενώνονται σε μία Β1
+    const allQuestions = CODE_ORDER
+      .map((code) => {
+        const texts = filteredQs.filter((q) => q.code === code).map((q) => q.text.trim());
+        return texts.length > 0 ? { code, text: texts.join('\n\n') } : null;
+      })
+      .filter(Boolean);
+    // Ερωτήσεις χωρίς κωδικό (fallback)
+    const noCodeQs = filteredQs.filter((q) => !q.code || !CODE_ORDER.includes(q.code));
+    noCodeQs.forEach((q) => allQuestions.push({ code: '', text: q.text.trim() }));
 
     if (allQuestions.length > 0) {
       const fontBytes = await fetchFont();
@@ -293,6 +301,8 @@ export default async function handler(req, res) {
       // 4b. Καταχώρηση PDF στα αρχεία (ώστε να φαίνεται στον φάκελο)
       if (!reg.files) reg.files = [];
       const existingIdx = reg.files.findIndex((f) => f.id === pdfFileId);
+      // Σειριοποίηση τελικών ερωτήσεων (ομαδοποιημένες ανά κωδικό)
+      const questionsJson = allQuestions.length > 0 ? JSON.stringify(allQuestions) : '';
       const fileEntry = {
         id: pdfFileId,
         name: filename,
@@ -300,7 +310,8 @@ export default async function handler(req, res) {
         folderId: targetFolder,
         tags: ['Δίκτυο'],
         comment: `Δίκτυο: ${network.name}`,
-        questions: '',
+        info: '',
+        questions: questionsJson,
         links: [],
         published: false,
         visibility: 'none',
@@ -310,9 +321,10 @@ export default async function handler(req, res) {
         addedAt: Date.now(),
       };
       if (existingIdx >= 0) {
-        // Ενημέρωση υπάρχοντος — κρατάμε tags/comment κ.λπ. αν άλλαξαν
+        // Ενημέρωση υπάρχοντος — κρατάμε tags/comment/info, ενημερώνουμε ερωτήσεις
         reg.files[existingIdx].name = filename;
         reg.files[existingIdx].mimeType = 'application/pdf';
+        reg.files[existingIdx].questions = questionsJson;
       } else {
         reg.files.push(fileEntry);
       }
