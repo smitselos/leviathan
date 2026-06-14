@@ -1,4 +1,4 @@
-// pages/login.js — Σύνδεση + Επιλογή ρόλου
+// pages/login.js — Σύνδεση + Επιλογή ρόλου + Βιβλιοθήκη
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -104,26 +104,47 @@ export default function Login() {
   // Αρχική οθόνη login (πριν το OAuth)
   return (
     <div style={S.page}>
-      <div style={S.card}>
-        <img src="/logo.png" alt="Leviathan" style={{ height: 100, objectFit: 'contain', marginBottom: 16 }} />
-        <p style={{ fontSize: 14, color: '#6b6b80', marginBottom: 28, lineHeight: 1.6 }}>
-          Συνδέσου με τον λογαριασμό Google σου. Τα αρχεία σου μένουν στο δικό σου Google Drive.
-        </p>
-        <button
-          onClick={() => signIn('google', { callbackUrl: '/login' })}
-          style={S.googleBtn}
-        >
-          Σύνδεση με Google
-        </button>
-        <div style={{ marginTop: 24, fontSize: 11, color: '#aeaeb8' }}>leviathan-cloud</div>
+      <div style={{ display: 'flex', gap: 20, alignItems: 'stretch', flexWrap: 'wrap', justifyContent: 'center', maxWidth: 700, width: '100%' }}>
+
+        {/* Είσοδος */}
+        <div style={{ ...S.card, flex: 1, minWidth: 280 }}>
+          <img src="/logo.png" alt="Leviathan" style={{ height: 100, objectFit: 'contain', marginBottom: 16 }} />
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Είσοδος</div>
+          <p style={{ fontSize: 13, color: '#6b6b80', marginBottom: 28, lineHeight: 1.6 }}>
+            Συνδέσου με τον λογαριασμό Google σου. Τα αρχεία σου μένουν στο δικό σου Google Drive.
+          </p>
+          <button
+            onClick={() => signIn('google', { callbackUrl: '/login' })}
+            style={S.googleBtn}
+          >
+            Σύνδεση με Google
+          </button>
+        </div>
+
+        {/* Βιβλιοθήκη */}
+        <div style={{ ...S.card, flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📖</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Βιβλιοθήκη</div>
+          <p style={{ fontSize: 13, color: '#6b6b80', marginBottom: 28, lineHeight: 1.6 }}>
+            Περιήγηση στο δημοσιευμένο εκπαιδευτικό υλικό χωρίς σύνδεση.
+          </p>
+          <button
+            onClick={() => window.open('/student', '_blank')}
+            style={{ ...S.googleBtn, background: '#5c7a3a' }}
+          >
+            Ανοικτό υλικό
+          </button>
+        </div>
+
       </div>
+      <div style={{ marginTop: 24, fontSize: 11, color: '#aeaeb8', textAlign: 'center' }}>leviathan-cloud</div>
     </div>
   );
 }
 
 const S = {
   page: {
-    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     background: '#f5f0e1', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", padding: 24,
   },
   card: {

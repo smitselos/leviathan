@@ -68,6 +68,7 @@ const Icon = {
   bolt:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PALETTE.mustard.deep} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
   collapseL:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
   collapseR:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  live:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
 };
 
 function loadPickerApi() {
@@ -147,6 +148,7 @@ export default function Home() {
   const [newNetName, setNewNetName] = useState('');
   const [newNetFolder, setNewNetFolder] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerMode, setPickerMode] = useState('texts'); // 'texts' | 'apps'
   const [netTagInput, setNetTagInput] = useState('');
   const [openAccordions, setOpenAccordions] = useState({});
   const [qrFile, setQrFile] = useState(null);
@@ -691,6 +693,7 @@ export default function Home() {
         .wallet-card:active{transform:scale(0.97)!important;}
         .btm-item{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 0;min-width:0;flex:1;}
         .btm-item svg{width:20px;height:20px;}
+        @keyframes pulse-live{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
       `}</style>
 
       {/* ── Sidebar (desktop only) ── */}
@@ -704,15 +707,26 @@ export default function Home() {
         </div>
         <nav style={S.nav}>
           <NavItem icon={Icon.home} label="Αρχική" active={activeView==='home'} onClick={goHome} />
-          <NavItem icon={Icon.netAdd} label="Δημιουργία Δικτύου" active={activeView==='netBuilder'}
+          <NavItem icon={Icon.netAdd} label="Δίκτυα Κειμένων" active={activeView==='netBuilder'}
             onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.net} label="Δίκτυα" active={activeView==='network'} onClick={openNetwork}
+          <NavItem icon={Icon.net} label="Τάξη" active={activeView==='network'} onClick={openNetwork}
             badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.student} label="Student" onClick={() => window.open('/student', '_blank')} />
+          <NavItem icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>} label="Βιβλιοθήκη" onClick={() => window.open('/student', '_blank')} />
+          {liveFile && (
+            <>
+              <div style={S.navDiv} />
+              <button className="nav-h" style={{ ...S.navItem, color:'#16a34a', position:'relative' }} title="Live ενεργό" onClick={() => {}}>
+                <span style={S.navIcon}>{Icon.live}</span>
+                {!sidebarCollapsed && <span style={{ flex:1, textAlign:'left' }}>Live</span>}
+                <span style={{ width:8, height:8, borderRadius:'50%', background:'#16a34a', animation:'pulse-live 1.5s infinite', position:'absolute', top:6, right: sidebarCollapsed ? 4 : 8 }} />
+              </button>
+            </>
+          )}
         </nav>
         <div style={S.sidebarFooter}>
           <div style={S.userCard}>
@@ -737,10 +751,10 @@ export default function Home() {
             {Icon.home}<span style={{ fontSize:10 }}>Αρχική</span>
           </button>
           <button className="btm-item" onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} style={{ color: activeView==='netBuilder'?'#ececec':'#8e8ea0' }}>
-            {Icon.netAdd}<span style={{ fontSize:10 }}>Δίκτυο+</span>
+            {Icon.netAdd}<span style={{ fontSize:10 }}>Κείμενα</span>
           </button>
           <button className="btm-item" onClick={openNetwork} style={{ color: activeView==='network'?'#ececec':'#8e8ea0', position:'relative' }}>
-            {Icon.net}<span style={{ fontSize:10 }}>Δίκτυα</span>
+            {Icon.net}<span style={{ fontSize:10 }}>Τάξη</span>
             {((networkData.received?.length||0)+(networkData.unseenCount||0)) > 0 && (
               <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {(networkData.received?.length||0)+(networkData.unseenCount||0)}
@@ -1009,8 +1023,8 @@ export default function Home() {
               <div style={S.pageHeader}>
                 <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
                 <div style={{ flex:1 }}>
-                  <h1 style={S.pageTitle}>Δημιουργία Δικτύου</h1>
-                  <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>Σύνθεση κειμένων + μεταδεδομένα + ερωτήσεις → αποθήκευση PDF στο Drive</p>
+                  <h1 style={S.pageTitle}>Δίκτυα Κειμένων</h1>
+                  <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>Δημιουργία δικτύου κειμένων · κριτηρίου · ενοποίηση αρχείων</p>
                 </div>
                 <button onClick={() => setShowNewNetForm(true)} style={{ ...btn('solid'), whiteSpace:'nowrap' }}>+ Νέο Δίκτυο</button>
               </div>
@@ -1076,11 +1090,24 @@ export default function Home() {
 
                   {/* Αριστερά — file picker */}
                   <div style={{ width: isMobile ? '100%' : 320, flexShrink:0, background:PALETTE.cream.bgSoft, borderRadius:16, padding:14, border:'1px solid ' + PALETTE.cream.accent }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>Κείμενα</div>
-                    <input type="search" placeholder="Αναζήτηση τίτλου ή ετικέτας…" value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
+                    <div style={{ display:'flex', gap:0, marginBottom:10, borderRadius:10, overflow:'hidden', border:'1px solid #e0e0e0' }}>
+                      <button onClick={() => { setPickerMode('texts'); setPickerSearch(''); }}
+                        style={{ flex:1, padding:'6px 0', fontSize:11, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', border:'none', cursor:'pointer',
+                          background: pickerMode === 'texts' ? PALETTE.mustard.deep : '#fff', color: pickerMode === 'texts' ? '#fff' : '#888' }}>
+                        Κείμενα
+                      </button>
+                      {appsFolderId && (
+                        <button onClick={() => { setPickerMode('apps'); setPickerSearch(''); }}
+                          style={{ flex:1, padding:'6px 0', fontSize:11, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', border:'none', borderLeft:'1px solid #e0e0e0', cursor:'pointer',
+                            background: pickerMode === 'apps' ? PALETTE.mustard.deep : '#fff', color: pickerMode === 'apps' ? '#fff' : '#888' }}>
+                          Εφαρμογές
+                        </button>
+                      )}
+                    </div>
+                    <input type="search" placeholder={pickerMode === 'texts' ? 'Αναζήτηση τίτλου ή ετικέτας…' : 'Αναζήτηση εφαρμογής…'} value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
                       style={{ width:'100%', padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile ? 16 : 12, background:'#fff', marginBottom:10, boxSizing:'border-box' }} />
                     <div style={{ maxHeight: isMobile ? 240 : 'calc(100vh - 380px)', overflowY:'auto', display:'flex', flexDirection:'column', gap:4 }}>
-                      {normalFiles.filter(f => {
+                      {(pickerMode === 'texts' ? normalFiles : files.filter(f => appsFolderId && f.folderId === appsFolderId)).filter(f => {
                         if (!pickerSearch) return true;
                         const q = pickerSearch.toLowerCase();
                         return (f.name || '').toLowerCase().includes(q) || (f.tags || []).some(t => t.toLowerCase().includes(q));
@@ -1257,7 +1284,7 @@ export default function Home() {
             <div style={{ maxWidth:640 }}>
               <div style={S.pageHeader}>
                 <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
-                <h1 style={S.pageTitle}>Δίκτυα</h1>
+                <h1 style={S.pageTitle}>Τάξη</h1>
               </div>
 
               {/* Εκκρεμείς προσκλήσεις */}

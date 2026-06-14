@@ -20,6 +20,7 @@ const Ic={
   live:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
   out:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   user:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  book:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
 export default function StudentPage({ teacher: ssrTeacher }){
@@ -468,6 +469,7 @@ function StudentView({myEmail,isMobile,router}){
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
           <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>setViewing(null)}/>
           <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+          <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/student','_blank')}/>
           <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
         </nav>
       )}
@@ -608,6 +610,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
       {isMobile&&<nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
         <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>{goHome();loadData();}}/>
         <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+        <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/student','_blank')}/>
         <MobBtn icon={Ic.out} label="Επιστροφή" disabled={!hasSession} onClick={goBack}/>
       </nav>}
     </div>
@@ -626,6 +629,8 @@ function StudentSidebar({open,setOpen,goHome,isMobile,myEmail}){
         <button onClick={goHome} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.home}</span>{open&&'Αρχική'}</button>
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
+        <div style={S.navDiv}/>
+        <button onClick={()=>window.open('/student','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
       </nav>
       <div style={S.sidebarFooter}>
         <div style={S.userCard}>
@@ -648,6 +653,8 @@ function TeacherSidebar({open,setOpen,goHome,goBack,hasSession}){
         <button onClick={goHome} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.home}</span>{open&&'Αρχική'}</button>
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
+        <div style={S.navDiv}/>
+        <button onClick={()=>window.open('/student','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
         <div style={S.navDiv}/>
         {hasSession&&<button onClick={goBack} style={S.navItem}><span style={S.navIcon}>{Ic.out}</span>{open&&'Επιστροφή'}</button>}
       </nav>
