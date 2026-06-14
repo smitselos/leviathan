@@ -433,20 +433,18 @@ export default function Home() {
     const allInfo = currentNetwork.items
       .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
       .filter(Boolean).join('\n\n');
-    // Ομαδοποίηση τσεκαρισμένων ερωτήσεων ανά κωδικό (Α, Β1, Β2, Β3, Γ, Δ)
-    // Αν τσέκαρες 2× Β1 από δύο κείμενα → ενώνονται σε μία Β1
+    // Φιλτραρισμένο δίκτυο: μόνο τσεκαρισμένες, ομαδοποιημένες ερωτήσεις → server
     const selectedQs = currentNetwork.items.flatMap(item =>
-      (item.questions || []).filter(q => q.selected && q.text?.trim()).map(q => ({ code: q.code || '', text: q.text.trim() }))
+      (item.questions || []).filter(q => q.selected && q.text?.trim()).map(q => ({ code: q.code || '', text: q.text.trim(), selected: true }))
     );
     const finalQuestions = Q_CODES.map(code => {
       const texts = selectedQs.filter(q => q.code === code).map(q => q.text);
       return { code, text: texts.join('\n\n') };
     }).filter(q => q.text);
-    // Φιλτραρισμένο δίκτυο για το PDF: τελικές ομαδοποιημένες ερωτήσεις στο 1ο item
     const filteredItems = currentNetwork.items.map((item, idx) => ({
       ...item,
       questions: idx === 0
-        ? finalQuestions.map(q => ({ id: 'final_' + q.code, code: q.code, text: q.text }))
+        ? finalQuestions.map(q => ({ id: 'final_' + q.code, code: q.code, text: q.text, selected: true }))
         : []
     }));
     const filteredNetwork = { ...currentNetwork, items: filteredItems };
@@ -457,16 +455,19 @@ export default function Home() {
         const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
         updateNet(updated);
         saveNetworkData(updated);
-        await loadAll();
-        // Ενημέρωση μεταδεδομένων στο ενιαίο PDF (ομαδοποιημένες ερωτήσεις)
-        const questionsJson = finalQuestions.length ? JSON.stringify(finalQuestions) : '';
-        const metaPatch = { questions: questionsJson };
+        // Ο server αποθήκευσε ήδη τις ερωτήσεις (ομαδοποιημένες) στο registry.
+        // PATCH μόνο tags/comment/info — ΟΧΙ questions (τα χειρίζεται ο server).
+        const metaPatch = {};
         if (allTags.length) metaPatch.tags = allTags;
         if (allComment) metaPatch.comment = allComment;
         if (allInfo) metaPatch.info = allInfo;
-        await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.pdfFileId, ...metaPatch }) });
-        // Ενημέρωση τοπικού state αμέσως
-        setFiles(prev => prev.map(f => f.id === d.pdfFileId ? { ...f, ...metaPatch } : f));
+        if (Object.keys(metaPatch).length) {
+          const pr = await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.pdfFileId, ...metaPatch }) });
+          const pd = await pr.json();
+          if (pd.files) setFiles(pd.files);
+        } else {
+          await loadAll();
+        }
         setNetMsg('✓ PDF + μεταδεδομένα αποθηκεύτηκαν');
       }
       else setNetMsg(`✗ ${d.error || 'Σφάλμα'}`);
