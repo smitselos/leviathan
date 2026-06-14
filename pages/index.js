@@ -335,11 +335,11 @@ export default function Home() {
     try {
       const parsed = JSON.parse(metaQ);
       if (Array.isArray(parsed)) {
-        importedQs = parsed.filter(q => q.text?.trim()).map(q => ({ id: newQid(), code: q.code || '', text: q.text }));
+        importedQs = parsed.filter(q => q.text?.trim()).map(q => ({ id: newQid(), code: q.code || '', text: q.text, selected: false }));
       }
     } catch {
       if (metaQ && typeof metaQ === 'string' && metaQ.trim()) {
-        importedQs = [{ id: newQid(), code: '', text: metaQ.trim() }];
+        importedQs = [{ id: newQid(), code: '', text: metaQ.trim(), selected: false }];
       }
     }
     // Συγκέντρωση ετικετών, σχολίων, πληροφοριών από το αρχείο
@@ -375,7 +375,7 @@ export default function Home() {
   const addNetQuestion = (fileId, code) => {
     const targetFileId = fileId || (currentNetwork.items[0]?.fileId);
     if (!targetFileId) return;
-    const items = currentNetwork.items.map(item => item.fileId !== targetFileId ? item : { ...item, questions: [...item.questions, { id: newQid(), code: code || '', text: '' }] });
+    const items = currentNetwork.items.map(item => item.fileId !== targetFileId ? item : { ...item, questions: [...item.questions, { id: newQid(), code: code || '', text: '', selected: false }] });
     updateNet({ ...currentNetwork, items });
   };
   const updateNetQuestion = (fileId, qid, field, value) => {
@@ -384,6 +384,11 @@ export default function Home() {
   };
   const removeNetQuestion = (fileId, qid) => {
     const items = currentNetwork.items.map(item => item.fileId !== fileId ? item : { ...item, questions: item.questions.filter(q => q.id !== qid) });
+    const updated = { ...currentNetwork, items };
+    updateNet(updated); saveNetworkData(updated);
+  };
+  const toggleNetQuestionSelected = (fileId, qid) => {
+    const items = currentNetwork.items.map(item => item.fileId !== fileId ? item : { ...item, questions: item.questions.map(q => q.id === qid ? { ...q, selected: !q.selected } : q) });
     const updated = { ...currentNetwork, items };
     updateNet(updated); saveNetworkData(updated);
   };
@@ -429,7 +434,7 @@ export default function Home() {
       .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
       .filter(Boolean).join('\n\n');
     const allQuestions = currentNetwork.items.flatMap(item =>
-      (item.questions || []).filter(q => q.text?.trim()).map(q => ({ code: q.code || '', text: q.text }))
+      (item.questions || []).filter(q => q.selected && q.text?.trim()).map(q => ({ code: q.code || '', text: q.text }))
     );
     try {
       const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: currentNetwork }) });
@@ -1090,6 +1095,7 @@ export default function Home() {
                         <h2 style={{ fontSize:17, fontWeight:600, color:'#1a1a1a', marginBottom:2 }}>{currentNetwork.name}</h2>
                         <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>
                           {currentNetwork.items.length} κείμενα
+                          {(() => { const sel = currentNetwork.items.flatMap(i => (i.questions || []).filter(q => q.selected)); return sel.length > 0 ? <span style={{ marginLeft:6, color:PALETTE.mustard.deep, fontWeight:600 }}>· {sel.length} ερωτ. ✓</span> : null; })()}
                           {netSaving && <span style={{ marginLeft:8, color:PALETTE.mustard.deep, fontSize:12 }}>· Αποθήκευση…</span>}
                           {netMsg && <span style={{ marginLeft:8, color: netMsg.startsWith('✓') ? PALETTE.mustard.deep : '#dc2626', fontSize:12 }}>{netMsg}</span>}
                         </p>
@@ -1172,32 +1178,44 @@ export default function Home() {
                                 background:PALETTE.peach.bgSoft, resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', minHeight:60 }} />
                           </div>
 
-                          {/* Ερωτήσεις — ομαδοποίηση κατά κωδικό */}
+                          {/* Ερωτήσεις — ομαδοποίηση κατά κωδικό, με checkbox επιλογής */}
                           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                             {Q_CODES.map(code => {
                               const grouped = currentNetwork.items.flatMap(item =>
                                 (item.questions || []).filter(q => q.code === code).map(q => ({ ...q, fileId: item.fileId, fileName: item.name }))
                               );
+                              const selectedCount = grouped.filter(q => q.selected).length;
                               const isOpen = !!openAccordions['code_' + code];
                               return (
                                 <div key={code} style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', overflow:'hidden' }}>
                                   <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background: isOpen ? PALETTE.mustard.bgSoft : '#fafaf9' }}
                                     onClick={() => setOpenAccordions(prev => ({ ...prev, ['code_' + code]: !prev['code_' + code] }))}>
                                     <span style={{ fontSize:15, fontWeight:700, color:PALETTE.mustard.deep, minWidth:28 }}>{code}</span>
-                                    <span style={{ flex:1, fontSize:12, color:'#6b6b80' }}>{grouped.length} {grouped.length === 1 ? 'ερώτηση' : 'ερωτήσεις'}</span>
+                                    <span style={{ flex:1, fontSize:12, color:'#6b6b80' }}>
+                                      {grouped.length} {grouped.length === 1 ? 'ερώτηση' : 'ερωτήσεις'}
+                                      {selectedCount > 0 && <span style={{ color:PALETTE.mustard.deep, fontWeight:600 }}> · {selectedCount} επιλεγμ.</span>}
+                                    </span>
                                     <span style={{ fontSize:11, color:'#6b6b80' }}>{isOpen ? '▲' : '▼'}</span>
                                   </div>
                                   {isOpen && (
                                     <div style={{ padding:'10px 14px 14px', borderTop:'1px solid #f0f0f0' }}>
                                       {grouped.length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', marginBottom:8 }}>Καμία ερώτηση {code}.</div>}
                                       {grouped.map(q => (
-                                        <div key={q.id} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:8 }}>
-                                          <div style={{ flexShrink:0, minWidth:0, maxWidth:80 }}>
-                                            <div style={{ fontSize:10, color:'#aeaeb8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{q.fileName?.length > 12 ? q.fileName.slice(0, 12) + '…' : q.fileName}</div>
+                                        <div key={q.id} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:8,
+                                          padding:8, borderRadius:10, border: q.selected ? '2px solid ' + PALETTE.mustard.deep : '1px solid #f0f0f0',
+                                          background: q.selected ? PALETTE.mustard.bgSoft : '#fff', transition:'all 0.15s ease' }}>
+                                          <input type="checkbox" checked={!!q.selected}
+                                            onChange={() => toggleNetQuestionSelected(q.fileId, q.id)}
+                                            style={{ width:18, height:18, marginTop:3, flexShrink:0, accentColor:PALETTE.mustard.deep, cursor:'pointer' }} />
+                                          <div style={{ flex:1, minWidth:0 }}>
+                                            <div style={{ fontSize:10, color:'#aeaeb8', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                              📄 {q.fileName?.length > 25 ? q.fileName.slice(0, 25) + '…' : q.fileName}
+                                            </div>
+                                            <textarea rows={2} placeholder={`Ερώτηση ${code}…`} value={q.text}
+                                              onChange={e => updateNetQuestion(q.fileId, q.id, 'text', e.target.value)} onBlur={saveNetQuestionsNow}
+                                              style={{ width:'100%', padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, lineHeight:1.5,
+                                                color:'#1a1a1a', background: q.selected ? '#fff' : PALETTE.cream.bgSoft, resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                                           </div>
-                                          <textarea rows={2} placeholder={`Ερώτηση ${code}…`} value={q.text}
-                                            onChange={e => updateNetQuestion(q.fileId, q.id, 'text', e.target.value)} onBlur={saveNetQuestionsNow}
-                                            style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:isMobile ? 16 : 13, lineHeight:1.5, color:'#1a1a1a', background:PALETTE.cream.bgSoft, resize:'vertical', fontFamily:'inherit' }} />
                                           <button onClick={() => removeNetQuestion(q.fileId, q.id)} style={{ ...S.delBtn, width:26, height:26, marginTop:2 }}>✕</button>
                                         </div>
                                       ))}
