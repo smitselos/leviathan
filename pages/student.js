@@ -469,7 +469,7 @@ function StudentView({myEmail,isMobile,router}){
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
           <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>setViewing(null)}/>
           <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
-          <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/student','_blank')}/>
+          <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/s/smitselos','_blank')}/>
           <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
         </nav>
       )}
@@ -610,7 +610,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
       {isMobile&&<nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
         <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>{goHome();loadData();}}/>
         <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
-        <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/student','_blank')}/>
+        <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/s/smitselos','_blank')}/>
         <MobBtn icon={Ic.out} label="Επιστροφή" disabled={!hasSession} onClick={goBack}/>
       </nav>}
     </div>
@@ -630,7 +630,7 @@ function StudentSidebar({open,setOpen,goHome,isMobile,myEmail}){
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/student','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
+        <button onClick={()=>window.open('/s/smitselos','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
       </nav>
       <div style={S.sidebarFooter}>
         <div style={S.userCard}>
@@ -654,7 +654,7 @@ function TeacherSidebar({open,setOpen,goHome,goBack,hasSession}){
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/student','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
+        <button onClick={()=>window.open('/s/smitselos','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
         <div style={S.navDiv}/>
         {hasSession&&<button onClick={goBack} style={S.navItem}><span style={S.navIcon}>{Ic.out}</span>{open&&'Επιστροφή'}</button>}
       </nav>

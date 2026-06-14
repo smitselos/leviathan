@@ -129,7 +129,7 @@ export default function Login() {
             Περιήγηση στο δημοσιευμένο εκπαιδευτικό υλικό χωρίς σύνδεση.
           </p>
           <button
-            onClick={() => window.open('/student', '_blank')}
+            onClick={() => window.open('/s/smitselos', '_blank')}
             style={{ ...S.googleBtn, background: '#5c7a3a' }}
           >
             Ανοικτό υλικό
