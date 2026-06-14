@@ -425,7 +425,7 @@ export default function Home() {
   const mergeAndSave = async () => {
     if (!currentNetwork?.items?.length) { alert('Προσθέστε κείμενα πρώτα.'); return; }
     setMerging(true); setNetMsg('');
-    // ── Συγκέντρωση μεταδεδομένων ΠΡΙΝ τη δημιουργία (τα αρχεία υπάρχουν στο state) ──
+    // ── Συγκέντρωση μεταδεδομένων ΠΡΙΝ τη δημιουργία ──
     const allTags = [...new Set(currentNetwork.items.flatMap(item => fileTags(item.fileId)))];
     const allComment = currentNetwork.items
       .map(item => { const c = fileComment(item.fileId); return c.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + c.trim() : ''; })
@@ -433,27 +433,40 @@ export default function Home() {
     const allInfo = currentNetwork.items
       .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
       .filter(Boolean).join('\n\n');
-    const allQuestions = currentNetwork.items.flatMap(item =>
-      (item.questions || []).filter(q => q.selected && q.text?.trim()).map(q => ({ code: q.code || '', text: q.text }))
+    // Ομαδοποίηση τσεκαρισμένων ερωτήσεων ανά κωδικό (Α, Β1, Β2, Β3, Γ, Δ)
+    // Αν τσέκαρες 2× Β1 από δύο κείμενα → ενώνονται σε μία Β1
+    const selectedQs = currentNetwork.items.flatMap(item =>
+      (item.questions || []).filter(q => q.selected && q.text?.trim()).map(q => ({ code: q.code || '', text: q.text.trim() }))
     );
+    const finalQuestions = Q_CODES.map(code => {
+      const texts = selectedQs.filter(q => q.code === code).map(q => q.text);
+      return { code, text: texts.join('\n\n') };
+    }).filter(q => q.text);
+    // Φιλτραρισμένο δίκτυο για το PDF: τελικές ομαδοποιημένες ερωτήσεις στο 1ο item
+    const filteredItems = currentNetwork.items.map((item, idx) => ({
+      ...item,
+      questions: idx === 0
+        ? finalQuestions.map(q => ({ id: 'final_' + q.code, code: q.code, text: q.text }))
+        : []
+    }));
+    const filteredNetwork = { ...currentNetwork, items: filteredItems };
     try {
-      const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: currentNetwork }) });
+      const r = await fetch('/api/networks/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: filteredNetwork }) });
       const d = await r.json();
       if (r.ok) {
         const updated = { ...currentNetwork, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
         updateNet(updated);
-        // Φόρτωσε αρχεία ώστε το PDF να εγγραφεί στο μητρώο
+        saveNetworkData(updated);
         await loadAll();
-        // Ενημέρωση μεταδεδομένων στο ενιαίο PDF
-        const metaPatch = {};
+        // Ενημέρωση μεταδεδομένων στο ενιαίο PDF (ομαδοποιημένες ερωτήσεις)
+        const questionsJson = finalQuestions.length ? JSON.stringify(finalQuestions) : '';
+        const metaPatch = { questions: questionsJson };
         if (allTags.length) metaPatch.tags = allTags;
         if (allComment) metaPatch.comment = allComment;
         if (allInfo) metaPatch.info = allInfo;
-        if (allQuestions.length) metaPatch.questions = JSON.stringify(allQuestions);
-        if (Object.keys(metaPatch).length) {
-          await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.pdfFileId, ...metaPatch }) });
-          await loadAll(); // ξαναφόρτωσε με τα ενημερωμένα μεταδεδομένα
-        }
+        await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.pdfFileId, ...metaPatch }) });
+        // Ενημέρωση τοπικού state αμέσως
+        setFiles(prev => prev.map(f => f.id === d.pdfFileId ? { ...f, ...metaPatch } : f));
         setNetMsg('✓ PDF + μεταδεδομένα αποθηκεύτηκαν');
       }
       else setNetMsg(`✗ ${d.error || 'Σφάλμα'}`);
