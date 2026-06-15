@@ -19,6 +19,30 @@ export default function LivePage() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeTab, setActiveTab] = useState('pdf');
   const [splitTab, setSplitTab] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Απόκρυψη toolbar PDF (Chrome built-in viewer)
+  const cleanSrc = (src, title) => {
+    if (!src) return src;
+    if (/\.pdf$/i.test(title || '') || src.includes('student-file')) {
+      return src.includes('#') ? src : src + '#toolbar=0&navpanes=0';
+    }
+    return src;
+  };
+
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  };
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   useEffect(() => {
     if (router.query.code) { setCode(router.query.code); setEntered(true); }
@@ -126,14 +150,14 @@ export default function LivePage() {
       {/* Content */}
       <div style={{ flex:1, display:'flex', overflow:'hidden', minHeight:0 }}>
         {activeTab==='pdf' && (
-          <iframe src={session.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
+          <iframe src={cleanSrc(session.src, session.title)} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
         )}
         {hasLinks && links.map((lnk, i) => (
           activeTab===('link-'+i) ? <LiveFrame key={i} lnk={lnk} /> : null
         ))}
         {activeTab==='split' && hasLinks && (
           <>
-            <iframe src={session.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
+            <iframe src={cleanSrc(session.src, session.title)} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
             <div style={{ width:3, background:'#333', flexShrink:0 }} />
             <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, minHeight:0, height:'100%' }}>
               {links.length > 1 && (
@@ -154,13 +178,18 @@ export default function LivePage() {
         )}
       </div>
 
-      {/* Bottom badge */}
+      {/* Bottom badge + fullscreen */}
       <div style={{ position:'absolute', bottom:10, left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.5)', backdropFilter:'blur(8px)', borderRadius:20, padding:'5px 14px', color:'rgba(255,255,255,0.4)', fontSize:11, display:'flex', gap:8, alignItems:'center', fontFamily:'sans-serif' }}>
         <span style={{ color:'#e8c96a', fontWeight:600 }}>ΛΕΒΙΑΘΑΝ</span>
         <span>·</span>
         <span>{session.title}</span>
         <span>·</span>
         <span style={{ fontFamily:'monospace' }}>{code}</span>
+        <span>·</span>
+        <button onClick={toggleFullscreen} title={isFullscreen ? 'Έξοδος πλήρους οθόνης' : 'Πλήρης οθόνη'}
+          style={{ background:'none', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6, padding:'3px 8px', color:'#e8c96a', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+          {isFullscreen ? '⊡' : '⊞'} <span style={{ fontSize:10 }}>{isFullscreen ? 'Esc' : 'Fullscreen'}</span>
+        </button>
       </div>
     </div>
   );
@@ -169,8 +198,11 @@ export default function LivePage() {
 /* ── LiveFrame: όλα σε iframe ── */
 function LiveFrame({ lnk }) {
   if (!lnk) return null;
+  const src = lnk.src && (/\.pdf$/i.test(lnk.name || '') || lnk.src.includes('student-file'))
+    ? (lnk.src.includes('#') ? lnk.src : lnk.src + '#toolbar=0&navpanes=0')
+    : lnk.src;
   return (
-    <iframe src={lnk.src} style={{ flex:1, border:'none', width:'100%', height:'100%' }}
+    <iframe src={src} style={{ flex:1, border:'none', width:'100%', height:'100%' }}
       title={lnk.name} allow="fullscreen" />
   );
 }
