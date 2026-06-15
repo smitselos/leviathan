@@ -1,0 +1,14 @@
+{
+  "name": "ΛΕΒΙΑΘΑΝ Cloud",
+  "short_name": "ΛΕΒΙΑΘΑΝ",
+  "description": "Εκπαιδευτική πλατφόρμα κειμένων",
+  "start_url": "/live",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1a1a",
+  "theme_color": "#e8c96a",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
