@@ -715,7 +715,7 @@ export default function Home() {
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.student} label="Student" onClick={() => window.open('/student', '_blank')} />
+          <NavItem icon={Icon.student} label="Το Υλικό μου" onClick={() => window.open('/student', '_blank')} />
           <NavItem icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>} label="Βιβλιοθήκη" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
           {liveFile && (
             <>
@@ -765,7 +765,7 @@ export default function Home() {
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
           <button className="btm-item" style={{ color:'#16a34a' }} onClick={() => window.open('/student', '_blank')}>
-            {Icon.student}<span style={{ fontSize:10 }}>Student</span>
+            {Icon.student}<span style={{ fontSize:10 }}>Υλικό</span>
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
             {Icon.logout}<span style={{ fontSize:10 }}>Έξοδος</span>
@@ -1555,9 +1555,26 @@ export default function Home() {
                             </button>
                           );
                         })}
+                        {appsFolderId && (() => {
+                          const appFiles = files.filter(x => x.folderId===appsFolderId && x.id!==viewing.id && !vLinks.some(l=>l.targetId===x.id));
+                          if (!appFiles.length) return null;
+                          const isOpen = modalPickerSection === 'apps';
+                          return (
+                            <button key="apps" onClick={() => setModalPickerSection(isOpen ? null : 'apps')}
+                              style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                                border:'2px solid '+(isOpen ? '#5c7a3a' : '#e0e0e0'),
+                                background: isOpen ? '#f0f5eb' : '#fafafa',
+                                cursor:'pointer', fontSize:13, fontWeight:600,
+                                color: isOpen ? '#5c7a3a' : '#555' }}>
+                              ⚡ Εφαρμογές <span style={{ fontSize:10 }}>{isOpen?'▾':'▸'}</span>
+                            </button>
+                          );
+                        })()}
                       </div>
                       {modalPickerSection && (()=> {
-                        const fldFiles = normalFiles.filter(x => x.folderId===modalPickerSection && x.id!==viewing.id && !vLinks.some(l=>l.targetId===x.id));
+                        const fldFiles = modalPickerSection === 'apps'
+                          ? files.filter(x => x.folderId===appsFolderId && x.id!==viewing.id && !vLinks.some(l=>l.targetId===x.id))
+                          : normalFiles.filter(x => x.folderId===modalPickerSection && x.id!==viewing.id && !vLinks.some(l=>l.targetId===x.id));
                         if (!fldFiles.length) return <div style={{ padding:10, color:'#aeaeb8', fontSize:12, textAlign:'center' }}>Κανένα αρχείο</div>;
                         return (
                           <div style={{ display:'flex', flexDirection:'column', gap:3 }}>

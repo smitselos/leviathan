@@ -21,6 +21,7 @@ const Ic={
   out:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   user:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   book:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  login:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>,
 };
 
 export default function StudentPage({ teacher: ssrTeacher }){
@@ -608,10 +609,12 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
         </div>
       )}
       {isMobile&&<nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-        <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>{goHome();loadData();}}/>
+        <MobBtn icon={Ic.book} label="Βιβλιοθήκη" active onClick={()=>{goHome();loadData();}}/>
         <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
-        <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/s/smitselos','_blank')}/>
-        <MobBtn icon={Ic.out} label="Επιστροφή" disabled={!hasSession} onClick={goBack}/>
+        {hasSession
+          ? <MobBtn icon={Ic.out} label="Επιστροφή" onClick={goBack}/>
+          : <MobBtn icon={Ic.login} label="Σύνδεση" onClick={()=>window.location.href='/login'}/>
+        }
       </nav>}
     </div>
   );
@@ -650,15 +653,16 @@ function TeacherSidebar({open,setOpen,goHome,goBack,hasSession}){
     <div style={{...S.sidebar,width:open?220:56}}>
       <div style={S.sidebarHeader}>{open&&<span style={{fontSize:15,fontWeight:500,color:'#ececec'}}>ΛΕΒΙΑΘΑΝ</span>}<button onClick={()=>setOpen(p=>!p)} style={S.collapseBtn}>{open?'◀':'▶'}</button></div>
       <nav style={S.nav}>
-        <button onClick={goHome} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.home}</span>{open&&'Αρχική'}</button>
+        <button onClick={goHome} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/s/smitselos','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
-        <div style={S.navDiv}/>
-        {hasSession&&<button onClick={goBack} style={S.navItem}><span style={S.navIcon}>{Ic.out}</span>{open&&'Επιστροφή'}</button>}
+        {hasSession
+          ? <button onClick={goBack} style={S.navItem}><span style={S.navIcon}>{Ic.out}</span>{open&&'Επιστροφή'}</button>
+          : <button onClick={()=>window.location.href='/login'} style={S.navItem}><span style={S.navIcon}>{Ic.login}</span>{open&&'Σύνδεση'}</button>
+        }
       </nav>
-      <div style={S.sidebarFooter}><div style={S.userCard}><div style={{...S.userAvatar,background:'#b8d4e3'}}>{Ic.user}</div>{open&&<div style={{fontSize:12,color:'#ececec'}}>Εκπαιδευτικός</div>}</div></div>
+      <div style={S.sidebarFooter}><div style={S.userCard}><div style={{...S.userAvatar,background:'#b8d4e3'}}>{Ic.user}</div>{open&&<div style={{fontSize:12,color:'#ececec'}}>{hasSession?'Εκπαιδευτικός':'Επισκέπτης'}</div>}</div></div>
     </div>
   );
 }
