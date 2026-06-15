@@ -20,6 +20,8 @@ export default function LivePage() {
   const [activeTab, setActiveTab] = useState('pdf');
   const [splitTab, setSplitTab] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showIOSHint, setShowIOSHint] = useState(false);
+  const isStandalone = typeof window !== 'undefined' && (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches);
 
   // Απόκρυψη toolbar PDF (Chrome built-in viewer)
   const cleanSrc = (src, title) => {
@@ -30,12 +32,17 @@ export default function LivePage() {
     return src;
   };
 
-  // Fullscreen toggle
+  // Fullscreen toggle (iOS Safari → show install hint)
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
+    if (isStandalone) return; // ήδη standalone
+    if (document.fullscreenElement) {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    } else if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      // iOS Safari — δεν υποστηρίζει Fullscreen API
+      setShowIOSHint(true);
+      setTimeout(() => setShowIOSHint(false), 6000);
     }
   };
   useEffect(() => {
@@ -80,7 +87,14 @@ export default function LivePage() {
   if (!entered) {
     return (
       <div style={S.entryWrap}>
-        <Head><title>Live — ΛΕΒΙΑΘΑΝ</title></Head>
+        <Head>
+          <title>Live — ΛΕΒΙΑΘΑΝ</title>
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="theme-color" content="#1a1a1a" />
+          <link rel="manifest" href="/manifest.json" />
+        </Head>
         <style>{css}</style>
         <div style={S.entryCard}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:2, color:'#e8c96a', marginBottom:8 }}>ΛΕΒΙΑΘΑΝ</div>
@@ -103,7 +117,14 @@ export default function LivePage() {
   if (!session) {
     return (
       <div style={{ minHeight:'100vh', background:'#1a1a1a', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:'sans-serif' }}>
-        <Head><title>Live {code} — ΛΕΒΙΑΘΑΝ</title></Head>
+        <Head>
+          <title>Live {code} — ΛΕΒΙΑΘΑΝ</title>
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="theme-color" content="#1a1a1a" />
+          <link rel="manifest" href="/manifest.json" />
+        </Head>
         <style>{css}</style>
         <div style={{ color:'#e8c96a', fontSize:48, fontWeight:700, letterSpacing:'0.1em', marginBottom:12 }}>{code}</div>
         <div style={{ color:'#8e8ea0', fontSize:14, marginBottom:32 }}>{error || 'Αναμονή παρουσίασης…'}</div>
@@ -124,7 +145,14 @@ export default function LivePage() {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'#000', display:'flex', flexDirection:'column' }}>
-      <Head><title>{session.title} — Live</title></Head>
+      <Head>
+        <title>{session.title} — Live</title>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#1a1a1a" />
+        <link rel="manifest" href="/manifest.json" />
+      </Head>
       <style>{css}</style>
 
       {/* Tab bar */}
@@ -185,12 +213,27 @@ export default function LivePage() {
         <span>{session.title}</span>
         <span>·</span>
         <span style={{ fontFamily:'monospace' }}>{code}</span>
-        <span>·</span>
-        <button onClick={toggleFullscreen} title={isFullscreen ? 'Έξοδος πλήρους οθόνης' : 'Πλήρης οθόνη'}
-          style={{ background:'none', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6, padding:'3px 8px', color:'#e8c96a', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-          {isFullscreen ? '⊡' : '⊞'} <span style={{ fontSize:10 }}>{isFullscreen ? 'Esc' : 'Fullscreen'}</span>
-        </button>
+        {!isStandalone && (
+          <>
+            <span>·</span>
+            <button onClick={toggleFullscreen} title={isFullscreen ? 'Έξοδος πλήρους οθόνης' : 'Πλήρης οθόνη'}
+              style={{ background:'none', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6, padding:'3px 8px', color:'#e8c96a', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+              {isFullscreen ? '⊡' : '⊞'} <span style={{ fontSize:10 }}>{isFullscreen ? 'Esc' : 'Fullscreen'}</span>
+            </button>
+          </>
+        )}
       </div>
+
+      {/* iOS Safari hint */}
+      {showIOSHint && (
+        <div style={{ position:'absolute', bottom:50, left:'50%', transform:'translateX(-50%)', background:'#fff', borderRadius:16, padding:'16px 24px', maxWidth:320, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', fontFamily:'sans-serif', textAlign:'center', zIndex:999 }}
+          onClick={() => setShowIOSHint(false)}>
+          <div style={{ fontSize:14, fontWeight:600, color:'#1a1a1a', marginBottom:8 }}>Πλήρης οθόνη στο Safari</div>
+          <div style={{ fontSize:12, color:'#6b6b80', lineHeight:1.6 }}>
+            Πάτα <strong>⎙ Κοινοποίηση</strong> → <strong>Προσθήκη στην αφετηρία</strong>. Η εφαρμογή θα ανοίγει χωρίς μπάρα.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
