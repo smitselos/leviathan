@@ -68,17 +68,22 @@ function PublicView({teacher,isMobile}){
   const [expandedPub,setExpandedPub]=useState(null);
   const [qrFile,setQrFile]=useState(null);
 
+  const [sidebarOpen,setSidebarOpen]=useState(!isMobile);
+
+  // Teacher email: αν δεν έχει @ δοκίμασε @gmail.com
+  const teacherEmail = teacher && !teacher.includes('@') ? teacher+'@gmail.com' : teacher;
+
   useEffect(()=>{
-    if(!teacher)return;
+    if(!teacherEmail)return;
     (async()=>{
       try{
-        const r=await fetch(`/api/publish?email=${encodeURIComponent(teacher)}`);
+        const r=await fetch(`/api/publish?email=${encodeURIComponent(teacherEmail)}`);
         const d=await r.json();
         setFiles((d.items||[]).filter(f=>f.visibility==='public').sort((a,b)=>(b.publishedAt||b.addedAt||'').localeCompare(a.publishedAt||a.addedAt||'')));
       }catch{}
       setLoading(false);
     })();
-  },[teacher]);
+  },[teacherEmail]);
 
   const filtered=useMemo(()=>{
     if(!search.trim())return files;
@@ -114,8 +119,24 @@ function PublicView({teacher,isMobile}){
 
   return(
     <div style={S.app}>
-      <Head><title>ΛΕΒΙΑΘΑΝ</title></Head>
+      <Head><title>Βιβλιοθήκη — ΛΕΒΙΑΘΑΝ</title></Head>
       <style>{css}</style>
+
+      {/* Sidebar */}
+      {!isMobile && (
+        <div style={{...S.sidebar,width:sidebarOpen?220:56}}>
+          <div style={S.sidebarHeader}>{sidebarOpen&&<span style={{fontSize:15,fontWeight:500,color:'#ececec'}}>ΛΕΒΙΑΘΑΝ</span>}<button onClick={()=>setSidebarOpen(p=>!p)} style={S.collapseBtn}>{sidebarOpen?'◀':'▶'}</button></div>
+          <nav style={S.nav}>
+            <button onClick={()=>window.location.reload()} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.book}</span>{sidebarOpen&&'Βιβλιοθήκη'}</button>
+            <div style={S.navDiv}/>
+            <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{sidebarOpen&&'Live'}</button>
+            <div style={S.navDiv}/>
+            <button onClick={()=>window.location.href='/login'} style={S.navItem}><span style={S.navIcon}>{Ic.login}</span>{sidebarOpen&&'Σύνδεση'}</button>
+          </nav>
+          <div style={S.sidebarFooter}><div style={S.userCard}><div style={{...S.userAvatar,background:'#b8d4e3'}}>{Ic.user}</div>{sidebarOpen&&<div style={{fontSize:12,color:'#ececec'}}>Επισκέπτης</div>}</div></div>
+        </div>
+      )}
+
       <div style={{flex:1,maxWidth:800,margin:'0 auto',padding:'24px 16px'}}>
         <div style={{textAlign:'center',marginBottom:28}}>
           <img src="/logo.png" alt="Leviathan" style={{height:60,objectFit:'contain',marginBottom:8}}/>
@@ -169,6 +190,15 @@ function PublicView({teacher,isMobile}){
             <button onClick={()=>setQrFile(null)} style={{marginTop:12,padding:'10px 28px',borderRadius:10,border:'none',background:'#1a1a1a',color:'#fff',fontSize:13,fontWeight:600,cursor:'pointer'}}>Κλείσιμο</button>
           </div>
         </div>
+      )}
+
+      {/* Mobile bottom nav */}
+      {isMobile&&(
+        <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
+          <MobBtn icon={Ic.book} label="Βιβλιοθήκη" active onClick={()=>window.location.reload()}/>
+          <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+          <MobBtn icon={Ic.login} label="Σύνδεση" onClick={()=>window.location.href='/login'}/>
+        </nav>
       )}
     </div>
   );
