@@ -136,6 +136,7 @@ export default function Home() {
   const [networkLoading, setNetworkLoading] = useState(false);
   const [expandedInbox, setExpandedInbox] = useState(null);
   const [inboxFilter, setInboxFilter] = useState(null);
+  const [inboxSaveTarget, setInboxSaveTarget] = useState(null); // fileId+i for which item shows folder picker
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
 
   // ── Network Builder (Δίκτυα Κειμένων) ──
@@ -530,6 +531,28 @@ export default function Home() {
   };
   const markInboxSeen = async (fileId) => {
     try { await fetch('/api/network', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'seen', fileId }) }); await loadNetwork(); } catch(e) {}
+  };
+  const saveInboxToDrive = async (fileId, fileName, targetFolderId) => {
+    if (!session?.accessToken) return;
+    setBusy('inbox-save');
+    try {
+      // Αντιγραφή αρχείου στον επιλεγμένο φάκελο μέσω Drive API
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/copy?fields=id,name,mimeType`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fileName, parents: [targetFolderId] }),
+      });
+      const doc = await res.json();
+      if (doc.id) {
+        await registerFiles([{ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: targetFolderId }]);
+        markInboxSeen(fileId);
+        setInboxSaveTarget(null);
+        alert('✓ Αποθηκεύτηκε στον φάκελο!');
+      } else {
+        alert('Σφάλμα αντιγραφής: ' + (doc.error?.message || 'Άγνωστο'));
+      }
+    } catch (err) { alert('Σφάλμα: ' + err.message); }
+    setBusy('');
   };
   const toggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
@@ -1340,11 +1363,36 @@ export default function Home() {
                           <span style={{ fontSize:11, color:'#aeaeb8', flexShrink:0, transition:'transform 0.15s', transform: isExp ? 'rotate(180deg)' : 'none' }}>▼</span>
                         </div>
                         {isExp && (
-                          <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                            <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/file/d/${item.fileId}/preview`, '_blank'); }}
-                              style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
-                            <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
-                              style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
+                          <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
+                            <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+                              <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/file/d/${item.fileId}/preview`, '_blank'); }}
+                                style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
+                              <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
+                                style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
+                              <button onClick={()=> setInboxSaveTarget(inboxSaveTarget === item.fileId+i ? null : item.fileId+i)}
+                                disabled={busy==='inbox-save'}
+                                style={{ marginTop:8, padding:'7px 14px', borderRadius:10, border: inboxSaveTarget===item.fileId+i ? '1.5px solid #16a34a' : '1px solid #e0e0e0',
+                                  background: inboxSaveTarget===item.fileId+i ? '#f0fdf4' : '#fff', color:'#15803d', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                                {busy==='inbox-save' ? '…' : '📁 Αποθήκευση'}
+                              </button>
+                            </div>
+                            {inboxSaveTarget === item.fileId+i && (
+                              <div style={{ marginTop:10, padding:10, background:'#f9fafb', borderRadius:12, border:'1px solid #e5e7eb' }}>
+                                <div style={{ fontSize:11, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Επιλογή φακέλου</div>
+                                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                                  {(folders||[]).map(fld => (
+                                    <button key={fld.id}
+                                      onClick={() => saveInboxToDrive(item.fileId, item.fileName, fld.id)}
+                                      disabled={busy==='inbox-save'}
+                                      style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:10, cursor:'pointer',
+                                        background:'#fff', border:'1px solid #e0e0e0', textAlign:'left', fontSize:12, fontWeight:500, color:'#1a1a1a' }}>
+                                      <span>📁</span> <span style={{ flex:1 }}>{fld.name}</span> <span style={{ fontSize:11, color:'#16a34a' }}>→</span>
+                                    </button>
+                                  ))}
+                                  {(!folders || !folders.length) && <div style={{ fontSize:12, color:'#aeaeb8' }}>Δεν υπάρχουν φάκελοι.</div>}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
