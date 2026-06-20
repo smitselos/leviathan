@@ -17,14 +17,16 @@ const SUGGESTED_TAGS = [
   'Α΄ Λυκείου','Β΄ Λυκείου','Γ΄ Λυκείου',
 ];
 const SUGGESTED_URLS = [
-  { name:'Ψηφιακό Σχολείο', url:'https://dschool.edu.gr' },
-  { name:'Φωτόδεντρο', url:'http://photodentro.edu.gr' },
-  { name:'sch.gr', url:'https://www.sch.gr' },
+  { name:'YouTube', url:'https://www.youtube.com' },
+  { name:'Wikipedia', url:'https://el.wikipedia.org' },
+  { name:'Λεξικό Τριανταφυλλίδη (Ηλεκτρονικό)', url:'http://www.greek-language.gr/greekLang/modern_greek/tools/lexica/triantafyllides/' },
+  { name:'Χρηστικό λεξικό – Ακαδημία Αθηνών', url:'https://www.lexikon.academyofathens.gr' },
+  { name:'Ψηφιακό φροντιστήριο', url:'https://dschool.edu.gr' },
+  { name:'Study4exams', url:'https://www.study4exams.gr' },
   { name:'ΕΡΤ', url:'https://www.ert.gr' },
-  { name:'Wikipedia (Ελ.)', url:'https://el.wikipedia.org' },
-  { name:'Λεξικό Τριανταφυλλίδη', url:'http://www.greek-language.gr/greekLang/modern_greek/tools/lexica/triantafyllides/' },
-  { name:'Λεξικό Ακαδημίας Αθηνών', url:'https://www.lexikon.academyofathens.gr' },
   { name:'Πύλη για την Ελληνική Γλώσσα', url:'http://www.greek-language.gr' },
+  { name:'Φωτόδεντρο', url:'http://photodentro.edu.gr' },
+  { name:'Μελίσπη – Ψηφιακή Βιβλιοθήκη', url:'https://melispe.gr' },
 ];
 const TAG_COLORS = [
   { bg:'#ede9fe', text:'#6d28d9' }, { bg:'#dcfce7', text:'#15803d' },
@@ -50,6 +52,14 @@ function hasAnyQuestions(raw) {
 }
 const trunc = (s, max = 15) => s && s.length > max ? s.slice(0, max) + '…' : s || '';
 const getFileUrl = (f) => `https://drive.google.com/file/d/${f.id}/view`;
+const toEmbedUrl = (url) => {
+  if (!url) return url;
+  // YouTube → embed
+  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  // Ήδη embed ή άλλο URL → ως έχει
+  return url;
+};
 const QrIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>;
 
 // ── SVG εικονίδια (ίδια με το παλιό) ──
@@ -118,6 +128,7 @@ export default function Home() {
   // Αναζήτηση με ετικέτες
   const [searchTags, setSearchTags] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const [searchCategory, setSearchCategory] = useState('texts'); // 'texts' | 'networks' | 'apps'
   const [folderSearch, setFolderSearch] = useState('');
 
   // Live & Συνδέσεις
@@ -125,6 +136,7 @@ export default function Home() {
   const [activeLiveTab, setActiveLiveTab] = useState(0);
   const [linkUrlInput, setLinkUrlInput] = useState('');
   const [linkNameInput, setLinkNameInput] = useState('');
+  const [customUrls, setCustomUrls] = useState([]);
   const [modalPickerSection, setModalPickerSection] = useState(null);
   const [studentUrl, setStudentUrl] = useState('/student');
   const [publishing, setPublishing] = useState(false);
@@ -193,8 +205,26 @@ export default function Home() {
       }
     } catch {}
   };
+  const loadCustomUrls = async () => {
+    try { const r = await fetch('/api/custom-urls'); const d = await r.json(); setCustomUrls(d.urls || []); } catch {}
+  };
+  const addCustomUrl = async (name, url) => {
+    const entry = { name: name.trim(), url: url.trim() };
+    if (!entry.name || !entry.url) return;
+    try {
+      const r = await fetch('/api/custom-urls', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry) });
+      const d = await r.json(); if (d.urls) setCustomUrls(d.urls);
+    } catch {}
+  };
+  const removeCustomUrl = async (url) => {
+    try {
+      const r = await fetch('/api/custom-urls', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+      const d = await r.json(); if (d.urls) setCustomUrls(d.urls);
+    } catch {}
+  };
+  const allSuggestedUrls = [...SUGGESTED_URLS, ...customUrls];
 
-  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); } }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); } }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -620,7 +650,7 @@ export default function Home() {
   };
 
   // ── Navigation helpers ──
-  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); };
+  const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); setSearchCategory('texts'); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
@@ -652,8 +682,19 @@ export default function Home() {
   const popularFiles = normalFiles.filter((f)=>(f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
   const allTags = [...new Set(normalFiles.flatMap((f)=>f.tags||[]))].sort();
 
+  // Αναζήτηση κατά κατηγορία: Κείμενα / Δίκτυα / Εφαρμογές
+  const networkFileIds = new Set(networks.map(n => n.pdfFileId).filter(Boolean));
+  const appFiles = appsFolderId ? files.filter(f => f.folderId === appsFolderId) : [];
+  const textOnlyFiles = normalFiles.filter(f => !networkFileIds.has(f.id));
+  const networkOnlyFiles = normalFiles.filter(f => networkFileIds.has(f.id));
+
+  const searchPool = searchCategory === 'apps' ? appFiles
+    : searchCategory === 'networks' ? networkOnlyFiles
+    : textOnlyFiles;
+  const searchPoolTags = [...new Set(searchPool.flatMap(f => f.tags || []))].sort();
+
   // Αναζήτηση
-  const searchResults = normalFiles.filter((f) => {
+  const searchResults = searchPool.filter((f) => {
     if (searchTags.length === 0 && !searchText) return false;
     const tags = f.tags || [];
     const okTags = searchTags.length === 0 || searchTags.every((t)=>tags.includes(t));
@@ -1021,7 +1062,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />
             </>
           )}
 
@@ -1040,7 +1081,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />
             </>
           )}
 
@@ -1434,7 +1475,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />
             </>
           )}
 
@@ -1445,11 +1486,34 @@ export default function Home() {
                 <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
                 <h1 style={S.pageTitle}>Αναζήτηση με ετικέτες</h1>
               </div>
+              {/* Κατηγορία: Κείμενα / Δίκτυα / Εφαρμογές */}
+              <div style={{ display:'flex', gap:0, marginBottom:14, borderRadius:12, overflow:'hidden', border:'1.5px solid #e0dcc8' }}>
+                {[
+                  { key:'texts',    label:'📄 Κείμενα',   count:textOnlyFiles.length },
+                  { key:'networks', label:'🔗 Δίκτυα',    count:networkOnlyFiles.length },
+                  { key:'apps',     label:'⚡ Εφαρμογές', count:appFiles.length },
+                ].map((cat, ci) => {
+                  const on = searchCategory === cat.key;
+                  return (
+                    <button key={cat.key}
+                      onClick={() => { setSearchCategory(cat.key); setSearchTags([]); setSearchText(''); }}
+                      style={{
+                        flex:1, padding:'9px 6px', border:'none', cursor:'pointer',
+                        fontSize:12, fontWeight: on ? 700 : 500,
+                        background: on ? PALETTE.cream.deep : 'transparent',
+                        color: on ? '#fff' : PALETTE.cream.text,
+                        borderRight: ci < 2 ? '1.5px solid #e0dcc8' : 'none',
+                      }}>
+                      {cat.label} <span style={{ opacity:0.6, fontSize:11 }}>({cat.count})</span>
+                    </button>
+                  );
+                })}
+              </div>
               <input type="search" placeholder="Αναζήτηση σε τίτλο ή ετικέτα…" value={searchText} onChange={(e)=>setSearchText(e.target.value)}
                 style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize: isMobile ? 16 : 14, background:'#fff', marginBottom:14 }} />
-              {allTags.length > 0 && (
+              {searchPoolTags.length > 0 && (
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:18 }}>
-                  {allTags.map((t) => { const c=tagColor(t); const on=searchTags.includes(t);
+                  {searchPoolTags.map((t) => { const c=tagColor(t); const on=searchTags.includes(t);
                     return <button key={t} onClick={()=>setSearchTags((p)=>p.includes(t)?p.filter(x=>x!==t):[...p,t])}
                       style={{ border:'none', cursor:'pointer', borderRadius:999, padding:'4px 12px', fontSize:12, fontWeight:on?700:500, background:on?c.text:c.bg, color:on?'#fff':c.text }}>#{t}</button>;
                   })}
@@ -1457,7 +1521,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />}
             </>
           )}
 
@@ -1581,14 +1645,32 @@ export default function Home() {
                       </div>
 
                       <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Ιστότοποι</div>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
-                        {SUGGESTED_URLS.filter(s => !vLinks.some(l=>l.url===s.url)).map((s) => (
-                          <button key={s.url} onClick={() => addLink(viewing.id, { type:'url', url:s.url, name:s.name })}
-                            style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
-                            + {s.name}
-                          </button>
-                        ))}
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:8 }}>
+                        {allSuggestedUrls.filter(s => !vLinks.some(l=>l.url===s.url)).map((s) => {
+                          const isCustom = customUrls.some(c => c.url === s.url);
+                          return (
+                            <span key={s.url} style={{ display:'inline-flex', alignItems:'center', gap:0 }}>
+                              <button onClick={() => addLink(viewing.id, { type:'url', url:s.url, name:s.name })}
+                                style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius: isCustom?'10px 0 0 10px':'10px', border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
+                                + {s.name}
+                              </button>
+                              {isCustom && (
+                                <button onClick={() => removeCustomUrl(s.url)} title="Αφαίρεση από σταθερές"
+                                  style={{ padding:'5px 6px', borderRadius:'0 10px 10px 0', border:'1px solid #e0d0d0', borderLeft:'none', background:'#fef2f2', cursor:'pointer', fontSize:10, color:'#b91c1c', lineHeight:1 }}>✕</button>
+                              )}
+                            </span>
+                          );
+                        })}
                       </div>
+                      <details style={{ marginBottom:12 }}>
+                        <summary style={{ fontSize:11, color:PALETTE.cream.deep, cursor:'pointer', fontWeight:600, marginBottom:6 }}>＋ Προσθήκη σταθερού ιστοτόπου</summary>
+                        <div style={{ display:'flex', gap:5, alignItems:'center', flexWrap:'wrap', marginTop:6 }}>
+                          <input placeholder="Τίτλος" id="cu-name" style={{ flex:1, minWidth:80, padding:'6px 8px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:12 }} />
+                          <input placeholder="https://…" id="cu-url" style={{ flex:2, minWidth:120, padding:'6px 8px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:12 }} />
+                          <button onClick={() => { const n=document.getElementById('cu-name'); const u=document.getElementById('cu-url'); if(n.value.trim()&&u.value.trim()){ addCustomUrl(n.value, u.value.startsWith('http')?u.value:'https://'+u.value); n.value=''; u.value=''; } }}
+                            style={{ ...btn('solid'), padding:'6px 12px', fontSize:11 }}>+</button>
+                        </div>
+                      </details>
 
                       <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Αρχεία & Εφαρμογές</div>
                       <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
@@ -1654,7 +1736,7 @@ export default function Home() {
       {liveFile && (() => {
         const lLinks = fileLinks(liveFile.id);
         const curLink = lLinks[activeLiveTab] || null;
-        const curSrc = curLink ? (curLink.type === 'url' ? curLink.url : '/api/file/'+curLink.targetId) : null;
+        const curSrc = curLink ? (curLink.type === 'url' ? toEmbedUrl(curLink.url) : '/api/file/'+curLink.targetId) : null;
 
         if (isMobile) return (
           <div style={{ position:'fixed', inset:0, background:'#fff', zIndex:210, display:'flex', flexDirection:'column' }}>
@@ -1853,7 +1935,7 @@ function QuestionsFields({ fileId, raw, onChange, compact }) {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls }) {
   const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
@@ -2031,7 +2113,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     {/* Γρήγορες επιλογές */}
                     <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Ιστότοποι</div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
-                      {SUGGESTED_URLS.filter(s => !fLinks.some(l=>l.url===s.url)).map((s) => (
+                      {(suggestedUrls||SUGGESTED_URLS).filter(s => !fLinks.some(l=>l.url===s.url)).map((s) => (
                         <button key={s.url} onClick={() => { if (onAddLink) onAddLink(f.id, { type:'url', url:s.url, name:s.name }); }}
                           style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
                           + {s.name}
