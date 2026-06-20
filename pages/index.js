@@ -2079,8 +2079,23 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
               {hasQuestions && onPrint && !(f._isNetwork || (f.tags||[]).includes('Δίκτυο')) ? (
-                <button onClick={(e)=>{e.stopPropagation(); setPrintOpen(printOpen===f.id ? null : f.id);}}
-                  style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12, background: printOpen===f.id ? PALETTE.cream.bgSoft : undefined }} title="Εκτύπωση">🖨️</button>
+                <span style={{ position:'relative', display:'inline-block' }}>
+                  <button onClick={(e)=>{e.stopPropagation(); setPrintOpen(printOpen===f.id ? null : f.id);}}
+                    style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12, background: printOpen===f.id ? PALETTE.cream.bgSoft : undefined }} title="Εκτύπωση">🖨️</button>
+                  {printOpen === f.id && (
+                    <div onClick={e => e.stopPropagation()}
+                      style={{ position:'absolute', top:'100%', right:0, marginTop:4, zIndex:50, background:'#fff', borderRadius:12, boxShadow:'0 6px 20px rgba(0,0,0,0.15)', border:'1px solid #e0e0e0', padding:6, display:'flex', flexDirection:'column', gap:4, minWidth:180 }}>
+                      <button onClick={() => { setPrintOpen(null); window.open('/api/file/'+f.id, '_blank'); }}
+                        style={{ padding:'8px 12px', borderRadius:8, border:'none', background:'#fafafa', cursor:'pointer', fontSize:12, fontWeight:500, color:'#3d3a2e', textAlign:'left', display:'flex', alignItems:'center', gap:6 }}>
+                        📄 Μόνο κείμενο
+                      </button>
+                      <button onClick={() => { setPrintOpen(null); onPrint(f); }}
+                        style={{ padding:'8px 12px', borderRadius:8, border:'none', background:PALETTE.cream.bgSoft, cursor:'pointer', fontSize:12, fontWeight:600, color:PALETTE.mustard?.deep||'#8a7d4a', textAlign:'left', display:'flex', alignItems:'center', gap:6 }}>
+                        📝 Με ερωτ./απαντ.
+                      </button>
+                    </div>
+                  )}
+                </span>
               ) : (
                 <button onClick={(e)=>{e.stopPropagation(); window.open('/api/file/'+f.id, '_blank');}}
                   style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση">🖨️</button>
@@ -2146,20 +2161,6 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <span style={{ fontSize: compact?11:undefined }}>Ερωτ./Απαντ.</span>
                   </button>}
                 </div>
-
-                {/* Επιλογές εκτύπωσης */}
-                {printOpen === f.id && (
-                  <div style={{ marginTop:10, display:'flex', gap:8, flexWrap:'wrap' }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => { setPrintOpen(null); window.open('/api/file/'+f.id, '_blank'); }}
-                      style={{ flex:1, padding:'9px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', cursor:'pointer', fontSize:12, fontWeight:600, color:'#3d3a2e', display:'flex', alignItems:'center', gap:6 }}>
-                      📄 Μόνο κείμενο
-                    </button>
-                    <button onClick={() => { setPrintOpen(null); if (onPrint) onPrint(f); }}
-                      style={{ flex:1, padding:'9px 14px', borderRadius:10, border:'1.5px solid '+PALETTE.mustard.deep, background:PALETTE.mustard.bgSoft||'#fef9ee', cursor:'pointer', fontSize:12, fontWeight:600, color:PALETTE.mustard.deep, display:'flex', alignItems:'center', gap:6 }}>
-                      📝 Με ερωτ./απαντ.
-                    </button>
-                  </div>
-                )}
 
                 {/* Σχόλια */}
                 {isCommentOpen && (
