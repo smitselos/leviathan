@@ -1997,10 +1997,11 @@ function QuestionsFields({ fileId, raw, onChange, compact, readOnly }) {
         <div key={q.code} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
           <span style={{ fontSize:12, fontWeight:700, color:PALETTE.mustard.deep, minWidth:34, paddingTop:7, textAlign:'right', flexShrink:0 }}>{q.code}</span>
           <textarea value={q.text} onChange={e => { e.stopPropagation(); update(q.code, e.target.value); }}
-            onClick={e => e.stopPropagation()} placeholder={`Ερώτηση ${q.code}…`} rows={q.text ? 2 : 1}
+            onClick={e => e.stopPropagation()} placeholder={`Ερώτηση ${q.code}…`}
+            ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }}
             style={{ flex:1, padding:'6px 10px', border:'1px solid '+(q.text ? PALETTE.mustard.accent : '#e0e0e0'), borderRadius:8,
               fontSize: compact ? 16 : 13, lineHeight:1.5, background: q.text ? 'rgba(255,255,255,0.9)' : '#fafafa',
-              resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', minHeight:30 }} />
+              resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:30, overflow:'hidden' }} />
         </div>
       ))}
     </div>
