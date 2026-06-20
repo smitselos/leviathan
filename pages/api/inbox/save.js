@@ -2,6 +2,8 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -12,15 +14,15 @@ export default async function handler(req, res) {
   if (!fileId || !targetFolderId) return res.status(400).json({ error: 'Missing fileId or targetFolderId' });
 
   const token = session.accessToken;
-  const headers = { Authorization: `Bearer ${token}` };
+  const authHeaders = { Authorization: `Bearer ${token}` };
 
-  // ── 1. Προσπάθεια απευθείας αντιγραφής ──
+  // ── 1. Απευθείας copy (αν ο χρήστης έχει API access) ──
   try {
     const copyRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}/copy?fields=id,name,mimeType`,
+      `https://www.googleapis.com/drive/v3/files/${fileId}/copy?fields=id,name,mimeType&supportsAllDrives=true`,
       {
         method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: fileName || 'Εισερχόμενο', parents: [targetFolderId] }),
       }
     );
@@ -28,61 +30,61 @@ export default async function handler(req, res) {
       const doc = await copyRes.json();
       return res.status(200).json({ id: doc.id, name: doc.name, mimeType: doc.mimeType });
     }
-    // Αν η αντιγραφή αποτύχει (403/404), δοκιμάζουμε download + re-upload
-    console.log(`[inbox/save] copy failed (${copyRes.status}), trying download+reupload…`);
+    console.log(`[inbox/save] copy failed (${copyRes.status}), trying public download…`);
   } catch (e) {
     console.log('[inbox/save] copy error:', e.message);
   }
 
-  // ── 2. Fallback: κατέβασμα περιεχομένου → ανέβασμα ως νέο αρχείο ──
+  // ── 2. Δημόσιο download (χωρίς OAuth, με API key) + upload ──
+  // Τα αρχεία στο inbox είναι ήδη "anyone with link" (sharePublic στο publish.js)
   try {
-    // Πρώτα παίρνουμε metadata (mimeType) — δοκιμάζουμε με supportsAllDrives
-    const metaRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,name&supportsAllDrives=true`,
-      { headers }
-    );
-    let mimeType = 'application/pdf';
-    let origName = fileName || 'Εισερχόμενο';
-    if (metaRes.ok) {
-      const meta = await metaRes.json();
-      mimeType = meta.mimeType || mimeType;
-      origName = meta.name || origName;
+    // Metadata μέσω API key (δημόσια πρόσβαση)
+    const metaUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,name,size&key=${API_KEY}`;
+    const metaRes = await fetch(metaUrl);
+    if (!metaRes.ok) {
+      const metaErr = await metaRes.json().catch(() => ({}));
+      console.log(`[inbox/save] public metadata failed (${metaRes.status}):`, metaErr.error?.message);
+      return res.status(metaRes.status).json({
+        error: `Δεν βρέθηκε το αρχείο (${metaRes.status}). Ίσως ο αποστολέας πρέπει να το δημοσιεύσει ξανά.`
+      });
     }
+    const meta = await metaRes.json();
+    const mimeType = meta.mimeType || 'application/pdf';
+    const origName = meta.name || fileName || 'Εισερχόμενο';
 
-    // Για Google Workspace αρχεία, κάνουμε export — για τα υπόλοιπα, download
-    const isGoogleDoc = mimeType === 'application/vnd.google-apps.document';
-    const isGoogleSlides = mimeType === 'application/vnd.google-apps.presentation';
-    const isGoogleSheets = mimeType === 'application/vnd.google-apps.spreadsheet';
+    // Κατέβασμα: export για Google Workspace, alt=media για τα υπόλοιπα
+    const isGDoc    = mimeType === 'application/vnd.google-apps.document';
+    const isGSlides = mimeType === 'application/vnd.google-apps.presentation';
+    const isGSheets = mimeType === 'application/vnd.google-apps.spreadsheet';
 
-    let downloadUrl, uploadMime, extension;
-    if (isGoogleDoc) {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`;
-      uploadMime = 'application/pdf'; extension = '.pdf';
-    } else if (isGoogleSlides) {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`;
-      uploadMime = 'application/pdf'; extension = '.pdf';
-    } else if (isGoogleSheets) {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
-      uploadMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; extension = '.xlsx';
+    let downloadUrl, uploadMime, ext;
+    if (isGDoc) {
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf&key=${API_KEY}`;
+      uploadMime = 'application/pdf'; ext = '.pdf';
+    } else if (isGSlides) {
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf&key=${API_KEY}`;
+      uploadMime = 'application/pdf'; ext = '.pdf';
+    } else if (isGSheets) {
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&key=${API_KEY}`;
+      uploadMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; ext = '.xlsx';
     } else {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
-      uploadMime = mimeType; extension = '';
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
+      uploadMime = mimeType; ext = '';
     }
 
-    const dlRes = await fetch(downloadUrl, { headers });
+    const dlRes = await fetch(downloadUrl);
     if (!dlRes.ok) {
       return res.status(dlRes.status).json({
-        error: `Δεν ήταν δυνατή η πρόσβαση στο αρχείο (${dlRes.status}). Ίσως ο αποστολέας πρέπει να ρυθμίσει τη δημοσιότητα.`
+        error: `Αποτυχία λήψης αρχείου (${dlRes.status}). Ο αποστολέας πρέπει να το δημοσιεύσει ξανά.`
       });
     }
 
     const fileBuffer = Buffer.from(await dlRes.arrayBuffer());
+    const uploadName = ext && !origName.endsWith(ext) ? origName + ext : origName;
 
-    // Upload ως νέο αρχείο μέσω multipart upload
-    const uploadName = extension && !origName.endsWith(extension) ? origName + extension : origName;
+    // Upload στον φάκελο του παραλήπτη μέσω multipart (OAuth token)
     const boundary = '-------inbox_save_boundary';
     const metadataJson = JSON.stringify({ name: uploadName, parents: [targetFolderId] });
-
     const multipartBody = Buffer.concat([
       Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadataJson}\r\n`),
       Buffer.from(`--${boundary}\r\nContent-Type: ${uploadMime}\r\n\r\n`),
@@ -95,7 +97,7 @@ export default async function handler(req, res) {
       {
         method: 'POST',
         headers: {
-          ...headers,
+          ...authHeaders,
           'Content-Type': `multipart/related; boundary=${boundary}`,
           'Content-Length': multipartBody.length.toString(),
         },
