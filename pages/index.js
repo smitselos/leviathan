@@ -2045,7 +2045,9 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
             background: isExp ? PALETTE.peach.bgSoft : '#fff',
             border: isExp ? `1.5px solid ${PALETTE.peach.accent}` : '1px solid #ebebeb',
             borderRadius: isExp ? 18 : (compact ? 10 : 12),
-            overflow:'hidden', transition:'all 0.3s ease',
+            overflow: printOpen === f.id ? 'visible' : 'hidden', transition:'all 0.3s ease',
+            position: printOpen === f.id ? 'relative' : undefined,
+            zIndex: printOpen === f.id ? 60 : undefined,
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
             maxWidth:'100%', minWidth:0,
           }}>
