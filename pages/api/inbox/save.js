@@ -2,8 +2,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -35,54 +33,62 @@ export default async function handler(req, res) {
     console.log('[inbox/save] copy error:', e.message);
   }
 
-  // ── 2. Δημόσιο download (χωρίς OAuth, με API key) + upload ──
-  // Τα αρχεία στο inbox είναι ήδη "anyone with link" (sharePublic στο publish.js)
+  // ── 2. Εύρεση mimeType μέσω OAuth (metadata μόνο — μπορεί να αποτύχει) ──
+  let mimeType = '';
   try {
-    // Metadata μέσω API key (δημόσια πρόσβαση)
-    const metaUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,name,size&key=${API_KEY}`;
-    const metaRes = await fetch(metaUrl);
-    if (!metaRes.ok) {
-      const metaErr = await metaRes.json().catch(() => ({}));
-      console.log(`[inbox/save] public metadata failed (${metaRes.status}):`, metaErr.error?.message);
-      return res.status(metaRes.status).json({
-        error: `Δεν βρέθηκε το αρχείο (${metaRes.status}). Ίσως ο αποστολέας πρέπει να το δημοσιεύσει ξανά.`
-      });
+    const metaRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,name&supportsAllDrives=true`,
+      { headers: authHeaders }
+    );
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      mimeType = meta.mimeType || '';
     }
-    const meta = await metaRes.json();
-    const mimeType = meta.mimeType || 'application/pdf';
-    const origName = meta.name || fileName || 'Εισερχόμενο';
+  } catch {}
 
-    // Κατέβασμα: export για Google Workspace, alt=media για τα υπόλοιπα
+  // ── 3. Δημόσιο download χωρίς auth/key (web URLs) ──
+  // Τα αρχεία inbox είναι ήδη "anyone with link" (sharePublic στο publish.js)
+  try {
     const isGDoc    = mimeType === 'application/vnd.google-apps.document';
     const isGSlides = mimeType === 'application/vnd.google-apps.presentation';
     const isGSheets = mimeType === 'application/vnd.google-apps.spreadsheet';
 
     let downloadUrl, uploadMime, ext;
     if (isGDoc) {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf&key=${API_KEY}`;
+      downloadUrl = `https://docs.google.com/document/d/${fileId}/export?format=pdf`;
       uploadMime = 'application/pdf'; ext = '.pdf';
     } else if (isGSlides) {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf&key=${API_KEY}`;
+      downloadUrl = `https://docs.google.com/presentation/d/${fileId}/export?format=pdf`;
       uploadMime = 'application/pdf'; ext = '.pdf';
     } else if (isGSheets) {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&key=${API_KEY}`;
+      downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
       uploadMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; ext = '.xlsx';
     } else {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
-      uploadMime = mimeType; ext = '';
+      // Binary (PDF, DOCX, PPTX κλπ.) — confirm=t παρακάμπτει virus-scan warning
+      downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download&confirm=t`;
+      uploadMime = mimeType || 'application/pdf'; ext = '';
     }
 
-    const dlRes = await fetch(downloadUrl);
+    const dlRes = await fetch(downloadUrl, { redirect: 'follow' });
     if (!dlRes.ok) {
       return res.status(dlRes.status).json({
         error: `Αποτυχία λήψης αρχείου (${dlRes.status}). Ο αποστολέας πρέπει να το δημοσιεύσει ξανά.`
       });
     }
 
+    // Έλεγχος ότι πήραμε πραγματικό αρχείο, όχι HTML σελίδα
+    const contentType = dlRes.headers.get('content-type') || '';
+    if (contentType.includes('text/html') && !mimeType.includes('html')) {
+      return res.status(403).json({
+        error: 'Το αρχείο δεν είναι δημόσια προσβάσιμο. Ο αποστολέας πρέπει να το δημοσιεύσει ξανά.'
+      });
+    }
+
     const fileBuffer = Buffer.from(await dlRes.arrayBuffer());
+    const origName = fileName || 'Εισερχόμενο';
     const uploadName = ext && !origName.endsWith(ext) ? origName + ext : origName;
 
-    // Upload στον φάκελο του παραλήπτη μέσω multipart (OAuth token)
+    // Upload στον φάκελο του παραλήπτη (OAuth — drive.file scope επιτρέπει upload)
     const boundary = '-------inbox_save_boundary';
     const metadataJson = JSON.stringify({ name: uploadName, parents: [targetFolderId] });
     const multipartBody = Buffer.concat([
