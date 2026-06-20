@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     let y = pageHeight - margin;
 
     // Τίτλος — bold
-    page.drawText('ΕΡΩΤΗΣΕΙΣ', {
+    page.drawText('ΕΡΩΤΗΣΕΙΣ/ΑΠΑΝΤΗΣΕΙΣ', {
       x: margin, y, size: 16, font: fontBold, color: rgb(0, 0, 0),
     });
     y -= lineHeight * 2.5;
