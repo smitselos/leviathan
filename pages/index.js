@@ -81,6 +81,37 @@ const Icon = {
   live:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
 };
 
+function EmbedFrame({ src, title, style }) {
+  const [blocked, setBlocked] = useState(false);
+  const isExternal = src && !src.startsWith('/');
+  useEffect(() => { setBlocked(false); }, [src]);
+  if (!isExternal) return <iframe src={src} style={style} title={title} />;
+  return (
+    <div style={{ position:'relative', width:'100%', height:'100%' }}>
+      <iframe src={src} style={{ ...style, width:'100%', height:'100%' }} title={title}
+        onLoad={(e) => {
+          try { const d = e.target.contentDocument; if (d && d.body && d.body.innerHTML === '') setBlocked(true); } catch { /* cross-origin = φόρτωσε κάτι */ }
+        }}
+        onError={() => setBlocked(true)} />
+      {blocked && (
+        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.95)', gap:12 }}>
+          <div style={{ fontSize:14, color:'#666', textAlign:'center', maxWidth:280 }}>Ο ιστότοπος δεν επιτρέπει ενσωμάτωση σε πλαίσιο.</div>
+          <button onClick={() => window.open(src, '_blank')}
+            style={{ padding:'10px 22px', borderRadius:12, border:'1.5px solid #8a7d4a', background:PALETTE.cream.bgSoft, color:'#5c4a1e', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            Άνοιγμα σε νέο παράθυρο ↗
+          </button>
+        </div>
+      )}
+      {!blocked && (
+        <button onClick={() => window.open(src, '_blank')}
+          style={{ position:'absolute', bottom:10, right:10, padding:'6px 14px', borderRadius:10, border:'1px solid rgba(0,0,0,0.15)', background:'rgba(255,255,255,0.9)', color:'#555', fontSize:11, fontWeight:600, cursor:'pointer', boxShadow:'0 1px 4px rgba(0,0,0,0.1)', zIndex:2 }}>
+          ↗ Νέο παράθυρο
+        </button>
+      )}
+    </div>
+  );
+}
+
 function loadPickerApi() {
   return new Promise((resolve, reject) => {
     if (window.google?.picker) return resolve();
@@ -1595,7 +1626,9 @@ export default function Home() {
                 <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
-                  <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Ετικέτες & Σχόλια">🏷️</button>
+                  <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Επεξεργασία">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
                   <button onClick={()=>setViewing(null)} style={S.closeBtn} title="Κλείσιμο">✕</button>
                 </div>
               </div>
@@ -1754,7 +1787,7 @@ export default function Home() {
               ))}
             </div>
             <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch' }}>
-              <iframe src={activeLiveTab===-1 ? '/api/file/'+liveFile.id : curSrc} style={{ border:'none', width:'100%', height:'100%', display:'block' }}
+              <EmbedFrame src={activeLiveTab===-1 ? '/api/file/'+liveFile.id : curSrc} style={{ border:'none', display:'block' }}
                 title={activeLiveTab===-1 ? liveFile.name : (curLink?.name||'')} />
             </div>
           </div>
@@ -1786,7 +1819,7 @@ export default function Home() {
                 </div>
                 <div style={{ flex:1, overflow:'hidden' }}>
                   {curSrc ? (
-                    <iframe src={curSrc} style={{ width:'100%', height:'100%', border:'none' }} title={curLink?.name||''} />
+                    <EmbedFrame src={curSrc} style={{ border:'none' }} title={curLink?.name||''} />
                   ) : (
                     <div style={{ padding:20, textAlign:'center', color:'#aeaeb8', fontSize:13 }}>Επίλεξε μια σύνδεση</div>
                   )}
@@ -2000,7 +2033,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   </div>
                 )}
               </div>
-              <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>Άνοιγμα</button>
+              <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
               {onQr && <button onClick={(e)=>{e.stopPropagation();onQr(f);}} style={{ ...btn('mini'), padding: compact ? '4px 6px' : '5px 8px' }} title="QR Code">{QrIcon}</button>}
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
@@ -2061,7 +2094,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                         ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
                     ) : (
                       <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#5c3826', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.peach.accent }}>
-                        {(f.comment||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς σχόλια — επεξεργασία από το modal (🏷️)</span>}
+                        {(f.comment||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς σχόλια — επεξεργασία από το modal (✏️)</span>}
                       </div>
                     )}
                   </div>
