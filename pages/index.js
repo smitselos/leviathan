@@ -222,7 +222,14 @@ export default function Home() {
       const d = await r.json(); if (d.urls) setCustomUrls(d.urls);
     } catch {}
   };
-  const allSuggestedUrls = [...SUGGESTED_URLS, ...customUrls];
+  const resetCustomUrls = async () => {
+    try {
+      const r = await fetch('/api/custom-urls', { method:'PUT' });
+      const d = await r.json(); if (d.urls) setCustomUrls(d.urls);
+    } catch {}
+  };
+  // customUrls = πλήρης λίστα ιστοτόπων (defaults + custom), fallback σε SUGGESTED_URLS
+  const allSuggestedUrls = customUrls.length > 0 ? customUrls : SUGGESTED_URLS;
 
   useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); } }, [status, loadAll]);
 
@@ -1644,33 +1651,27 @@ export default function Home() {
                           style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>
                       </div>
 
-                      <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Ιστότοποι</div>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:8 }}>
-                        {allSuggestedUrls.filter(s => !vLinks.some(l=>l.url===s.url)).map((s) => {
-                          const isCustom = customUrls.some(c => c.url === s.url);
-                          return (
-                            <span key={s.url} style={{ display:'inline-flex', alignItems:'center', gap:0 }}>
-                              <button onClick={() => addLink(viewing.id, { type:'url', url:s.url, name:s.name })}
-                                style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius: isCustom?'10px 0 0 10px':'10px', border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
-                                + {s.name}
-                              </button>
-                              {isCustom && (
-                                <button onClick={() => removeCustomUrl(s.url)} title="Αφαίρεση από σταθερές"
-                                  style={{ padding:'5px 6px', borderRadius:'0 10px 10px 0', border:'1px solid #e0d0d0', borderLeft:'none', background:'#fef2f2', cursor:'pointer', fontSize:10, color:'#b91c1c', lineHeight:1 }}>✕</button>
-                              )}
-                            </span>
-                          );
-                        })}
+                      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>Ιστότοποι</span>
+                        <button onClick={() => { const n=prompt('Τίτλος ιστοτόπου:'); if(!n) return; const u=prompt('Διεύθυνση (URL):'); if(!u) return; addCustomUrl(n, u.startsWith('http')?u:'https://'+u); }}
+                          title="Προσθήκη σταθερού ιστοτόπου"
+                          style={{ width:20, height:20, borderRadius:6, border:'1px solid #d0d0d0', background:'#f4f4f4', cursor:'pointer', fontSize:13, lineHeight:1, color:'#888', display:'flex', alignItems:'center', justifyContent:'center' }}>＋</button>
+                        <button onClick={() => { if(confirm('Επαναφορά στους αρχικούς ιστοτόπους;')) resetCustomUrls(); }}
+                          title="Επαναφορά προεπιλογών"
+                          style={{ width:20, height:20, borderRadius:6, border:'1px solid #d0d0d0', background:'#f4f4f4', cursor:'pointer', fontSize:11, lineHeight:1, color:'#888', display:'flex', alignItems:'center', justifyContent:'center' }}>↺</button>
                       </div>
-                      <details style={{ marginBottom:12 }}>
-                        <summary style={{ fontSize:11, color:PALETTE.cream.deep, cursor:'pointer', fontWeight:600, marginBottom:6 }}>＋ Προσθήκη σταθερού ιστοτόπου</summary>
-                        <div style={{ display:'flex', gap:5, alignItems:'center', flexWrap:'wrap', marginTop:6 }}>
-                          <input placeholder="Τίτλος" id="cu-name" style={{ flex:1, minWidth:80, padding:'6px 8px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:12 }} />
-                          <input placeholder="https://…" id="cu-url" style={{ flex:2, minWidth:120, padding:'6px 8px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:12 }} />
-                          <button onClick={() => { const n=document.getElementById('cu-name'); const u=document.getElementById('cu-url'); if(n.value.trim()&&u.value.trim()){ addCustomUrl(n.value, u.value.startsWith('http')?u.value:'https://'+u.value); n.value=''; u.value=''; } }}
-                            style={{ ...btn('solid'), padding:'6px 12px', fontSize:11 }}>+</button>
-                        </div>
-                      </details>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
+                        {allSuggestedUrls.filter(s => !vLinks.some(l=>l.url===s.url)).map((s) => (
+                          <span key={s.url} style={{ display:'inline-flex', alignItems:'center', gap:0 }}>
+                            <button onClick={() => addLink(viewing.id, { type:'url', url:s.url, name:s.name })}
+                              style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:'10px 0 0 10px', border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
+                              + {s.name}
+                            </button>
+                            <button onClick={() => removeCustomUrl(s.url)} title="Αφαίρεση από τη λίστα"
+                              style={{ padding:'5px 6px', borderRadius:'0 10px 10px 0', border:'1px solid #e0d0d0', borderLeft:'none', background:'#fef2f2', cursor:'pointer', fontSize:10, color:'#b91c1c', lineHeight:1 }}>✕</button>
+                          </span>
+                        ))}
+                      </div>
 
                       <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Αρχεία & Εφαρμογές</div>
                       <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
