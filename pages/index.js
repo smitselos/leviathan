@@ -536,11 +536,11 @@ export default function Home() {
     if (!session?.accessToken) return;
     setBusy('inbox-save');
     try {
-      // Αντιγραφή αρχείου στον επιλεγμένο φάκελο μέσω Drive API
-      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/copy?fields=id,name,mimeType`, {
+      // Server-side αντιγραφή: ο server κατεβάζει το αρχείο και το ανεβάζει στον φάκελο του χρήστη
+      const res = await fetch('/api/inbox/save', {
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + session.accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fileName, parents: [targetFolderId] }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId, fileName, targetFolderId }),
       });
       const doc = await res.json();
       if (doc.id) {
@@ -549,7 +549,7 @@ export default function Home() {
         setInboxSaveTarget(null);
         alert('✓ Αποθηκεύτηκε στον φάκελο!');
       } else {
-        alert('Σφάλμα αντιγραφής: ' + (doc.error?.message || 'Άγνωστο'));
+        alert('Σφάλμα αντιγραφής: ' + (doc.error || 'Άγνωστο'));
       }
     } catch (err) { alert('Σφάλμα: ' + err.message); }
     setBusy('');
@@ -911,8 +911,11 @@ export default function Home() {
                       <div style={{ position:'relative', marginBottom:8, paddingBottom:8 }}>
                         {renderWallet(folderItems)}
                       </div>
-                      <div onClick={addFolder} style={{ textAlign:'center', padding:'8px 0' }}>
-                        <span style={{ fontSize:12, color:PALETTE.cream.deep, cursor:'pointer', opacity:0.6 }}>{busy==='folder' ? 'Δημιουργία…' : '＋ Νέος φάκελος'}</span>
+                      <div style={{ textAlign:'center', padding:'6px 0' }}>
+                        <button onClick={addFolder} disabled={busy==='folder'}
+                          style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 12px', borderRadius:9, border:`1.5px solid ${PALETTE.cream.accent}`, background:'transparent', color:PALETTE.cream.deep, fontSize:11, fontWeight:600, cursor:'pointer', opacity:0.7 }}>
+                          <span style={{ fontSize:13, lineHeight:1 }}>＋</span> {busy==='folder' ? '…' : 'Νέος'}
+                        </button>
                       </div>
                     </section>
                   </>
@@ -958,11 +961,12 @@ export default function Home() {
                           </div>
                         );
                       })}
-                      <div className="ch" onClick={addFolder}
-                        style={{ ...S.folderCard, background:'transparent', border:`1.5px dashed ${PALETTE.cream.accent}`, alignItems:'center', justifyContent:'center', textAlign:'center', color:PALETTE.cream.accent, minHeight:120 }}>
-                        <div style={{ fontSize:22, lineHeight:1, marginBottom:4, opacity:0.7 }}>＋</div>
-                        <div style={{ fontSize:12, fontWeight:500, opacity:0.7 }}>{busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}</div>
-                      </div>
+                    </div>
+                    <div style={{ marginTop:10, textAlign:'left' }}>
+                      <button onClick={addFolder} disabled={busy==='folder'}
+                        style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'6px 14px', borderRadius:10, border:`1.5px solid ${PALETTE.cream.accent}`, background:'transparent', color:PALETTE.cream.deep, fontSize:12, fontWeight:600, cursor:'pointer', opacity:0.75 }}>
+                        <span style={{ fontSize:14, lineHeight:1 }}>＋</span> {busy==='folder' ? 'Δημιουργία…' : 'Νέος φάκελος'}
+                      </button>
                     </div>
                   </section>
                 </>
