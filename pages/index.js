@@ -545,6 +545,22 @@ export default function Home() {
     } catch { setNetMsg('✗ Σφάλμα σύνδεσης'); }
     setMerging(false); setTimeout(() => setNetMsg(''), 4000);
   };
+  const printWithQuestions = async (f) => {
+    const qs = f.questions;
+    if (!hasAnyQuestions(qs)) return;
+    try {
+      const r = await fetch('/api/print-with-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: f.id, fileName: f.name, questions: qs }),
+      });
+      if (!r.ok) { alert('Σφάλμα δημιουργίας PDF'); return; }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) { alert('Σφάλμα: ' + e.message); }
+  };
+
   const openLive = async (f) => {
     const fLinks = fileLinks(f.id);
     if (!fLinks.length || liveSending) return;
@@ -1105,7 +1121,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />
             </>
           )}
 
@@ -1124,7 +1140,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />
             </>
           )}
 
@@ -1518,7 +1534,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />
             </>
           )}
 
@@ -1564,7 +1580,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />}
             </>
           )}
 
@@ -1668,7 +1684,7 @@ export default function Home() {
                       <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:200, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                       {isTeacher && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις</div>
-                      <QuestionsFields fileId={viewing.id} raw={fileQuestions(viewing.id)} onChange={updateQuestions} compact={false} /></>}
+                      <QuestionsFields fileId={viewing.id} raw={fileQuestions(viewing.id)} onChange={updateQuestions} compact={false} readOnly={false} /></>}
 
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
                       {vLinks.map((lnk, li) => (
@@ -1951,12 +1967,26 @@ export default function Home() {
 }
 
 // ── Ερωτήσεις (8 πεδία: Α1, Β1, Β2α, Β2β, Β3α, Β3β, Γ1, Δ1) ──
-function QuestionsFields({ fileId, raw, onChange, compact }) {
+function QuestionsFields({ fileId, raw, onChange, compact, readOnly }) {
   const items = parseQuestions(raw);
   const update = (code, text) => {
     const updated = items.map(q => q.code === code ? { ...q, text } : q);
     if (onChange) onChange(fileId, serializeQuestions(updated));
   };
+  if (readOnly) {
+    const hasAny = items.some(q => q.text?.trim());
+    if (!hasAny) return <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0' }}>Χωρίς ερωτήσεις — {compact ? 'πάτα ✏️ για επεξεργασία' : 'επεξεργασία από το modal (✏️)'}</div>;
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+        {items.filter(q => q.text?.trim()).map(q => (
+          <div key={q.code} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+            <span style={{ fontSize:12, fontWeight:700, color:PALETTE.mustard.deep, minWidth:34, textAlign:'right', flexShrink:0 }}>{q.code}</span>
+            <div style={{ flex:1, fontSize: compact?12:13, color:'#3d3a2e', lineHeight:1.5, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{q.text}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
       {items.map(q => (
@@ -1974,13 +2004,14 @@ function QuestionsFields({ fileId, raw, onChange, compact }) {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls, onPrint }) {
   const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
   const [infoOpen, setInfoOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
   const [linksOpen, setLinksOpen] = useState(null);
+  const [editMode, setEditMode] = useState(null); // fileId αν ενεργή η επεξεργασία (μόνο mobile)
   const [mLinkUrl, setMLinkUrl] = useState('');
   const [mLinkName, setMLinkName] = useState('');
   const [pickerSection, setPickerSection] = useState(null);
@@ -1997,6 +2028,8 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
         const isPublished = !!(f.published || (f.visibility && f.visibility !== 'none'));
         const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : (f.visibility?.startsWith('user:') || f.visibility?.startsWith('users:')) ? '👤' : null;
         const isExp = expanded === f.id;
+        const isEditing = compact && editMode === f.id; // Mobile: edit only after toggle
+        const canEdit = isEditing; // Desktop: never editable in card
         const isCommentOpen = isExp && commentOpen === f.id;
         const isInfoOpen = isExp && infoOpen === f.id;
         const isQuestionsOpen = isExp && questionsOpen === f.id;
@@ -2010,7 +2043,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
             maxWidth:'100%', minWidth:0,
           }}>
-            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setInfoOpen(null); setQuestionsOpen(null); setLinksOpen(null); }}
+            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setInfoOpen(null); setQuestionsOpen(null); setLinksOpen(null); setEditMode(null); }}
               style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor:'pointer', minWidth:0 }}>
               <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
@@ -2039,12 +2072,25 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
+              {hasQuestions && onPrint && <button onClick={(e)=>{e.stopPropagation();onPrint(f);}} style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση με ερωτήσεις">🖨️</button>}
               {onQr && <button onClick={(e)=>{e.stopPropagation();onQr(f);}} style={{ ...btn('mini'), padding: compact ? '4px 6px' : '5px 8px' }} title="QR Code">{QrIcon}</button>}
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
 
             {isExp && (
               <div style={{ padding: compact ? '0 10px 14px' : '0 14px 14px', borderTop: compact ? 'none' : '1px solid #f0f0f0', background: compact ? 'transparent' : PALETTE.cream.bgSoft, maxWidth:'100%', overflow:'hidden', boxSizing:'border-box' }}>
+                {compact && (
+                  <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:6, paddingTop:4 }}>
+                    <button onClick={(e) => { e.stopPropagation(); setEditMode(isEditing ? null : f.id); }}
+                      style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 12px', borderRadius:8,
+                        border: isEditing ? '1.5px solid '+PALETTE.peach.deep : '1px solid #d0d0d0',
+                        background: isEditing ? PALETTE.peach.bgSoft : '#f4f4f4',
+                        color: isEditing ? PALETTE.peach.deep : '#888',
+                        fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                      ✏️ {isEditing ? 'Κλείδωμα' : 'Επεξεργασία'}
+                    </button>
+                  </div>
+                )}
                 {tags.length > 0 && (
                   <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2, paddingTop: compact ? 0 : 8 }}>
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
@@ -2092,14 +2138,14 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 {/* Σχόλια */}
                 {isCommentOpen && (
                   <div style={{ marginTop:10 }}>
-                    {compact ? (
+                    {canEdit ? (
                       <textarea value={f.comment || ''} onChange={(e) => { e.stopPropagation(); if (onComment) onComment(f.id, e.target.value); }}
                         onClick={(e) => e.stopPropagation()} placeholder="Σημειώσεις για το αρχείο…"
                         style={{ width:'100%', padding:'10px 12px', border:'1px solid '+PALETTE.peach.accent, borderRadius:12, fontSize:16, lineHeight:1.6, color:'#3d3a2e', background:'rgba(255,255,255,0.7)', resize:'none', fontFamily:'inherit', boxSizing:'border-box', minHeight:60, overflow:'hidden' }}
                         ref={(el) => { if (el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; } }} />
                     ) : (
                       <div style={{ padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, fontSize:13, color:'#5c3826', lineHeight:1.6, whiteSpace:'pre-wrap', border:'1px solid '+PALETTE.peach.accent }}>
-                        {(f.comment||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>Χωρίς σχόλια — επεξεργασία από το modal (✏️)</span>}
+                        {(f.comment||'').trim() || <span style={{ color:'#aeaeb8', fontStyle:'italic' }}>{compact ? 'Χωρίς σχόλια — πάτα ✏️ για επεξεργασία' : 'Χωρίς σχόλια — επεξεργασία από το modal (✏️)'}</span>}
                       </div>
                     )}
                   </div>
@@ -2108,7 +2154,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 {/* Ερωτήσεις */}
                 {isQuestionsOpen && (
                   <div style={{ marginTop:10 }} onClick={e => e.stopPropagation()}>
-                    <QuestionsFields fileId={f.id} raw={f.questions} onChange={onQuestions} compact={compact} />
+                    <QuestionsFields fileId={f.id} raw={f.questions} onChange={onQuestions} compact={compact} readOnly={!canEdit} />
                   </div>
                 )}
 
