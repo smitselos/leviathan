@@ -548,17 +548,21 @@ export default function Home() {
   const printWithQuestions = async (f) => {
     const qs = f.questions;
     if (!hasAnyQuestions(qs)) return;
+    // Άνοιγμα παραθύρου ΠΡΙΝ το fetch (σύγχρονο, user gesture)
+    const win = window.open('', '_blank');
+    if (!win) { alert('Επίτρεψε τα αναδυόμενα παράθυρα για αυτόν τον ιστότοπο.'); return; }
+    win.document.write('<html><head><title>Εκτύπωση…</title></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888">⏳ Δημιουργία PDF…</body></html>');
     try {
       const r = await fetch('/api/print-with-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId: f.id, fileName: f.name, questions: qs }),
       });
-      if (!r.ok) { alert('Σφάλμα δημιουργίας PDF'); return; }
+      if (!r.ok) { win.document.body.innerText = '✗ Σφάλμα δημιουργίας PDF'; return; }
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch (e) { alert('Σφάλμα: ' + e.message); }
+      win.location.href = url;
+    } catch (e) { win.document.body.innerText = '✗ ' + e.message; }
   };
 
   const openLive = async (f) => {
