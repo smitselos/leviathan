@@ -1687,7 +1687,7 @@ export default function Home() {
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Σχόλια</div>
                       <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:200, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
-                      {isTeacher && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις</div>
+                      {isTeacher && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις/Απαντήσεις</div>
                       <QuestionsFields fileId={viewing.id} raw={fileQuestions(viewing.id)} onChange={updateQuestions} compact={false} readOnly={false} /></>}
 
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
@@ -2076,7 +2076,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
-              {hasQuestions && onPrint && <button onClick={(e)=>{e.stopPropagation();onPrint(f);}} style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση με ερωτήσεις">🖨️</button>}
+              {hasQuestions && onPrint && <button onClick={(e)=>{e.stopPropagation();onPrint(f);}} style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση με ερωτήσεις/απαντήσεις">🖨️</button>}
               {onQr && <button onClick={(e)=>{e.stopPropagation();onQr(f);}} style={{ ...btn('mini'), padding: compact ? '4px 6px' : '5px 8px' }} title="QR Code">{QrIcon}</button>}
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
@@ -2135,7 +2135,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   {isTeacherRole && <button style={{ ...actionBtn, color: isQuestionsOpen ? '#fff' : PALETTE.peach.deep, background: isQuestionsOpen ? PALETTE.peach.deep : 'none' }}
                     onClick={(e) => { e.stopPropagation(); setQuestionsOpen(isQuestionsOpen ? null : f.id); setInfoOpen(null); setCommentOpen(null); setLinksOpen(null); setPickerSection(null); }}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span style={{ fontSize: compact?11:undefined }}>Ερωτήσεις</span>
+                    <span style={{ fontSize: compact?11:undefined }}>Ερωτ./Απαντ.</span>
                   </button>}
                 </div>
 
