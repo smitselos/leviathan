@@ -528,7 +528,7 @@ export default function Home() {
         saveNetworkData(updated);
         // Ο server αποθήκευσε ήδη τις ερωτήσεις (ομαδοποιημένες) στο registry.
         // PATCH μόνο tags/comment/info — ΟΧΙ questions (τα χειρίζεται ο server).
-        const metaPatch = {};
+        const metaPatch = { _isNetwork: true };
         if (allTags.length) metaPatch.tags = allTags;
         if (allComment) metaPatch.comment = allComment;
         if (allInfo) metaPatch.info = allInfo;
@@ -721,12 +721,17 @@ export default function Home() {
   const allTags = [...new Set(normalFiles.flatMap((f)=>f.tags||[]))].sort();
 
   // Αναζήτηση κατά κατηγορία: Κείμενα / Δίκτυα / Εφαρμογές
-  const networkFileIds = new Set(networks.map(n => n.pdfFileId).filter(Boolean));
+  // Αναγνώριση δικτύων: pdfFileId + driveFileId + flag _isNetwork στο registry
+  const networkFileIds = new Set([
+    ...networks.map(n => n.pdfFileId),
+    ...networks.map(n => n.driveFileId),
+  ].filter(Boolean));
   const appFiles = appsFolderId ? files.filter(f => f.folderId === appsFolderId) : [];
-  const textOnlyFiles = normalFiles.filter(f => !networkFileIds.has(f.id));
-  const networkOnlyFiles = normalFiles.filter(f => networkFileIds.has(f.id));
+  const isNetworkFile = (f) => networkFileIds.has(f.id) || f._isNetwork;
+  const textOnlyFiles = normalFiles.filter(f => !isNetworkFile(f));
+  const networkOnlyFiles = [...normalFiles.filter(f => isNetworkFile(f)), ...appFiles.filter(f => isNetworkFile(f))];
 
-  const searchPool = searchCategory === 'apps' ? appFiles
+  const searchPool = searchCategory === 'apps' ? appFiles.filter(f => !isNetworkFile(f))
     : searchCategory === 'networks' ? networkOnlyFiles
     : textOnlyFiles;
   const searchPoolTags = [...new Set(searchPool.flatMap(f => f.tags || []))].sort();
