@@ -2016,7 +2016,8 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
   const [infoOpen, setInfoOpen] = useState(null);
   const [questionsOpen, setQuestionsOpen] = useState(null);
   const [linksOpen, setLinksOpen] = useState(null);
-  const [editMode, setEditMode] = useState(null); // fileId αν ενεργή η επεξεργασία (μόνο mobile)
+  const [editMode, setEditMode] = useState(null);
+  const [printOpen, setPrintOpen] = useState(null); // fileId αν ενεργή η επεξεργασία (μόνο mobile)
   const [mLinkUrl, setMLinkUrl] = useState('');
   const [mLinkName, setMLinkName] = useState('');
   const [pickerSection, setPickerSection] = useState(null);
@@ -2048,7 +2049,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
             boxShadow: isExp ? '0 8px 28px rgba(0,0,0,0.10)' : 'none',
             maxWidth:'100%', minWidth:0,
           }}>
-            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setInfoOpen(null); setQuestionsOpen(null); setLinksOpen(null); setEditMode(null); }}
+            <div onClick={() => { setExpanded(isExp ? null : f.id); setCommentOpen(null); setInfoOpen(null); setQuestionsOpen(null); setLinksOpen(null); setEditMode(null); setPrintOpen(null); }}
               style={{ display:'flex', alignItems:'center', gap: compact ? 8 : 12, padding: compact ? '10px 10px' : '12px 14px', cursor:'pointer', minWidth:0 }}>
               <button onClick={(e)=>{e.stopPropagation();onFav(f.id,e);}} title={f.favorite?'Αφαίρεση':'Αγαπημένο'}
                 style={{ background:'none', border:'none', cursor:'pointer', fontSize: compact ? 15 : 17, color:f.favorite?'#eab308':'#d0d0d0', flexShrink:0, padding:0 }}>{f.favorite?'★':'☆'}</button>
@@ -2077,7 +2078,13 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
-              {hasQuestions && onPrint && <button onClick={(e)=>{e.stopPropagation();onPrint(f);}} style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση με ερωτήσεις/απαντήσεις">🖨️</button>}
+              {hasQuestions && onPrint && !(f._isNetwork || (f.tags||[]).includes('Δίκτυο')) ? (
+                <button onClick={(e)=>{e.stopPropagation(); setPrintOpen(printOpen===f.id ? null : f.id);}}
+                  style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12, background: printOpen===f.id ? PALETTE.cream.bgSoft : undefined }} title="Εκτύπωση">🖨️</button>
+              ) : (
+                <button onClick={(e)=>{e.stopPropagation(); window.open('/api/file/'+f.id, '_blank');}}
+                  style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση">🖨️</button>
+              )}
               {onQr && <button onClick={(e)=>{e.stopPropagation();onQr(f);}} style={{ ...btn('mini'), padding: compact ? '4px 6px' : '5px 8px' }} title="QR Code">{QrIcon}</button>}
               {!compact && <button onClick={(e)=>{e.stopPropagation();onRemove(f.id);}} className="del-h" style={S.delBtn} title="Διαγραφή">✕</button>}
             </div>
@@ -2139,6 +2146,20 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <span style={{ fontSize: compact?11:undefined }}>Ερωτ./Απαντ.</span>
                   </button>}
                 </div>
+
+                {/* Επιλογές εκτύπωσης */}
+                {printOpen === f.id && (
+                  <div style={{ marginTop:10, display:'flex', gap:8, flexWrap:'wrap' }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => { setPrintOpen(null); window.open('/api/file/'+f.id, '_blank'); }}
+                      style={{ flex:1, padding:'9px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', cursor:'pointer', fontSize:12, fontWeight:600, color:'#3d3a2e', display:'flex', alignItems:'center', gap:6 }}>
+                      📄 Μόνο κείμενο
+                    </button>
+                    <button onClick={() => { setPrintOpen(null); if (onPrint) onPrint(f); }}
+                      style={{ flex:1, padding:'9px 14px', borderRadius:10, border:'1.5px solid '+PALETTE.mustard.deep, background:PALETTE.mustard.bgSoft||'#fef9ee', cursor:'pointer', fontSize:12, fontWeight:600, color:PALETTE.mustard.deep, display:'flex', alignItems:'center', gap:6 }}>
+                      📝 Με ερωτ./απαντ.
+                    </button>
+                  </div>
+                )}
 
                 {/* Σχόλια */}
                 {isCommentOpen && (
