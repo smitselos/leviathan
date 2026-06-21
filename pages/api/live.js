@@ -47,17 +47,18 @@ export default async function handler(req, res) {
       const fileIds = [file.id, ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId)];
       await Promise.allSettled(fileIds.map(id => sharePublic(drive, id)));
 
-      const fileSrc = (id) => `/api/student-file?id=${id}`;
+      const fileSrc = (id, name) =>
+        /\.html?$/i.test(name||'') ? `/api/student-file?id=${id}` : `https://drive.google.com/file/d/${id}/preview`;
 
       const liveData = {
         title: file.name,
-        src: fileSrc(file.id),
+        src: fileSrc(file.id, file.name),
         fileId: file.id,
         tags: file.tags || [],
         questions: file.questions || '',
         links: (links || []).map(l => ({
           type: l.type, targetId: l.targetId, url: l.url, name: l.name,
-          src: l.type === 'url' ? l.url : fileSrc(l.targetId),
+          src: l.type === 'url' ? l.url : fileSrc(l.targetId, l.name),
         })),
         teacher: session.user?.name || session.user?.email || 'Εκπαιδευτικός',
         updatedAt: Date.now(),
