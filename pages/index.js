@@ -1826,9 +1826,15 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch' }}>
-              <EmbedFrame src={activeLiveTab===-1 ? '/api/file/'+liveFile.id : curSrc} style={{ border:'none', display:'block' }}
-                title={activeLiveTab===-1 ? liveFile.name : (curLink?.name||'')} />
+            <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', display:'flex' }}>
+              {(()=>{
+                const liveSrc = activeLiveTab===-1 ? '/api/file/'+liveFile.id : curSrc;
+                const liveTitle = activeLiveTab===-1 ? liveFile.name : (curLink?.name||'');
+                const isUrl = curLink?.type === 'url' && activeLiveTab !== -1;
+                return isUrl
+                  ? <EmbedFrame src={liveSrc} style={{ border:'none', display:'block' }} title={liveTitle} />
+                  : <iframe src={liveSrc} style={{ flex:1, border:'none', minWidth:0 }} title={liveTitle} />;
+              })()}
             </div>
           </div>
         );
@@ -1857,9 +1863,11 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                <div style={{ flex:1, overflow:'hidden' }}>
+                <div style={{ flex:1, overflow:'hidden', display:'flex' }}>
                   {curSrc ? (
-                    <EmbedFrame src={curSrc} style={{ border:'none' }} title={curLink?.name||''} />
+                    curLink?.type === 'url'
+                      ? <EmbedFrame src={curSrc} style={{ border:'none' }} title={curLink?.name||''} />
+                      : <iframe src={curSrc} style={{ flex:1, border:'none', minWidth:0 }} title={curLink?.name||''} />
                   ) : (
                     <div style={{ padding:20, textAlign:'center', color:'#aeaeb8', fontSize:13 }}>Επίλεξε μια σύνδεση</div>
                   )}
