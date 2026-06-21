@@ -62,6 +62,18 @@ const toEmbedUrl = (url) => {
 };
 const QrIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>;
 
+const getEditUrl = (f) => {
+  if (!f) return null;
+  const m = f.mimeType || '';
+  if (m === 'application/vnd.google-apps.document' || m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || m === 'application/msword')
+    return `https://docs.google.com/document/d/${f.id}/edit`;
+  if (m === 'application/vnd.google-apps.presentation' || m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || m === 'application/vnd.ms-powerpoint')
+    return `https://docs.google.com/presentation/d/${f.id}/edit`;
+  if (m === 'application/vnd.google-apps.spreadsheet' || m === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || m === 'application/vnd.ms-excel')
+    return `https://docs.google.com/spreadsheets/d/${f.id}/edit`;
+  return null;
+};
+
 // ── SVG εικονίδια (ίδια με το παλιό) ──
 const Icon = {
   home:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
@@ -1651,6 +1663,9 @@ export default function Home() {
                 <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
+                  {getEditUrl(viewing) && <button onClick={()=>window.open(getEditUrl(viewing),'_blank')} style={{ ...S.iconBtn, color:'#1a73e8' }} title="Επεξεργασία στο Google">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </button>}
                   <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Επεξεργασία">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
@@ -2127,7 +2142,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
                 {/* Πληροφορίες — σταθερό read-only πλαίσιο */}
                 {hasInfo && (
-                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:8, fontSize: compact?11:12, color:'#3d3a2e', lineHeight:1.5, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word' }}>
+                  <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.6)', borderRadius:10, marginBottom:8, fontSize: compact?11:12, color:'#3d3a2e', lineHeight:1.5, maxWidth:'100%', overflow:'hidden', wordBreak:'break-word', border: compact ? 'none' : '1px solid '+PALETTE.cream.accent }}>
                     ℹ️ {compact
                       ? (f.info.length > 80 ? f.info.slice(0,80)+'…' : f.info)
                       : f.info.split(/\s+/).slice(0,40).join(' ') + (f.info.split(/\s+/).length > 40 ? ' …' : '')
@@ -2182,7 +2197,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
 
                 {/* Ερωτήσεις */}
                 {isQuestionsOpen && (
-                  <div style={{ marginTop:10 }} onClick={e => e.stopPropagation()}>
+                  <div style={{ marginTop:10, ...(compact ? {} : { padding:'10px 14px', background:'rgba(255,255,255,0.7)', borderRadius:12, border:'1px solid '+PALETTE.cream.accent }) }} onClick={e => e.stopPropagation()}>
                     <QuestionsFields fileId={f.id} raw={f.questions} onChange={onQuestions} compact={compact} readOnly={!canEdit} />
                   </div>
                 )}
