@@ -93,13 +93,7 @@ function PublicView({teacher,isMobile,hasSession}){
   },[files,search]);
 
   const openFile=(f)=>{
-    const isHtml=/\.html?$/i.test(f.name);
-    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
-    let url;
-    if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/doc-proxy?id='+f.id)}`;
-    else url=`https://drive.google.com/file/d/${f.id}/preview`;
-    window.open(url,'_blank');
+    window.open(`/api/student-file?id=${f.id}`,'_blank');
   };
 
   const getFileUrl=(f)=>{
@@ -617,22 +611,15 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const filtered=useMemo(()=>{let r=[...files];if(activeTag)r=r.filter(f=>(f.tags||[]).includes(activeTag));if(search.trim()){const q=search.toLowerCase();r=r.filter(f=>f.name.toLowerCase().includes(q)||(f.tags||[]).some(t=>t.toLowerCase().includes(q)));}return r;},[files,search,activeTag]);
 
   const openFile=f=>{
-    const isHtml=/\.html?$/i.test(f.name);
-    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
-    let url;
-    if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/doc-proxy?id='+f.id)}`;
-    else url=`https://drive.google.com/file/d/${f.id}/preview`;
+    const url='/api/file/'+f.id;
     if(isMobile){window.open(url,'_blank');return;}
-    setViewing(f);
+    setViewing({...f, previewUrl:url});
   };
   const goHome=()=>{setViewing(null);setSearch('');setActiveTag(null);loadData();};
   const goBack=()=>{if(hasSession)router.push('/');else router.push('/login');};
 
   if(viewing&&!isMobile){
-    const isHtml=/\.html?$/i.test(viewing.name);
-    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(viewing.name);
-    const driveUrl=isHtml?`/api/student-file?id=${viewing.id}`:isOffice?`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/doc-proxy?id='+viewing.id)}`:`https://drive.google.com/file/d/${viewing.id}/preview`;
+    const driveUrl=viewing.previewUrl||'/api/file/'+viewing.id;
     return(
       <div style={S.app}><Head><title>{viewing.name}</title></Head><style>{css}</style>
         <TeacherSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={goHome} goBack={goBack} hasSession={hasSession}/>
