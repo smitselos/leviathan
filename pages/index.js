@@ -191,9 +191,12 @@ export default function Home() {
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
   const [networkLoading, setNetworkLoading] = useState(false);
   const [expandedInbox, setExpandedInbox] = useState(null);
-  const [inboxFilter, setInboxFilter] = useState(null);
+  const [inboxFilter, setInboxFilter] = useState(null); // null=όλα, string email, ή array emails (ομάδα)
   const [inboxSaveTarget, setInboxSaveTarget] = useState(null); // fileId+i for which item shows folder picker
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
+  const [contactInfo, setContactInfo] = useState({}); // { email: {firstName,lastName,email,school,roleTitle,phone,note} }
+  const [contactPicker, setContactPicker] = useState(null); // email του χρήστη που επεξεργαζόμαστε
+  const [contactDraft, setContactDraft] = useState({});
 
   // ── Network Builder (Δίκτυα Κειμένων) ──
   const [networks, setNetworks] = useState([]);
@@ -275,7 +278,7 @@ export default function Home() {
   // customUrls = πλήρης λίστα ιστοτόπων (defaults + custom), fallback σε SUGGESTED_URLS
   const allSuggestedUrls = customUrls.length > 0 ? customUrls : SUGGESTED_URLS;
 
-  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); } }, [status, loadAll]);
+  useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); loadContacts(); } }, [status, loadAll]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -363,6 +366,32 @@ export default function Home() {
   };
   const loadNetwork = async () => {
     try { const r = await fetch('/api/network'); const d = await r.json(); setNetworkData(d); } catch(e) {}
+  };
+
+  // ── Στοιχεία επικοινωνίας συνδέσεων ──
+  const loadContacts = async () => {
+    try { const r = await fetch('/api/contact-info'); const d = await r.json(); setContactInfo(d.contacts || {}); } catch(e) {}
+  };
+  const openContactPicker = (email) => {
+    const existing = contactInfo[email] || {};
+    const conn = (networkData.connections||[]).find(c=>c.email===email);
+    setContactDraft({
+      firstName: existing.firstName || '',
+      lastName: existing.lastName || (conn?.name && !conn.name.includes('@') ? conn.name : ''),
+      email,
+      school: existing.school || '',
+      roleTitle: existing.roleTitle || '',
+      phone: existing.phone || '',
+      note: existing.note || '',
+    });
+    setContactPicker(email);
+  };
+  const saveContact = async () => {
+    const email = contactPicker;
+    if (!email) return;
+    setContactInfo(prev => ({ ...prev, [email]: { ...contactDraft } }));
+    try { await fetch('/api/contact-info', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, info: contactDraft }) }); } catch(e) {}
+    setContactPicker(null);
   };
 
   // ── Network Builder (Δίκτυα Κειμένων) ─────────────────────────────────
@@ -1462,16 +1491,42 @@ export default function Home() {
                 {(networkData.sent||[]).length > 0 && <div style={{ marginTop:8, fontSize:11, color:'#aeaeb8' }}>Αναμένει: {networkData.sent.join(', ')}</div>}
               </div>
 
+              {/* Φίλτρο εισερχομένων: Όλα / ανά χρήστη */}
+              {(networkData.connections||[]).length > 0 && (networkData.inbox||[]).length > 0 && (
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Εμφάνιση εισερχομένων</div>
+                  <select
+                    value={typeof inboxFilter === 'string' ? inboxFilter : '__all__'}
+                    onChange={e => setInboxFilter(e.target.value === '__all__' ? null : e.target.value)}
+                    style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:isMobile?16:13, background:'#fff', color:'#1a1a1a', cursor:'pointer' }}>
+                    <option value="__all__">Όλοι οι αποστολείς</option>
+                    {(networkData.connections||[]).map(conn => {
+                      const cInfo = contactInfo[conn.email];
+                      const label = cInfo && (cInfo.firstName || cInfo.lastName)
+                        ? `${cInfo.firstName||''} ${cInfo.lastName||''}`.trim()
+                        : (conn.name || conn.email.split('@')[0]);
+                      return <option key={conn.email} value={conn.email}>{label}</option>;
+                    })}
+                  </select>
+                </div>
+              )}
+
               {/* Inbox εισερχόμενων αρχείων — expandable κάρτες */}
               {(networkData.inbox||[]).length > 0 && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>
                     📥 Εισερχόμενα
-                    {inboxFilter && <span style={{ marginLeft:8, fontSize:11, color:PALETTE.cream.deep }}>— από {inboxFilter.split('@')[0]}</span>}
+                    {inboxFilter && typeof inboxFilter === 'string' && <span style={{ marginLeft:8, fontSize:11, color:PALETTE.cream.deep }}>— από {(contactInfo[inboxFilter]?.firstName || contactInfo[inboxFilter]?.lastName) ? `${contactInfo[inboxFilter].firstName||''} ${contactInfo[inboxFilter].lastName||''}`.trim() : inboxFilter.split('@')[0]}</span>}
                     {inboxFilter && <button onClick={()=>setInboxFilter(null)} style={{ marginLeft:6, background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:11 }}>✕</button>}
                     {networkData.unseenCount > 0 && !inboxFilter && <span style={{ marginLeft:8, background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{networkData.unseenCount} νέα</span>}
                   </div>
-                  {(inboxFilter ? networkData.inbox.filter(i=>i.fromEmail===inboxFilter) : networkData.inbox).map((item, i) => {
+                  {(()=>{
+                    const flt = inboxFilter;
+                    const list = !flt ? networkData.inbox
+                      : Array.isArray(flt) ? networkData.inbox.filter(i=>flt.includes(i.fromEmail))
+                      : networkData.inbox.filter(i=>i.fromEmail===flt);
+                    return list;
+                  })().map((item, i) => {
                     const isExp = expandedInbox === item.fileId+i;
                     return (
                       <div key={item.fileId+i} style={{ background: !item.seen ? '#fff9ed' : '#fff', border: `1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, borderRadius:14, marginBottom:8, overflow:'hidden', transition:'all 0.15s ease' }}>
@@ -1544,17 +1599,23 @@ export default function Home() {
                 <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Συνδέσεις {(networkData.connections||[]).length > 0 && `(${networkData.connections.length})`}</div>
                 {networkLoading && <div style={{ color:'#aeaeb8', fontSize:13 }}>Φόρτωση…</div>}
                 {!networkLoading && (networkData.connections||[]).length === 0 && <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση ακόμα.</div>}
-                {(networkData.connections||[]).map(conn => (
+                {(networkData.connections||[]).map(conn => {
+                  const cInfo = contactInfo[conn.email];
+                  const displayName = cInfo && (cInfo.firstName || cInfo.lastName)
+                    ? `${cInfo.firstName||''} ${cInfo.lastName||''}`.trim()
+                    : (conn.name||conn.email);
+                  return (
                   <div key={conn.email} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', background:'#fff', borderRadius:14, border:'1px solid #ebebeb', marginBottom:8 }}>
                     <div style={{ width:36, height:36, borderRadius:'50%', background:'#dbeafe', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>👤</div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:600 }}>{conn.name||conn.email}</div>
-                      <div style={{ fontSize:11, color:'#6b6b80' }}>{conn.email}</div>
+                      <div style={{ fontSize:13, fontWeight:600 }}>{displayName}</div>
+                      <div style={{ fontSize:11, color:'#6b6b80' }}>{cInfo?.school ? cInfo.school : conn.email}</div>
                     </div>
-                    <button onClick={()=>setInboxFilter(inboxFilter===conn.email?null:conn.email)} style={{ padding:'6px 14px', borderRadius:10, border: inboxFilter===conn.email ? '1.5px solid #8a7d4a' : '1px solid #e0e0e0', background: inboxFilter===conn.email ? PALETTE.cream.bgSoft : '#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>{inboxFilter===conn.email ? '✕ Φίλτρο' : 'Υλικό →'}</button>
+                    <button onClick={()=>openContactPicker(conn.email)} title="Στοιχεία επικοινωνίας" style={{ padding:'6px 14px', borderRadius:10, border: cInfo && (cInfo.firstName||cInfo.lastName||cInfo.school) ? '1.5px solid #8a7d4a' : '1px solid #e0e0e0', background: cInfo && (cInfo.firstName||cInfo.lastName||cInfo.school) ? PALETTE.cream.bgSoft : '#fff', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>ℹ️ Πληροφορίες</button>
                     <button onClick={()=>disconnect(conn.email)} style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:12, padding:'4px' }}>✕</button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1620,6 +1681,38 @@ export default function Home() {
 
         </div>
       </main>
+
+      {/* Στοιχεία επικοινωνίας — picker */}
+      {contactPicker && (
+        <div onClick={()=>setContactPicker(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:'24px 22px', maxWidth:440, width:'100%', maxHeight:'88vh', overflowY:'auto', boxShadow:'0 20px 60px rgba(0,0,0,0.22)' }}>
+            <div style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Στοιχεία επικοινωνίας</div>
+            <div style={{ fontSize:12, color:'#6b6b80', marginBottom:18 }}>{contactPicker}</div>
+            {[
+              { key:'firstName', label:'Όνομα', ph:'Όνομα' },
+              { key:'lastName',  label:'Επώνυμο', ph:'Επώνυμο' },
+              { key:'school',    label:'Σχολείο', ph:'π.χ. 2ο ΓΕΛ Ηγουμενίτσας' },
+              { key:'roleTitle', label:'Ιδιότητα', ph:'π.χ. Φιλόλογος' },
+              { key:'phone',     label:'Τηλέφωνο', ph:'π.χ. 26650…' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.4, marginBottom:5 }}>{f.label}</label>
+                <input value={contactDraft[f.key]||''} onChange={e=>setContactDraft(d=>({ ...d, [f.key]: e.target.value }))} placeholder={f.ph}
+                  style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', boxSizing:'border-box' }} />
+              </div>
+            ))}
+            <div style={{ marginBottom:16 }}>
+              <label style={{ display:'block', fontSize:11, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.4, marginBottom:5 }}>Άλλη πληροφορία</label>
+              <textarea value={contactDraft.note||''} onChange={e=>setContactDraft(d=>({ ...d, note: e.target.value }))} placeholder="Σημειώσεις…" rows={3}
+                style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit' }} />
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>setContactPicker(null)} style={{ flex:1, padding:'11px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Ακύρωση</button>
+              <button onClick={saveContact} style={{ flex:1, padding:'11px', borderRadius:12, border:'none', background:PALETTE.cream.deep, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Αποθήκευση</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Viewer modal */}
       {viewing && (

@@ -224,6 +224,7 @@ function StudentView({myEmail,isMobile,router}){
   const [viewing,setViewing]=useState(null);
   const [pendingFile,setPendingFile]=useState(null);
   const [sendRecipients,setSendRecipients]=useState([]);
+  const [inboxFrom,setInboxFrom]=useState('__all__'); // φίλτρο εισερχομένων ανά αποστολέα
 
   const myName=myEmail;
 
@@ -424,13 +425,27 @@ function StudentView({myEmail,isMobile,router}){
                   )}
                 </div>
 
+                {/* Φίλτρο εισερχομένων ανά αποστολέα */}
+                {(network.connections||[]).length>0&&incoming.length>0&&(
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:11,fontWeight:700,color:P.cream.deep,textTransform:'uppercase',letterSpacing:0.4,marginBottom:6}}>Εμφάνιση εισερχομένων</div>
+                    <select value={inboxFrom} onChange={e=>setInboxFrom(e.target.value)}
+                      style={{width:'100%',padding:'10px 12px',border:'1px solid #e0e0e0',borderRadius:10,fontSize:isMobile?16:13,background:'#fff',color:'#1a1a1a',cursor:'pointer'}}>
+                      <option value="__all__">Όλοι οι εκπαιδευτικοί</option>
+                      {(network.connections||[]).map(c=>(
+                        <option key={c.email} value={c.email}>{c.name||c.email.split('@')[0]}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Εισερχόμενα */}
                 <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
                   📥 Εισερχόμενα {unseenCount>0&&<span style={S.badge}>{unseenCount}</span>}
                 </div>
-                {incoming.length===0&&<div style={S.emptyCol}>Δεν υπάρχουν εισερχόμενα ακόμη.</div>}
+                {incoming.filter(f=>inboxFrom==='__all__'||f.fromEmail===inboxFrom).length===0&&<div style={S.emptyCol}>Δεν υπάρχουν εισερχόμενα ακόμη.</div>}
                 <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                  {incoming.map(f=>{
+                  {incoming.filter(f=>inboxFrom==='__all__'||f.fromEmail===inboxFrom).map(f=>{
                     const isNew=!seenIds.has(f.id);
                     const isExp=expandedIn===(f.id+f.fromEmail);
                     return(
