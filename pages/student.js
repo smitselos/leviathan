@@ -14,6 +14,7 @@ const P = {
 const TAG_COLORS=[{bg:'#ede9fe',text:'#6d28d9'},{bg:'#dcfce7',text:'#15803d'},{bg:'#fef3c7',text:'#b45309'},{bg:'#dbeafe',text:'#1d4ed8'},{bg:'#fce7f3',text:'#9d174d'},{bg:'#e0f2fe',text:'#0369a1'},{bg:'#f3f4f6',text:'#374151'}];
 const tagColor=t=>TAG_COLORS[Math.abs([...t].reduce((a,c)=>a+c.charCodeAt(0),0))%TAG_COLORS.length];
 const trunc=(s,n)=>s&&s.length>n?s.slice(0,n)+'…':s;
+const teacherColor=(email)=>TAG_COLORS[Math.abs([...(email||'')].reduce((a,c)=>a+c.charCodeAt(0),0))%TAG_COLORS.length];
 
 const Ic={
   home:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
@@ -224,6 +225,8 @@ function StudentView({myEmail,isMobile,router}){
   const [savingId,setSavingId]=useState(null);
   const [uploading,setUploading]=useState(false);
   const [viewing,setViewing]=useState(null);
+  const [pendingFile,setPendingFile]=useState(null);
+  const [sendRecipients,setSendRecipients]=useState([]);
 
   const myName=myEmail;
 
@@ -320,20 +323,44 @@ function StudentView({myEmail,isMobile,router}){
   };
 
   // Upload & Send
-  const handleUpload=async(e)=>{
+  // Step 1: Capture file, open recipient picker
+  const handleFileSelect=(e)=>{
     const file=e.target.files?.[0];
     if(!file)return;
+    const conns=network.connections||[];
+    if(conns.length===0){alert('Δεν έχεις συνδέσεις.');return;}
+    if(conns.length===1){
+      // Μόνο μια σύνδεση — στείλε κατευθείαν
+      setPendingFile(file);
+      setSendRecipients([conns[0].email]);
+      doSend(file,[conns[0].email]);
+    } else {
+      setPendingFile(file);
+      setSendRecipients(conns.map(c=>c.email)); // default: all selected
+    }
+    e.target.value='';
+  };
+
+  // Step 2: Actual send
+  const doSend=async(file,recipients)=>{
+    if(!file||recipients.length===0)return;
     setUploading(true);
     try{
       const form=new FormData();
-      form.append('file',file);
+      form.append('file',file||pendingFile);
+      form.append('recipients',JSON.stringify(recipients));
       const r=await fetch('/api/student-send',{method:'POST',body:form});
       const d=await r.json();
       if(d.ok){alert('✅ Εστάλη: '+d.name);loadAll();}
       else alert('❌ '+(d.error||'Σφάλμα'));
     }catch{alert('❌ Σφάλμα αποστολής');}
     setUploading(false);
-    e.target.value='';
+    setPendingFile(null);
+    setSendRecipients([]);
+  };
+
+  const toggleRecipient=(email)=>{
+    setSendRecipients(prev=>prev.includes(email)?prev.filter(e=>e!==email):[...prev,email]);
   };
 
   // Desktop viewer
@@ -422,7 +449,9 @@ function StudentView({myEmail,isMobile,router}){
                           <div style={{width:34,height:34,borderRadius:10,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>📄</div>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(f.name,20)}</div>
-                            <div style={{fontSize:11,color:'#8a8a9a',marginTop:1}}>από {trunc(f.fromName,25)}</div>
+                            <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
+                              {(()=>{const tc=teacherColor(f.fromEmail);return <span style={{fontSize:10,fontWeight:600,padding:'1px 8px',borderRadius:999,background:tc.bg,color:tc.text,whiteSpace:'nowrap'}}>📚 {trunc(f.fromName,20)}</span>;})()}
+                            </div>
                           </div>
                           {isNew&&<span style={{width:8,height:8,borderRadius:'50%',background:'#f59e0b',flexShrink:0}}/>}
                           <span style={{fontSize:11,color:'#aeaeb8',flexShrink:0,transition:'transform 0.15s',transform:isExp?'rotate(180deg)':'none'}}>▼</span>
@@ -455,7 +484,7 @@ function StudentView({myEmail,isMobile,router}){
                   <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>📤 Ανέβασμα & Αποστολή</div>
                   <label style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',borderRadius:12,background:P.peach.bg,color:P.peach.deep,fontSize:13,fontWeight:600,cursor:uploading?'wait':'pointer',opacity:uploading?0.5:1,border:'1.5px solid '+P.peach.accent}}>
                     {uploading?'Αποστολή…':'Επιλογή αρχείου'}
-                    <input type="file" style={{display:'none'}} onChange={handleUpload} disabled={uploading}/>
+                    <input type="file" style={{display:'none'}} onChange={handleFileSelect} disabled={uploading}/>
                   </label>
                   <p style={{fontSize:11,color:'#aeaeb8',marginTop:8}}>Φωτογραφία, PDF, DOCX — στέλνεται στις συνδέσεις σου</p>
                 </div>
@@ -506,6 +535,46 @@ function StudentView({myEmail,isMobile,router}){
           <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/s/smitselos','_blank')}/>
           <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
         </nav>
+      )}
+
+      {/* Recipient picker modal */}
+      {pendingFile&&(network.connections||[]).length>1&&(
+        <div onClick={()=>{setPendingFile(null);setSendRecipients([]);}} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'24px 20px',maxWidth:360,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.25)',maxHeight:'80vh',overflowY:'auto'}}>
+            <div style={{fontSize:16,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>Αποστολή σε…</div>
+            <div style={{fontSize:12,color:'#6b6b80',marginBottom:12}}>📎 {pendingFile.name}</div>
+            <div style={{fontSize:11,color:'#aeaeb8',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>
+              Παραλήπτες {sendRecipients.length>0&&<span style={{background:'#1a1a1a',color:'#fff',borderRadius:999,padding:'1px 7px',fontSize:10}}>{sendRecipients.length}</span>}
+            </div>
+            {(network.connections||[]).map(c=>{
+              const isSel=sendRecipients.includes(c.email);
+              const tc=teacherColor(c.email);
+              return(
+                <button key={c.email} onClick={()=>toggleRecipient(c.email)}
+                  style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'10px 14px',borderRadius:12,
+                    border:isSel?'2px solid #16a34a':'1px solid #ebebeb',
+                    background:isSel?'#f0fdf4':'#fafafa',cursor:'pointer',marginBottom:6,textAlign:'left'}}>
+                  <span style={{width:28,height:28,borderRadius:8,background:tc.bg,color:tc.text,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>
+                    {(c.name||c.email).charAt(0).toUpperCase()}
+                  </span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:500,color:'#1a1a1a'}}>{c.name||c.email}</div>
+                    <div style={{fontSize:11,color:'#6b6b80'}}>{c.email}</div>
+                  </div>
+                  {isSel&&<span style={{fontSize:16,color:'#16a34a',flexShrink:0}}>✓</span>}
+                </button>
+              );
+            })}
+            <div style={{display:'flex',gap:8,marginTop:14}}>
+              <button onClick={()=>{setPendingFile(null);setSendRecipients([]);}}
+                style={{flex:1,padding:'10px',borderRadius:12,border:'1px solid #e0e0e0',background:'#fff',fontSize:13,cursor:'pointer',color:'#6b6b80'}}>Ακύρωση</button>
+              <button onClick={()=>doSend(pendingFile,sendRecipients)} disabled={sendRecipients.length===0||uploading}
+                style={{flex:1,padding:'10px',borderRadius:12,border:'none',background:sendRecipients.length>0?P.peach.deep:'#ccc',color:'#fff',fontSize:13,fontWeight:600,cursor:sendRecipients.length>0?'pointer':'not-allowed',opacity:uploading?0.5:1}}>
+                {uploading?'Αποστολή…':'Αποστολή'} {sendRecipients.length>0&&`(${sendRecipients.length})`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
