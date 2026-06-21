@@ -1499,7 +1499,7 @@ export default function Home() {
                                 const pUrl=isHtml
                                   ?`/api/student-file?id=${item.fileId}`
                                   :isOff
-                                  ?`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+item.fileId)}`
+                                  ?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`
                                   :`https://drive.google.com/file/d/${item.fileId}/preview`;
                                 setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
                                 setShowMetaPanel(false);

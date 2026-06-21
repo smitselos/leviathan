@@ -95,11 +95,9 @@ function PublicView({teacher,isMobile,hasSession}){
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
-    let url;
-    if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+f.id)}`;
-    else url=`https://drive.google.com/file/d/${f.id}/preview`;
-    window.open(url,'_blank');
+    if(isHtml){ window.open(`/api/student-file?id=${f.id}`,'_blank'); return; }
+    if(isOffice){ window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank'); return; }
+    window.open(`https://drive.google.com/file/d/${f.id}/preview`,'_blank');
   };
 
   const getFileUrl=(f)=>{
@@ -281,7 +279,7 @@ function StudentView({myEmail,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+f.id)}`;
+    else if(isOffice) url=`/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f,previewUrl:url});
@@ -621,7 +619,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+f.id)}`;
+    else if(isOffice) url=`/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f, previewUrl:url});
