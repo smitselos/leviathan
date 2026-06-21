@@ -43,12 +43,12 @@ export default function StudentPage({ teacher: ssrTeacher }){
   },[hasSession,status]);
 
   // Χωρίς σύνδεση → δημόσια σελίδα ΑΜΕΣΩΣ (χωρίς αναμονή role)
-  if(status==='unauthenticated'||(!hasSession&&status!=='loading')) return <PublicView teacher={teacher} isMobile={isMobile} />;
+  if(status==='unauthenticated'||(!hasSession&&status!=='loading')) return <PublicView teacher={teacher} isMobile={isMobile} hasSession={false} />;
 
   if(status==='loading'||roleLoading) return <div style={S.page}><div style={{color:'#6b6b80',fontSize:14}}>Φόρτωση…</div></div>;
 
   // Δημόσια σελίδα: χωρίς session ή με ?teacher= parameter
-  if(!hasSession || teacher) return <PublicView teacher={teacher} isMobile={isMobile} />;
+  if(!hasSession || teacher) return <PublicView teacher={teacher} isMobile={isMobile} hasSession={hasSession} />;
 
   // Μαθητής
   if(role==='student') return <StudentView myEmail={myEmail} isMobile={isMobile} router={router} />;
@@ -61,7 +61,7 @@ export default function StudentPage({ teacher: ssrTeacher }){
 /* ══════════════════════════════════════════════════════════════
    ΔΗΜΟΣΙΑ ΣΕΛΙΔΑ — αρχεία δημοσιευμένα ως «Όλοι»
    ══════════════════════════════════════════════════════════════ */
-function PublicView({teacher,isMobile}){
+function PublicView({teacher,isMobile,hasSession}){
   const [files,setFiles]=useState([]);
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState('');
@@ -93,8 +93,11 @@ function PublicView({teacher,isMobile}){
 
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
+    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isOffice && hasSession) url=`/api/file/${f.id}`;
+    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent('https://drive.google.com/uc?export=download&confirm=t&id='+f.id)}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     window.open(url,'_blank');
   };
@@ -272,8 +275,10 @@ function StudentView({myEmail,isMobile,router}){
   const openFile=(f)=>{
     markSeen(f.id);
     const isHtml=/\.html?$/i.test(f.name);
+    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isOffice) url=`/api/file/${f.id}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f,previewUrl:url});
@@ -550,7 +555,11 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 
   const openFile=f=>{
     const isHtml=/\.html?$/i.test(f.name);
-    const url=isHtml?`/api/student-file?id=${f.id}`:`https://drive.google.com/file/d/${f.id}/preview`;
+    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    let url;
+    if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isOffice) url=`/api/file/${f.id}`;
+    else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing(f);
   };
@@ -559,7 +568,8 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 
   if(viewing&&!isMobile){
     const isHtml=/\.html?$/i.test(viewing.name);
-    const driveUrl=isHtml?`/api/student-file?id=${viewing.id}`:`https://drive.google.com/file/d/${viewing.id}/preview`;
+    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(viewing.name);
+    const driveUrl=isHtml?`/api/student-file?id=${viewing.id}`:isOffice?`/api/file/${viewing.id}`:`https://drive.google.com/file/d/${viewing.id}/preview`;
     return(
       <div style={S.app}><Head><title>{viewing.name}</title></Head><style>{css}</style>
         <TeacherSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={goHome} goBack={goBack} hasSession={hasSession}/>
