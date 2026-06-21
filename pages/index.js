@@ -1492,7 +1492,7 @@ export default function Home() {
                           <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
                             {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, marginBottom:4, lineHeight:1.5 }}>💬 {item.message}</div>}
                             <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                              <button onClick={()=>{ markInboxSeen(item.fileId); const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||''); window.open(`https://drive.google.com/file/d/${item.fileId}/${isOff?'view':'preview'}`, '_blank'); }}
+                              <button onClick={()=>{ markInboxSeen(item.fileId); const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||''); window.open(isOff?`https://docs.google.com/gview?url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+item.fileId)}`:`https://drive.google.com/file/d/${item.fileId}/preview`, '_blank'); }}
                                 style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
                               <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
                                 style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
