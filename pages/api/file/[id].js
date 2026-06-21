@@ -25,6 +25,16 @@ const OFFICE_TO_GOOGLE = {
   'application/vnd.ms-excel': 'application/vnd.google-apps.spreadsheet',
 };
 
+// Fallback: αν ο mimeType δεν ταιριάζει, ελέγχουμε την κατάληξη
+const EXT_TO_GOOGLE = {
+  'docx': 'application/vnd.google-apps.document',
+  'doc':  'application/vnd.google-apps.document',
+  'pptx': 'application/vnd.google-apps.presentation',
+  'ppt':  'application/vnd.google-apps.presentation',
+  'xlsx': 'application/vnd.google-apps.spreadsheet',
+  'xls':  'application/vnd.google-apps.spreadsheet',
+};
+
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).send('Unauthorized');
@@ -39,6 +49,7 @@ export default async function handler(req, res) {
     const mimeType = meta.data.mimeType;
     const name = meta.data.name || 'document';
     const baseName = name.replace(/\.[^.]+$/, '');
+    const ext = (name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
 
     // Google native → export PDF
     if (GOOGLE_EXPORT.includes(mimeType)) {
@@ -53,7 +64,8 @@ export default async function handler(req, res) {
     }
 
     // Office → copy+convert → export PDF → delete temp
-    const gMime = OFFICE_TO_GOOGLE[mimeType];
+    // Ελέγχουμε πρώτα τον mimeType, αν δεν ταιριάζει δοκιμάζουμε την κατάληξη
+    const gMime = OFFICE_TO_GOOGLE[mimeType] || EXT_TO_GOOGLE[ext] || null;
     if (gMime) {
       const copy = await drive.files.copy({
         fileId: id,
