@@ -51,6 +51,7 @@ function buildItems(reg) {
       folderId: f.folderId, visibility: f.visibility,
       publishedAt: f.publishedAt || new Date().toISOString(),
       mimeType: f.mimeType || '',
+      shareMessage: f.shareMessage || '',
     }));
 }
 
@@ -104,7 +105,7 @@ export default async function handler(req, res) {
 
     /* ── POST: ορισμός visibility + inbox push ── */
     if (req.method === 'POST') {
-      const { id, visibility } = req.body || {};
+      const { id, visibility, message } = req.body || {};
       if (!id || !visibility) return res.status(400).json({ error: 'Missing data' });
       const idx = reg.files.findIndex(f => f.id === id);
       if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -114,6 +115,8 @@ export default async function handler(req, res) {
       reg.files[idx].visibility = visibility;
       reg.files[idx].published = visibility !== 'none';
       reg.files[idx].publishedAt = visibility !== 'none' ? new Date().toISOString() : null;
+      // Αποθήκευση μηνύματος στο registry
+      if (message !== undefined) reg.files[idx].shareMessage = message || '';
 
       if (visibility !== 'none') {
         const shareResult = await sharePublic(drive, id);
@@ -141,6 +144,7 @@ export default async function handler(req, res) {
           fileId: id, fileName: file.name,
           fromEmail: myEmail, fromName: myName,
           visibility, sentAt: Date.now(), seen: false,
+          message: message || '',
         };
         const conns = await kv.get(`conn:${myEmail}`) || [];
         let recipients = [];
