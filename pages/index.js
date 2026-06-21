@@ -1480,13 +1480,17 @@ export default function Home() {
                           <div style={{ flexShrink:0, fontSize:18 }}>📄</div>
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.fileName?.length > 20 ? item.fileName.slice(0,20)+'…' : item.fileName}</div>
-                            <div style={{ fontSize:11, color:'#6b6b80' }}>από {item.fromName||item.fromEmail} · {new Date(item.sentAt).toLocaleDateString('el-GR')}</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
+                              {(()=>{ const tc=tagColor(item.fromEmail||''); return <span style={{ fontSize:10, fontWeight:600, padding:'1px 8px', borderRadius:999, background:tc.bg, color:tc.text, whiteSpace:'nowrap' }}>📚 {(item.fromName||item.fromEmail||'').split('@')[0]}</span>; })()}
+                              <span style={{ fontSize:10, color:'#aeaeb8' }}>{new Date(item.sentAt).toLocaleDateString('el-GR')}</span>
+                            </div>
                           </div>
                           {!item.seen && <span style={{ width:8, height:8, borderRadius:'50%', background:'#dc2626', flexShrink:0 }} />}
                           <span style={{ fontSize:11, color:'#aeaeb8', flexShrink:0, transition:'transform 0.15s', transform: isExp ? 'rotate(180deg)' : 'none' }}>▼</span>
                         </div>
                         {isExp && (
                           <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
+                            {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, marginBottom:4, lineHeight:1.5 }}>💬 {item.message}</div>}
                             <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
                               <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/file/d/${item.fileId}/preview`, '_blank'); }}
                                 style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
