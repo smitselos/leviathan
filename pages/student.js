@@ -93,10 +93,8 @@ function PublicView({teacher,isMobile}){
 
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
-    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?id='+f.id+'&export=download')}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     window.open(url,'_blank');
   };
@@ -274,10 +272,8 @@ function StudentView({myEmail,isMobile,router}){
   const openFile=(f)=>{
     markSeen(f.id);
     const isHtml=/\.html?$/i.test(f.name);
-    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?id='+f.id+'&export=download')}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f,previewUrl:url});
