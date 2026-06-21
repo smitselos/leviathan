@@ -162,6 +162,7 @@ function PublicView({teacher,isMobile,hasSession}){
                 </div>
                 {isExp&&(
                   <div style={{padding:'0 14px 12px',borderTop:'1px solid rgba(0,0,0,0.04)'}}>
+                    {f.shareMessage&&<div style={{fontSize:12,color:'#1a7f37',background:'#f0fdf4',padding:'8px 10px',borderRadius:8,marginTop:8,lineHeight:1.5}}>💬 {f.shareMessage}</div>}
                     {f.info&&<div style={{fontSize:12,color:P.cream.deep,padding:'8px 0 6px',lineHeight:1.5}}>ℹ️ {f.info}</div>}
                     <div style={{display:'flex',gap:6,marginTop:6,flexWrap:'wrap',alignItems:'center'}}>
                       <button onClick={()=>openFile(f)} style={S.openBtn}>Άνοιγμα</button>
@@ -428,6 +429,7 @@ function StudentView({myEmail,isMobile,router}){
                         </div>
                         {isExp&&(
                           <div style={{padding:'0 14px 12px',borderTop:'1px solid rgba(0,0,0,0.04)'}}>
+                            {f.shareMessage&&<div style={{fontSize:12,color:'#1a7f37',background:'#f0fdf4',padding:'8px 10px',borderRadius:8,marginTop:8,lineHeight:1.5}}>💬 {f.shareMessage}</div>}
                             {f.info&&<div style={{fontSize:12,color:P.cream.deep,padding:'8px 0 6px',lineHeight:1.5}}>ℹ️ {f.info}</div>}
                             <div style={{display:'flex',gap:6,marginTop:6,flexWrap:'wrap',alignItems:'center'}}>
                               <button onClick={()=>openFile(f)} style={S.openBtn}>Άνοιγμα</button>
@@ -619,6 +621,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
                       {(f.tags||[]).slice(0,3).map(t=>{const c=tagColor(t);return<span key={t} style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:c.bg,color:c.text}}>#{t}</span>;})}
                     </div>
                     {f.info&&<div style={{fontSize:11,color:P.cream.deep,marginTop:4,lineHeight:1.4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>ℹ️ {trunc(f.info,isMobile?40:60)}</div>}
+                    {f.shareMessage&&<div style={{fontSize:11,color:'#1a7f37',marginTop:3,lineHeight:1.4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>💬 {trunc(f.shareMessage,isMobile?40:60)}</div>}
                   </div>
                   <button onClick={e=>{e.stopPropagation();setQrFile(f);}} style={{background:'none',border:'1px solid #e0e0e0',borderRadius:8,padding:'5px 7px',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}} title="QR Code">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b80" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>

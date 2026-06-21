@@ -186,6 +186,7 @@ export default function Home() {
   const [liveSending, setLiveSending] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
   const [visibilityPicker, setVisibilityPicker] = useState(null);
+  const [shareMessage, setShareMessage] = useState('');
   const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[], inbox:[], unseenCount:0 });
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
   const [networkLoading, setNetworkLoading] = useState(false);
@@ -596,14 +597,16 @@ export default function Home() {
   const setVisibility = async (id, visibility) => {
     setPublishing(true);
     try {
-      const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, visibility }) });
+      const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, visibility, message: shareMessage.trim() || undefined }) });
       if (r.ok) setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none' } : f));
     } catch(e) {}
     setPublishing(false);
     setVisibilityPicker(null);
+    setShareMessage('');
   };
   const togglePublish = (id) => {
-    setVisibilityPicker(id); // πάντα άνοιγε picker
+    setShareMessage('');
+    setVisibilityPicker(id);
   };
   const openNetwork = async () => {
     setActiveView('network');
@@ -1909,7 +1912,7 @@ export default function Home() {
         };
 
         return (
-          <div onClick={()=>setVisibilityPicker(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div onClick={()=>{setVisibilityPicker(null);setShareMessage('');}} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
             <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'24px 20px', maxWidth:360, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', maxHeight:'90vh', overflowY:'auto' }}>
               <div style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Ορατό σε…</div>
               <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16 }}>Επίλεξε ποιος θα βλέπει αυτό το αρχείο. Μπορείς να επιλέξεις πολλούς χρήστες.</div>
@@ -1959,6 +1962,14 @@ export default function Home() {
               </>}
               {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις — πήγαινε στα Δίκτυα.</div>}
 
+              {/* Μήνυμα προς παραλήπτες */}
+              <div style={{ marginTop:10 }}>
+                <div style={{ fontSize:11, color:'#6b6b80', fontWeight:600, marginBottom:4 }}>💬 Μήνυμα (προαιρετικό)</div>
+                <textarea value={shareMessage} onChange={e => setShareMessage(e.target.value)}
+                  placeholder="π.χ. Δείτε το κείμενο και ετοιμάστε σχόλια…"
+                  rows={2} style={{ width:'100%', padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:13, resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+              </div>
+
               <div style={{ height:1, background:'#f0f0f0', margin:'12px 0 8px' }} />
               {curV !== 'none' && (
                 <button onClick={()=>setVisibility(visibilityPicker, 'none')}
@@ -1970,7 +1981,7 @@ export default function Home() {
                   </div>
                 </button>
               )}
-              <button onClick={()=>setVisibilityPicker(null)} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Κλείσιμο</button>
+              <button onClick={()=>{setVisibilityPicker(null);setShareMessage('');}} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Κλείσιμο</button>
             </div>
           </div>
         );
