@@ -97,7 +97,7 @@ function EmbedFrame({ src, title, style }) {
   const [blocked, setBlocked] = useState(false);
   const isExternal = src && !src.startsWith('/');
   useEffect(() => { setBlocked(false); }, [src]);
-  if (!isExternal) return <iframe src={src} style={style} title={title} />;
+  if (!isExternal) return <iframe src={src} style={{ ...style, width:'100%', height:'100%' }} title={title} />;
   return (
     <div style={{ position:'relative', width:'100%', height:'100%' }}>
       <iframe src={src} style={{ ...style, width:'100%', height:'100%' }} title={title}
