@@ -1492,7 +1492,15 @@ export default function Home() {
                           <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
                             {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, marginBottom:4, lineHeight:1.5 }}>💬 {item.message}</div>}
                             <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                              <button onClick={()=>{ markInboxSeen(item.fileId); const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||''); window.open(isOff?`https://docs.google.com/gview?url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+item.fileId)}`:`https://drive.google.com/file/d/${item.fileId}/preview`, '_blank'); }}
+                              <button onClick={()=>{
+                                markInboxSeen(item.fileId);
+                                const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||'');
+                                const pUrl=isOff
+                                  ?`https://docs.google.com/gview?url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+item.fileId)}&embedded=true`
+                                  :`https://drive.google.com/file/d/${item.fileId}/preview`;
+                                setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
+                                setShowMetaPanel(false);
+                              }}
                                 style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
                               <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
                                 style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
@@ -1624,7 +1632,7 @@ export default function Home() {
                 <span style={{ fontSize:11, color:'#6b6b80', minWidth:32, textAlign:'center', cursor:'pointer' }} onClick={()=>setMobileZoom(1)}>{Math.round(mobileZoom*100)}%</span>
                 <button onClick={()=>setMobileZoom(z=>Math.min(2,z+0.1))} style={S.zoomBtn}>+</button>
               </div>
-              <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Νέα καρτέλα">↗</button>
+              <button onClick={()=>window.open(viewing.previewUrl||'/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Νέα καρτέλα">↗</button>
             </div>
             {/* Action toolbar */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-around', padding:'6px 8px', borderBottom:'1px solid #f0f0f0', background:PALETTE.cream.bgSoft, flexShrink:0 }}>
@@ -1651,7 +1659,7 @@ export default function Home() {
             </div>
             {/* File content — fit-to-width via transform scale */}
             <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', position:'relative' }}>
-              <iframe src={'/api/file/'+viewing.id}
+              <iframe src={viewing.previewUrl||'/api/file/'+viewing.id}
                 style={{
                   border:'none', display:'block',
                   width: (100/mobileZoom)+'%',
@@ -1669,18 +1677,18 @@ export default function Home() {
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', gap:10 }}>
                 <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <button onClick={()=>window.open('/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
-                  {getEditUrl(viewing) && <button onClick={()=>window.open(getEditUrl(viewing),'_blank')} style={{ ...S.iconBtn, color:'#1a73e8' }} title="Επεξεργασία στο Google">
+                  <button onClick={()=>window.open(viewing.previewUrl||'/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
+                  {!viewing.isInbox && getEditUrl(viewing) && <button onClick={()=>window.open(getEditUrl(viewing),'_blank')} style={{ ...S.iconBtn, color:'#1a73e8' }} title="Επεξεργασία στο Google">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                   </button>}
-                  <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Επεξεργασία">
+                  {!viewing.isInbox && <button onClick={()=>setShowMetaPanel((p)=>!p)} style={{ ...S.iconBtn, background:showMetaPanel?PALETTE.peach.bgSoft:'#f4f4f4', borderColor:showMetaPanel?PALETTE.peach.deep:'#e0e0e0', color:showMetaPanel?PALETTE.peach.deep:'#444' }} title="Επεξεργασία">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
+                  </button>}
                   <button onClick={()=>setViewing(null)} style={S.closeBtn} title="Κλείσιμο">✕</button>
                 </div>
               </div>
               <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-                <iframe src={'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
+                <iframe src={viewing.previewUrl||'/api/file/'+viewing.id} style={{ flex:1, border:'none', minWidth:0 }} title={viewing.name} />
                 {showMetaPanel && (
                   <div style={{ flex:'0 0 50%', borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
