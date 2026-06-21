@@ -94,9 +94,11 @@ function PublicView({teacher,isMobile,hasSession}){
 
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
-    const url=isHtml
-      ?`/api/student-file?id=${f.id}`
-      :`https://drive.google.com/file/d/${f.id}/preview`;
+    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    let url;
+    if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/student-file?id='+f.id)}`;
+    else url=`https://drive.google.com/file/d/${f.id}/preview`;
     window.open(url,'_blank');
   };
 
@@ -279,7 +281,7 @@ function StudentView({myEmail,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/doc-proxy?id='+f.id)}`;
+    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/student-file?id='+f.id)}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f,previewUrl:url});
@@ -616,7 +618,11 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 
   const openFile=f=>{
     const isHtml=/\.html?$/i.test(f.name);
-    const url=isHtml?`/api/student-file?id=${f.id}`:`https://drive.google.com/file/d/${f.id}/preview`;
+    const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    let url;
+    if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/student-file?id='+f.id)}`;
+    else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f, previewUrl:url});
   };
