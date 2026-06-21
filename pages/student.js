@@ -97,8 +97,7 @@ function PublicView({teacher,isMobile,hasSession}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice && hasSession) url=`/api/file/${f.id}`;
-    else if(isOffice) url=`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent('https://drive.google.com/uc?export=download&confirm=t&id='+f.id)}`;
+    else if(isOffice) { window.open(`https://drive.google.com/file/d/${f.id}/view`, '_blank'); return; }
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     window.open(url,'_blank');
   };
@@ -282,7 +281,7 @@ function StudentView({myEmail,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`/api/file/${f.id}`;
+    else if(isOffice) { window.open(`https://drive.google.com/file/d/${f.id}/view`,'_blank'); return; }
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f,previewUrl:url});
@@ -329,15 +328,8 @@ function StudentView({myEmail,isMobile,router}){
     if(!file)return;
     const conns=network.connections||[];
     if(conns.length===0){alert('Δεν έχεις συνδέσεις.');return;}
-    if(conns.length===1){
-      // Μόνο μια σύνδεση — στείλε κατευθείαν
-      setPendingFile(file);
-      setSendRecipients([conns[0].email]);
-      doSend(file,[conns[0].email]);
-    } else {
-      setPendingFile(file);
-      setSendRecipients(conns.map(c=>c.email)); // default: all selected
-    }
+    setPendingFile(file);
+    setSendRecipients(conns.length===1?[conns[0].email]:conns.map(c=>c.email));
     e.target.value='';
   };
 
@@ -538,7 +530,7 @@ function StudentView({myEmail,isMobile,router}){
       )}
 
       {/* Recipient picker modal */}
-      {pendingFile&&(network.connections||[]).length>1&&(
+      {pendingFile&&(network.connections||[]).length>0&&(
         <div onClick={()=>{setPendingFile(null);setSendRecipients([]);}} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
           <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'24px 20px',maxWidth:360,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.25)',maxHeight:'80vh',overflowY:'auto'}}>
             <div style={{fontSize:16,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>Αποστολή σε…</div>
@@ -629,7 +621,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`/api/file/${f.id}`;
+    else if(isOffice) { window.open(`https://drive.google.com/file/d/${f.id}/view`,'_blank'); return; }
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing(f);
@@ -640,7 +632,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   if(viewing&&!isMobile){
     const isHtml=/\.html?$/i.test(viewing.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(viewing.name);
-    const driveUrl=isHtml?`/api/student-file?id=${viewing.id}`:isOffice?`/api/file/${viewing.id}`:`https://drive.google.com/file/d/${viewing.id}/preview`;
+    const driveUrl=isHtml?`/api/student-file?id=${viewing.id}`:isOffice?`https://drive.google.com/file/d/${viewing.id}/preview`:`https://drive.google.com/file/d/${viewing.id}/preview`;
     return(
       <div style={S.app}><Head><title>{viewing.name}</title></Head><style>{css}</style>
         <TeacherSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={goHome} goBack={goBack} hasSession={hasSession}/>
