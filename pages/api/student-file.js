@@ -34,9 +34,10 @@ export default async function handler(req, res) {
     }
 
     if (isOffice) {
-      // Google Docs Viewer — πολύ πιο ελαφρύ από Drive preview, δεν χρειάζεται cookies
-      const viewUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(downloadUrl)}`;
-      return res.redirect(302, viewUrl);
+      // Serve raw bytes — Office Online will fetch this URL and render the document
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, s-maxage=300');
+      return res.status(200).send(buffer);
     }
 
     // Fallback: serve raw
