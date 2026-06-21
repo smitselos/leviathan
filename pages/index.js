@@ -1496,7 +1496,7 @@ export default function Home() {
                                 markInboxSeen(item.fileId);
                                 const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||'');
                                 const pUrl=isOff
-                                  ?`https://docs.google.com/gview?url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+item.fileId)}&embedded=true`
+                                  ?`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/doc-proxy?id='+item.fileId)}`
                                   :`https://drive.google.com/file/d/${item.fileId}/preview`;
                                 setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
                                 setShowMetaPanel(false);
@@ -1669,6 +1669,17 @@ export default function Home() {
                 }}
                 title={viewing.name} />
             </div>
+          </div>
+        ) : viewing.isInbox ? (
+          /* ── Desktop: full-page inline viewer for inbox items ── */
+          <div style={{ position:'fixed', inset:0, background:'#fff', zIndex:200, display:'flex', flexDirection:'column' }}>
+            <div style={{ display:'flex', alignItems:'center', padding:'10px 16px', borderBottom:'1px solid #ebebeb', gap:12, flexShrink:0 }}>
+              <button onClick={()=>setViewing(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#444', padding:'4px 8px' }}>← Πίσω</button>
+              <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, color:'#1a1a1a' }}>{viewing.name}</strong>
+              <button onClick={()=>window.open(viewing.previewUrl,'_blank')} style={S.iconBtn} title="Νέα καρτέλα">↗</button>
+              <button onClick={()=>window.open(`https://drive.google.com/uc?id=${viewing.id}&export=download`,'_blank')} style={S.iconBtn} title="Λήψη">⬇</button>
+            </div>
+            <iframe src={viewing.previewUrl} style={{ flex:1, border:'none', width:'100%' }} title={viewing.name} />
           </div>
         ) : (
           /* ── Desktop: modal viewer ── */
