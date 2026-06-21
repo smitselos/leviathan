@@ -1494,7 +1494,11 @@ export default function Home() {
                             <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
                               <button onClick={()=>{
                                 markInboxSeen(item.fileId);
-                                setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:'/api/file/'+item.fileId, isInbox:true });
+                                const isHtml=/\.html?$/i.test(item.fileName||'');
+                                const pUrl=isHtml
+                                  ?`/api/student-file?id=${item.fileId}`
+                                  :`https://drive.google.com/file/d/${item.fileId}/preview`;
+                                setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
                                 setShowMetaPanel(false);
                               }}
                                 style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>

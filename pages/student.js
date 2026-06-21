@@ -93,7 +93,11 @@ function PublicView({teacher,isMobile,hasSession}){
   },[files,search]);
 
   const openFile=(f)=>{
-    window.open(`/api/student-file?id=${f.id}`,'_blank');
+    const isHtml=/\.html?$/i.test(f.name);
+    const url=isHtml
+      ?`/api/student-file?id=${f.id}`
+      :`https://drive.google.com/file/d/${f.id}/preview`;
+    window.open(url,'_blank');
   };
 
   const getFileUrl=(f)=>{
@@ -611,7 +615,8 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const filtered=useMemo(()=>{let r=[...files];if(activeTag)r=r.filter(f=>(f.tags||[]).includes(activeTag));if(search.trim()){const q=search.toLowerCase();r=r.filter(f=>f.name.toLowerCase().includes(q)||(f.tags||[]).some(t=>t.toLowerCase().includes(q)));}return r;},[files,search,activeTag]);
 
   const openFile=f=>{
-    const url='/api/file/'+f.id;
+    const isHtml=/\.html?$/i.test(f.name);
+    const url=isHtml?`/api/student-file?id=${f.id}`:`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f, previewUrl:url});
   };
