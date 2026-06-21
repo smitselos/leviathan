@@ -51,8 +51,6 @@ export default async function handler(req, res) {
     const baseName = name.replace(/\.[^.]+$/, '');
     const ext = (name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
 
-    console.error('[file] DEBUG id=%s name=%s mimeType=%s ext=%s', id, name, mimeType, ext);
-
     // Google native → export PDF
     if (GOOGLE_EXPORT.includes(mimeType)) {
       const exp = await drive.files.export(
@@ -96,7 +94,6 @@ export default async function handler(req, res) {
     }
 
     // Όλα τα υπόλοιπα (PDF, εικόνες) → ως έχουν
-    console.error('[file] CATCH-ALL id=%s name=%s mimeType=%s ext=%s — serving raw', id, name, mimeType, ext);
     const dl = await drive.files.get({ fileId: id, alt: 'media' }, { responseType: 'arraybuffer' });
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(name)}"`);
