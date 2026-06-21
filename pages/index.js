@@ -1499,7 +1499,7 @@ export default function Home() {
                                 const pUrl=isHtml
                                   ?`/api/student-file?id=${item.fileId}`
                                   :isOff
-                                  ?`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin+'/api/student-file?id='+item.fileId)}`
+                                  ?`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+item.fileId)}`
                                   :`https://drive.google.com/file/d/${item.fileId}/preview`;
                                 setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
                                 setShowMetaPanel(false);
