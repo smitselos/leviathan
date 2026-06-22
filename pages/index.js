@@ -1002,8 +1002,8 @@ export default function Home() {
                           zIndex: isExpanded ? 50 : (isBefore ? idx : hasExpanded ? idx : idx+1),
                           marginTop: mt,
                           borderRadius:22, cursor:'pointer',
-                          padding: item.type==='stat' ? '20px 22px' : '16px 20px',
-                          minHeight: item.type==='stat' ? 115 : 90,
+                          padding: item.type==='stat' ? '20px 22px' : '20px 22px',
+                          minHeight: item.type==='stat' ? 115 : 115,
                           background:`linear-gradient(135deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
                           boxShadow: isExpanded
                             ? '0 14px 44px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.12)'
@@ -1036,7 +1036,7 @@ export default function Home() {
                           </>
                         ) : (
                           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                            <div style={{ width:42, height:42, borderRadius:12, background:p.accent, color:p.deep, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{Icon.folder}</div>
+                            <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
                             <div style={{ flex:1 }}>
                               <div style={{ fontSize:16, fontWeight:700, color:p.text, marginBottom:2 }}>{item.name}</div>
                               <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
@@ -1106,7 +1106,7 @@ export default function Home() {
                         const p = PALETTE[TONES[i % TONES.length]];
                         return (
                           <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
-                            style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, transparent 65%), ${p.bg}` }}>
+                            style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
                             <div style={S.folderTop}>
                               <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
                             </div>
@@ -2500,7 +2500,7 @@ const S = {
   statIcon:{ width:44, height:44, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   section:{ marginBottom:44 },
   secTitle:{ fontSize:17, fontWeight:600, color:'#1a1a1a', marginBottom:18, letterSpacing:'-0.01em' },
-  cardsGrid:{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:14 },
+  cardsGrid:{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:18 },
   folderCard:{ borderRadius:22, padding:'22px 24px', border:'none', cursor:'pointer', minHeight:170, display:'flex', flexDirection:'column', transition:'transform 0.2s,box-shadow 0.2s' },
   folderTop:{ marginBottom:14, display:'flex', alignItems:'flex-start', justifyContent:'space-between' },
   folderIcon:{ width:48, height:48, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center' },
