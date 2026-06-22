@@ -5,16 +5,11 @@ import { useRouter } from 'next/router';
 
 // ── Energy Insights palette (από το παλιό ΛΕΒΙΑΘΑΝ) ──
 const PALETTE = {
-  cream:      { bg:'#f7f3e8', bgSoft:'#fcf9f0', accent:'#e9e0c8', text:'#3d3a2e', deep:'#8a7d4a' },
-  peach:      { bg:'#fae0cc', bgSoft:'#fdf0e4', accent:'#f0c4a0', text:'#5c3826', deep:'#c97b5a' },
-  mustard:    { bg:'#f0e4a8', bgSoft:'#f8f0c8', accent:'#d9be52', text:'#4a3f1a', deep:'#a68a2e' },
-  sage:       { bg:'#e2e8d5', bgSoft:'#eef2e6', accent:'#c2cfa8', text:'#3a4230', deep:'#7a8a5c' },
-  terracotta: { bg:'#f0d4c4', bgSoft:'#f8e6da', accent:'#e0ab8e', text:'#5e3826', deep:'#bd6f4e' },
-  sky:        { bg:'#d8e4e8', bgSoft:'#e8f0f2', accent:'#aecbd4', text:'#2e4248', deep:'#5e8590' },
-  rose:       { bg:'#f0dce0', bgSoft:'#f8ecee', accent:'#e0b8c0', text:'#553038', deep:'#b06a78' },
-  olive:      { bg:'#e8e6cc', bgSoft:'#f2f0de', accent:'#ccc794', text:'#43421f', deep:'#8f8a48' },
+  cream:   { bg:'#f7f3e8', bgSoft:'#fcf9f0', accent:'#e9e0c8', text:'#3d3a2e', deep:'#8a7d4a' },
+  peach:   { bg:'#fae0cc', bgSoft:'#fdf0e4', accent:'#f0c4a0', text:'#5c3826', deep:'#c97b5a' },
+  mustard: { bg:'#f0e4a8', bgSoft:'#f8f0c8', accent:'#d9be52', text:'#4a3f1a', deep:'#a68a2e' },
 };
-const TONES = ['cream', 'peach', 'mustard', 'sage', 'terracotta', 'sky', 'rose', 'olive'];
+const TONES = ['cream', 'peach', 'mustard'];
 
 const SUGGESTED_TAGS = [
   'Γλώσσα','Λογοτεχνία','Ιστορία','Αρχαία','Λατινικά',
@@ -979,11 +974,11 @@ export default function Home() {
                     const isBefore = hasExpanded && idx < expandedIdx;
                     const isAfter = hasExpanded && idx > expandedIdx;
 
-                    let mt = idx === 0 ? 0 : -36;
+                    let mt = idx === 0 ? 0 : -52;
                     let ty = 0;
                     if (isExpanded)     { mt = idx===0 ? 0 : 16; ty = -8; }
-                    else if (isBefore)  { mt = idx===0 ? 0 : -48; ty = -4; }
-                    else if (isAfter)   { mt = -48; ty = 40; }
+                    else if (isBefore)  { mt = idx===0 ? 0 : -60; ty = -4; }
+                    else if (isAfter)   { mt = -60; ty = 40; }
 
                     const cardClick = () => {
                       if (isExpanded) {
