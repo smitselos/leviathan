@@ -22,6 +22,8 @@ const Ic={
   out:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   user:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   book:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  dashboard:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>,
+  globe:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
   login:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>,
 };
 
@@ -225,6 +227,11 @@ function StudentView({myEmail,isMobile,router}){
   const [pendingFile,setPendingFile]=useState(null);
   const [sendRecipients,setSendRecipients]=useState([]);
   const [inboxFrom,setInboxFrom]=useState('__all__'); // φίλτρο εισερχομένων ανά αποστολέα
+  const [publicView,setPublicView]=useState(false); // προβολή «Ανοιχτή πρόσβαση» (δημόσιο υλικό όλων των εκπαιδευτικών)
+  const [publicFiles,setPublicFiles]=useState([]);
+  const [publicFrom,setPublicFrom]=useState('__all__'); // φίλτρο δημόσιου υλικού ανά εκπαιδευτικό
+  const [loadingPublic,setLoadingPublic]=useState(false);
+  const [expandedPub,setExpandedPub]=useState(null);
 
   const myName=myEmail;
 
@@ -265,6 +272,28 @@ function StudentView({myEmail,isMobile,router}){
   },[myEmail]);
 
   useEffect(()=>{loadAll();const iv=setInterval(loadAll,30000);return()=>clearInterval(iv);},[loadAll]);
+
+  // Φόρτωση δημόσιου υλικού ΟΛΩΝ των συνδεδεμένων εκπαιδευτικών
+  const loadPublicFiles=useCallback(async()=>{
+    setLoadingPublic(true);
+    try{
+      const conns=network.connections||[];
+      const all=[];
+      await Promise.all(conns.map(async c=>{
+        try{
+          const r=await fetch(`/api/publish?email=${encodeURIComponent(c.email)}&visitor=${encodeURIComponent(myEmail)}`);
+          if(!r.ok)return;
+          const d=await r.json();
+          (d.items||[]).filter(f=>f.visibility==='public').forEach(f=>all.push({...f,fromEmail:c.email,fromName:c.name||c.email}));
+        }catch{}
+      }));
+      all.sort((a,b)=>(b.publishedAt||b.addedAt||'').localeCompare(a.publishedAt||a.addedAt||''));
+      setPublicFiles(all);
+    }catch{}
+    setLoadingPublic(false);
+  },[network.connections,myEmail]);
+
+  const openPublicView=()=>{ setViewing(null); setPublicView(true); loadPublicFiles(); };
 
   const unseenCount=useMemo(()=>incoming.filter(f=>!seenIds.has(f.id)).length,[incoming,seenIds]);
 
@@ -354,12 +383,89 @@ function StudentView({myEmail,isMobile,router}){
     setSendRecipients(prev=>prev.includes(email)?prev.filter(e=>e!==email):[...prev,email]);
   };
 
+  // ── Προβολή «Ανοιχτή πρόσβαση»: δημόσιο υλικό όλων των εκπαιδευτικών ──
+  if(publicView && !viewing){
+    const teacherList=(network.connections||[]).filter(c=>publicFiles.some(f=>f.fromEmail===c.email));
+    const shown=publicFiles.filter(f=>publicFrom==='__all__'||f.fromEmail===publicFrom);
+    return(
+      <div style={S.app}><Head><title>Ανοιχτή πρόσβαση — ΛΕΒΙΑΘΑΝ</title></Head><style>{css}</style>
+        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setPublicView(false);setViewing(null);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} activePublic/>}
+        <div className="student-main" style={{...S.main,marginLeft:!isMobile?(sidebarOpen?220:56):0}}>
+          {isMobile&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff'}}><span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>ΛΕΒΙΑΘΑΝ</span></div>}
+          <div style={S.container}>
+            <div style={{marginBottom:18}}>
+              <h1 style={{fontSize:20,fontWeight:600,color:'#1a1a1a',marginBottom:4}}>🌐 Ανοιχτή πρόσβαση</h1>
+              <p style={{fontSize:13,color:'#6b6b80',margin:0}}>Δημόσιο υλικό από τους εκπαιδευτικούς σου</p>
+            </div>
+
+            {/* Φίλτρο ανά εκπαιδευτικό */}
+            {teacherList.length>0&&(
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:11,fontWeight:700,color:P.cream.deep,textTransform:'uppercase',letterSpacing:0.4,marginBottom:6}}>Εμφάνιση υλικού</div>
+                <select value={publicFrom} onChange={e=>setPublicFrom(e.target.value)}
+                  style={{width:'100%',maxWidth:420,padding:'10px 12px',border:'1px solid #e0e0e0',borderRadius:10,fontSize:isMobile?16:13,background:'#fff',color:'#1a1a1a',cursor:'pointer'}}>
+                  <option value="__all__">Όλοι οι εκπαιδευτικοί</option>
+                  {teacherList.map(c=>(
+                    <option key={c.email} value={c.email}>{c.name||c.email.split('@')[0]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {loadingPublic&&<div style={S.empty}>Φόρτωση…</div>}
+            {!loadingPublic&&(network.connections||[]).length===0&&<div style={S.empty}>Δεν είσαι συνδεδεμένος με κανέναν εκπαιδευτικό ακόμη.</div>}
+            {!loadingPublic&&(network.connections||[]).length>0&&shown.length===0&&<div style={S.empty}>Δεν υπάρχει δημόσιο υλικό προς εμφάνιση.</div>}
+
+            {!loadingPublic&&shown.length>0&&(
+              <div style={{display:'flex',flexDirection:'column',gap:6,maxWidth:560}}>
+                {shown.map((f,i)=>{
+                  const isExp=expandedPub===(f.id+f.fromEmail+i);
+                  const tc=tagColor(f.fromEmail||'');
+                  return(
+                    <div key={f.id+f.fromEmail+i} style={{background:'#fff',border:'1px solid #ebebeb',borderRadius:14,overflow:'hidden'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',cursor:'pointer'}} onClick={()=>setExpandedPub(isExp?null:f.id+f.fromEmail+i)}>
+                        <div style={{width:34,height:34,borderRadius:10,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>📄</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</div>
+                          <div style={{marginTop:2}}>
+                            <span style={{fontSize:10,fontWeight:600,padding:'1px 8px',borderRadius:999,background:tc.bg,color:tc.text,whiteSpace:'nowrap'}}>📚 {(f.fromName||f.fromEmail||'').split('@')[0]}</span>
+                          </div>
+                        </div>
+                        <span style={{fontSize:11,color:'#aeaeb8',flexShrink:0,transition:'transform 0.15s',transform:isExp?'rotate(180deg)':'none'}}>▼</span>
+                      </div>
+                      {isExp&&(
+                        <div style={{padding:'0 14px 12px',borderTop:'1px solid rgba(0,0,0,0.04)'}}>
+                          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+                            <button onClick={()=>openFile(f)} style={{padding:'7px 16px',borderRadius:10,border:'1.5px solid #8a7d4a',background:'transparent',color:'#5c4a1e',fontSize:12,fontWeight:600,cursor:'pointer'}}>Άνοιγμα →</button>
+                            <button onClick={()=>window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank')} style={{padding:'7px 12px',borderRadius:10,border:'1px solid #e0e0e0',background:'#f9f6ed',color:'#5c4a1e',fontSize:12,cursor:'pointer'}}>⬇ Λήψη</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        {isMobile&&(
+          <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
+            <MobBtn icon={Ic.dashboard} label="Πίνακας ελέγχου" onClick={()=>{setPublicView(false);setViewing(null);}}/>
+            <MobBtn icon={Ic.live} label="Live session" onClick={()=>window.open('/live','_blank')}/>
+            <MobBtn icon={Ic.globe} label="Ανοιχτή πρόσβαση" active onClick={openPublicView}/>
+            <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
+          </nav>
+        )}
+      </div>
+    );
+  }
+
   // Desktop viewer
   if(viewing&&!isMobile){
     const url=viewing.previewUrl||`https://drive.google.com/file/d/${viewing.id}/preview`;
     return(
       <div style={S.app}><Head><title>{viewing.name}</title></Head><style>{css}</style>
-        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>setViewing(null)} isMobile={isMobile} myEmail={myEmail}/>}
+        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setViewing(null);setPublicView(false);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView}/>}
         <div style={{...S.main,marginLeft:sidebarOpen?220:56}}>
           <div style={{display:'flex',alignItems:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff',gap:10}}>
             <button onClick={()=>setViewing(null)} style={{background:'none',border:'1px solid #ddd',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:13,color:'#444'}}>← Πίσω</button>
@@ -374,7 +480,7 @@ function StudentView({myEmail,isMobile,router}){
   // Main
   return(
     <div style={S.app}><Head><title>ΛΕΒΙΑΘΑΝ — Μαθητής</title></Head><style>{css}</style>
-      {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>setViewing(null)} isMobile={isMobile} myEmail={myEmail}/>}
+      {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setViewing(null);setPublicView(false);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView}/>}
       <div className="student-main" style={{...S.main,marginLeft:!isMobile?(sidebarOpen?220:56):0}}>
         {isMobile&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff'}}><span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>ΛΕΒΙΑΘΑΝ</span></div>}
 
@@ -535,9 +641,9 @@ function StudentView({myEmail,isMobile,router}){
       {/* Mobile bottom nav */}
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-          <MobBtn icon={Ic.home} label="Αρχική" active onClick={()=>setViewing(null)}/>
-          <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
-          <MobBtn icon={Ic.book} label="Βιβλιοθήκη" onClick={()=>window.open('/s/smitselos','_blank')}/>
+          <MobBtn icon={Ic.dashboard} label="Πίνακας ελέγχου" active onClick={()=>{setViewing(null);setPublicView(false);}}/>
+          <MobBtn icon={Ic.live} label="Live session" onClick={()=>window.open('/live','_blank')}/>
+          <MobBtn icon={Ic.globe} label="Ανοιχτή πρόσβαση" onClick={openPublicView}/>
           <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
         </nav>
       )}
@@ -735,16 +841,16 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 /* ══════════════════════════════════════════════════════════════
    SHARED COMPONENTS
    ══════════════════════════════════════════════════════════════ */
-function StudentSidebar({open,setOpen,goHome,isMobile,myEmail}){
+function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,activePublic}){
   return(
     <div style={{...S.sidebar,width:open?220:56}}>
       <div style={S.sidebarHeader}>{open&&<span style={{fontSize:15,fontWeight:500,color:'#ececec'}}>ΛΕΒΙΑΘΑΝ</span>}<button onClick={()=>setOpen(p=>!p)} style={S.collapseBtn}>{open?'◀':'▶'}</button></div>
       <nav style={S.nav}>
-        <button onClick={goHome} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.home}</span>{open&&'Αρχική'}</button>
+        <button onClick={goHome} style={{...S.navItem,...(activePublic?{}:S.navActive)}}><span style={S.navIcon}>{Ic.dashboard}</span>{open&&'Πίνακας ελέγχου'}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
+        <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live session'}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/s/smitselos','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
+        <button onClick={openPublic?openPublic:()=>window.open('/s/smitselos','_blank')} style={{...S.navItem,...(activePublic?S.navActive:{})}}><span style={S.navIcon}>{Ic.globe}</span>{open&&'Ανοιχτή πρόσβαση'}</button>
       </nav>
       <div style={S.sidebarFooter}>
         <div style={S.userCard}>

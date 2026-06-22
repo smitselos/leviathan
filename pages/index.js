@@ -91,6 +91,10 @@ const Icon = {
   collapseL:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
   collapseR:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
   live:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
+  book:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  filePdf: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h1.5a1.5 1.5 0 000-3H9v6"/><path d="M15.5 12H14v6M14 15h1.2"/></svg>,
+  send:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+  globe:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
 };
 
 function EmbedFrame({ src, title, style }) {
@@ -877,17 +881,17 @@ export default function Home() {
           </button>
         </div>
         <nav style={S.nav}>
-          <NavItem icon={Icon.home} label="Αρχική" active={activeView==='home'} onClick={goHome} />
-          <NavItem icon={Icon.netAdd} label="Δίκτυα Κειμένων" active={activeView==='netBuilder'}
+          <NavItem icon={Icon.book} label="Βιβλιοθήκη" active={activeView==='home'} onClick={goHome} />
+          <NavItem icon={Icon.filePdf} label="Δημιουργία pdf" active={activeView==='netBuilder'}
             onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.net} label="Τάξη" active={activeView==='network'} onClick={openNetwork}
+          <NavItem icon={Icon.net} label="Δίκτυο" active={activeView==='network'} onClick={openNetwork}
             badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.student} label="Το Υλικό μου" onClick={() => window.open('/student', '_blank')} />
-          <NavItem icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>} label="Βιβλιοθήκη" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
+          <NavItem icon={Icon.send} label="Απεσταλμένα" onClick={() => window.open('/student', '_blank')} />
+          <NavItem icon={Icon.globe} label="Ανοιχτή πρόσβαση" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
           {liveFile && (
             <>
               <div style={S.navDiv} />
@@ -919,13 +923,13 @@ export default function Home() {
       {isMobile && (
         <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:58, background:'#1a1a1a', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:150, borderTop:'1px solid rgba(255,255,255,0.08)', paddingBottom:'env(safe-area-inset-bottom,0)' }}>
           <button className="btm-item" onClick={goHome} style={{ color: activeView==='home'?'#ececec':'#8e8ea0' }}>
-            {Icon.home}<span style={{ fontSize:10 }}>Αρχική</span>
+            {Icon.book}<span style={{ fontSize:10 }}>Βιβλιοθήκη</span>
           </button>
           <button className="btm-item" onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} style={{ color: activeView==='netBuilder'?'#ececec':'#8e8ea0' }}>
-            {Icon.netAdd}<span style={{ fontSize:10 }}>Κείμενα</span>
+            {Icon.filePdf}<span style={{ fontSize:10 }}>Δημιουργία</span>
           </button>
           <button className="btm-item" onClick={openNetwork} style={{ color: activeView==='network'?'#ececec':'#8e8ea0', position:'relative' }}>
-            {Icon.net}<span style={{ fontSize:10 }}>Τάξη</span>
+            {Icon.net}<span style={{ fontSize:10 }}>Δίκτυο</span>
             {((networkData.received?.length||0)+(networkData.unseenCount||0)) > 0 && (
               <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {(networkData.received?.length||0)+(networkData.unseenCount||0)}
@@ -936,7 +940,7 @@ export default function Home() {
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
           <button className="btm-item" style={{ color:'#16a34a' }} onClick={() => window.open('/student', '_blank')}>
-            {Icon.student}<span style={{ fontSize:10 }}>Υλικό</span>
+            {Icon.send}<span style={{ fontSize:10 }}>Απεσταλμένα</span>
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
             {Icon.logout}<span style={{ fontSize:10 }}>Έξοδος</span>
