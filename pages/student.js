@@ -428,7 +428,7 @@ function StudentView({myEmail,isMobile,router}){
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</div>
                           <div style={{marginTop:2}}>
-                            <span style={{fontSize:10,fontWeight:600,padding:'1px 8px',borderRadius:999,background:tc.bg,color:tc.text,whiteSpace:'nowrap'}}>📚 {(f.fromName||f.fromEmail||'').split('@')[0]}</span>
+                            <span style={{fontSize:10,fontWeight:600,padding:'1px 8px',borderRadius:999,background:tc.bg,color:tc.text,whiteSpace:'nowrap',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',display:'inline-block'}} title={(f.fromName||f.fromEmail||'').split('@')[0]}>📚 {trunc((f.fromName||f.fromEmail||'').split('@')[0],20)}</span>
                           </div>
                         </div>
                         <span style={{fontSize:11,color:'#aeaeb8',flexShrink:0,transition:'transform 0.15s',transform:isExp?'rotate(180deg)':'none'}}>▼</span>

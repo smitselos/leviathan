@@ -1540,7 +1540,7 @@ export default function Home() {
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.fileName?.length > 20 ? item.fileName.slice(0,20)+'…' : item.fileName}</div>
                             <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
-                              {(()=>{ const tc=tagColor(item.fromEmail||''); return <span style={{ fontSize:10, fontWeight:600, padding:'1px 8px', borderRadius:999, background:tc.bg, color:tc.text, whiteSpace:'nowrap' }}>📚 {(item.fromName||item.fromEmail||'').split('@')[0]}</span>; })()}
+                              {(()=>{ const tc=tagColor(item.fromEmail||''); const raw=(item.fromName||item.fromEmail||'').split('@')[0]; return <span style={{ fontSize:10, fontWeight:600, padding:'1px 8px', borderRadius:999, background:tc.bg, color:tc.text, whiteSpace:'nowrap', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', display:'inline-block' }} title={raw}>📚 {trunc(raw, 20)}</span>; })()}
                               <span style={{ fontSize:10, color:'#aeaeb8' }}>{new Date(item.sentAt).toLocaleDateString('el-GR')}</span>
                             </div>
                           </div>
