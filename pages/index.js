@@ -1560,6 +1560,8 @@ export default function Home() {
                                   :isOff
                                   ?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`
                                   :`https://drive.google.com/file/d/${item.fileId}/preview`;
+                                // Κινητό → άνοιγμα κατευθείαν σε νέα καρτέλα (όλες οι σελίδες, χωρίς ενδιάμεσο modal)
+                                if(isMobile){ window.open(pUrl,'_blank'); return; }
                                 setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
                                 setShowMetaPanel(false);
                               }}
