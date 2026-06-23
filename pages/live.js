@@ -10,6 +10,30 @@ const TAG_COLORS = [
 ];
 const tagColor = (t) => TAG_COLORS[Math.abs([...t].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
 
+// Μετατροπή YouTube link → embed μορφή (ώστε να φορτώνει σε iframe)
+// Καλύπτει: youtu.be/ID · youtube.com/watch?v=ID · /shorts/ID · /live/ID · ήδη /embed/
+function toEmbedUrl(url) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace('www.', '');
+    let id = null;
+    if (host === 'youtu.be') id = u.pathname.slice(1);
+    else if (host.endsWith('youtube.com')) {
+      if (u.pathname === '/watch') id = u.searchParams.get('v');
+      else if (u.pathname.startsWith('/embed/')) return url; // ήδη embed
+      else if (u.pathname.startsWith('/shorts/')) id = u.pathname.split('/')[2];
+      else if (u.pathname.startsWith('/live/')) id = u.pathname.split('/')[2];
+    }
+    if (id) {
+      const t = u.searchParams.get('t') || u.searchParams.get('start');
+      const start = t ? `?start=${parseInt(t)||0}` : '';
+      return `https://www.youtube.com/embed/${id}${start}`;
+    }
+  } catch {}
+  return url;
+}
+
 export default function LivePage() {
   const router = useRouter();
   const [code, setCode] = useState('');
@@ -241,12 +265,15 @@ export default function LivePage() {
 /* ── LiveFrame: όλα σε iframe ── */
 function LiveFrame({ lnk }) {
   if (!lnk) return null;
-  const src = lnk.src && (/\.pdf$/i.test(lnk.name || '') || lnk.src.includes('student-file'))
-    ? (lnk.src.includes('#') ? lnk.src : lnk.src + '#toolbar=0&navpanes=0')
-    : lnk.src;
+  let src = lnk.src;
+  if (lnk.type === 'url') {
+    src = toEmbedUrl(lnk.src); // YouTube → embed
+  } else if (lnk.src && (/\.pdf$/i.test(lnk.name || '') || lnk.src.includes('student-file'))) {
+    src = lnk.src.includes('#') ? lnk.src : lnk.src + '#toolbar=0&navpanes=0';
+  }
   return (
     <iframe src={src} style={{ flex:1, border:'none', width:'100%', height:'100%' }}
-      title={lnk.name} allow="fullscreen" />
+      title={lnk.name} allow="fullscreen; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
   );
 }
 
