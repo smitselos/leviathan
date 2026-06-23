@@ -4,7 +4,7 @@
 // DELETE → { ok }         auth — αποδημοσίευση
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive, loadRegistry, saveRegistry } from '../../lib/drive';
+import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile } from '../../lib/drive';
 import { createClient } from '@vercel/kv';
 
 /* ── KV client ── */
@@ -52,6 +52,7 @@ function buildItems(reg) {
       publishedAt: f.publishedAt || new Date().toISOString(),
       mimeType: f.mimeType || '',
       shareMessage: f.shareMessage || '',
+      pdfId: f.pdfId || null, // PDF αντίγραφο για Office αρχεία (προβολή χωρίς auth)
     }));
 }
 
@@ -126,6 +127,13 @@ export default async function handler(req, res) {
             const fm = await drive.files.get({ fileId: id, fields: 'mimeType' });
             reg.files[idx].mimeType = fm.data.mimeType || '';
           } catch {}
+        }
+        // Για Office αρχεία → φτιάξε/βρες PDF αντίγραφο (προβολή χωρίς auth στη δημόσια σελίδα)
+        if (isOfficeFile(file.name)) {
+          try {
+            const pdfId = await ensurePdfCopy(drive, id, file.name);
+            reg.files[idx].pdfId = pdfId || null;
+          } catch { reg.files[idx].pdfId = null; }
         }
       } else {
         await unsharePublic(drive, id);
