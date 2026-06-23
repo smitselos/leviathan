@@ -98,7 +98,11 @@ function PublicView({teacher,isMobile,hasSession}){
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     if(isHtml){ window.open(`/api/student-file?id=${f.id}`,'_blank'); return; }
-    if(isOffice){ window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank'); return; }
+    if(isOffice){
+      // Αν υπάρχει PDF αντίγραφο (από τη δημοσίευση) → προβολή· αλλιώς λήψη
+      if(f.pdfId){ window.open(`https://drive.google.com/file/d/${f.pdfId}/preview`,'_blank'); return; }
+      window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank'); return;
+    }
     window.open(`https://drive.google.com/file/d/${f.id}/preview`,'_blank');
   };
 
@@ -309,7 +313,9 @@ function StudentView({myEmail,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`;
+    else if(isOffice) url = f.pdfId
+      ? `https://drive.google.com/file/d/${f.pdfId}/preview`   // έτοιμο PDF αντίγραφο
+      : `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`; // fallback on-the-fly
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){window.open(url,'_blank');return;}
     setViewing({...f,previewUrl:url});
