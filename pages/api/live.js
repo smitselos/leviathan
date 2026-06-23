@@ -4,7 +4,7 @@
 // DELETE → { ok }        auth — σταματά live
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive } from '../../lib/drive';
+import { getDrive, ensurePdfCopy, isOfficeFile } from '../../lib/drive';
 import { createClient } from '@vercel/kv';
 
 function getKV() {
@@ -47,19 +47,30 @@ export default async function handler(req, res) {
       const fileIds = [file.id, ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId)];
       await Promise.allSettled(fileIds.map(id => sharePublic(drive, id)));
 
-      const fileSrc = (id, name) =>
-        /\.html?$/i.test(name||'') ? `/api/student-file?id=${id}` : `https://drive.google.com/file/d/${id}/preview`;
+      // Για Office αρχεία → φτιάξε/βρες PDF αντίγραφο (προβάλλεται χωρίς auth, όλες οι σελίδες)
+      // HTML → student-file · PDF/εικόνες → Drive preview · Office → PDF copy preview
+      const resolveSrc = async (id, name) => {
+        if (/\.html?$/i.test(name||'')) return `/api/student-file?id=${id}`;
+        if (isOfficeFile(name)) {
+          const pdfId = await ensurePdfCopy(drive, id, name);
+          if (pdfId) return `https://drive.google.com/file/d/${pdfId}/preview`;
+        }
+        return `https://drive.google.com/file/d/${id}/preview`;
+      };
+
+      const mainSrc = await resolveSrc(file.id, file.name);
+      const resolvedLinks = await Promise.all((links || []).map(async l => ({
+        type: l.type, targetId: l.targetId, url: l.url, name: l.name,
+        src: l.type === 'url' ? l.url : await resolveSrc(l.targetId, l.name),
+      })));
 
       const liveData = {
         title: file.name,
-        src: fileSrc(file.id, file.name),
+        src: mainSrc,
         fileId: file.id,
         tags: file.tags || [],
         questions: file.questions || '',
-        links: (links || []).map(l => ({
-          type: l.type, targetId: l.targetId, url: l.url, name: l.name,
-          src: l.type === 'url' ? l.url : fileSrc(l.targetId, l.name),
-        })),
+        links: resolvedLinks,
         teacher: session.user?.name || session.user?.email || 'Εκπαιδευτικός',
         updatedAt: Date.now(),
       };
