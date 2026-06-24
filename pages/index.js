@@ -202,6 +202,12 @@ export default function Home() {
   const [liveUrlName, setLiveUrlName] = useState('');
   const [liveCenterCode, setLiveCenterCode] = useState(null);
   const [liveCenterBusy, setLiveCenterBusy] = useState(false);
+  const [liveCenterSection, setLiveCenterSection] = useState(null); // ποιος φάκελος/εφαρμογές ανοιχτός
+  const [createMenu, setCreateMenu] = useState(false); // μενού: Νέο / Συγχώνευση
+  const [newDocForm, setNewDocForm] = useState(false); // φόρμα νέου εγγράφου
+  const [newDocName, setNewDocName] = useState('');
+  const [newDocFolder, setNewDocFolder] = useState('');
+  const [newDocBusy, setNewDocBusy] = useState(false);
   const [inboxSaveTarget, setInboxSaveTarget] = useState(null); // fileId+i for which item shows folder picker
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
   const [contactInfo, setContactInfo] = useState({}); // { email: {firstName,lastName,email,school,roleTitle,phone,note} }
@@ -320,6 +326,28 @@ export default function Home() {
   const registerFiles = async (items) => {
     const r = await fetch('/api/registry', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ files: items }) });
     const d = await r.json(); if (d.files) setFiles(d.files);
+  };
+
+  // ── Νέο έγγραφο: δημιουργία κενού Google Doc → register → άνοιγμα για γράψιμο ──
+  const createNewDoc = async () => {
+    const name = newDocName.trim();
+    if (!name || !newDocFolder || newDocBusy) return;
+    setNewDocBusy(true);
+    try {
+      const meta = { name, mimeType: 'application/vnd.google-apps.document', parents: [newDocFolder] };
+      const res = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType',
+        { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken, 'Content-Type':'application/json' }, body: JSON.stringify(meta) });
+      const doc = await res.json();
+      if (doc.id) {
+        await registerFiles([{ id:doc.id, name:doc.name, mimeType:doc.mimeType, folderId:newDocFolder }]);
+        // Άνοιγμα Google Docs σε νέα καρτέλα για επεξεργασία
+        window.open(`https://docs.google.com/document/d/${doc.id}/edit`, '_blank');
+        setNewDocForm(false); setNewDocName(''); setNewDocFolder('');
+      } else {
+        alert('Σφάλμα δημιουργίας εγγράφου');
+      }
+    } catch (e) { alert('Σφάλμα: ' + e.message); }
+    setNewDocBusy(false);
   };
   const patchMeta = async (id, body) => {
     setMetaSaving(true);
@@ -917,8 +945,8 @@ export default function Home() {
         </div>
         <nav style={S.nav}>
           <NavItem icon={Icon.book} label="Βιβλιοθήκη" active={activeView==='home'} onClick={goHome} />
-          <NavItem icon={Icon.filePdf} label="Δημιουργία pdf" active={activeView==='netBuilder'}
-            onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} />
+          <NavItem icon={Icon.filePdf} label="Δημιουργία αρχείου" active={activeView==='netBuilder'}
+            onClick={() => setCreateMenu(true)} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.net} label="Δίκτυο" active={activeView==='network'} onClick={openNetwork}
             badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
@@ -1759,10 +1787,19 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Προσθήκη URL */}
+              {/* Προτεινόμενοι ιστότοποι (chips) */}
               <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🌐 Προσθήκη συνδέσμου</div>
-                <input value={liveUrlInput} onChange={e=>setLiveUrlInput(e.target.value)} placeholder="Επικόλλησε διεύθυνση (π.χ. YouTube, ιστοσελίδα)…"
+                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🌐 Ιστότοποι</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:12 }}>
+                  {allSuggestedUrls.filter(s => !liveItems.some(it=>it.url===s.url)).map((s) => (
+                    <button key={s.url} onClick={() => addLiveItem({ kind:'url', url:s.url, name:s.name })}
+                      style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fafafa', cursor:'pointer', fontSize:11, fontWeight:500, color:'#333' }}>
+                      + {s.name}
+                    </button>
+                  ))}
+                </div>
+                {/* Χειροκίνητο URL */}
+                <input value={liveUrlInput} onChange={e=>setLiveUrlInput(e.target.value)} placeholder="…ή επικόλλησε διεύθυνση (YouTube, σετ εφαρμογής, ιστοσελίδα)"
                   style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, marginBottom:8, boxSizing:'border-box' }} />
                 <div style={{ display:'flex', gap:8 }}>
                   <input value={liveUrlName} onChange={e=>setLiveUrlName(e.target.value)} placeholder="Όνομα (προαιρετικό)"
@@ -1771,27 +1808,61 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Προσθήκη αρχείου */}
+              {/* Αρχεία & Εφαρμογές — φάκελοι (όπως στο picker της κάρτας) */}
               <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>📄 Προσθήκη αρχείου</div>
-                <select onChange={e=>{ const f=normalFiles.find(x=>x.id===e.target.value); if(f){addLiveItem({kind:'file',id:f.id,name:f.name});e.target.value='';} }} defaultValue=""
-                  style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', cursor:'pointer', boxSizing:'border-box' }}>
-                  <option value="" disabled>Διάλεξε αρχείο…</option>
-                  {normalFiles.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </div>
-
-              {/* Προσθήκη εφαρμογής */}
-              {appsFolderId && files.filter(f=>f.folderId===appsFolderId).length>0 && (
-                <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🧩 Προσθήκη εφαρμογής</div>
-                  <select onChange={e=>{ const f=files.find(x=>x.id===e.target.value); if(f){addLiveItem({kind:'app',id:f.id,name:f.name});e.target.value='';} }} defaultValue=""
-                    style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', cursor:'pointer', boxSizing:'border-box' }}>
-                    <option value="" disabled>Διάλεξε εφαρμογή…</option>
-                    {files.filter(f=>f.folderId===appsFolderId).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                  </select>
+                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>📁 Αρχεία & Εφαρμογές</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
+                  {folders.map((fld) => {
+                    const cnt = normalFiles.filter(x => x.folderId===fld.id && !liveItems.some(it=>it.id===x.id)).length;
+                    if (!cnt) return null;
+                    const isOpen = liveCenterSection === fld.id;
+                    return (
+                      <button key={fld.id} onClick={() => setLiveCenterSection(isOpen ? null : fld.id)}
+                        style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                          border:'2px solid '+(isOpen ? PALETTE.cream.deep : '#e0e0e0'),
+                          background: isOpen ? PALETTE.cream.bgSoft : '#fafafa',
+                          cursor:'pointer', fontSize:13, fontWeight:600,
+                          color: isOpen ? PALETTE.cream.deep : '#555' }}>
+                        📁 {fld.name} <span style={{ fontSize:10 }}>{isOpen?'▾':'▸'}</span>
+                      </button>
+                    );
+                  })}
+                  {appsFolderId && (() => {
+                    const af = files.filter(x => x.folderId===appsFolderId && !liveItems.some(it=>it.id===x.id));
+                    if (!af.length) return null;
+                    const isOpen = liveCenterSection === 'apps';
+                    return (
+                      <button key="apps" onClick={() => setLiveCenterSection(isOpen ? null : 'apps')}
+                        style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                          border:'2px solid '+(isOpen ? '#5c7a3a' : '#e0e0e0'),
+                          background: isOpen ? '#f0f5eb' : '#fafafa',
+                          cursor:'pointer', fontSize:13, fontWeight:600,
+                          color: isOpen ? '#5c7a3a' : '#555' }}>
+                        ⚡ Εφαρμογές <span style={{ fontSize:10 }}>{isOpen?'▾':'▸'}</span>
+                      </button>
+                    );
+                  })()}
                 </div>
-              )}
+                {liveCenterSection && (()=> {
+                  const list = liveCenterSection === 'apps'
+                    ? files.filter(x => x.folderId===appsFolderId && !liveItems.some(it=>it.id===x.id))
+                    : normalFiles.filter(x => x.folderId===liveCenterSection && !liveItems.some(it=>it.id===x.id));
+                  if (!list.length) return <div style={{ padding:10, color:'#aeaeb8', fontSize:12, textAlign:'center' }}>Κανένα αρχείο</div>;
+                  const kind = liveCenterSection === 'apps' ? 'app' : 'file';
+                  return (
+                    <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
+                      {list.map((af) => (
+                        <div key={af.id} onClick={() => addLiveItem({ kind, id:af.id, name:af.name })}
+                          style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, cursor:'pointer', background:'#fff', border:'1px solid #e8e0c8' }}>
+                          <span style={{ fontSize:14 }}>{kind==='app'?'⚡':'📄'}</span>
+                          <span style={{ flex:1, fontSize:13, fontWeight:500, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{af.name}</span>
+                          <span style={{ fontSize:11, color:PALETTE.cream.deep, flexShrink:0 }}>+ Προσθήκη</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
 
               {/* Δημιουργία */}
               <button onClick={createLiveFromItems} disabled={!liveItems.length || liveCenterBusy}
@@ -1818,6 +1889,61 @@ export default function Home() {
 
         </div>
       </main>
+      {/* Μενού Δημιουργίας: Νέο / Συγχώνευση */}
+      {createMenu && (
+        <div onClick={()=>setCreateMenu(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:'24px 22px', maxWidth:420, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.22)' }}>
+            <h2 style={{ fontSize:18, fontWeight:600, margin:'0 0 4px', color:'#1a1a1a' }}>Δημιουργία αρχείου</h2>
+            <p style={{ fontSize:13, color:'#6b6b80', margin:'0 0 20px' }}>Διάλεξε τι θέλεις να δημιουργήσεις.</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={()=>{ setCreateMenu(false); setNewDocFolder(folders[0]?.id||''); setNewDocForm(true); }}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:'pointer', textAlign:'left' }}>
+                <span style={{ fontSize:24 }}>📝</span>
+                <span style={{ flex:1 }}>
+                  <span style={{ display:'block', fontSize:15, fontWeight:600, color:'#1a1a1a' }}>Νέο έγγραφο</span>
+                  <span style={{ display:'block', fontSize:12, color:'#6b6b80', marginTop:2 }}>Γράψε ένα νέο κείμενο στο Google Docs</span>
+                </span>
+              </button>
+              <button onClick={()=>{ setCreateMenu(false); setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:'pointer', textAlign:'left' }}>
+                <span style={{ fontSize:24 }}>🔗</span>
+                <span style={{ flex:1 }}>
+                  <span style={{ display:'block', fontSize:15, fontWeight:600, color:'#1a1a1a' }}>Συγχώνευση</span>
+                  <span style={{ display:'block', fontSize:12, color:'#6b6b80', marginTop:2 }}>Ένωσε αρχεία/κείμενα σε ένα PDF, με ερωτήσεις</span>
+                </span>
+              </button>
+            </div>
+            <button onClick={()=>setCreateMenu(false)} style={{ marginTop:16, width:'100%', padding:'10px', borderRadius:10, border:'1px solid #ebebeb', background:'#fff', color:'#6b6b80', fontSize:13, cursor:'pointer' }}>Άκυρο</button>
+          </div>
+        </div>
+      )}
+
+      {/* Φόρμα Νέου εγγράφου */}
+      {newDocForm && (
+        <div onClick={()=>setNewDocForm(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:'24px 22px', maxWidth:420, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.22)' }}>
+            <h2 style={{ fontSize:18, fontWeight:600, margin:'0 0 16px', color:'#1a1a1a' }}>📝 Νέο έγγραφο</h2>
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#6b6b80', marginBottom:6 }}>Τίτλος</label>
+            <input value={newDocName} onChange={e=>setNewDocName(e.target.value)} placeholder="π.χ. Κριτήριο αξιολόγησης" autoFocus
+              onKeyDown={e=>{ if(e.key==='Enter' && newDocName.trim() && newDocFolder) createNewDoc(); }}
+              style={{ width:'100%', padding:'11px 13px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:14, marginBottom:16, boxSizing:'border-box' }} />
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#6b6b80', marginBottom:6 }}>Φάκελος αποθήκευσης</label>
+            <select value={newDocFolder} onChange={e=>setNewDocFolder(e.target.value)}
+              style={{ width:'100%', padding:'11px 13px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:14, marginBottom:20, background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+              {folders.length===0 && <option value="">(Δεν υπάρχουν φάκελοι)</option>}
+              {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setNewDocForm(false)} style={{ flex:1, padding:'12px', borderRadius:10, border:'1px solid #ebebeb', background:'#fff', color:'#6b6b80', fontSize:14, cursor:'pointer' }}>Άκυρο</button>
+              <button onClick={createNewDoc} disabled={!newDocName.trim() || !newDocFolder || newDocBusy}
+                style={{ flex:2, padding:'12px', borderRadius:10, border:'none', background:(newDocName.trim()&&newDocFolder&&!newDocBusy)?'#1a1a1a':'#e0e0e0', color:'#fff', fontSize:14, fontWeight:600, cursor:(newDocName.trim()&&newDocFolder&&!newDocBusy)?'pointer':'default' }}>
+                {newDocBusy ? '⏳ Δημιουργία…' : 'Δημιουργία & άνοιγμα →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {contactPicker && (
         <div onClick={()=>setContactPicker(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:20 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:'24px 22px', maxWidth:440, width:'100%', maxHeight:'88vh', overflowY:'auto', boxShadow:'0 20px 60px rgba(0,0,0,0.22)' }}>
