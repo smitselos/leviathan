@@ -35,6 +35,19 @@ const TAG_COLORS = [
   { bg:'#f3f4f6', text:'#374151' },
 ];
 const tagColor = (tag) => TAG_COLORS[Math.abs([...tag].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
+
+// Μετατροπή ΛΕΒΙΑΘΑΝ link /api/file/{id} → δημόσιο /api/student-file (κρατά το #set=…).
+// Εξωτερικά URLs (synoxi κ.λπ.) μένουν ως έχουν. Χρησιμοποιείται σε ΟΛΑ τα σημεία που δέχονται URL.
+function toPublicLink(raw) {
+  if (!raw) return raw;
+  let url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+  const m = url.match(/\/api\/file\/([^?#]+)(#.*)?$/);
+  if (m) {
+    const origin = (typeof window !== 'undefined') ? window.location.origin : 'https://leviathan-olive.vercel.app';
+    url = `${origin}/api/student-file?id=${m[1]}${m[2] || ''}`;
+  }
+  return url;
+}
 const newQid = () => Math.random().toString(36).slice(2, 8);
 const Q_CODES = ['Α', 'Β1', 'Β2', 'Β3', 'Γ', 'Δ'];
 function parseQuestions(raw) {
@@ -677,15 +690,7 @@ export default function Home() {
   const addLiveUrl = () => {
     const u = liveUrlInput.trim();
     if (!u) return;
-    let url = /^https?:\/\//i.test(u) ? u : 'https://' + u;
-    // Μόνο ΛΕΒΙΑΘΑΝ links τύπου /api/file/{id} → μετατροπή σε δημόσιο /api/student-file (κρατώντας το #set=…)
-    // Εξωτερικές εφαρμογές (π.χ. synoxi.vercel.app) μένουν ως έχουν.
-    const m = url.match(/\/api\/file\/([^?#]+)(#.*)?$/);
-    if (m) {
-      const id = m[1];
-      const hash = m[2] || '';
-      url = `${window.location.origin}/api/student-file?id=${id}${hash}`;
-    }
+    const url = toPublicLink(u);
     addLiveItem({ kind:'url', url, name: liveUrlName.trim() || url });
     setLiveUrlInput(''); setLiveUrlName('');
   };
@@ -2115,9 +2120,9 @@ export default function Home() {
 
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
                       {vLinks.map((lnk, li) => (
-                        <div key={li} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, padding:'6px 10px', background:'#fff', borderRadius:8, border:'1px solid #e8e0c8' }}>
+                        <div key={li} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, padding:'6px 10px', background:'#fff', borderRadius:8, border:'1px solid #e8e0c8', minWidth:0 }}>
                           <span style={{ fontSize:14, flexShrink:0 }}>{lnk.type==='url'?'🌐':'📄'}</span>
-                          <span style={{ flex:1, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lnk.name}</span>
+                          <span style={{ flex:1, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>{lnk.name}</span>
                           <button onClick={() => removeLink(viewing.id, li)} style={S.delBtnSm}>✕</button>
                         </div>
                       ))}
@@ -2128,7 +2133,7 @@ export default function Home() {
                           style={{ flex:2, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
                         <input placeholder="Τίτλος…" value={linkNameInput} onChange={(e)=>setLinkNameInput(e.target.value)}
                           style={{ flex:1, padding:'7px 10px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, background:'#fff' }} />
-                        <button onClick={() => { const u=linkUrlInput.trim(); if (u) { addLink(viewing.id, { type:'url', url:u, name:linkNameInput.trim()||u }); setLinkUrlInput(''); setLinkNameInput(''); } }}
+                        <button onClick={() => { const u=linkUrlInput.trim(); if (u) { addLink(viewing.id, { type:'url', url:toPublicLink(u), name:linkNameInput.trim()||u }); setLinkUrlInput(''); setLinkNameInput(''); } }}
                           style={{ ...btn('solid'), padding:'7px 12px' }}>+</button>
                       </div>
 
@@ -2651,15 +2656,15 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <div style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Διεύθυνση URL</div>
                     <div style={{ display:'flex', flexDirection: compact?'column':'row', gap:6, marginBottom:12 }}>
                       <input value={mLinkUrl} onChange={(e)=>setMLinkUrl(e.target.value)}
-                        onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const u=mLinkUrl.trim(); if(u && onAddLink){ onAddLink(f.id, {type:'url', url:u.startsWith('http')?u:'https://'+u, name:mLinkName.trim()||u}); setMLinkUrl(''); setMLinkName(''); }}}}
+                        onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const u=mLinkUrl.trim(); if(u && onAddLink){ onAddLink(f.id, {type:'url', url: toPublicLink(u), name:mLinkName.trim()||u}); setMLinkUrl(''); setMLinkName(''); }}}}
                         placeholder="https://…" onClick={e=>e.stopPropagation()}
                         style={{ flex:compact?undefined:2, width:compact?'100%':undefined, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: compact?16:13, background:'#fff', boxSizing:'border-box' }} />
                       <div style={{ display:'flex', gap:6 }}>
                         <input value={mLinkName} onChange={(e)=>setMLinkName(e.target.value)}
-                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const u=mLinkUrl.trim(); if(u && onAddLink){ onAddLink(f.id, {type:'url', url:u.startsWith('http')?u:'https://'+u, name:mLinkName.trim()||u}); setMLinkUrl(''); setMLinkName(''); }}}}
+                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const u=mLinkUrl.trim(); if(u && onAddLink){ onAddLink(f.id, {type:'url', url: toPublicLink(u), name:mLinkName.trim()||u}); setMLinkUrl(''); setMLinkName(''); }}}}
                           placeholder="Τίτλος…" onClick={e=>e.stopPropagation()}
                           style={{ flex:1, padding:'8px 10px', border:'1px solid #e0e0e0', borderRadius:10, fontSize: compact?16:13, background:'#fff', boxSizing:'border-box', minWidth:0 }} />
-                        <button onClick={(e) => { e.stopPropagation(); const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url:u.startsWith('http')?u:'https://'+u, name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
+                        <button onClick={(e) => { e.stopPropagation(); const u=mLinkUrl.trim(); if (u && onAddLink) { onAddLink(f.id, { type:'url', url: toPublicLink(u), name:mLinkName.trim()||u }); setMLinkUrl(''); setMLinkName(''); } }}
                           style={{ ...btn('solid'), padding:'8px 14px', flexShrink:0, fontSize:13 }}>+</button>
                       </div>
                     </div>
