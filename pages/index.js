@@ -207,6 +207,7 @@ export default function Home() {
   const [newDocForm, setNewDocForm] = useState(false); // φόρμα νέου εγγράφου
   const [newDocName, setNewDocName] = useState('');
   const [newDocFolder, setNewDocFolder] = useState('');
+  const [newDocTemplate, setNewDocTemplate] = useState(''); // '' = κενό, αλλιώς id προτύπου
   const [newDocBusy, setNewDocBusy] = useState(false);
   const [inboxSaveTarget, setInboxSaveTarget] = useState(null); // fileId+i for which item shows folder picker
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
@@ -328,21 +329,29 @@ export default function Home() {
     const d = await r.json(); if (d.files) setFiles(d.files);
   };
 
-  // ── Νέο έγγραφο: δημιουργία κενού Google Doc → register → άνοιγμα για γράψιμο ──
+  // ── Νέο έγγραφο: κενό Google Doc ή αντίγραφο προτύπου → register → άνοιγμα ──
   const createNewDoc = async () => {
     const name = newDocName.trim();
     if (!name || !newDocFolder || newDocBusy) return;
     setNewDocBusy(true);
     try {
-      const meta = { name, mimeType: 'application/vnd.google-apps.document', parents: [newDocFolder] };
-      const res = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType',
-        { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken, 'Content-Type':'application/json' }, body: JSON.stringify(meta) });
-      const doc = await res.json();
+      let doc;
+      if (newDocTemplate) {
+        // Αντιγραφή προτύπου με νέο όνομα, στον επιλεγμένο φάκελο
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${newDocTemplate}/copy?fields=id,name,mimeType`,
+          { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken, 'Content-Type':'application/json' }, body: JSON.stringify({ name, parents:[newDocFolder] }) });
+        doc = await res.json();
+      } else {
+        // Κενό Google Doc
+        const meta = { name, mimeType: 'application/vnd.google-apps.document', parents: [newDocFolder] };
+        const res = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType',
+          { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken, 'Content-Type':'application/json' }, body: JSON.stringify(meta) });
+        doc = await res.json();
+      }
       if (doc.id) {
         await registerFiles([{ id:doc.id, name:doc.name, mimeType:doc.mimeType, folderId:newDocFolder }]);
-        // Άνοιγμα Google Docs σε νέα καρτέλα για επεξεργασία
         window.open(`https://docs.google.com/document/d/${doc.id}/edit`, '_blank');
-        setNewDocForm(false); setNewDocName(''); setNewDocFolder('');
+        setNewDocForm(false); setNewDocName(''); setNewDocFolder(''); setNewDocTemplate('');
       } else {
         alert('Σφάλμα δημιουργίας εγγράφου');
       }
@@ -843,6 +852,11 @@ export default function Home() {
 
   // Αρχεία εκτός του φακέλου «Εφαρμογές» (για τις κανονικές λίστες)
   const normalFiles = files.filter((f) => !appsFolderId || f.folderId !== appsFolderId);
+  // Φάκελος «Πρότυπα» (με βάση το όνομα) + τα Google Docs μέσα του
+  const templatesFolder = folders.find(f => f.name === 'Πρότυπα');
+  const templateFiles = templatesFolder
+    ? files.filter(f => f.folderId === templatesFolder.id && f.mimeType === 'application/vnd.google-apps.document')
+    : [];
 
   // Παράγωγες λίστες
   const favoriteFiles = normalFiles.filter((f) => f.favorite);
@@ -1896,7 +1910,7 @@ export default function Home() {
             <h2 style={{ fontSize:18, fontWeight:600, margin:'0 0 4px', color:'#1a1a1a' }}>Δημιουργία αρχείου</h2>
             <p style={{ fontSize:13, color:'#6b6b80', margin:'0 0 20px' }}>Διάλεξε τι θέλεις να δημιουργήσεις.</p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <button onClick={()=>{ setCreateMenu(false); setNewDocFolder(folders[0]?.id||''); setNewDocForm(true); }}
+              <button onClick={()=>{ setCreateMenu(false); setNewDocFolder(folders[0]?.id||''); setNewDocTemplate(''); setNewDocForm(true); }}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:'pointer', textAlign:'left' }}>
                 <span style={{ fontSize:24 }}>📝</span>
                 <span style={{ flex:1 }}>
@@ -1929,10 +1943,21 @@ export default function Home() {
               style={{ width:'100%', padding:'11px 13px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:14, marginBottom:16, boxSizing:'border-box' }} />
             <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#6b6b80', marginBottom:6 }}>Φάκελος αποθήκευσης</label>
             <select value={newDocFolder} onChange={e=>setNewDocFolder(e.target.value)}
-              style={{ width:'100%', padding:'11px 13px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:14, marginBottom:20, background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+              style={{ width:'100%', padding:'11px 13px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:14, marginBottom:16, background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
               {folders.length===0 && <option value="">(Δεν υπάρχουν φάκελοι)</option>}
               {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
+            {templateFiles.length > 0 && (
+              <>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#6b6b80', marginBottom:6 }}>Πρότυπο</label>
+                <select value={newDocTemplate} onChange={e=>setNewDocTemplate(e.target.value)}
+                  style={{ width:'100%', padding:'11px 13px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:14, marginBottom:20, background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+                  <option value="">Κενό έγγραφο</option>
+                  {templateFiles.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </>
+            )}
+            {templateFiles.length === 0 && <div style={{ height:4 }} />}
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setNewDocForm(false)} style={{ flex:1, padding:'12px', borderRadius:10, border:'1px solid #ebebeb', background:'#fff', color:'#6b6b80', fontSize:14, cursor:'pointer' }}>Άκυρο</button>
               <button onClick={createNewDoc} disabled={!newDocName.trim() || !newDocFolder || newDocBusy}
