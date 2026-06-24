@@ -196,6 +196,12 @@ export default function Home() {
   const [networkLoading, setNetworkLoading] = useState(false);
   const [expandedInbox, setExpandedInbox] = useState(null);
   const [inboxFilter, setInboxFilter] = useState(null); // null=όλα, string email, ή array emails (ομάδα)
+  const [inboxShowAll, setInboxShowAll] = useState(false); // 10 + Περισσότερα
+  const [liveItems, setLiveItems] = useState([]); // [{kind:'file'|'app'|'url', id?, name, url?}]
+  const [liveUrlInput, setLiveUrlInput] = useState('');
+  const [liveUrlName, setLiveUrlName] = useState('');
+  const [liveCenterCode, setLiveCenterCode] = useState(null);
+  const [liveCenterBusy, setLiveCenterBusy] = useState(false);
   const [inboxSaveTarget, setInboxSaveTarget] = useState(null); // fileId+i for which item shows folder picker
   const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
   const [contactInfo, setContactInfo] = useState({}); // { email: {firstName,lastName,email,school,roleTitle,phone,note} }
@@ -612,8 +618,8 @@ export default function Home() {
   };
 
   const openLive = async (f) => {
-    const fLinks = fileLinks(f.id);
-    if (!fLinks.length || liveSending) return;
+    if (liveSending) return;
+    const fLinks = fileLinks(f.id); // μπορεί να είναι κενό — επιτρέπεται live μεμονωμένου
     setLiveSending(true);
     try {
       const r = await fetch('/api/live', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ file:{ id:f.id, name:f.name, tags:f.tags||[], questions:f.questions||'' }, links:fLinks }) });
@@ -626,6 +632,27 @@ export default function Home() {
       }
     } catch(e) {}
     setLiveSending(false);
+  };
+
+  // ── Κέντρο Live: δημιουργία από πολλαπλά στοιχεία (αρχεία/εφαρμογές/URLs) ──
+  const addLiveItem = (it) => setLiveItems(p => p.find(x => (x.id&&x.id===it.id)||(x.url&&x.url===it.url)) ? p : [...p, it]);
+  const removeLiveItem = (i) => setLiveItems(p => p.filter((_, idx) => idx !== i));
+  const addLiveUrl = () => {
+    const u = liveUrlInput.trim();
+    if (!u) return;
+    const url = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+    addLiveItem({ kind:'url', url, name: liveUrlName.trim() || url });
+    setLiveUrlInput(''); setLiveUrlName('');
+  };
+  const createLiveFromItems = async () => {
+    if (!liveItems.length || liveCenterBusy) return;
+    setLiveCenterBusy(true); setLiveCenterCode(null);
+    try {
+      const r = await fetch('/api/live', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ items: liveItems, title: liveItems[0].name }) });
+      const d = await r.json();
+      if (d.code) setLiveCenterCode(d.code);
+    } catch(e) {}
+    setLiveCenterBusy(false);
   };
   const setVisibility = async (id, visibility) => {
     setPublishing(true);
@@ -891,6 +918,7 @@ export default function Home() {
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.send} label="Απεσταλμένα" onClick={() => window.open('/student', '_blank')} />
+          <NavItem icon={Icon.live} label="Live" active={activeView==='liveCenter'} onClick={() => { setActiveView('liveCenter'); setOpenFolder(null); }} />
           <NavItem icon={Icon.globe} label="Ανοιχτή πρόσβαση" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
           {liveFile && (
             <>
@@ -1501,7 +1529,7 @@ export default function Home() {
                   <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Εμφάνιση εισερχομένων</div>
                   <select
                     value={typeof inboxFilter === 'string' ? inboxFilter : '__all__'}
-                    onChange={e => setInboxFilter(e.target.value === '__all__' ? null : e.target.value)}
+                    onChange={e => { setInboxFilter(e.target.value === '__all__' ? null : e.target.value); setInboxShowAll(false); }}
                     style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:isMobile?16:13, background:'#fff', color:'#1a1a1a', cursor:'pointer' }}>
                     <option value="__all__">Όλοι οι αποστολείς</option>
                     {(networkData.connections||[]).map(conn => {
@@ -1529,7 +1557,8 @@ export default function Home() {
                     const list = !flt ? networkData.inbox
                       : Array.isArray(flt) ? networkData.inbox.filter(i=>flt.includes(i.fromEmail))
                       : networkData.inbox.filter(i=>i.fromEmail===flt);
-                    return list;
+                    const shown = inboxShowAll ? list : list.slice(0, 10);
+                    return shown;
                   })().map((item, i) => {
                     const isExp = expandedInbox === item.fileId+i;
                     return (
@@ -1597,10 +1626,20 @@ export default function Home() {
                       </div>
                     );
                   })}
+                  {(()=>{
+                    const flt = inboxFilter;
+                    const list = !flt ? networkData.inbox
+                      : Array.isArray(flt) ? networkData.inbox.filter(i=>flt.includes(i.fromEmail))
+                      : networkData.inbox.filter(i=>i.fromEmail===flt);
+                    if (list.length <= 10) return null;
+                    return (
+                      <button onClick={()=>setInboxShowAll(v=>!v)} style={{ width:'100%', padding:'10px', marginTop:4, borderRadius:10, border:'1px solid #ebebeb', background:'#fafafa', color:PALETTE.cream.deep, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                        {inboxShowAll ? '▲ Λιγότερα' : `▼ Περισσότερα (${list.length - 10})`}
+                      </button>
+                    );
+                  })()}
                 </div>
               )}
-
-              {/* Συνδέσεις */}
               <div>
                 <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Συνδέσεις {(networkData.connections||[]).length > 0 && `(${networkData.connections.length})`}</div>
                 {networkLoading && <div style={{ color:'#aeaeb8', fontSize:13 }}>Φόρτωση…</div>}
@@ -1685,10 +1724,89 @@ export default function Home() {
             </>
           )}
 
+          {activeView === 'liveCenter' && (
+            <div style={{ maxWidth: 720 }}>
+              <div style={{ marginBottom: 20 }}>
+                <h1 style={{ fontSize: isMobile?20:24, fontWeight:600, color:'#1a1a1a', margin:'0 0 6px' }}>📡 Δημιουργία Live</h1>
+                <p style={{ fontSize:13, color:'#6b6b80', margin:0 }}>Διάλεξε ένα ή περισσότερα στοιχεία (αρχεία, εφαρμογές, συνδέσμους) — θα παρουσιαστούν μαζί με έναν κωδικό PIN.</p>
+              </div>
+
+              {/* Επιλεγμένα στοιχεία */}
+              {liveItems.length > 0 && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Στην παρουσίαση ({liveItems.length})</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {liveItems.map((it, i) => (
+                      <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#fff', border:'1px solid #ebebeb', borderRadius:12 }}>
+                        <span style={{ fontSize:16 }}>{it.kind==='url'?'🌐':it.kind==='app'?'🧩':'📄'}</span>
+                        <span style={{ flex:1, fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{it.name}</span>
+                        {i===0 && <span style={{ fontSize:10, color:PALETTE.cream.deep, fontWeight:700 }}>ΚΥΡΙΟ</span>}
+                        <button onClick={()=>removeLiveItem(i)} style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:13 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Προσθήκη URL */}
+              <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🌐 Προσθήκη συνδέσμου</div>
+                <input value={liveUrlInput} onChange={e=>setLiveUrlInput(e.target.value)} placeholder="Επικόλλησε διεύθυνση (π.χ. YouTube, ιστοσελίδα)…"
+                  style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, marginBottom:8, boxSizing:'border-box' }} />
+                <div style={{ display:'flex', gap:8 }}>
+                  <input value={liveUrlName} onChange={e=>setLiveUrlName(e.target.value)} placeholder="Όνομα (προαιρετικό)"
+                    style={{ flex:1, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, boxSizing:'border-box' }} />
+                  <button onClick={addLiveUrl} disabled={!liveUrlInput.trim()} style={{ padding:'10px 18px', borderRadius:10, border:'none', background: liveUrlInput.trim()?PALETTE.cream.deep:'#e0e0e0', color:'#fff', fontSize:13, fontWeight:600, cursor: liveUrlInput.trim()?'pointer':'default' }}>+ Προσθήκη</button>
+                </div>
+              </div>
+
+              {/* Προσθήκη αρχείου */}
+              <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>📄 Προσθήκη αρχείου</div>
+                <select onChange={e=>{ const f=normalFiles.find(x=>x.id===e.target.value); if(f){addLiveItem({kind:'file',id:f.id,name:f.name});e.target.value='';} }} defaultValue=""
+                  style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', cursor:'pointer', boxSizing:'border-box' }}>
+                  <option value="" disabled>Διάλεξε αρχείο…</option>
+                  {normalFiles.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </div>
+
+              {/* Προσθήκη εφαρμογής */}
+              {appsFolderId && files.filter(f=>f.folderId===appsFolderId).length>0 && (
+                <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🧩 Προσθήκη εφαρμογής</div>
+                  <select onChange={e=>{ const f=files.find(x=>x.id===e.target.value); if(f){addLiveItem({kind:'app',id:f.id,name:f.name});e.target.value='';} }} defaultValue=""
+                    style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', cursor:'pointer', boxSizing:'border-box' }}>
+                    <option value="" disabled>Διάλεξε εφαρμογή…</option>
+                    {files.filter(f=>f.folderId===appsFolderId).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Δημιουργία */}
+              <button onClick={createLiveFromItems} disabled={!liveItems.length || liveCenterBusy}
+                style={{ width:'100%', padding:'14px', borderRadius:14, border:'none', background: liveItems.length&&!liveCenterBusy?'#1a1a1a':'#e0e0e0', color:'#fff', fontSize:15, fontWeight:600, cursor: liveItems.length&&!liveCenterBusy?'pointer':'default', marginBottom:16 }}>
+                {liveCenterBusy ? '⏳ Δημιουργία…' : '📡 Έναρξη Live'}
+              </button>
+
+              {/* Αποτέλεσμα: PIN */}
+              {liveCenterCode && (
+                <div style={{ padding:'24px', background:'linear-gradient(135deg,#1a1a1a,#2d2a1e)', borderRadius:18, textAlign:'center' }}>
+                  <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:2, color:'#e8c96a', marginBottom:10 }}>Κωδικός Live</div>
+                  <div style={{ fontSize:52, fontWeight:700, color:'#fff', letterSpacing:'0.15em', fontFamily:'monospace', marginBottom:10 }}>{liveCenterCode}</div>
+                  <div style={{ fontSize:12, color:'#8e8ea0', marginBottom:16 }}>Δώσε αυτόν τον κωδικό — ισχύει για ~2 ώρες</div>
+                  <div style={{ display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' }}>
+                    <button onClick={()=>{ navigator.clipboard?.writeText(`${window.location.origin}/live?code=${liveCenterCode}`).catch(()=>{}); }}
+                      style={{ padding:'10px 18px', borderRadius:10, border:'1px solid rgba(255,255,255,0.2)', background:'transparent', color:'#e8c96a', fontSize:13, cursor:'pointer' }}>📋 Αντιγραφή συνδέσμου</button>
+                    <button onClick={()=>window.open(`/live?code=${liveCenterCode}`,'_blank')}
+                      style={{ padding:'10px 18px', borderRadius:10, border:'none', background:'#e8c96a', color:'#1a1a1a', fontSize:13, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </main>
-
-      {/* Στοιχεία επικοινωνίας — picker */}
       {contactPicker && (
         <div onClick={()=>setContactPicker(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:20 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:'24px 22px', maxWidth:440, width:'100%', maxHeight:'88vh', overflowY:'auto', boxShadow:'0 20px 60px rgba(0,0,0,0.22)' }}>
@@ -2300,9 +2418,9 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>{visIcon || 'Μοίρασμα'}</span>
                   </button>
-                  <button style={{ ...actionBtn, color: PALETTE.peach.deep, opacity: hasLinks ? 1 : 0.35 }}
-                    onClick={(e) => { e.stopPropagation(); if (hasLinks && onLive) onLive(f); }}
-                    disabled={!hasLinks} title={hasLinks ? 'Προβολή με συνδέσεις' : 'Πρόσθεσε συνδέσεις πρώτα'}>
+                  <button style={{ ...actionBtn, color: PALETTE.peach.deep }}
+                    onClick={(e) => { e.stopPropagation(); if (onLive) onLive(f); }}
+                    title={hasLinks ? 'Live με συνδέσεις' : 'Live'}>
                     <svg width={compact?17:18} height={compact?17:18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
                     <span style={{ fontSize: compact?11:undefined }}>Live</span>
                   </button>

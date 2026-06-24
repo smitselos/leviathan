@@ -202,14 +202,14 @@ export default function LivePage() {
       {/* Content */}
       <div style={{ flex:1, display:'flex', overflow:'hidden', minHeight:0 }}>
         {activeTab==='pdf' && (
-          <iframe src={cleanSrc(session.src, session.title)} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
+          <iframe src={session.isUrl ? toEmbedUrl(session.src) : cleanSrc(session.src, session.title)} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
         )}
         {hasLinks && links.map((lnk, i) => (
           activeTab===('link-'+i) ? <LiveFrame key={i} lnk={lnk} /> : null
         ))}
         {activeTab==='split' && hasLinks && (
           <>
-            <iframe src={cleanSrc(session.src, session.title)} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen" />
+            <iframe src={session.isUrl ? toEmbedUrl(session.src) : cleanSrc(session.src, session.title)} style={{ flex:1, border:'none', width:'100%', height:'100%' }} title={session.title} allow="fullscreen; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
             <div style={{ width:3, background:'#333', flexShrink:0 }} />
             <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, minHeight:0, height:'100%' }}>
               {links.length > 1 && (
