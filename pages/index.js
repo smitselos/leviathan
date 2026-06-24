@@ -640,7 +640,15 @@ export default function Home() {
   const addLiveUrl = () => {
     const u = liveUrlInput.trim();
     if (!u) return;
-    const url = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+    let url = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+    // Μόνο ΛΕΒΙΑΘΑΝ links τύπου /api/file/{id} → μετατροπή σε δημόσιο /api/student-file (κρατώντας το #set=…)
+    // Εξωτερικές εφαρμογές (π.χ. synoxi.vercel.app) μένουν ως έχουν.
+    const m = url.match(/\/api\/file\/([^?#]+)(#.*)?$/);
+    if (m) {
+      const id = m[1];
+      const hash = m[2] || '';
+      url = `${window.location.origin}/api/student-file?id=${id}${hash}`;
+    }
     addLiveItem({ kind:'url', url, name: liveUrlName.trim() || url });
     setLiveUrlInput(''); setLiveUrlName('');
   };
@@ -953,8 +961,8 @@ export default function Home() {
           <button className="btm-item" onClick={goHome} style={{ color: activeView==='home'?'#ececec':'#8e8ea0' }}>
             {Icon.book}<span style={{ fontSize:10 }}>Βιβλιοθήκη</span>
           </button>
-          <button className="btm-item" onClick={() => { setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }} style={{ color: activeView==='netBuilder'?'#ececec':'#8e8ea0' }}>
-            {Icon.filePdf}<span style={{ fontSize:10 }}>Δημιουργία</span>
+          <button className="btm-item" onClick={() => { setActiveView('liveCenter'); setOpenFolder(null); }} style={{ color: activeView==='liveCenter'?'#ececec':'#8e8ea0' }}>
+            {Icon.live}<span style={{ fontSize:10 }}>Live</span>
           </button>
           <button className="btm-item" onClick={openNetwork} style={{ color: activeView==='network'?'#ececec':'#8e8ea0', position:'relative' }}>
             {Icon.net}<span style={{ fontSize:10 }}>Δίκτυο</span>
@@ -1195,7 +1203,10 @@ export default function Home() {
                 <button onClick={goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
                 <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{openFolder.name}</h1>
                 <div style={{ flex:1 }} />
-                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Drive">{busy==='picker'?'…':'➕ Drive'}</button>
+                {isMobile
+                  ? <button onClick={() => { setNewNetFolder(openFolder.id); setNewNetName(openFolder.name + ' — δημιουργία'); setActiveView('netBuilder'); setShowNewNetForm(true); }} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.85 }} title="Δημιουργία ενωμένου PDF σε αυτόν τον φάκελο">✚ Δημιουργία</button>
+                  : <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Drive">{busy==='picker'?'…':'➕ Drive'}</button>
+                }
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα αρχείου">{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
