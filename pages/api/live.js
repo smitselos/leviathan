@@ -36,19 +36,34 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'Unauthorized' });
 
   if (req.method === 'POST') {
-    const { file, links } = req.body || {};
-    if (!file?.id) return res.status(400).json({ error: 'Missing file' });
+    let { file, links, items, title } = req.body || {};
+
+    // Νέο format: items[] (ενιαία λίστα στοιχείων). Το πρώτο γίνεται «κύριο».
+    // items: [{ kind:'file'|'app'|'url', id?, name, url? }]
+    if (Array.isArray(items) && items.length) {
+      const first = items[0];
+      const rest = items.slice(1);
+      if (first.kind === 'url') {
+        file = { id: null, name: first.name || title || 'Σύνδεσμος', _url: first.url, tags: [], questions: '' };
+      } else {
+        file = { id: first.id, name: first.name, tags: [], questions: '' };
+      }
+      links = rest.map(it => it.kind === 'url'
+        ? { type: 'url', url: it.url, name: it.name || it.url }
+        : { type: 'file', targetId: it.id, name: it.name });
+    }
+
+    if (!file || (!file.id && !file._url)) return res.status(400).json({ error: 'Missing file or url' });
 
     try {
       const drive = getDrive(session.accessToken);
       const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-      // Share main file + all linked Drive files publicly (parallel, fire-and-forget errors)
-      const fileIds = [file.id, ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId)];
+      // Share main file + all linked Drive files publicly (μόνο όσα έχουν id)
+      const fileIds = [file.id, ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId)].filter(Boolean);
       await Promise.allSettled(fileIds.map(id => sharePublic(drive, id)));
 
-      // Για Office αρχεία → φτιάξε/βρες PDF αντίγραφο (προβάλλεται χωρίς auth, όλες οι σελίδες)
-      // HTML → student-file · PDF/εικόνες → Drive preview · Office → PDF copy preview
+      // Office → PDF copy preview · HTML → student-file · PDF/εικόνες → Drive preview
       const resolveSrc = async (id, name) => {
         if (/\.html?$/i.test(name||'')) return `/api/student-file?id=${id}`;
         if (isOfficeFile(name)) {
@@ -58,7 +73,8 @@ export default async function handler(req, res) {
         return `https://drive.google.com/file/d/${id}/preview`;
       };
 
-      const mainSrc = await resolveSrc(file.id, file.name);
+      // Κύριο: αν είναι URL → χρησιμοποίησέ το ως έχει· αλλιώς resolve το αρχείο
+      const mainSrc = file._url ? file._url : await resolveSrc(file.id, file.name);
       const resolvedLinks = await Promise.all((links || []).map(async l => ({
         type: l.type, targetId: l.targetId, url: l.url, name: l.name,
         src: l.type === 'url' ? l.url : await resolveSrc(l.targetId, l.name),
@@ -67,7 +83,8 @@ export default async function handler(req, res) {
       const liveData = {
         title: file.name,
         src: mainSrc,
-        fileId: file.id,
+        fileId: file.id || null,
+        isUrl: !!file._url,
         tags: file.tags || [],
         questions: file.questions || '',
         links: resolvedLinks,
