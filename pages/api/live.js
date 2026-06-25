@@ -59,9 +59,27 @@ export default async function handler(req, res) {
       const drive = getDrive(session.accessToken);
       const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-      // Share main file + all linked Drive files publicly (μόνο όσα έχουν id)
-      const fileIds = [file.id, ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId)].filter(Boolean);
-      await Promise.allSettled(fileIds.map(id => sharePublic(drive, id)));
+      // Εξαγωγή Drive ID από URLs τύπου student-file?id=XXX ή /api/file/XXX (ΛΕΒΙΑΘΑΝ links)
+      const idFromUrl = (u) => {
+        if (!u) return null;
+        const m1 = u.match(/[?&]id=([^&#]+)/);        // student-file?id=XXX
+        if (m1) return decodeURIComponent(m1[1]);
+        const m2 = u.match(/\/api\/file\/([^?#/]+)/);  // /api/file/XXX
+        if (m2) return decodeURIComponent(m2[1]);
+        return null;
+      };
+
+      // Share: κύριο αρχείο + linked files + Drive IDs κρυμμένα μέσα σε URLs (κύριο + links)
+      const urlIds = [
+        idFromUrl(file._url),
+        ...(links||[]).filter(l=>l.type==='url').map(l=>idFromUrl(l.url)),
+      ].filter(Boolean);
+      const fileIds = [
+        file.id,
+        ...(links||[]).filter(l=>l.targetId).map(l=>l.targetId),
+        ...urlIds,
+      ].filter(Boolean);
+      await Promise.allSettled([...new Set(fileIds)].map(id => sharePublic(drive, id)));
 
       // Office → PDF copy preview · HTML → student-file · PDF/εικόνες → Drive preview
       const resolveSrc = async (id, name) => {
