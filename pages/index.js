@@ -691,7 +691,12 @@ export default function Home() {
     const u = liveUrlInput.trim();
     if (!u) return;
     const url = toPublicLink(u);
-    addLiveItem({ kind:'url', url, name: liveUrlName.trim() || url });
+    // Αν δεν δοθεί όνομα, φτιάξε σύντομη ετικέτα (domain) αντί για ολόκληρο το URL
+    let label = liveUrlName.trim();
+    if (!label) {
+      try { const h = new URL(url).hostname.replace('www.',''); label = h + ' …'; } catch { label = url.slice(0, 40) + '…'; }
+    }
+    addLiveItem({ kind:'url', url, name: label });
     setLiveUrlInput(''); setLiveUrlName('');
   };
   const createLiveFromItems = async () => {
@@ -1250,11 +1255,16 @@ export default function Home() {
                 <button onClick={goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
                 <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{openFolder.name}</h1>
                 <div style={{ flex:1 }} />
-                {isMobile
-                  ? <button onClick={() => { setNewNetFolder(openFolder.id); setNewNetName(openFolder.name + ' — δημιουργία'); setActiveView('netBuilder'); setShowNewNetForm(true); }} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.85 }} title="Δημιουργία ενωμένου PDF σε αυτόν τον φάκελο">✚ Δημιουργία</button>
-                  : <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Drive">{busy==='picker'?'…':'➕ Drive'}</button>
-                }
-                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα αρχείου">{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
+                {/* Κανονικός φάκελος: Drive · Συγχώνευση · Ανέβασμα */}
+                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Google Drive">
+                  {busy==='picker'?'…': (isMobile ? '📁 Drive' : '➕ Drive')}
+                </button>
+                <button onClick={() => { setNewNetFolder(openFolder.id); setNewNetName(openFolder.name + ' — συγχώνευση'); setActiveView('netBuilder'); setShowNewNetForm(true); }} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.85 }} title="Συγχώνευση αρχείων σε ένα PDF">
+                  {isMobile ? '🔗 Merge' : '🔗 Συγχώνευση'}
+                </button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα αρχείου">
+                  {busy==='upload'?'…': (isMobile ? '⬆️ Αρχείο' : '⬆️ Ανέβασμα')}
+                </button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
@@ -1795,11 +1805,11 @@ export default function Home() {
                   <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Στην παρουσίαση ({liveItems.length})</div>
                   <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                     {liveItems.map((it, i) => (
-                      <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#fff', border:'1px solid #ebebeb', borderRadius:12 }}>
-                        <span style={{ fontSize:16 }}>{it.kind==='url'?'🌐':it.kind==='app'?'🧩':'📄'}</span>
-                        <span style={{ flex:1, fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{it.name}</span>
-                        {i===0 && <span style={{ fontSize:10, color:PALETTE.cream.deep, fontWeight:700 }}>ΚΥΡΙΟ</span>}
-                        <button onClick={()=>removeLiveItem(i)} style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:13 }}>✕</button>
+                      <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#fff', border:'1px solid #ebebeb', borderRadius:12, minWidth:0, maxWidth:'100%' }}>
+                        <span style={{ fontSize:16, flexShrink:0 }}>{it.kind==='url'?'🌐':it.kind==='app'?'🧩':'📄'}</span>
+                        <span style={{ flex:1, fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>{it.name}</span>
+                        {i===0 && <span style={{ fontSize:10, color:PALETTE.cream.deep, fontWeight:700, flexShrink:0 }}>ΚΥΡΙΟ</span>}
+                        <button onClick={()=>removeLiveItem(i)} style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:13, flexShrink:0 }}>✕</button>
                       </div>
                     ))}
                   </div>
