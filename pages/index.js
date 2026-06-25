@@ -217,6 +217,7 @@ export default function Home() {
   const [liveCenterBusy, setLiveCenterBusy] = useState(false);
   const [liveCenterSection, setLiveCenterSection] = useState(null); // ποιος φάκελος/εφαρμογές ανοιχτός
   const [createMenu, setCreateMenu] = useState(false); // μενού: Νέο / Συγχώνευση
+  const [createMenuFolder, setCreateMenuFolder] = useState(''); // προεπιλεγμένος φάκελος (αν ανοίγει από φάκελο)
   const [newDocForm, setNewDocForm] = useState(false); // φόρμα νέου εγγράφου
   const [newDocName, setNewDocName] = useState('');
   const [newDocFolder, setNewDocFolder] = useState('');
@@ -970,7 +971,7 @@ export default function Home() {
         <nav style={S.nav}>
           <NavItem icon={Icon.book} label="Βιβλιοθήκη" active={activeView==='home'} onClick={goHome} />
           <NavItem icon={Icon.filePdf} label="Δημιουργία αρχείου" active={activeView==='netBuilder'}
-            onClick={() => setCreateMenu(true)} />
+            onClick={() => { setCreateMenuFolder(''); setCreateMenu(true); }} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.net} label="Δίκτυο" active={activeView==='network'} onClick={openNetwork}
             badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
@@ -1255,16 +1256,22 @@ export default function Home() {
                 <button onClick={goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
                 <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{openFolder.name}</h1>
                 <div style={{ flex:1 }} />
-                {/* Κανονικός φάκελος: Drive · Συγχώνευση · Ανέβασμα */}
-                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Google Drive">
-                  {busy==='picker'?'…': (isMobile ? '📁 Drive' : '➕ Drive')}
-                </button>
-                <button onClick={() => { setNewNetFolder(openFolder.id); setNewNetName(openFolder.name + ' — συγχώνευση'); setActiveView('netBuilder'); setShowNewNetForm(true); }} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.85 }} title="Συγχώνευση αρχείων σε ένα PDF">
-                  {isMobile ? '🔗 Merge' : '🔗 Συγχώνευση'}
-                </button>
-                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα αρχείου">
-                  {busy==='upload'?'…': (isMobile ? '⬆️ Αρχείο' : '⬆️ Ανέβασμα')}
-                </button>
+                {/* Κανονικός φάκελος */}
+                {isMobile ? (
+                  <>
+                    {/* Κινητό: 3 μικρά εικονίδια — Merge · Drive · Ανέβασμα */}
+                    <button onClick={() => { setNewNetFolder(openFolder.id); setNewNetName(openFolder.name + ' — συγχώνευση'); setActiveView('netBuilder'); setShowNewNetForm(true); }} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Συγχώνευση σε PDF">🔗</button>
+                    <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Από Google Drive">{busy==='picker'?'…':'📁'}</button>
+                    <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Ανέβασμα αρχείου">{busy==='upload'?'…':'⬆️'}</button>
+                  </>
+                ) : (
+                  <>
+                    {/* Desktop: +Νέο · +Drive · +Ανέβασμα */}
+                    <button onClick={() => { setCreateMenuFolder(openFolder.id); setCreateMenu(true); }} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.85 }} title="Νέο έγγραφο ή συγχώνευση σε αυτόν τον φάκελο">＋ Νέο</button>
+                    <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Google Drive">{busy==='picker'?'…':'＋ Drive'}</button>
+                    <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα αρχείου">{busy==='upload'?'…':'＋ Ανέβασμα'}</button>
+                  </>
+                )}
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
@@ -1925,7 +1932,7 @@ export default function Home() {
             <h2 style={{ fontSize:18, fontWeight:600, margin:'0 0 4px', color:'#1a1a1a' }}>Δημιουργία αρχείου</h2>
             <p style={{ fontSize:13, color:'#6b6b80', margin:'0 0 20px' }}>Διάλεξε τι θέλεις να δημιουργήσεις.</p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <button onClick={()=>{ setCreateMenu(false); setNewDocFolder(folders[0]?.id||''); setNewDocTemplate(''); setNewDocForm(true); }}
+              <button onClick={()=>{ setCreateMenu(false); setNewDocFolder(createMenuFolder || folders[0]?.id||''); setNewDocTemplate(''); setNewDocForm(true); }}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:'pointer', textAlign:'left' }}>
                 <span style={{ fontSize:24 }}>📝</span>
                 <span style={{ flex:1 }}>
@@ -1933,7 +1940,7 @@ export default function Home() {
                   <span style={{ display:'block', fontSize:12, color:'#6b6b80', marginTop:2 }}>Γράψε ένα νέο κείμενο στο Google Docs</span>
                 </span>
               </button>
-              <button onClick={()=>{ setCreateMenu(false); setActiveView('netBuilder'); setOpenFolder(null); setCurrentNetwork(null); }}
+              <button onClick={()=>{ const fid=createMenuFolder; setCreateMenu(false); if(fid){ const fl=folders.find(f=>f.id===fid); setNewNetFolder(fid); setNewNetName((fl?.name||'')+' — συγχώνευση'); setShowNewNetForm(true); } else { setCurrentNetwork(null); } setActiveView('netBuilder'); setOpenFolder(null); }}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:'pointer', textAlign:'left' }}>
                 <span style={{ fontSize:24 }}>🔗</span>
                 <span style={{ flex:1 }}>
