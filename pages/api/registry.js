@@ -41,6 +41,10 @@ export default async function handler(req, res) {
           openCount: prev.openCount || 0,
           openedAt: prev.openedAt || null,
           addedAt: prev.addedAt || Date.now(),
+          // Διατήρηση πεδίων αποστολής (μαθητής) — να μη χάνονται σε re-POST
+          sent: typeof f.sent === 'boolean' ? f.sent : (prev.sent || false),
+          sentAt: f.sentAt || prev.sentAt || null,
+          recipients: Array.isArray(f.recipients) ? f.recipients : (prev.recipients || []),
         });
       }
       reg.files = Array.from(byId.values());
