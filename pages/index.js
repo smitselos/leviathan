@@ -2536,6 +2536,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = hasAnyQuestions(f.questions); const hasInfo = !!(f.info||'').trim();
         const isApp = (appFiles||[]).some(a => a.id === f.id); // εφαρμογή; → χωρίς εκτύπωση/ερωτήσεις
+        const isNet = !!(f._isNetwork || networkFileIds?.has(f.id) || (f.tags||[]).includes('Δίκτυο')); // συγχωνευμένο (δίκτυο) → μία μόνο εκτύπωση
         const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
         const isPublished = !!(f.published || (f.visibility && f.visibility !== 'none'));
         const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : (f.visibility?.startsWith('user:') || f.visibility?.startsWith('users:')) ? '👤' : null;
@@ -2586,7 +2587,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
-              {!isApp && (hasQuestions && onPrint && !(f._isNetwork || networkFileIds?.has(f.id) || (f.tags||[]).includes('Δίκτυο')) ? (
+              {!isApp && (hasQuestions && onPrint && !isNet ? (
                 <span style={{ position:'relative', display:'inline-block' }}>
                   <button onClick={(e)=>{e.stopPropagation(); setPrintOpen(printOpen===f.id ? null : f.id);}}
                     style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12, background: printOpen===f.id ? PALETTE.cream.bgSoft : undefined }} title="Εκτύπωση">🖨️</button>
