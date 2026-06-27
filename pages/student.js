@@ -471,10 +471,10 @@ function StudentView({myEmail,isMobile,router}){
       const isExpanded=activeId===item.view;
       const isBefore=hasExpanded&&idx<expandedIdx;
       const isAfter=hasExpanded&&idx>expandedIdx;
-      let mt=idx===0?0:-52, ty=0;
-      if(isExpanded){mt=idx===0?0:16;ty=-8;}
-      else if(isBefore){mt=idx===0?0:-60;ty=-4;}
-      else if(isAfter){mt=-60;ty=40;}
+      let mt=idx===0?0:-24, ty=0;
+      if(isExpanded){mt=idx===0?0:18;ty=-6;}
+      else if(isBefore){mt=idx===0?0:-32;ty=-3;}
+      else if(isAfter){mt=-32;ty=20;}
       return(
         <div key={item.view} onClick={()=>onTap(item,isExpanded)}
           style={{position:'relative',zIndex:isExpanded?50:(isBefore?idx:hasExpanded?idx:idx+1),marginTop:mt,borderRadius:22,cursor:'pointer',padding:'20px 22px',minHeight:96,
