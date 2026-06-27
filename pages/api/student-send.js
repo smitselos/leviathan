@@ -98,22 +98,26 @@ export default async function handler(req, res) {
       await drive.permissions.create({ fileId: uploaded.id, requestBody: { role: 'reader', type: 'anyone' }, fields: 'id' });
     } catch {}
 
-    // 4. Πρόσθεσε στο registry ως sent
+    // 4α. Υπολόγισε τους παραλήπτες (επιλεγμένοι ή όλοι) ΠΡΙΝ το registry,
+    //     ώστε να αποθηκευτούν στο entry (χρειάζονται για «Απεσταλμένα ανά χρήστη»)
+    const conns = await kv.get(`conn:${myEmail}`) || [];
+    const targetConns = selectedRecipients
+      ? conns.filter(email => selectedRecipients.includes(email))
+      : conns;
+
+    // 4β. Πρόσθεσε στο registry ως sent (με τους παραλήπτες)
     if (!reg.files) reg.files = [];
     const sentEntry = {
       id: uploaded.id, name: uploaded.name, mimeType: uploaded.mimeType || fileMime,
       info: '', comment: '', tags: [], questions: '', links: [],
       fav: false, openCount: 0, addedAt: new Date().toISOString(),
       folderId, sent: true, sentAt: new Date().toISOString(),
+      recipients: targetConns,
     };
     reg.files.push(sentEntry);
     await saveRegistry(drive, reg);
 
     // 5. Ειδοποίησε τις συνδέσεις (επιλεγμένους ή όλους)
-    const conns = await kv.get(`conn:${myEmail}`) || [];
-    const targetConns = selectedRecipients
-      ? conns.filter(email => selectedRecipients.includes(email))
-      : conns;
     const inboxEntry = {
       fileId: uploaded.id, fileName: uploaded.name,
       fromEmail: myEmail, fromName: myName,
