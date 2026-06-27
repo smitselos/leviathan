@@ -198,6 +198,8 @@ export default function Home() {
   const [appsSearchOn, setAppsSearchOn] = useState(false);
   const [appsSearchText, setAppsSearchText] = useState('');
   const [appsTagFilter, setAppsTagFilter] = useState(null);
+  const [appsStatActive, setAppsStatActive] = useState(null);   // wallet (κινητό) — ποια στατιστική κάρτα
+  const [appsWalletActive, setAppsWalletActive] = useState(null); // wallet (κινητό) — ποια εφαρμογή
 
   // Live & Συνδέσεις
   const [liveFile, setLiveFile] = useState(null);
@@ -896,6 +898,79 @@ export default function Home() {
     setOpenFolder({ id: appsFolderId, name: 'Εφαρμογές', isApps: true });
     setActiveView('apps'); setActiveTagFilter(null);
     setAppsFilter(null); setAppsSearchOn(false); setAppsSearchText(''); setAppsTagFilter(null);
+    setAppsStatActive(null); setAppsWalletActive(null);
+  };
+
+  // ── Wallet renderer (κινητό): στοιβαγμένες κάρτες — κοινό για φακέλους & εφαρμογές ──
+  // items: [{ view, type:'stat'|'folder', tone, label/value/sub/unit/icon ή name/desc/icon }]
+  // activeId: ποια κάρτα είναι ανοιχτή · onTap(item, isExpanded): χειρισμός αγγίγματος
+  const renderWallet = (items, activeId, onTap) => {
+    const expandedIdx = items.findIndex(i => i.view === activeId);
+    const hasExpanded = expandedIdx >= 0;
+    return items.map((item, idx) => {
+      const p = PALETTE[item.tone];
+      const isExpanded = activeId === item.view;
+      const isBefore = hasExpanded && idx < expandedIdx;
+      const isAfter = hasExpanded && idx > expandedIdx;
+
+      let mt = idx === 0 ? 0 : -52;
+      let ty = 0;
+      if (isExpanded)     { mt = idx===0 ? 0 : 16; ty = -8; }
+      else if (isBefore)  { mt = idx===0 ? 0 : -60; ty = -4; }
+      else if (isAfter)   { mt = -60; ty = 40; }
+
+      return (
+        <div key={item.view} className="wallet-card" onClick={() => onTap(item, isExpanded)}
+          style={{
+            position:'relative',
+            zIndex: isExpanded ? 50 : (isBefore ? idx : hasExpanded ? idx : idx+1),
+            marginTop: mt,
+            borderRadius:22, cursor:'pointer',
+            padding:'20px 22px',
+            minHeight:115,
+            background:`linear-gradient(135deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
+            boxShadow: isExpanded
+              ? '0 14px 44px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.12)'
+              : hasExpanded && !isExpanded
+                ? '0 1px 4px rgba(0,0,0,0.06)'
+                : '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+            transition: 'all 0.4s cubic-bezier(0.34,1.4,0.64,1)',
+            transform: `translateY(${ty}px) scale(${isExpanded ? 1.03 : hasExpanded ? 0.96 : 1})`,
+            opacity: hasExpanded && !isExpanded ? 0.65 : 1,
+            display:'flex', flexDirection:'column',
+          }}>
+          {item.type === 'stat' ? (
+            <>
+              <div style={S.statInner}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:500, color:p.text, opacity:0.75, marginBottom:12 }}>{item.label}</div>
+                  <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:6 }}>
+                    <span style={{ fontSize:36, fontWeight:700, lineHeight:1, color:p.text }}>{item.value}</span>
+                    <span style={{ fontSize:14, color:p.text, opacity:0.6 }}>{item.unit || 'αρχεία'}</span>
+                  </div>
+                  <div style={{ fontSize:12, color:p.text, opacity:0.55 }}>{item.sub}</div>
+                </div>
+                <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon}</div>
+              </div>
+              {isExpanded && (
+                <div style={{ textAlign:'right', marginTop:6 }}>
+                  <span style={{ fontSize:12, fontWeight:600, color:p.deep }}>{item.cta || 'Προβολή →'}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon || Icon.folder}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:16, fontWeight:700, color:p.text, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
+              </div>
+              {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>{item.cta || 'Άνοιγμα →'}</span>}
+            </div>
+          )}
+        </div>
+      );
+    });
   };
 
   if (status === 'loading' || status === 'unauthenticated' || !minLoadDone) {
@@ -942,6 +1017,7 @@ export default function Home() {
   const appRecent = pureAppFiles.filter(f => f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
   const appPopular = pureAppFiles.filter(f => (f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
   const appTags = [...new Set(pureAppFiles.flatMap(f => f.tags||[]))].sort();
+
   const textOnlyFiles = normalFiles.filter(f => !isNetworkFile(f));
   const networkOnlyFiles = [...normalFiles.filter(f => isNetworkFile(f)), ...appFiles.filter(f => isNetworkFile(f))];
 
@@ -1109,88 +1185,6 @@ export default function Home() {
 
               {/* Stat cards */}
               {isMobile ? (()=>{
-                /* ── Unified wallet renderer (ίδιος αλγόριθμος με παλιό ΛΕΒΙΑΘΑΝ) ── */
-                const renderWallet = (items) => {
-                  const expandedIdx = items.findIndex(i => i.view === (i.type==='stat' ? statActive : walletActive));
-                  const hasExpanded = expandedIdx >= 0;
-
-                  return items.map((item, idx) => {
-                    const p = PALETTE[item.tone];
-                    const activeId = item.type==='stat' ? statActive : walletActive;
-                    const isExpanded = activeId === item.view;
-                    const isBefore = hasExpanded && idx < expandedIdx;
-                    const isAfter = hasExpanded && idx > expandedIdx;
-
-                    let mt = idx === 0 ? 0 : -52;
-                    let ty = 0;
-                    if (isExpanded)     { mt = idx===0 ? 0 : 16; ty = -8; }
-                    else if (isBefore)  { mt = idx===0 ? 0 : -60; ty = -4; }
-                    else if (isAfter)   { mt = -60; ty = 40; }
-
-                    const cardClick = () => {
-                      if (isExpanded) {
-                        if (item.type==='stat') { setStatActive(null); setActiveView(item.view); }
-                        else { setWalletActive(null); openFolderView(item); }
-                      } else {
-                        if (item.type==='stat') setStatActive(item.view);
-                        else setWalletActive(item.view);
-                      }
-                    };
-
-                    return (
-                      <div key={item.view} className="wallet-card" onClick={cardClick}
-                        style={{
-                          position:'relative',
-                          zIndex: isExpanded ? 50 : (isBefore ? idx : hasExpanded ? idx : idx+1),
-                          marginTop: mt,
-                          borderRadius:22, cursor:'pointer',
-                          padding: item.type==='stat' ? '20px 22px' : '20px 22px',
-                          minHeight: item.type==='stat' ? 115 : 115,
-                          background:`linear-gradient(135deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}`,
-                          boxShadow: isExpanded
-                            ? '0 14px 44px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.12)'
-                            : hasExpanded && !isExpanded
-                              ? '0 1px 4px rgba(0,0,0,0.06)'
-                              : '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
-                          transition: 'all 0.4s cubic-bezier(0.34,1.4,0.64,1)',
-                          transform: `translateY(${ty}px) scale(${isExpanded ? 1.03 : hasExpanded ? 0.96 : 1})`,
-                          opacity: hasExpanded && !isExpanded ? 0.65 : 1,
-                          display:'flex', flexDirection:'column',
-                        }}>
-                        {item.type === 'stat' ? (
-                          <>
-                            <div style={S.statInner}>
-                              <div style={{ flex:1 }}>
-                                <div style={{ fontSize:13, fontWeight:500, color:p.text, opacity:0.75, marginBottom:12 }}>{item.label}</div>
-                                <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:6 }}>
-                                  <span style={{ fontSize:36, fontWeight:700, lineHeight:1, color:p.text }}>{item.value}</span>
-                                  <span style={{ fontSize:14, color:p.text, opacity:0.6 }}>αρχεία</span>
-                                </div>
-                                <div style={{ fontSize:12, color:p.text, opacity:0.55 }}>{item.sub}</div>
-                              </div>
-                              <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon}</div>
-                            </div>
-                            {isExpanded && (
-                              <div style={{ textAlign:'right', marginTop:6 }}>
-                                <span style={{ fontSize:12, fontWeight:600, color:p.deep }}>Προβολή →</span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                            <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:16, fontWeight:700, color:p.text, marginBottom:2 }}>{item.name}</div>
-                              <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
-                            </div>
-                            {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>Άνοιγμα →</span>}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  });
-                };
-
                 const statsItems = statConfig.map(s => ({ type:'stat', ...s }));
                 const folderItems = folders.map((fld, i) => ({
                   type:'folder', view: fld.id, id: fld.id, name: fld.name,
@@ -1203,12 +1197,18 @@ export default function Home() {
                 return (
                   <>
                     <div style={{ position:'relative', marginBottom:28, paddingBottom:8 }}>
-                      {renderWallet(statsItems)}
+                      {renderWallet(statsItems, statActive, (item, isExpanded) => {
+                        if (isExpanded) { setStatActive(null); setActiveView(item.view); }
+                        else setStatActive(item.view);
+                      })}
                     </div>
                     <section style={{ marginBottom:24 }}>
                       <h2 style={{ ...S.secTitle, marginBottom:12, fontSize:15 }}>Οι φάκελοί μου</h2>
                       <div style={{ position:'relative', marginBottom:8, paddingBottom:8 }}>
-                        {renderWallet(folderItems)}
+                        {renderWallet(folderItems, walletActive, (item, isExpanded) => {
+                          if (isExpanded) { setWalletActive(null); openFolderView(item); }
+                          else setWalletActive(item.view);
+                        })}
                       </div>
                       <div style={{ textAlign:'center', padding:'6px 0' }}>
                         <button onClick={addFolder} disabled={busy==='folder'}
@@ -1338,7 +1338,7 @@ export default function Home() {
             </>
           )}
 
-          {/* APPS VIEW — εφαρμογές ως κάρτες-φάκελοι */}
+          {/* APPS VIEW — εφαρμογές ως κάρτες-φάκελοι (κινητό: wallet, desktop: grid) */}
           {activeView === 'apps' && openFolder && (() => {
             // Ποιες εφαρμογές εμφανίζονται ως κάρτες
             let appCards = pureAppFiles;
@@ -1354,111 +1354,153 @@ export default function Home() {
               { label:'Δημοφιλή', value:appPopular.length, sub:'Πιο δημοφιλείς εφαρμογές', key:'popular', tone:'peach', icon:Icon.bolt },
               { label:'Αναζήτηση', value:appTags.length, sub:'Αναζήτηση με ετικέτες', key:'search', tone:'mustard', icon:Icon.search },
             ];
-            const onStat = (key) => {
+            // Στατιστική κάρτα: εφαρμογή φίλτρου/αναζήτησης
+            const applyAppStat = (key) => {
               if (key === 'search') { setAppsSearchOn(v => !v); return; }
               setAppsFilter(prev => prev === key ? null : key);
             };
+            const sectionTitle = appsFilter === 'favorites' ? 'Αγαπημένες εφαρμογές'
+              : appsFilter === 'popular' ? 'Δημοφιλείς εφαρμογές' : 'Οι εφαρμογές μου';
             return (
             <>
-              <div style={S.pageHeader}>
-                <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
-                <h1 style={S.pageTitle}>Εφαρμογές</h1>
+              <div style={{ ...S.pageHeader, gap: isMobile ? 8 : 14 }}>
+                <button onClick={goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
+                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>Εφαρμογές</h1>
                 <div style={{ flex:1 }} />
-                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Google Drive">{busy==='picker'?'…':'＋ Drive'}</button>
-                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα">{busy==='upload'?'…':'＋ Ανέβασμα'}</button>
+                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding: isMobile ? '7px 11px' : '5px 10px', opacity:0.75 }} title="Επιλογή από Google Drive">{busy==='picker'?'…':(isMobile?'📁':'＋ Drive')}</button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding: isMobile ? '7px 11px' : '5px 10px', opacity:0.75 }} title="Ανέβασμα">{busy==='upload'?'…':(isMobile?'⬆️':'＋ Ανέβασμα')}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:16 }}>
                 Κάθε εφαρμογή εμφανίζεται ως κάρτα-φάκελος. Πάτησέ την για να ανοίξει.
               </p>
 
-              {/* Stat cards: Αγαπημένα · Δημοφιλή · Αναζήτηση */}
-              <div style={{ ...S.statsGrid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit,minmax(220px,1fr))', gap:14, marginBottom: appsSearchOn ? 16 : 32 }}>
-                {appStatConfig.map((s) => {
-                  const p = PALETTE[s.tone];
-                  const active = s.key === 'search' ? appsSearchOn : appsFilter === s.key;
-                  return (
-                    <div key={s.key} className="ch" onClick={() => onStat(s.key)}
-                      style={{ ...S.statCard, minHeight:120, cursor:'pointer', outline: active ? `2px solid ${p.deep}` : 'none', outlineOffset:active ? 2 : 0, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
-                      <div style={S.statInner}>
-                        <div>
-                          <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
-                          <div style={{ ...S.statVal, color:p.text, fontSize:36 }}>{s.value}</div>
-                          <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
-                        </div>
-                        <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {isMobile ? (
+                /* ═══ ΚΙΝΗΤΟ: wallet στατιστικών + wallet εφαρμογών ═══ */
+                <>
+                  <div style={{ position:'relative', marginBottom:28, paddingBottom:8 }}>
+                    {renderWallet(
+                      appStatConfig.map(s => ({ type:'stat', view:s.key, unit:'', cta:s.key==='search'?'Αναζήτηση →':'Προβολή →', ...s })),
+                      appsStatActive,
+                      (item, isExpanded) => {
+                        if (isExpanded) { setAppsStatActive(null); applyAppStat(item.view); }
+                        else setAppsStatActive(item.view);
+                      }
+                    )}
+                  </div>
 
-              {/* Πεδίο αναζήτησης + ετικέτες */}
-              {appsSearchOn && (
-                <div style={{ marginBottom:24 }}>
-                  <input autoFocus type="search" placeholder="Αναζήτηση εφαρμογής με όνομα ή ετικέτα…" value={appsSearchText} onChange={(e)=>setAppsSearchText(e.target.value)}
-                    style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom: appTags.length ? 10 : 0 }} />
-                  {appTags.length > 0 && (
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                      {appTags.map(t => {
-                        const c = tagColor(t);
-                        const on = appsTagFilter === t;
-                        return (
-                          <span key={t} onClick={() => setAppsTagFilter(on ? null : t)}
-                            style={{ fontSize:11, padding:'4px 11px', borderRadius:999, cursor:'pointer', background: on ? c.text : c.bg, color: on ? '#fff' : c.text, fontWeight:600 }}>
-                            #{t}
-                          </span>
-                        );
-                      })}
+                  {appsSearchOn && (
+                    <div style={{ marginBottom:24 }}>
+                      <input autoFocus type="search" placeholder="Αναζήτηση εφαρμογής με όνομα ή ετικέτα…" value={appsSearchText} onChange={(e)=>setAppsSearchText(e.target.value)}
+                        style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:16, background:'#fff', marginBottom: appTags.length ? 10 : 0 }} />
+                      {appTags.length > 0 && (
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                          {appTags.map(t => { const c = tagColor(t); const on = appsTagFilter === t;
+                            return <span key={t} onClick={() => setAppsTagFilter(on ? null : t)} style={{ fontSize:11, padding:'4px 11px', borderRadius:999, cursor:'pointer', background: on ? c.text : c.bg, color: on ? '#fff' : c.text, fontWeight:600 }}>#{t}</span>;
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Κάρτες εφαρμογών (σαν φάκελοι) */}
-              <section style={{ marginBottom:44 }}>
-                <h2 style={S.secTitle}>
-                  {appsFilter === 'favorites' ? 'Αγαπημένες εφαρμογές' : appsFilter === 'popular' ? 'Δημοφιλείς εφαρμογές' : 'Οι εφαρμογές μου'}
-                  {appsTagFilter && <span style={{ fontSize:13, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}
-                </h2>
-                {loading ? (
-                  <div style={S.empty}>Φόρτωση…</div>
-                ) : appCards.length === 0 ? (
-                  <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με «＋ Drive» ή «＋ Ανέβασμα».</div>
-                ) : (
-                  <div style={S.cardsGrid}>
-                    {appCards.map((f, i) => {
-                      const p = PALETTE[TONES[i % TONES.length]];
-                      const nTags = (f.tags||[]).length;
+                  <section style={{ marginBottom:24 }}>
+                    <h2 style={{ ...S.secTitle, marginBottom:12, fontSize:15 }}>{sectionTitle}{appsTagFilter && <span style={{ fontSize:12, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}</h2>
+                    {loading ? <div style={S.empty}>Φόρτωση…</div>
+                      : appCards.length === 0 ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με 📁 ή ⬆️.</div>
+                      : <div style={{ position:'relative', marginBottom:8, paddingBottom:8 }}>
+                          {renderWallet(
+                            appCards.map((f, i) => ({
+                              type:'folder', view: f.id, name: trunc(f.name, 22), icon: Icon.apps, cta:'Άνοιγμα →',
+                              desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : ''),
+                              tone: TONES[i % TONES.length],
+                            })),
+                            appsWalletActive,
+                            (item, isExpanded) => {
+                              const f = appCards.find(x => x.id === item.view);
+                              if (isExpanded) { setAppsWalletActive(null); if (f) openViewer(f); }
+                              else setAppsWalletActive(item.view);
+                            }
+                          )}
+                        </div>
+                    }
+                  </section>
+                </>
+              ) : (
+                /* ═══ DESKTOP: grid στατιστικών + grid καρτών ═══ */
+                <>
+                  <div style={{ ...S.statsGrid, gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:14, marginBottom: appsSearchOn ? 16 : 40 }}>
+                    {appStatConfig.map((s) => {
+                      const p = PALETTE[s.tone];
+                      const active = s.key === 'search' ? appsSearchOn : appsFilter === s.key;
                       return (
-                        <div key={f.id} className="ch" onClick={() => openViewer(f)}
-                          style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
-                          <div style={S.folderTop}>
-                            <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.apps}</div>
-                            <div style={{ display:'flex', gap:6 }}>
-                              <button onClick={(e)=>toggleFavorite(f.id, e)} title="Αγαπημένο"
-                                style={{ background:'transparent', border:'none', cursor:'pointer', color: f.favorite ? p.deep : p.text, opacity: f.favorite ? 1 : 0.4, padding:2, lineHeight:0 }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill={f.favorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                              </button>
-                              <button onClick={(e)=>{ e.stopPropagation(); setQrFile(f); }} title="QR"
-                                style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.45, padding:2, lineHeight:0 }}>{QrIcon}</button>
-                              <button onClick={(e)=>{ e.stopPropagation(); removeFile(f.id); }} title="Αφαίρεση"
-                                style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.4, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
+                        <div key={s.key} className="ch" onClick={() => applyAppStat(s.key)}
+                          style={{ ...S.statCard, minHeight:120, cursor:'pointer', outline: active ? `2px solid ${p.deep}` : 'none', outlineOffset: active ? 2 : 0, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                          <div style={S.statInner}>
+                            <div>
+                              <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
+                              <div style={{ ...S.statVal, color:p.text, fontSize:36 }}>{s.value}</div>
+                              <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
                             </div>
-                          </div>
-                          <h3 style={{ ...S.folderTitle, color:p.text }}>{trunc(f.name, 26)}</h3>
-                          <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>
-                            {(f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή'}{nTags > 0 ? ` · ${nTags} ετικέτες` : ''}
-                          </p>
-                          <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
-                            <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                            <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
-              </section>
+
+                  {appsSearchOn && (
+                    <div style={{ marginBottom:24 }}>
+                      <input autoFocus type="search" placeholder="Αναζήτηση εφαρμογής με όνομα ή ετικέτα…" value={appsSearchText} onChange={(e)=>setAppsSearchText(e.target.value)}
+                        style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:13, background:'#fff', marginBottom: appTags.length ? 10 : 0 }} />
+                      {appTags.length > 0 && (
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                          {appTags.map(t => { const c = tagColor(t); const on = appsTagFilter === t;
+                            return <span key={t} onClick={() => setAppsTagFilter(on ? null : t)} style={{ fontSize:11, padding:'4px 11px', borderRadius:999, cursor:'pointer', background: on ? c.text : c.bg, color: on ? '#fff' : c.text, fontWeight:600 }}>#{t}</span>;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <section style={{ marginBottom:44 }}>
+                    <h2 style={S.secTitle}>{sectionTitle}{appsTagFilter && <span style={{ fontSize:13, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}</h2>
+                    {loading ? <div style={S.empty}>Φόρτωση…</div>
+                      : appCards.length === 0 ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με «＋ Drive» ή «＋ Ανέβασμα».</div>
+                      : <div style={S.cardsGrid}>
+                          {appCards.map((f, i) => {
+                            const p = PALETTE[TONES[i % TONES.length]];
+                            const nTags = (f.tags||[]).length;
+                            return (
+                              <div key={f.id} className="ch" onClick={() => openViewer(f)}
+                                style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                                <div style={S.folderTop}>
+                                  <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.apps}</div>
+                                  <div style={{ display:'flex', gap:6 }}>
+                                    <button onClick={(e)=>toggleFavorite(f.id, e)} title="Αγαπημένο"
+                                      style={{ background:'transparent', border:'none', cursor:'pointer', color: f.favorite ? p.deep : p.text, opacity: f.favorite ? 1 : 0.4, padding:2, lineHeight:0 }}>
+                                      <svg width="18" height="18" viewBox="0 0 24 24" fill={f.favorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    </button>
+                                    <button onClick={(e)=>{ e.stopPropagation(); setQrFile(f); }} title="QR"
+                                      style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.45, padding:2, lineHeight:0 }}>{QrIcon}</button>
+                                    <button onClick={(e)=>{ e.stopPropagation(); removeFile(f.id); }} title="Αφαίρεση"
+                                      style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.4, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
+                                  </div>
+                                </div>
+                                <h3 style={{ ...S.folderTitle, color:p.text }}>{trunc(f.name, 26)}</h3>
+                                <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>
+                                  {(f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή'}{nTags > 0 ? ` · ${nTags} ετικέτες` : ''}
+                                </p>
+                                <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
+                                  <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                    }
+                  </section>
+                </>
+              )}
 
               {/* Πρόσφατες / Δημοφιλείς εφαρμογές */}
               {(appRecent.length > 0 || appPopular.length > 0) && (
