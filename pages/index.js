@@ -1320,7 +1320,7 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
             </>
           )}
 
@@ -1339,7 +1339,7 @@ export default function Home() {
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />
+              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
             </>
           )}
 
@@ -1793,7 +1793,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
             </>
           )}
 
@@ -1839,7 +1839,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />}
             </>
           )}
 
@@ -2514,7 +2514,7 @@ function QuestionsFields({ fileId, raw, onChange, compact, readOnly }) {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls, onPrint }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls, onPrint, networkFileIds }) {
   const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
@@ -2586,7 +2586,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
-              {!isApp && (hasQuestions && onPrint && !(f._isNetwork || (f.tags||[]).includes('Δίκτυο')) ? (
+              {!isApp && (hasQuestions && onPrint && !(f._isNetwork || networkFileIds?.has(f.id) || (f.tags||[]).includes('Δίκτυο')) ? (
                 <span style={{ position:'relative', display:'inline-block' }}>
                   <button onClick={(e)=>{e.stopPropagation(); setPrintOpen(printOpen===f.id ? null : f.id);}}
                     style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12, background: printOpen===f.id ? PALETTE.cream.bgSoft : undefined }} title="Εκτύπωση">🖨️</button>
