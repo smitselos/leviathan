@@ -242,12 +242,12 @@ function StudentView({myEmail,isMobile,router}){
   const [groups,setGroups]=useState([]);           // χειροκίνητες ομάδες (από localStorage)
   const [expandedCard,setExpandedCard]=useState(null);
   const [detailSearch,setDetailSearch]=useState('');
+  const [walletActive,setWalletActive]=useState(null); // κινητό: ποια κάρτα-φάκελος είναι ανοιχτή (wallet)
 
   const myName=myEmail;
 
-  // Φόρτωση ομάδων (localStorage· συγχρονίζονται με τη σελίδα «Δίκτυο»)
-  const GROUPS_KEY = myEmail ? `lev_groups_${myEmail}` : 'lev_groups';
-  useEffect(()=>{ try{ const r=localStorage.getItem(GROUPS_KEY); setGroups(r?JSON.parse(r)||[]:[]); }catch{ setGroups([]); } },[GROUPS_KEY]);
+  // Φόρτωση ομάδων από τον server (συγχρονισμός σε όλες τις συσκευές)
+  useEffect(()=>{ (async()=>{ try{ const r=await fetch('/api/student-groups'); const d=await r.json(); setGroups(Array.isArray(d.groups)?d.groups:[]); }catch{ setGroups([]); } })(); },[]);
 
   const loadAll=useCallback(async()=>{
     setLoading(true);
@@ -461,6 +461,40 @@ function StudentView({myEmail,isMobile,router}){
     );
   };
 
+  // ── Wallet renderer (κινητό): στοιβαγμένες κάρτες-φάκελοι, όπως του καθηγητή ──
+  // items: [{ view, name, sub, icon, tone:'cream'|'peach', badge, open() }]
+  const renderWallet=(items,activeId,onTap)=>{
+    const expandedIdx=items.findIndex(i=>i.view===activeId);
+    const hasExpanded=expandedIdx>=0;
+    return items.map((item,idx)=>{
+      const t=P[item.tone]||P.cream;
+      const isExpanded=activeId===item.view;
+      const isBefore=hasExpanded&&idx<expandedIdx;
+      const isAfter=hasExpanded&&idx>expandedIdx;
+      let mt=idx===0?0:-52, ty=0;
+      if(isExpanded){mt=idx===0?0:16;ty=-8;}
+      else if(isBefore){mt=idx===0?0:-60;ty=-4;}
+      else if(isAfter){mt=-60;ty=40;}
+      return(
+        <div key={item.view} onClick={()=>onTap(item,isExpanded)}
+          style={{position:'relative',zIndex:isExpanded?50:(isBefore?idx:hasExpanded?idx:idx+1),marginTop:mt,borderRadius:22,cursor:'pointer',padding:'20px 22px',minHeight:96,
+            background:`linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 55%, transparent 70%), ${t.bg}`,
+            boxShadow:isExpanded?'0 14px 44px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.12)':hasExpanded&&!isExpanded?'0 1px 4px rgba(0,0,0,0.06)':'0 2px 8px rgba(0,0,0,0.06)',
+            transition:'all 0.4s cubic-bezier(0.34,1.4,0.64,1)',transform:`translateY(${ty}px) scale(${isExpanded?1.03:hasExpanded?0.96:1})`,opacity:hasExpanded&&!isExpanded?0.65:1,display:'flex',flexDirection:'column'}}>
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <div style={{width:46,height:46,borderRadius:14,background:t.accent,color:t.deep,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,flexShrink:0}}>{item.icon}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:16,fontWeight:700,color:t.text,marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+              <div style={{fontSize:12,color:t.text,opacity:0.65,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.sub}</div>
+            </div>
+            {item.badge>0&&<span style={S.badge}>{item.badge}</span>}
+            {isExpanded&&<span style={{fontSize:13,fontWeight:600,color:t.deep,flexShrink:0}}>Άνοιγμα →</span>}
+          </div>
+        </div>
+      );
+    });
+  };
+
   // ── Προβολή «Ανοιχτή πρόσβαση»: δημόσιο υλικό όλων των εκπαιδευτικών ──
   if(publicView && !viewing){
     const teacherList=(network.connections||[]).filter(c=>publicFiles.some(f=>f.fromEmail===c.email));
@@ -592,6 +626,14 @@ function StudentView({myEmail,isMobile,router}){
                 </div>
               );
             };
+            const openOf=(o)=>()=>{setExpandedCard(null);setDetailSearch('');setOpenFolder({type:o.type,name:o.name});};
+            // Στοιχεία για wallet (κινητό)
+            const fixedItems=fixed.map(o=>({view:o.key,name:o.name,sub:o.sub,icon:o.icon,tone:o.tone,badge:o.badge,open:openOf(o)}));
+            const contactItems=[
+              ...groups.map(g=>{const ic=inboxFromGroup(g),st=sentToGroup(g);return {view:'g_'+g.id,name:g.name,icon:'👥',tone:'peach',sub:`📥 ${ic.length} · 📤 ${st.length}`,badge:unseenFor(ic),open:()=>{setExpandedCard(null);setOpenFolder({type:'group',group:g,name:g.name});}};}),
+              ...conns.map(c=>{const nm=c.name||c.email.split('@')[0];const ic=inboxFromUser(c.email),st=sentToUser(c.email);return {view:'u_'+c.email,name:nm,icon:(nm.charAt(0)||'?').toUpperCase(),tone:'cream',sub:`📥 ${ic.length} · 📤 ${st.length}`,badge:unseenFor(ic),open:()=>{setExpandedCard(null);setOpenFolder({type:'user',email:c.email,name:nm});}};}),
+            ];
+            const walletTap=(item,isExpanded)=>{ if(isExpanded){setWalletActive(null);item.open();} else setWalletActive(item.view); };
             return(
               <>
                 <div style={{marginBottom:18}}>
@@ -599,9 +641,11 @@ function StudentView({myEmail,isMobile,router}){
                   <p style={{fontSize:13,color:'#6b6b80',margin:0}}>{myEmail}</p>
                 </div>
 
-                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fit,minmax(260px,1fr))',gap:18,marginBottom:32}}>
-                  {fixed.map(o=>card(o,()=>{setExpandedCard(null);setDetailSearch('');setOpenFolder({type:o.type,name:o.name});}))}
-                </div>
+                {isMobile
+                  ? <div style={{position:'relative',marginBottom:28,paddingBottom:8}}>{renderWallet(fixedItems,walletActive,walletTap)}</div>
+                  : <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:18,marginBottom:32}}>
+                      {fixed.map(o=>card(o,openOf(o)))}
+                    </div>}
 
                 <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:12,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   Οι επαφές μου
@@ -610,19 +654,21 @@ function StudentView({myEmail,isMobile,router}){
 
                 {conns.length===0&&groups.length===0
                   ? <div style={S.emptyCol}>Δεν έχεις συνδέσεις ακόμη. Πήγαινε στο «Δίκτυο» για να προσκαλέσεις χρήστες.</div>
-                  : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fit,minmax(260px,1fr))',gap:18}}>
-                      {groups.map(g=>{
-                        const ic=inboxFromGroup(g), st=sentToGroup(g);
-                        return card({key:'g_'+g.id,name:g.name,icon:'👥',tone:'peach',sub:`📥 ${ic.length} εισερχόμενα · 📤 ${st.length} απεσταλμένα`,badge:unseenFor(ic)},
-                          ()=>{setExpandedCard(null);setOpenFolder({type:'group',group:g,name:g.name});});
-                      })}
-                      {conns.map(c=>{
-                        const nm=c.name||c.email.split('@')[0];
-                        const ic=inboxFromUser(c.email), st=sentToUser(c.email);
-                        return card({key:'u_'+c.email,name:nm,icon:(nm.charAt(0)||'?').toUpperCase(),tone:'cream',sub:`📥 ${ic.length} εισερχόμενα · 📤 ${st.length} απεσταλμένα`,badge:unseenFor(ic)},
-                          ()=>{setExpandedCard(null);setOpenFolder({type:'user',email:c.email,name:nm});});
-                      })}
-                    </div>
+                  : isMobile
+                    ? <div style={{position:'relative',paddingBottom:8}}>{renderWallet(contactItems,walletActive,walletTap)}</div>
+                    : <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:18}}>
+                        {groups.map(g=>{
+                          const ic=inboxFromGroup(g), st=sentToGroup(g);
+                          return card({key:'g_'+g.id,name:g.name,icon:'👥',tone:'peach',sub:`📥 ${ic.length} εισερχόμενα · 📤 ${st.length} απεσταλμένα`,badge:unseenFor(ic)},
+                            ()=>{setExpandedCard(null);setOpenFolder({type:'group',group:g,name:g.name});});
+                        })}
+                        {conns.map(c=>{
+                          const nm=c.name||c.email.split('@')[0];
+                          const ic=inboxFromUser(c.email), st=sentToUser(c.email);
+                          return card({key:'u_'+c.email,name:nm,icon:(nm.charAt(0)||'?').toUpperCase(),tone:'cream',sub:`📥 ${ic.length} εισερχόμενα · 📤 ${st.length} απεσταλμένα`,badge:unseenFor(ic)},
+                            ()=>{setExpandedCard(null);setOpenFolder({type:'user',email:c.email,name:nm});});
+                        })}
+                      </div>
                 }
               </>
             );
