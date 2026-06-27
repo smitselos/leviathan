@@ -183,7 +183,9 @@ export default function Home() {
   const saveTimerI = useRef(null);
   const saveTimerNetC = useRef(null);
   const saveTimerNetI = useRef(null);
+  const saveTimerPdf = useRef(null);
   const currentNetRef = useRef(null);
+  const networksRef = useRef([]);
 
   // Αναζήτηση με ετικέτες
   const [searchTags, setSearchTags] = useState([]);
@@ -261,6 +263,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => { currentNetRef.current = currentNetwork; }, [currentNetwork]);
+  useEffect(() => { networksRef.current = networks; }, [networks]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -412,6 +415,11 @@ export default function Home() {
     setFiles((p) => p.map((f) => f.id === id ? { ...f, questions: value } : f));
     if (saveTimerQ.current) clearTimeout(saveTimerQ.current);
     saveTimerQ.current = setTimeout(() => patchMeta(id, { questions: value }), 800);
+    // Αν το αρχείο είναι PDF δικτύου, αναγέννησε το PDF μετά από μεγαλύτερη καθυστέρηση
+    if (networksRef.current.some(n => n.pdfFileId === id)) {
+      if (saveTimerPdf.current) clearTimeout(saveTimerPdf.current);
+      saveTimerPdf.current = setTimeout(() => regenerateNetworkPdf(id, value), 2000);
+    }
   };
   const fileLinks = (id) => fileOf(id).links || [];
   const addLink = (id, link) => {
@@ -567,6 +575,42 @@ export default function Home() {
     updateNet(updated); saveNetworkData(updated);
   };
   const saveNetQuestionsNow = () => { if (currentNetwork) saveNetworkData(currentNetwork); };
+
+  // ── Αναγέννηση PDF δικτύου όταν αλλάζουν ερωτήσεις από κάρτα/modal ──
+  const regenerateNetworkPdf = async (fileId, questionsRaw) => {
+    const net = networksRef.current.find(n => n.pdfFileId === fileId);
+    if (!net || !net.items?.length) return;
+    const parsedQs = parseQuestions(questionsRaw);
+    const nonEmptyQs = parsedQs.filter(q => q.text?.trim());
+    const filteredItems = net.items.map((item, idx) => ({
+      ...item,
+      questions: idx === 0
+        ? nonEmptyQs.map(q => ({ id: 'final_' + q.code, code: q.code, text: q.text, selected: true }))
+        : [],
+    }));
+    const filteredNetwork = { ...net, items: filteredItems };
+    try {
+      const r = await fetch('/api/networks/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ network: filteredNetwork }),
+      });
+      const d = await r.json();
+      if (r.ok) {
+        const updated = { ...net, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
+        setNetworks(prev => prev.map(n => n.id === net.id ? updated : n));
+        setNetMsg('✓ PDF ενημερώθηκε');
+        setTimeout(() => setNetMsg(''), 2500);
+      } else {
+        setNetMsg('✗ Αποτυχία αναγέννησης PDF');
+        setTimeout(() => setNetMsg(''), 2500);
+      }
+    } catch {
+      setNetMsg('✗ Σφάλμα αναγέννησης PDF');
+      setTimeout(() => setNetMsg(''), 2500);
+    }
+  };
+
   // ── Μεταδεδομένα δικτύου (ετικέτες, σχόλια, πληροφορίες) ──
   const addNetTag = (tag) => {
     if (!currentNetwork) return;
