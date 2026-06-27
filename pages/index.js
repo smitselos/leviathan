@@ -193,6 +193,12 @@ export default function Home() {
   const [searchCategory, setSearchCategory] = useState('texts'); // 'texts' | 'networks' | 'apps'
   const [folderSearch, setFolderSearch] = useState('');
 
+  // ── Προβολή «Εφαρμογές» ως κάρτες-φάκελοι ──
+  const [appsFilter, setAppsFilter] = useState(null);     // null | 'favorites' | 'popular'
+  const [appsSearchOn, setAppsSearchOn] = useState(false);
+  const [appsSearchText, setAppsSearchText] = useState('');
+  const [appsTagFilter, setAppsTagFilter] = useState(null);
+
   // Live & Συνδέσεις
   const [liveFile, setLiveFile] = useState(null);
   const [activeLiveTab, setActiveLiveTab] = useState(0);
@@ -889,6 +895,7 @@ export default function Home() {
     if (!appsFolderId) return;
     setOpenFolder({ id: appsFolderId, name: 'Εφαρμογές', isApps: true });
     setActiveView('apps'); setActiveTagFilter(null);
+    setAppsFilter(null); setAppsSearchOn(false); setAppsSearchText(''); setAppsTagFilter(null);
   };
 
   if (status === 'loading' || status === 'unauthenticated' || !minLoadDone) {
@@ -928,6 +935,13 @@ export default function Home() {
   ].filter(Boolean));
   const appFiles = appsFolderId ? files.filter(f => f.folderId === appsFolderId) : [];
   const isNetworkFile = (f) => networkFileIds.has(f.id) || f._isNetwork;
+
+  // ── Παράγωγες λίστες «Εφαρμογών» (μόνο πραγματικές εφαρμογές, όχι δίκτυα-PDF) ──
+  const pureAppFiles = appFiles.filter(f => !isNetworkFile(f));
+  const appFavorites = pureAppFiles.filter(f => f.favorite);
+  const appRecent = pureAppFiles.filter(f => f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
+  const appPopular = pureAppFiles.filter(f => (f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
+  const appTags = [...new Set(pureAppFiles.flatMap(f => f.tags||[]))].sort();
   const textOnlyFiles = normalFiles.filter(f => !isNetworkFile(f));
   const networkOnlyFiles = [...normalFiles.filter(f => isNetworkFile(f)), ...appFiles.filter(f => isNetworkFile(f))];
 
@@ -1324,24 +1338,164 @@ export default function Home() {
             </>
           )}
 
-          {/* APPS VIEW */}
-          {activeView === 'apps' && openFolder && (
+          {/* APPS VIEW — εφαρμογές ως κάρτες-φάκελοι */}
+          {activeView === 'apps' && openFolder && (() => {
+            // Ποιες εφαρμογές εμφανίζονται ως κάρτες
+            let appCards = pureAppFiles;
+            if (appsFilter === 'favorites') appCards = appFavorites;
+            else if (appsFilter === 'popular') appCards = appPopular;
+            if (appsTagFilter) appCards = appCards.filter(f => (f.tags||[]).includes(appsTagFilter));
+            if (appsSearchText.trim()) {
+              const q = appsSearchText.toLowerCase();
+              appCards = appCards.filter(f => (f.name||'').toLowerCase().includes(q) || (f.tags||[]).some(t => t.toLowerCase().includes(q)));
+            }
+            const appStatConfig = [
+              { label:'Αγαπημένα', value:appFavorites.length, sub:'Επιλεγμένες εφαρμογές', key:'favorites', tone:'cream', icon:Icon.star },
+              { label:'Δημοφιλή', value:appPopular.length, sub:'Πιο δημοφιλείς εφαρμογές', key:'popular', tone:'peach', icon:Icon.bolt },
+              { label:'Αναζήτηση', value:appTags.length, sub:'Αναζήτηση με ετικέτες', key:'search', tone:'mustard', icon:Icon.search },
+            ];
+            const onStat = (key) => {
+              if (key === 'search') { setAppsSearchOn(v => !v); return; }
+              setAppsFilter(prev => prev === key ? null : key);
+            };
+            return (
             <>
               <div style={S.pageHeader}>
                 <button onClick={goHome} style={S.backBtn}>← Πίσω</button>
                 <h1 style={S.pageTitle}>Εφαρμογές</h1>
-              </div>
-              <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:16 }}>
-                Ανέβασε ή επίλεξε εφαρμογές (π.χ. διαδραστικά HTML, κουίζ). Αποθηκεύονται χωριστά και δεν εμφανίζονται στους φακέλους σου.
-              </p>
-              <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
-                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='picker'?'…':'➕ Drive'}</button>
-                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, opacity:0.7 }}>{busy==='upload'?'…':'⬆️ Ανέβασμα'}</button>
+                <div style={{ flex:1 }} />
+                <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Επιλογή από Google Drive">{busy==='picker'?'…':'＋ Drive'}</button>
+                <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', opacity:0.7 }} title="Ανέβασμα">{busy==='upload'?'…':'＋ Ανέβασμα'}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
-              <FileList files={viewFiles} loading={loading} empty="Καμία εφαρμογή ακόμη. Πρόσθεσε με «Επιλογή από Drive» ή «Ανέβασμα»." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+              <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:16 }}>
+                Κάθε εφαρμογή εμφανίζεται ως κάρτα-φάκελος. Πάτησέ την για να ανοίξει.
+              </p>
+
+              {/* Stat cards: Αγαπημένα · Δημοφιλή · Αναζήτηση */}
+              <div style={{ ...S.statsGrid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit,minmax(220px,1fr))', gap:14, marginBottom: appsSearchOn ? 16 : 32 }}>
+                {appStatConfig.map((s) => {
+                  const p = PALETTE[s.tone];
+                  const active = s.key === 'search' ? appsSearchOn : appsFilter === s.key;
+                  return (
+                    <div key={s.key} className="ch" onClick={() => onStat(s.key)}
+                      style={{ ...S.statCard, minHeight:120, cursor:'pointer', outline: active ? `2px solid ${p.deep}` : 'none', outlineOffset:active ? 2 : 0, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                      <div style={S.statInner}>
+                        <div>
+                          <div style={{ ...S.statLabel, color:p.text }}>{s.label}</div>
+                          <div style={{ ...S.statVal, color:p.text, fontSize:36 }}>{s.value}</div>
+                          <div style={{ ...S.statSub, color:p.text, opacity:0.7 }}>{s.sub}</div>
+                        </div>
+                        <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{s.icon}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Πεδίο αναζήτησης + ετικέτες */}
+              {appsSearchOn && (
+                <div style={{ marginBottom:24 }}>
+                  <input autoFocus type="search" placeholder="Αναζήτηση εφαρμογής με όνομα ή ετικέτα…" value={appsSearchText} onChange={(e)=>setAppsSearchText(e.target.value)}
+                    style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom: appTags.length ? 10 : 0 }} />
+                  {appTags.length > 0 && (
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                      {appTags.map(t => {
+                        const c = tagColor(t);
+                        const on = appsTagFilter === t;
+                        return (
+                          <span key={t} onClick={() => setAppsTagFilter(on ? null : t)}
+                            style={{ fontSize:11, padding:'4px 11px', borderRadius:999, cursor:'pointer', background: on ? c.text : c.bg, color: on ? '#fff' : c.text, fontWeight:600 }}>
+                            #{t}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Κάρτες εφαρμογών (σαν φάκελοι) */}
+              <section style={{ marginBottom:44 }}>
+                <h2 style={S.secTitle}>
+                  {appsFilter === 'favorites' ? 'Αγαπημένες εφαρμογές' : appsFilter === 'popular' ? 'Δημοφιλείς εφαρμογές' : 'Οι εφαρμογές μου'}
+                  {appsTagFilter && <span style={{ fontSize:13, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}
+                </h2>
+                {loading ? (
+                  <div style={S.empty}>Φόρτωση…</div>
+                ) : appCards.length === 0 ? (
+                  <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με «＋ Drive» ή «＋ Ανέβασμα».</div>
+                ) : (
+                  <div style={S.cardsGrid}>
+                    {appCards.map((f, i) => {
+                      const p = PALETTE[TONES[i % TONES.length]];
+                      const nTags = (f.tags||[]).length;
+                      return (
+                        <div key={f.id} className="ch" onClick={() => openViewer(f)}
+                          style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                          <div style={S.folderTop}>
+                            <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.apps}</div>
+                            <div style={{ display:'flex', gap:6 }}>
+                              <button onClick={(e)=>toggleFavorite(f.id, e)} title="Αγαπημένο"
+                                style={{ background:'transparent', border:'none', cursor:'pointer', color: f.favorite ? p.deep : p.text, opacity: f.favorite ? 1 : 0.4, padding:2, lineHeight:0 }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill={f.favorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                              </button>
+                              <button onClick={(e)=>{ e.stopPropagation(); setQrFile(f); }} title="QR"
+                                style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.45, padding:2, lineHeight:0 }}>{QrIcon}</button>
+                              <button onClick={(e)=>{ e.stopPropagation(); removeFile(f.id); }} title="Αφαίρεση"
+                                style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.4, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
+                            </div>
+                          </div>
+                          <h3 style={{ ...S.folderTitle, color:p.text }}>{trunc(f.name, 26)}</h3>
+                          <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>
+                            {(f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή'}{nTags > 0 ? ` · ${nTags} ετικέτες` : ''}
+                          </p>
+                          <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
+                            <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+              {/* Πρόσφατες / Δημοφιλείς εφαρμογές */}
+              {(appRecent.length > 0 || appPopular.length > 0) && (
+                <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20, marginBottom: isMobile ? 24 : 44 }}>
+                  <section>
+                    <h2 style={{ ...S.secTitle, display:'flex', alignItems:'center', gap:8 }}>{Icon.clock} Πρόσφατες</h2>
+                    <div style={S.recentList}>
+                      {appRecent.length === 0
+                        ? <div style={S.empty}>Δεν έχεις ανοίξει εφαρμογές ακόμα</div>
+                        : appRecent.map((f, idx) => (
+                          <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<appRecent.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
+                            <span style={{ fontSize:16, flexShrink:0 }}>⚡</span>
+                            <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
+                            <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
+                          </div>
+                        ))}
+                    </div>
+                  </section>
+                  <section>
+                    <h2 style={{ ...S.secTitle, display:'flex', alignItems:'center', gap:8 }}>{Icon.bolt} Δημοφιλείς</h2>
+                    <div style={S.recentList}>
+                      {appPopular.length === 0
+                        ? <div style={S.empty}>Άνοιξε μερικές εφαρμογές για να εμφανιστούν εδώ</div>
+                        : appPopular.map((f, idx) => (
+                          <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<appPopular.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
+                            <div style={{ width:24, height:24, borderRadius:8, background:PALETTE.mustard.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:11, fontWeight:700, color:PALETTE.mustard.deep }}>{f.openCount}</div>
+                            <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
+                            <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
+                          </div>
+                        ))}
+                    </div>
+                  </section>
+                </div>
+              )}
             </>
-          )}
+            );
+          })()}
 
           {/* ΔΗΜΙΟΥΡΓΙΑ ΔΙΚΤΥΟΥ ΚΕΙΜΕΝΩΝ */}
           {activeView === 'netBuilder' && (
