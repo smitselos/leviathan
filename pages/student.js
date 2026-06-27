@@ -25,6 +25,7 @@ const Ic={
   dashboard:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>,
   globe:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
   login:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>,
+  net:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="2.4"/><circle cx="5" cy="19" r="2.4"/><circle cx="19" cy="19" r="2.4"/><line x1="12" y1="7.4" x2="5.8" y2="16.8"/><line x1="12" y1="7.4" x2="18.2" y2="16.8"/><line x1="7" y1="19" x2="17" y2="19"/></svg>,
 };
 
 export default function StudentPage({ teacher: ssrTeacher }){
@@ -236,8 +237,17 @@ function StudentView({myEmail,isMobile,router}){
   const [publicFrom,setPublicFrom]=useState('__all__'); // φίλτρο δημόσιου υλικού ανά εκπαιδευτικό
   const [loadingPublic,setLoadingPublic]=useState(false);
   const [expandedPub,setExpandedPub]=useState(null);
+  // ── Νέος πίνακας ελέγχου με κάρτες-φακέλους ──
+  const [openFolder,setOpenFolder]=useState(null); // {type:'inbox'|'sent'|'search'|'user'|'group', email?, group?, name}
+  const [groups,setGroups]=useState([]);           // χειροκίνητες ομάδες (από localStorage)
+  const [expandedCard,setExpandedCard]=useState(null);
+  const [detailSearch,setDetailSearch]=useState('');
 
   const myName=myEmail;
+
+  // Φόρτωση ομάδων (localStorage· συγχρονίζονται με τη σελίδα «Δίκτυο»)
+  const GROUPS_KEY = myEmail ? `lev_groups_${myEmail}` : 'lev_groups';
+  useEffect(()=>{ try{ const r=localStorage.getItem(GROUPS_KEY); setGroups(r?JSON.parse(r)||[]:[]); }catch{ setGroups([]); } },[GROUPS_KEY]);
 
   const loadAll=useCallback(async()=>{
     setLoading(true);
@@ -389,6 +399,71 @@ function StudentView({myEmail,isMobile,router}){
     setSendRecipients(prev=>prev.includes(email)?prev.filter(e=>e!==email):[...prev,email]);
   };
 
+  // ── Βοηθητικά για κάρτες-φακέλους (εισερχόμενα/απεσταλμένα ανά χρήστη ή ομάδα) ──
+  // Παραλήπτες αποσταλμένου αρχείου (υποστηρίζει διάφορα ονόματα πεδίων από το backend)
+  const recipientsOfSent=(f)=>{
+    if(Array.isArray(f.recipients))return f.recipients;
+    if(Array.isArray(f.sentTo))return f.sentTo;
+    if(typeof f.sentTo==='string')return [f.sentTo];
+    if(Array.isArray(f.to))return f.to;
+    if(typeof f.to==='string')return [f.to];
+    return [];
+  };
+  const inboxFromUser=(email)=>incoming.filter(f=>f.fromEmail===email);
+  const sentToUser=(email)=>sentFiles.filter(f=>recipientsOfSent(f).includes(email));
+  const inboxFromGroup=(g)=>incoming.filter(f=>(g.members||[]).includes(f.fromEmail));
+  const sentToGroup=(g)=>sentFiles.filter(f=>recipientsOfSent(f).some(e=>(g.members||[]).includes(e)));
+  const unseenFor=(list)=>list.filter(f=>!seenIds.has(f.id)).length;
+
+  // Παραλήπτες ανοιχτού φακέλου (για αυτόματη αποστολή)
+  const folderRecipients=()=>{
+    if(openFolder?.type==='user')return [openFolder.email];
+    if(openFolder?.type==='group')return (openFolder.group?.members)||[];
+    return [];
+  };
+  // Επιλογή αρχείου μέσα σε φάκελο → αυτόματη αποστολή στους παραλήπτες του φακέλου
+  const handleFolderFileSelect=(e)=>{
+    const file=e.target.files?.[0]; if(!file)return;
+    const rcp=folderRecipients();
+    if(rcp.length===0){alert('Ο φάκελος δεν έχει παραλήπτες.');e.target.value='';return;}
+    doSend(file,rcp);
+    e.target.value='';
+  };
+
+  // ── Μικρή κάρτα αρχείου (όπως οι τωρινές: άνοιγμα/λήψη/αποθήκευση/QR) ──
+  const renderMiniCard=(f,keyBase,{showSave=true}={})=>{
+    const isNew=!seenIds.has(f.id);
+    const k=keyBase;
+    const isExp=expandedCard===k;
+    return(
+      <div key={k} style={{background:isNew?'#fff9ed':'#fff',border:isNew?'1.5px solid '+P.cream.accent:'1px solid #ebebeb',borderRadius:14,overflow:'hidden',transition:'all 0.15s ease'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',cursor:'pointer'}} onClick={()=>setExpandedCard(isExp?null:k)}>
+          <div style={{width:34,height:34,borderRadius:10,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>📄</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(f.name,22)}</div>
+            {f.sentAt&&<div style={{fontSize:11,color:'#8a8a9a',marginTop:1}}>{new Date(f.sentAt).toLocaleDateString('el-GR')}</div>}
+          </div>
+          {isNew&&<span style={{width:8,height:8,borderRadius:'50%',background:'#f59e0b',flexShrink:0}}/>}
+          <span style={{fontSize:11,color:'#aeaeb8',flexShrink:0,transition:'transform 0.15s',transform:isExp?'rotate(180deg)':'none'}}>▼</span>
+        </div>
+        {isExp&&(
+          <div style={{padding:'0 14px 12px',borderTop:'1px solid rgba(0,0,0,0.04)'}}>
+            {f.shareMessage&&<div style={{fontSize:12,color:'#1a7f37',background:'#f0fdf4',padding:'8px 10px',borderRadius:8,marginTop:8,lineHeight:1.5}}>💬 {f.shareMessage}</div>}
+            {f.info&&<div style={{fontSize:12,color:P.cream.deep,padding:'8px 0 6px',lineHeight:1.5}}>ℹ️ {f.info}</div>}
+            <div style={{display:'flex',gap:6,marginTop:6,flexWrap:'wrap',alignItems:'center'}}>
+              <button onClick={()=>openFile(f)} style={S.openBtn}>Άνοιγμα</button>
+              <button onClick={()=>downloadFile(f)} style={S.miniBtn} title="Λήψη">⬇</button>
+              {showSave&&<button onClick={()=>saveToMyDrive(f)} disabled={savingId===f.id} style={{...S.miniBtn,opacity:savingId===f.id?0.4:1}} title="Αποθήκευση στο Drive">💾</button>}
+              <button onClick={()=>setQrFile(f)} style={S.miniBtn} title="QR Code">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ── Προβολή «Ανοιχτή πρόσβαση»: δημόσιο υλικό όλων των εκπαιδευτικών ──
   if(publicView && !viewing){
     const teacherList=(network.connections||[]).filter(c=>publicFiles.some(f=>f.fromEmail===c.email));
@@ -456,10 +531,11 @@ function StudentView({myEmail,isMobile,router}){
         </div>
         {isMobile&&(
           <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-            <MobBtn icon={Ic.dashboard} label="Πίνακας ελέγχου" onClick={()=>{setPublicView(false);setViewing(null);}}/>
-            <MobBtn icon={Ic.live} label="Live session" onClick={()=>window.open('/live','_blank')}/>
-            <MobBtn icon={Ic.globe} label="Ανοιχτή πρόσβαση" active onClick={openPublicView}/>
-            <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
+            <MobBtn icon={Ic.dashboard} label="Πίνακας" onClick={()=>{setPublicView(false);setViewing(null);setOpenFolder(null);}}/>
+            <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+            <MobBtn icon={Ic.net} label="Δίκτυο" onClick={()=>{window.location.href='/network';}}/>
+            <MobBtn icon={Ic.globe} label="Πρόσβαση" active onClick={openPublicView}/>
+            <MobBtn icon={Ic.out} label="Έξοδος" onClick={()=>signOut({callbackUrl:'/login'})}/>
           </nav>
         )}
       </div>
@@ -491,142 +567,134 @@ function StudentView({myEmail,isMobile,router}){
         {isMobile&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff'}}><span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>ΛΕΒΙΑΘΑΝ</span></div>}
 
         <div style={S.container}>
-          <div style={{marginBottom:20}}>
-            <h1 style={{fontSize:20,fontWeight:600,color:'#1a1a1a',marginBottom:4}}>Καλώς ήρθες 📚</h1>
-            <p style={{fontSize:13,color:'#6b6b80',margin:0}}>{myEmail}</p>
-          </div>
 
           {loading&&<div style={S.empty}>Φόρτωση…</div>}
 
-          {!loading&&(
-            <div style={{display:'flex',gap:20,flexWrap:'wrap'}}>
-
-              {/* ══ ΑΡΙΣΤΕΡΗ ΣΤΗΛΗ ══ */}
-              <div style={{flex:'1 1 340px',minWidth:0}}>
-
-                {/* Πρόσκληση / Αποδοχή */}
-                <div style={{background:'#fff',borderRadius:14,border:'1px solid #ebebeb',padding:'14px 16px',marginBottom:16}}>
-                  <div style={{fontSize:13,fontWeight:600,marginBottom:8}}>📧 Σύνδεση με εκπαιδευτικό</div>
-                  <div style={{display:'flex',gap:8}}>
-                    <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="email@example.com"
-                      style={{flex:1,padding:'10px 12px',border:'1px solid #e0e0e0',borderRadius:10,fontSize:isMobile?16:13,background:'#fff',boxSizing:'border-box'}}/>
-                    <button onClick={sendInvite} disabled={netLoading||!inviteEmail.trim()}
-                      style={{padding:'10px 16px',borderRadius:10,border:'none',background:P.cream.deep,color:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',opacity:netLoading?0.5:1}}>Αποστολή</button>
+          {/* ═══════════ ΠΙΝΑΚΑΣ ΕΛΕΓΧΟΥ — ΚΑΡΤΕΣ-ΦΑΚΕΛΟΙ ═══════════ */}
+          {!loading&&!openFolder&&(()=>{
+            const conns=network.connections||[];
+            const fixed=[
+              {key:'inbox', type:'inbox', name:'Εισερχόμενα', icon:'📥', tone:'cream', sub:`${incoming.length} αρχεία`, badge:unseenCount},
+              {key:'sent', type:'sent', name:'Απεσταλμένα', icon:'📤', tone:'peach', sub:`${sentFiles.length} αρχεία`},
+              {key:'search', type:'search', name:'Αναζήτηση', icon:'🔍', tone:'cream', sub:'εισερχόμενα & απεσταλμένα'},
+            ];
+            const card=(o,onClick)=>{
+              const t=P[o.tone];
+              return(
+                <div key={o.key} className="ri-h" onClick={onClick}
+                  style={{background:`linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 55%, transparent 70%), ${t.bg}`,borderRadius:18,padding:'16px 18px',cursor:'pointer',minHeight:118,display:'flex',flexDirection:'column',boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'transform 0.15s,box-shadow 0.15s'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+                    <div style={{width:42,height:42,borderRadius:12,background:t.accent,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{o.icon}</div>
+                    {o.badge>0&&<span style={S.badge}>{o.badge}</span>}
                   </div>
-                  {(network.received||[]).length>0&&(
-                    <div style={{marginTop:10}}>
-                      <div style={{fontSize:12,fontWeight:600,color:'#dc2626',marginBottom:6}}>🔔 Εκκρεμείς προσκλήσεις</div>
-                      {network.received.map(inv=>(
-                        <div key={inv.email} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:'1px solid #f0f0f0'}}>
-                          <span style={{flex:1,fontSize:12,color:'#6b6b80'}}>{inv.name||inv.email}</span>
-                          <button onClick={()=>acceptInvite(inv.email)} style={{padding:'5px 12px',borderRadius:8,border:'none',background:'#16a34a',color:'#fff',fontSize:11,fontWeight:600,cursor:'pointer'}}>Αποδοχή</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {(network.connections||[]).length>0&&(
-                    <div style={{marginTop:8}}>
-                      <div style={{fontSize:11,color:'#aeaeb8',marginBottom:4}}>Συνδέσεις:</div>
-                      {network.connections.map(c=>(
-                        <div key={c.email} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
-                          <span style={{flex:1,fontSize:12,color:'#1a1a1a'}}>{c.name||c.email}</span>
-                          <button onClick={()=>disconnectUser(c.email)} style={{background:'none',border:'none',color:'#aeaeb8',cursor:'pointer',fontSize:11,padding:'2px 6px'}}>✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div style={{fontSize:15,fontWeight:700,color:t.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.name}</div>
+                  <div style={{fontSize:12,color:t.text,opacity:0.65,marginTop:3}}>{o.sub}</div>
+                </div>
+              );
+            };
+            return(
+              <>
+                <div style={{marginBottom:18}}>
+                  <h1 style={{fontSize:20,fontWeight:600,color:'#1a1a1a',marginBottom:4}}>Καλώς ήρθες 📚</h1>
+                  <p style={{fontSize:13,color:'#6b6b80',margin:0}}>{myEmail}</p>
                 </div>
 
-                {/* Φίλτρο εισερχομένων ανά αποστολέα */}
-                {(network.connections||[]).length>0&&incoming.length>0&&(
-                  <div style={{marginBottom:14}}>
-                    <div style={{fontSize:11,fontWeight:700,color:P.cream.deep,textTransform:'uppercase',letterSpacing:0.4,marginBottom:6}}>Εμφάνιση εισερχομένων</div>
-                    <select value={inboxFrom} onChange={e=>setInboxFrom(e.target.value)}
-                      style={{width:'100%',padding:'10px 12px',border:'1px solid #e0e0e0',borderRadius:10,fontSize:isMobile?16:13,background:'#fff',color:'#1a1a1a',cursor:'pointer'}}>
-                      <option value="__all__">Όλοι οι εκπαιδευτικοί</option>
-                      {(network.connections||[]).map(c=>(
-                        <option key={c.email} value={c.email}>{c.name||c.email.split('@')[0]}</option>
-                      ))}
-                    </select>
+                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(auto-fill,minmax(190px,1fr))',gap:14,marginBottom:28}}>
+                  {fixed.map(o=>card(o,()=>{setExpandedCard(null);setDetailSearch('');setOpenFolder({type:o.type,name:o.name});}))}
+                </div>
+
+                <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:12,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                  Οι επαφές μου
+                  <button onClick={()=>{window.location.href='/network';}} style={{marginLeft:'auto',padding:'6px 14px',borderRadius:10,border:'1.5px solid '+P.cream.accent,background:P.cream.bgSoft,color:P.cream.deep,fontSize:12,fontWeight:600,cursor:'pointer'}}>⚙ Διαχείριση δικτύου</button>
+                </div>
+
+                {conns.length===0&&groups.length===0
+                  ? <div style={S.emptyCol}>Δεν έχεις συνδέσεις ακόμη. Πήγαινε στο «Δίκτυο» για να προσκαλέσεις χρήστες.</div>
+                  : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(auto-fill,minmax(190px,1fr))',gap:14}}>
+                      {groups.map(g=>{
+                        const ic=inboxFromGroup(g), st=sentToGroup(g);
+                        return card({key:'g_'+g.id,name:g.name,icon:'👥',tone:'peach',sub:`📥 ${ic.length} · 📤 ${st.length}`,badge:unseenFor(ic)},
+                          ()=>{setExpandedCard(null);setOpenFolder({type:'group',group:g,name:g.name});});
+                      })}
+                      {conns.map(c=>{
+                        const nm=c.name||c.email.split('@')[0];
+                        const ic=inboxFromUser(c.email), st=sentToUser(c.email);
+                        return card({key:'u_'+c.email,name:nm,icon:(nm.charAt(0)||'?').toUpperCase(),tone:'cream',sub:`📥 ${ic.length} · 📤 ${st.length}`,badge:unseenFor(ic)},
+                          ()=>{setExpandedCard(null);setOpenFolder({type:'user',email:c.email,name:nm});});
+                      })}
+                    </div>
+                }
+              </>
+            );
+          })()}
+
+          {/* ═══════════ ΑΝΟΙΓΜΑ ΦΑΚΕΛΟΥ — ΔΙΠΛΗ ΣΤΗΛΗ ═══════════ */}
+          {!loading&&openFolder&&(()=>{
+            const f=openFolder;
+            const isUserOrGroup=f.type==='user'||f.type==='group';
+            let leftList=[], rightList=[];
+            if(f.type==='inbox') leftList=incoming;
+            else if(f.type==='sent') rightList=sentFiles;
+            else if(f.type==='user'){leftList=inboxFromUser(f.email); rightList=sentToUser(f.email);}
+            else if(f.type==='group'){leftList=inboxFromGroup(f.group); rightList=sentToGroup(f.group);}
+            else if(f.type==='search'){
+              const q=detailSearch.trim().toLowerCase();
+              leftList=q?incoming.filter(x=>x.name.toLowerCase().includes(q)):[];
+              rightList=q?sentFiles.filter(x=>x.name.toLowerCase().includes(q)):[];
+            }
+            const showLeft=f.type==='inbox'||f.type==='search'||isUserOrGroup;
+            const showRight=f.type==='sent'||f.type==='search'||isUserOrGroup;
+            return(
+              <>
+                <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16,flexWrap:'wrap'}}>
+                  <button onClick={()=>{setOpenFolder(null);setDetailSearch('');setExpandedCard(null);}} style={{background:'none',border:'1px solid #ddd',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:13,color:'#444'}}>← Πίσω</button>
+                  <h1 style={{fontSize:19,fontWeight:600,color:'#1a1a1a',margin:0,display:'flex',alignItems:'center',gap:8}}>
+                    {f.type==='group'?'👥':f.type==='user'?'👤':f.type==='sent'?'📤':f.type==='search'?'🔍':'📥'} {f.name}
+                  </h1>
+                </div>
+
+                {/* Πλαίσιο αποστολής (μόνο σε φάκελο χρήστη/ομάδας) — αυτόματη αποστολή στον φάκελο */}
+                {isUserOrGroup&&(
+                  <div style={{background:'#fff',borderRadius:14,border:'1px solid '+P.peach.accent,padding:'14px 16px',marginBottom:18,textAlign:'center'}}>
+                    <div style={{fontSize:13,fontWeight:600,marginBottom:4,color:'#1a1a1a'}}>📤 Αποστολή σε «{f.name}»</div>
+                    <div style={{fontSize:11,color:'#aeaeb8',marginBottom:10}}>
+                      {f.type==='group'?`Στέλνεται αυτόματα σε ${(f.group?.members||[]).length} μέλη`:'Στέλνεται αυτόματα στον χρήστη του φακέλου'}
+                    </div>
+                    <label style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',borderRadius:12,background:P.peach.bg,color:P.peach.deep,fontSize:13,fontWeight:600,cursor:uploading?'wait':'pointer',opacity:uploading?0.5:1,border:'1.5px solid '+P.peach.accent}}>
+                      {uploading?'Αποστολή…':'Επιλογή αρχείου'}
+                      <input type="file" style={{display:'none'}} onChange={handleFolderFileSelect} disabled={uploading}/>
+                    </label>
                   </div>
                 )}
 
-                {/* Εισερχόμενα */}
-                <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
-                  📥 Εισερχόμενα {unseenCount>0&&<span style={S.badge}>{unseenCount}</span>}
-                </div>
-                {incoming.filter(f=>inboxFrom==='__all__'||f.fromEmail===inboxFrom).length===0&&<div style={S.emptyCol}>Δεν υπάρχουν εισερχόμενα ακόμη.</div>}
-                <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                  {incoming.filter(f=>inboxFrom==='__all__'||f.fromEmail===inboxFrom).map(f=>{
-                    const isNew=!seenIds.has(f.id);
-                    const isExp=expandedIn===(f.id+f.fromEmail);
-                    return(
-                      <div key={f.id+f.fromEmail} style={{background:isNew?'#fff9ed':'#fff',border:isNew?'1.5px solid '+P.cream.accent:'1px solid #ebebeb',borderRadius:14,overflow:'hidden',transition:'all 0.15s ease'}}>
-                        <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',cursor:'pointer'}} onClick={()=>setExpandedIn(isExp?null:f.id+f.fromEmail)}>
-                          <div style={{width:34,height:34,borderRadius:10,background:P.cream.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>📄</div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(f.name,20)}</div>
-                            <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
-                              {(()=>{const tc=teacherColor(f.fromEmail);return <span style={{fontSize:10,fontWeight:600,padding:'1px 8px',borderRadius:999,background:tc.bg,color:tc.text,whiteSpace:'nowrap'}}>📚 {trunc(f.fromName,20)}</span>;})()}
-                            </div>
-                          </div>
-                          {isNew&&<span style={{width:8,height:8,borderRadius:'50%',background:'#f59e0b',flexShrink:0}}/>}
-                          <span style={{fontSize:11,color:'#aeaeb8',flexShrink:0,transition:'transform 0.15s',transform:isExp?'rotate(180deg)':'none'}}>▼</span>
-                        </div>
-                        {isExp&&(
-                          <div style={{padding:'0 14px 12px',borderTop:'1px solid rgba(0,0,0,0.04)'}}>
-                            {f.shareMessage&&<div style={{fontSize:12,color:'#1a7f37',background:'#f0fdf4',padding:'8px 10px',borderRadius:8,marginTop:8,lineHeight:1.5}}>💬 {f.shareMessage}</div>}
-                            {f.info&&<div style={{fontSize:12,color:P.cream.deep,padding:'8px 0 6px',lineHeight:1.5}}>ℹ️ {f.info}</div>}
-                            <div style={{display:'flex',gap:6,marginTop:6,flexWrap:'wrap',alignItems:'center'}}>
-                              <button onClick={()=>openFile(f)} style={S.openBtn}>Άνοιγμα</button>
-                              <button onClick={()=>downloadFile(f)} style={S.miniBtn} title="Λήψη">⬇</button>
-                              <button onClick={()=>saveToMyDrive(f)} disabled={savingId===f.id} style={{...S.miniBtn,opacity:savingId===f.id?0.4:1}} title="Αποθήκευση στο Drive">💾</button>
-                              <button onClick={()=>setQrFile(f)} style={S.miniBtn} title="QR Code">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                {/* Αναζήτηση (φάκελος «Αναζήτηση») */}
+                {f.type==='search'&&(
+                  <input autoFocus type="search" placeholder="Αναζήτηση σε εισερχόμενα & απεσταλμένα…" value={detailSearch} onChange={e=>setDetailSearch(e.target.value)}
+                    style={{width:'100%',padding:'11px 16px',border:'1px solid #ebebeb',borderRadius:14,fontSize:isMobile?16:14,background:'#fff',marginBottom:16,boxSizing:'border-box'}}/>
+                )}
 
-              {/* ══ ΔΕΞΙΑ ΣΤΗΛΗ ══ */}
-              <div style={{flex:'1 1 340px',minWidth:0}}>
-
-                {/* Upload / Αποστολή */}
-                <div style={{background:'#fff',borderRadius:14,border:'1px solid #ebebeb',padding:'14px 16px',marginBottom:16,textAlign:'center'}}>
-                  <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>📤 Ανέβασμα & Αποστολή</div>
-                  <label style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',borderRadius:12,background:P.peach.bg,color:P.peach.deep,fontSize:13,fontWeight:600,cursor:uploading?'wait':'pointer',opacity:uploading?0.5:1,border:'1.5px solid '+P.peach.accent}}>
-                    {uploading?'Αποστολή…':'Επιλογή αρχείου'}
-                    <input type="file" style={{display:'none'}} onChange={handleFileSelect} disabled={uploading}/>
-                  </label>
-                  <p style={{fontSize:11,color:'#aeaeb8',marginTop:8}}>Φωτογραφία, PDF, DOCX — στέλνεται στις συνδέσεις σου</p>
-                </div>
-
-                {/* Αποστολές μου */}
-                <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:10}}>📤 Αποστολές μου</div>
-                {sentFiles.length===0&&<div style={S.emptyCol}>Δεν έχεις στείλει κάτι ακόμη.</div>}
-                <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                  {sentFiles.map(f=>(
-                    <div key={f.id} style={{background:'#fff',border:'1px solid #ebebeb',borderRadius:14,padding:'11px 14px',display:'flex',alignItems:'center',gap:10}}>
-                      <div style={{width:34,height:34,borderRadius:10,background:P.peach.bgSoft,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>📄</div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(f.name,20)}</div>
-                        <div style={{fontSize:11,color:'#8a8a9a',marginTop:1}}>{f.sentAt?new Date(f.sentAt).toLocaleDateString('el-GR'):''}</div>
-                      </div>
-                      <button onClick={()=>setQrFile(f)} style={S.miniBtn} title="QR Code">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
-                      </button>
+                <div style={{display:'flex',gap:20,flexWrap:'wrap',alignItems:'flex-start'}}>
+                  {showLeft&&(
+                    <div style={{flex:'1 1 320px',minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700,color:'#1a1a1a',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>📥 Εισερχόμενα {unseenFor(leftList)>0&&<span style={S.badge}>{unseenFor(leftList)}</span>}</div>
+                      {leftList.length===0
+                        ? <div style={S.emptyCol}>{f.type==='search'?'Πληκτρολόγησε για αναζήτηση.':'Κανένα εισερχόμενο.'}</div>
+                        : <div style={{display:'flex',flexDirection:'column',gap:6}}>{leftList.map((x,i)=>renderMiniCard(x,'in_'+x.id+'_'+(x.fromEmail||'')+'_'+i,{showSave:true}))}</div>}
                     </div>
-                  ))}
+                  )}
+                  {showRight&&(
+                    <div style={{flex:'1 1 320px',minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700,color:'#1a1a1a',marginBottom:10}}>📤 Απεσταλμένα</div>
+                      {rightList.length===0
+                        ? <div style={S.emptyCol}>{f.type==='search'?'Πληκτρολόγησε για αναζήτηση.':'Κανένα απεσταλμένο.'}</div>
+                        : <div style={{display:'flex',flexDirection:'column',gap:6}}>{rightList.map((x,i)=>renderMiniCard(x,'out_'+x.id+'_'+i,{showSave:false}))}</div>}
+                    </div>
+                  )}
                 </div>
-              </div>
+              </>
+            );
+          })()}
 
-            </div>
-          )}
         </div>
       </div>
 
@@ -647,10 +715,11 @@ function StudentView({myEmail,isMobile,router}){
       {/* Mobile bottom nav */}
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-          <MobBtn icon={Ic.dashboard} label="Πίνακας ελέγχου" active onClick={()=>{setViewing(null);setPublicView(false);}}/>
-          <MobBtn icon={Ic.live} label="Live session" onClick={()=>window.open('/live','_blank')}/>
-          <MobBtn icon={Ic.globe} label="Ανοιχτή πρόσβαση" onClick={openPublicView}/>
-          <MobBtn icon={Ic.out} label="Αποσύνδεση" onClick={()=>signOut({callbackUrl:'/login'})}/>
+          <MobBtn icon={Ic.dashboard} label="Πίνακας" active onClick={()=>{setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
+          <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+          <MobBtn icon={Ic.net} label="Δίκτυο" onClick={()=>{window.location.href='/network';}}/>
+          <MobBtn icon={Ic.globe} label="Πρόσβαση" onClick={openPublicView}/>
+          <MobBtn icon={Ic.out} label="Έξοδος" onClick={()=>signOut({callbackUrl:'/login'})}/>
         </nav>
       )}
 
@@ -847,16 +916,18 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 /* ══════════════════════════════════════════════════════════════
    SHARED COMPONENTS
    ══════════════════════════════════════════════════════════════ */
-function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,activePublic}){
+function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,activePublic,activeNetwork}){
   return(
     <div style={{...S.sidebar,width:open?220:56}}>
       <div style={S.sidebarHeader}>{open&&<span style={{fontSize:15,fontWeight:500,color:'#ececec'}}>ΛΕΒΙΑΘΑΝ</span>}<button onClick={()=>setOpen(p=>!p)} style={S.collapseBtn}>{open?'◀':'▶'}</button></div>
       <nav style={S.nav}>
-        <button onClick={goHome} style={{...S.navItem,...(activePublic?{}:S.navActive)}}><span style={S.navIcon}>{Ic.dashboard}</span>{open&&'Πίνακας ελέγχου'}</button>
+        <button onClick={goHome} style={{...S.navItem,...((activePublic||activeNetwork)?{}:S.navActive)}}><span style={S.navIcon}>{Ic.dashboard}</span>{open&&'Πίνακας ελέγχου'}</button>
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live session'}</button>
         <div style={S.navDiv}/>
         <button onClick={openPublic?openPublic:()=>window.open('/s/smitselos','_blank')} style={{...S.navItem,...(activePublic?S.navActive:{})}}><span style={S.navIcon}>{Ic.globe}</span>{open&&'Ανοιχτή πρόσβαση'}</button>
+        <div style={S.navDiv}/>
+        <button onClick={()=>{window.location.href='/network';}} style={{...S.navItem,...(activeNetwork?S.navActive:{})}}><span style={S.navIcon}>{Ic.net}</span>{open&&'Δίκτυο'}</button>
       </nav>
       <div style={S.sidebarFooter}>
         <div style={S.userCard}>
