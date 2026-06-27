@@ -43,14 +43,16 @@ export default function NetworkPage(){
   useEffect(()=>{const c=()=>setIsMobile(window.innerWidth<768);c();window.addEventListener('resize',c);return()=>window.removeEventListener('resize',c);},[]);
   useEffect(()=>{ if(status==='unauthenticated') router.replace('/login'); },[status,router]);
 
-  // ── Ομάδες (localStorage· κοινό κλειδί με τον πίνακα ελέγχου) ──
-  const GROUPS_KEY = myEmail ? `lev_groups_${myEmail}` : 'lev_groups';
-  const saveGroups=(g)=>{ setGroups(g); try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(g)); }catch{} };
-  useEffect(()=>{ try{ const r=localStorage.getItem(GROUPS_KEY); setGroups(r?JSON.parse(r)||[]:[]); }catch{ setGroups([]); } },[GROUPS_KEY]);
+  // ── Ομάδες (server· συγχρονισμός σε όλες τις συσκευές) ──
+  const loadGroups=useCallback(async()=>{ try{ const r=await fetch('/api/student-groups'); const d=await r.json(); setGroups(Array.isArray(d.groups)?d.groups:[]); }catch{ setGroups([]); } },[]);
+  const saveGroups=async(g)=>{
+    setGroups(g);
+    try{ await fetch('/api/student-groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groups:g})}); }catch{}
+  };
 
   const loadNetwork=useCallback(async()=>{ try{ const r=await fetch('/api/network'); setNetwork(await r.json()); }catch{} },[]);
   const loadContacts=useCallback(async()=>{ try{ const r=await fetch('/api/contact-info'); const d=await r.json(); setContacts(d.contacts||{}); }catch{} },[]);
-  useEffect(()=>{ if(hasSession){ loadNetwork(); loadContacts(); } },[hasSession,loadNetwork,loadContacts]);
+  useEffect(()=>{ if(hasSession){ loadNetwork(); loadContacts(); loadGroups(); } },[hasSession,loadNetwork,loadContacts,loadGroups]);
 
   // ── Πρόσκληση / Αποδοχή / Αποσύνδεση ──
   const sendInvite=async()=>{
@@ -66,8 +68,7 @@ export default function NetworkPage(){
   const disconnectUser=async(email)=>{
     if(!confirm(`Αποσύνδεση από ${email};`))return;
     try{ await fetch('/api/network',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}); await loadNetwork();
-      // αφαίρεση από τυχόν ομάδες
-      saveGroups(groups.map(g=>({...g,members:(g.members||[]).filter(e=>e!==email)})));
+      await saveGroups(groups.map(g=>({...g,members:(g.members||[]).filter(e=>e!==email)})));
     }catch{}
   };
 
@@ -87,12 +88,12 @@ export default function NetworkPage(){
 
   // ── Ομάδες: δημιουργία / διαγραφή ──
   const toggleMember=(email)=>setNewGroupMembers(p=>p.includes(email)?p.filter(e=>e!==email):[...p,email]);
-  const createGroup=()=>{
+  const createGroup=async()=>{
     if(!newGroupName.trim()||newGroupMembers.length===0)return;
-    saveGroups([{id:Date.now().toString(),name:newGroupName.trim(),members:newGroupMembers},...groups]);
+    await saveGroups([{id:Date.now().toString(),name:newGroupName.trim(),members:newGroupMembers},...groups]);
     setNewGroupName(''); setNewGroupMembers([]); setShowNewGroup(false);
   };
-  const deleteGroup=(id)=>{ if(!confirm('Διαγραφή ομάδας;'))return; saveGroups(groups.filter(g=>g.id!==id)); };
+  const deleteGroup=async(id)=>{ if(!confirm('Διαγραφή ομάδας;'))return; await saveGroups(groups.filter(g=>g.id!==id)); };
 
   if(status==='loading') return <div style={S.page}><div style={{color:'#6b6b80',fontSize:14}}>Φόρτωση…</div></div>;
   if(status==='unauthenticated') return <div style={S.page}><div style={{color:'#6b6b80',fontSize:14}}>Απαιτείται σύνδεση.</div></div>;
