@@ -246,8 +246,17 @@ function StudentView({myEmail,isMobile,router}){
 
   const myName=myEmail;
 
-  // Φόρτωση ομάδων από τον server (συγχρονισμός σε όλες τις συσκευές)
-  useEffect(()=>{ (async()=>{ try{ const r=await fetch('/api/student-groups'); const d=await r.json(); setGroups(Array.isArray(d.groups)?d.groups:[]); }catch{ setGroups([]); } })(); },[]);
+  // Φόρτωση ομάδων: άμεσα από localStorage (για να δείχνει πάντα) + συγχρονισμός με τον server
+  useEffect(()=>{
+    const LS='lev_groups_'+(myEmail||'');
+    try{ const r=localStorage.getItem(LS); const loc=r?JSON.parse(r)||[]:[]; if(loc.length) setGroups(loc); }catch{}
+    (async()=>{
+      try{
+        const r=await fetch('/api/student-groups'); const d=await r.json();
+        if(Array.isArray(d.groups)&&d.groups.length){ setGroups(d.groups); try{localStorage.setItem(LS,JSON.stringify(d.groups));}catch{} }
+      }catch{}
+    })();
+  },[myEmail]);
 
   const loadAll=useCallback(async()=>{
     setLoading(true);

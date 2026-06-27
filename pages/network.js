@@ -43,10 +43,25 @@ export default function NetworkPage(){
   useEffect(()=>{const c=()=>setIsMobile(window.innerWidth<768);c();window.addEventListener('resize',c);return()=>window.removeEventListener('resize',c);},[]);
   useEffect(()=>{ if(status==='unauthenticated') router.replace('/login'); },[status,router]);
 
-  // ── Ομάδες (server· συγχρονισμός σε όλες τις συσκευές) ──
-  const loadGroups=useCallback(async()=>{ try{ const r=await fetch('/api/student-groups'); const d=await r.json(); setGroups(Array.isArray(d.groups)?d.groups:[]); }catch{ setGroups([]); } },[]);
+  // ── Ομάδες (hybrid: server + localStorage· δείχνει πάντα, συγχρονίζεται όταν υπάρχει API) ──
+  const LSKEY='lev_groups_'+(myEmail||'');
+  const loadGroups=useCallback(async()=>{
+    let loc=[];
+    try{ const r=localStorage.getItem(LSKEY); loc=r?JSON.parse(r)||[]:[]; }catch{}
+    if(loc.length) setGroups(loc);
+    try{
+      const r=await fetch('/api/student-groups'); const d=await r.json();
+      if(Array.isArray(d.groups)){
+        if(d.groups.length){ setGroups(d.groups); try{localStorage.setItem(LSKEY,JSON.stringify(d.groups));}catch{} }
+        else if(loc.length){ // ο server είναι άδειος αλλά υπάρχουν τοπικές → μεταφορά
+          try{ await fetch('/api/student-groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groups:loc})}); }catch{}
+        }
+      }
+    }catch{}
+  },[LSKEY]);
   const saveGroups=async(g)=>{
     setGroups(g);
+    try{ localStorage.setItem(LSKEY,JSON.stringify(g)); }catch{}
     try{ await fetch('/api/student-groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groups:g})}); }catch{}
   };
 
