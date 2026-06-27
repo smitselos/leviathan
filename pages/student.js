@@ -400,7 +400,6 @@ function StudentView({myEmail,isMobile,router}){
   };
 
   // ── Βοηθητικά για κάρτες-φακέλους (εισερχόμενα/απεσταλμένα ανά χρήστη ή ομάδα) ──
-  // Παραλήπτες αποσταλμένου αρχείου (υποστηρίζει διάφορα ονόματα πεδίων από το backend)
   const recipientsOfSent=(f)=>{
     if(Array.isArray(f.recipients))return f.recipients;
     if(Array.isArray(f.sentTo))return f.sentTo;
@@ -415,13 +414,11 @@ function StudentView({myEmail,isMobile,router}){
   const sentToGroup=(g)=>sentFiles.filter(f=>recipientsOfSent(f).some(e=>(g.members||[]).includes(e)));
   const unseenFor=(list)=>list.filter(f=>!seenIds.has(f.id)).length;
 
-  // Παραλήπτες ανοιχτού φακέλου (για αυτόματη αποστολή)
   const folderRecipients=()=>{
     if(openFolder?.type==='user')return [openFolder.email];
     if(openFolder?.type==='group')return (openFolder.group?.members)||[];
     return [];
   };
-  // Επιλογή αρχείου μέσα σε φάκελο → αυτόματη αποστολή στους παραλήπτες του φακέλου
   const handleFolderFileSelect=(e)=>{
     const file=e.target.files?.[0]; if(!file)return;
     const rcp=folderRecipients();
@@ -430,7 +427,7 @@ function StudentView({myEmail,isMobile,router}){
     e.target.value='';
   };
 
-  // ── Μικρή κάρτα αρχείου (όπως οι τωρινές: άνοιγμα/λήψη/αποθήκευση/QR) ──
+  // ── Μικρή κάρτα αρχείου (άνοιγμα/λήψη/αποθήκευση/QR) ──
   const renderMiniCard=(f,keyBase,{showSave=true}={})=>{
     const isNew=!seenIds.has(f.id);
     const k=keyBase;
@@ -570,7 +567,7 @@ function StudentView({myEmail,isMobile,router}){
 
           {loading&&<div style={S.empty}>Φόρτωση…</div>}
 
-          {/* ═══════════ ΠΙΝΑΚΑΣ ΕΛΕΓΧΟΥ — ΚΑΡΤΕΣ-ΦΑΚΕΛΟΙ ═══════════ */}
+          {/* ═══════════ ΠΙΝΑΚΑΣ ΕΛΕΓΧΟΥ — ΚΑΡΤΕΣ-ΦΑΚΕΛΟΙ (μεγάλες, όπως του καθηγητή) ═══════════ */}
           {!loading&&!openFolder&&(()=>{
             const conns=network.connections||[];
             const fixed=[
@@ -581,14 +578,17 @@ function StudentView({myEmail,isMobile,router}){
             const card=(o,onClick)=>{
               const t=P[o.tone];
               return(
-                <div key={o.key} className="ri-h" onClick={onClick}
-                  style={{background:`linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 55%, transparent 70%), ${t.bg}`,borderRadius:18,padding:'16px 18px',cursor:'pointer',minHeight:118,display:'flex',flexDirection:'column',boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'transform 0.15s,box-shadow 0.15s'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
-                    <div style={{width:42,height:42,borderRadius:12,background:t.accent,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{o.icon}</div>
+                <div key={o.key} className="ch" onClick={onClick}
+                  style={{background:`linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 55%, transparent 70%), ${t.bg}`,borderRadius:22,padding:'22px 24px',cursor:'pointer',minHeight:170,display:'flex',flexDirection:'column',boxShadow:'0 2px 8px rgba(0,0,0,0.06)',transition:'transform 0.15s,box-shadow 0.15s'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
+                    <div style={{width:48,height:48,borderRadius:14,background:t.accent,color:t.deep,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:700,flexShrink:0}}>{o.icon}</div>
                     {o.badge>0&&<span style={S.badge}>{o.badge}</span>}
                   </div>
-                  <div style={{fontSize:15,fontWeight:700,color:t.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.name}</div>
-                  <div style={{fontSize:12,color:t.text,opacity:0.65,marginTop:3}}>{o.sub}</div>
+                  <h3 style={{fontSize:18,fontWeight:700,color:t.text,margin:'0 0 6px',letterSpacing:'-0.015em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.name}</h3>
+                  <p style={{fontSize:13,lineHeight:1.55,color:t.text,opacity:0.65,margin:0,flex:1}}>{o.sub}</p>
+                  <div style={{display:'flex',justifyContent:'flex-end',paddingTop:14,marginTop:14,borderTop:'1px solid '+t.accent}}>
+                    <button style={{background:'transparent',border:'none',fontSize:13,fontWeight:600,cursor:'pointer',color:t.deep}}>Άνοιγμα →</button>
+                  </div>
                 </div>
               );
             };
@@ -599,7 +599,7 @@ function StudentView({myEmail,isMobile,router}){
                   <p style={{fontSize:13,color:'#6b6b80',margin:0}}>{myEmail}</p>
                 </div>
 
-                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(auto-fill,minmax(190px,1fr))',gap:14,marginBottom:28}}>
+                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fit,minmax(260px,1fr))',gap:18,marginBottom:32}}>
                   {fixed.map(o=>card(o,()=>{setExpandedCard(null);setDetailSearch('');setOpenFolder({type:o.type,name:o.name});}))}
                 </div>
 
@@ -610,16 +610,16 @@ function StudentView({myEmail,isMobile,router}){
 
                 {conns.length===0&&groups.length===0
                   ? <div style={S.emptyCol}>Δεν έχεις συνδέσεις ακόμη. Πήγαινε στο «Δίκτυο» για να προσκαλέσεις χρήστες.</div>
-                  : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(auto-fill,minmax(190px,1fr))',gap:14}}>
+                  : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fit,minmax(260px,1fr))',gap:18}}>
                       {groups.map(g=>{
                         const ic=inboxFromGroup(g), st=sentToGroup(g);
-                        return card({key:'g_'+g.id,name:g.name,icon:'👥',tone:'peach',sub:`📥 ${ic.length} · 📤 ${st.length}`,badge:unseenFor(ic)},
+                        return card({key:'g_'+g.id,name:g.name,icon:'👥',tone:'peach',sub:`📥 ${ic.length} εισερχόμενα · 📤 ${st.length} απεσταλμένα`,badge:unseenFor(ic)},
                           ()=>{setExpandedCard(null);setOpenFolder({type:'group',group:g,name:g.name});});
                       })}
                       {conns.map(c=>{
                         const nm=c.name||c.email.split('@')[0];
                         const ic=inboxFromUser(c.email), st=sentToUser(c.email);
-                        return card({key:'u_'+c.email,name:nm,icon:(nm.charAt(0)||'?').toUpperCase(),tone:'cream',sub:`📥 ${ic.length} · 📤 ${st.length}`,badge:unseenFor(ic)},
+                        return card({key:'u_'+c.email,name:nm,icon:(nm.charAt(0)||'?').toUpperCase(),tone:'cream',sub:`📥 ${ic.length} εισερχόμενα · 📤 ${st.length} απεσταλμένα`,badge:unseenFor(ic)},
                           ()=>{setExpandedCard(null);setOpenFolder({type:'user',email:c.email,name:nm});});
                       })}
                     </div>
@@ -653,7 +653,6 @@ function StudentView({myEmail,isMobile,router}){
                   </h1>
                 </div>
 
-                {/* Πλαίσιο αποστολής (μόνο σε φάκελο χρήστη/ομάδας) — αυτόματη αποστολή στον φάκελο */}
                 {isUserOrGroup&&(
                   <div style={{background:'#fff',borderRadius:14,border:'1px solid '+P.peach.accent,padding:'14px 16px',marginBottom:18,textAlign:'center'}}>
                     <div style={{fontSize:13,fontWeight:600,marginBottom:4,color:'#1a1a1a'}}>📤 Αποστολή σε «{f.name}»</div>
@@ -667,7 +666,6 @@ function StudentView({myEmail,isMobile,router}){
                   </div>
                 )}
 
-                {/* Αναζήτηση (φάκελος «Αναζήτηση») */}
                 {f.type==='search'&&(
                   <input autoFocus type="search" placeholder="Αναζήτηση σε εισερχόμενα & απεσταλμένα…" value={detailSearch} onChange={e=>setDetailSearch(e.target.value)}
                     style={{width:'100%',padding:'11px 16px',border:'1px solid #ebebeb',borderRadius:14,fontSize:isMobile?16:14,background:'#fff',marginBottom:16,boxSizing:'border-box'}}/>
