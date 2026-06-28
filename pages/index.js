@@ -1023,7 +1023,7 @@ export default function Home() {
             <div style={{ display:'flex', alignItems:'center', gap:14 }}>
               <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon || Icon.folder}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:16, fontWeight:700, color:p.text, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                <div style={{ fontSize:16, fontWeight:item.fw||700, color:p.text, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
                 <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
               </div>
               {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>{item.cta || 'Άνοιγμα →'}</span>}
@@ -2106,7 +2106,7 @@ export default function Home() {
                 {isMobile ? (
                   <>
                     <div style={{ position:'relative', marginBottom:24, paddingBottom:8 }}>
-                      {renderWallet(fixed.map(o=>({type:'folder',view:o.key,name:o.name,icon:o.icon,tone:o.tone,desc:o.sub,open:()=>openFixed(o)})), msgStatActive, (item,isExp)=>{ if(isExp){setMsgStatActive(null);item.open();} else setMsgStatActive(item.view); })}
+                      {renderWallet(fixed.map(o=>({type:'folder',view:o.key,name:o.name,icon:o.icon,tone:o.tone,desc:o.sub,fw:500,open:()=>openFixed(o)})), msgStatActive, (item,isExp)=>{ if(isExp){setMsgStatActive(null);item.open();} else setMsgStatActive(item.view); })}
                     </div>
                     <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:12 }}>Χρήστες & ομάδες</div>
                     {folderItems.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση/ομάδα. Πρόσθεσε από το «Δίκτυο».</div>
@@ -2121,7 +2121,7 @@ export default function Home() {
                             <div style={{ fontSize:30, marginBottom:8 }}>{o.icon}</div>
                             {o.badge>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'2px 9px', fontSize:12, fontWeight:700 }}>{o.badge}</span>}
                           </div>
-                          <div style={{ fontSize:18, fontWeight:700, color:p.text, marginBottom:4 }}>{o.name}</div>
+                          <div style={{ fontSize:18, fontWeight:500, color:p.text, marginBottom:4 }}>{o.name}</div>
                           <div style={{ fontSize:13, color:p.text, opacity:0.65 }}>{o.sub}</div>
                         </div>
                       ); })}
