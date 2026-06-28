@@ -253,6 +253,16 @@ export default function Home() {
   const [netTagInput, setNetTagInput] = useState('');
   const [openAccordions, setOpenAccordions] = useState({});
   const [qrFile, setQrFile] = useState(null);
+  // ── Ομάδες χρηστών + όψη «Εισερχ./Απεστ.» ──
+  const [groups, setGroups] = useState([]);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupMembers, setNewGroupMembers] = useState([]);
+  const [groupMsg, setGroupMsg] = useState('');
+  const [msgFolder, setMsgFolder] = useState(null); // {type:'inbox'|'sent'|'search'|'user'|'group', email?, group?, name}
+  const [msgSearch, setMsgSearch] = useState('');
+  const [msgWalletActive, setMsgWalletActive] = useState(null);
+  const [msgStatActive, setMsgStatActive] = useState(null);
   const isTeacher = userRole === 'teacher';
   const isStudent = userRole === 'student';
 
@@ -890,6 +900,57 @@ export default function Home() {
     setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
   };
 
+  // ── Ομάδες χρηστών (hybrid: server /api/student-groups + localStorage) ──
+  const GROUPS_LSKEY = () => 'lev_groups_' + (session?.user?.email || '');
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    const LS = GROUPS_LSKEY();
+    try { const r = localStorage.getItem(LS); const loc = r ? JSON.parse(r) || [] : []; if (loc.length) setGroups(loc); } catch {}
+    (async () => {
+      try {
+        const r = await fetch('/api/student-groups'); const d = await r.json();
+        if (Array.isArray(d.groups) && d.groups.length) { setGroups(d.groups); try { localStorage.setItem(LS, JSON.stringify(d.groups)); } catch {} }
+      } catch {}
+    })();
+  }, [status]);
+  const saveGroups = async (g) => {
+    setGroups(g);
+    try { localStorage.setItem(GROUPS_LSKEY(), JSON.stringify(g)); } catch {}
+    setGroupMsg('Αποθήκευση…');
+    try {
+      const r = await fetch('/api/student-groups', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ groups: g }) });
+      setGroupMsg(r.ok ? '✓ Αποθηκεύτηκε (συγχρονίζεται)' : '✗ Ο server απάντησε ' + r.status);
+    } catch { setGroupMsg('✗ Χωρίς server — μόνο τοπικά'); }
+    setTimeout(() => setGroupMsg(''), 6000);
+  };
+  const toggleGroupMember = (email) => setNewGroupMembers(p => p.includes(email) ? p.filter(e => e !== email) : [...p, email]);
+  const createGroup = () => {
+    if (!newGroupName.trim() || newGroupMembers.length === 0) return;
+    saveGroups([{ id: Date.now().toString(), name: newGroupName.trim(), members: newGroupMembers }, ...groups]);
+    setNewGroupName(''); setNewGroupMembers([]); setShowNewGroup(false);
+  };
+  const deleteGroup = (id) => { if (!confirm('Διαγραφή ομάδας;')) return; saveGroups(groups.filter(g => g.id !== id)); };
+
+  // ── Εισερχόμενα / Απεσταλμένα ανά χρήστη ή ομάδα ──
+  // Απεσταλμένα = δημοσιευμένα αρχεία του εκπαιδευτικού με βάση το visibility
+  const visTargets = (f) => {
+    const v = f.visibility;
+    if (!v || v === 'none') return null;
+    if (v === 'public') return { pub: true };
+    if (v === 'connections') return { all: true };
+    if (v.startsWith('user:')) return [v.slice(5)];
+    if (v.startsWith('users:')) { try { return JSON.parse(v.slice(6)); } catch { return []; } }
+    return null;
+  };
+  const sentToUser = (email) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.includes(email); return false; });
+  const sentToGroup = (g) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.some(e => (g.members || []).includes(e)); return false; });
+  const allSentFiles = () => files.filter(f => { const v = f.visibility; return v && v !== 'none'; });
+  const msgInbox = () => networkData.inbox || [];
+  const inboxFromUser = (email) => (networkData.inbox || []).filter(i => i.fromEmail === email);
+  const inboxFromGroup = (g) => (networkData.inbox || []).filter(i => (g.members || []).includes(i.fromEmail));
+  const unseenInbox = (list) => list.filter(i => !i.seen).length;
+  const openMessages = async () => { setActiveView('messages'); setOpenFolder(null); setMsgFolder(null); setMsgSearch(''); setMsgWalletActive(null); setMsgStatActive(null); setNetworkLoading(true); await loadNetwork(); setNetworkLoading(false); };
+
   // ── Navigation helpers ──
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); setSearchCategory('texts'); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
@@ -1112,7 +1173,8 @@ export default function Home() {
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
-          <NavItem icon={Icon.send} label="Απεσταλμένα" onClick={() => window.open('/student', '_blank')} />
+          <NavItem icon={Icon.send} label="Εισερχ./Απεστ." active={activeView==='messages'} onClick={openMessages}
+            badge={networkData.unseenCount||0} />
           <NavItem icon={Icon.live} label="Live" active={activeView==='liveCenter'} onClick={() => { setActiveView('liveCenter'); setOpenFolder(null); }} />
           <NavItem icon={Icon.globe} label="Ανοιχτή πρόσβαση" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
           {liveFile && (
@@ -1162,8 +1224,11 @@ export default function Home() {
           <button className="btm-item" onClick={openApps} style={{ color: activeView==='apps'?'#ececec':'#8e8ea0' }}>
             {Icon.apps}<span style={{ fontSize:10 }}>Εφαρμογές</span>
           </button>
-          <button className="btm-item" style={{ color:'#16a34a' }} onClick={() => window.open('/student', '_blank')}>
-            {Icon.send}<span style={{ fontSize:10 }}>Απεσταλμένα</span>
+          <button className="btm-item" onClick={openMessages} style={{ color: activeView==='messages'?'#ececec':'#8e8ea0', position:'relative' }}>
+            {Icon.send}<span style={{ fontSize:10 }}>Εισερχ./Απεστ.</span>
+            {(networkData.unseenCount||0) > 0 && (
+              <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>{networkData.unseenCount}</span>
+            )}
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
             {Icon.logout}<span style={{ fontSize:10 }}>Έξοδος</span>
@@ -1838,123 +1903,52 @@ export default function Home() {
                 {(networkData.sent||[]).length > 0 && <div style={{ marginTop:8, fontSize:11, color:'#aeaeb8' }}>Αναμένει: {networkData.sent.join(', ')}</div>}
               </div>
 
-              {/* Φίλτρο εισερχομένων: Όλα / ανά χρήστη */}
-              {(networkData.connections||[]).length > 0 && (networkData.inbox||[]).length > 0 && (
-                <div style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Εμφάνιση εισερχομένων</div>
-                  <select
-                    value={typeof inboxFilter === 'string' ? inboxFilter : '__all__'}
-                    onChange={e => { setInboxFilter(e.target.value === '__all__' ? null : e.target.value); setInboxShowAll(false); }}
-                    style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize:isMobile?16:13, background:'#fff', color:'#1a1a1a', cursor:'pointer' }}>
-                    <option value="__all__">Όλοι οι αποστολείς</option>
-                    {(networkData.connections||[]).map(conn => {
-                      const cInfo = contactInfo[conn.email];
-                      const label = cInfo && (cInfo.firstName || cInfo.lastName)
-                        ? `${cInfo.firstName||''} ${cInfo.lastName||''}`.trim()
-                        : (conn.name || conn.email.split('@')[0]);
-                      return <option key={conn.email} value={conn.email}>{label}</option>;
-                    })}
-                  </select>
+              {/* Ομάδες */}
+              <div style={{ marginBottom:20 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, flexWrap:'wrap' }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a' }}>👥 Ομάδες</div>
+                  {groupMsg && <span style={{ fontSize:11, color: groupMsg.startsWith('✓')?'#15803d':groupMsg.startsWith('✗')?'#dc2626':'#8a8a9a' }}>{groupMsg}</span>}
+                  <button onClick={()=>{ setShowNewGroup(v=>!v); setNewGroupName(''); setNewGroupMembers([]); }} disabled={(networkData.connections||[]).length===0}
+                    style={{ marginLeft:'auto', ...btn('mini'), fontSize:12, opacity:(networkData.connections||[]).length===0?0.5:1 }}>+ Νέα ομάδα</button>
                 </div>
-              )}
-
-              {/* Inbox εισερχόμενων αρχείων — expandable κάρτες */}
-              {(networkData.inbox||[]).length > 0 && (
-                <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>
-                    📥 Εισερχόμενα
-                    {inboxFilter && typeof inboxFilter === 'string' && <span style={{ marginLeft:8, fontSize:11, color:PALETTE.cream.deep }}>— από {(contactInfo[inboxFilter]?.firstName || contactInfo[inboxFilter]?.lastName) ? `${contactInfo[inboxFilter].firstName||''} ${contactInfo[inboxFilter].lastName||''}`.trim() : inboxFilter.split('@')[0]}</span>}
-                    {inboxFilter && <button onClick={()=>setInboxFilter(null)} style={{ marginLeft:6, background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:11 }}>✕</button>}
-                    {networkData.unseenCount > 0 && !inboxFilter && <span style={{ marginLeft:8, background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{networkData.unseenCount} νέα</span>}
+                {showNewGroup && (
+                  <div style={{ background:'#fff', borderRadius:14, border:'1px solid '+PALETTE.peach.accent, padding:'14px 16px', marginBottom:12 }}>
+                    <input autoFocus value={newGroupName} onChange={e=>setNewGroupName(e.target.value)} placeholder="Όνομα ομάδας…"
+                      style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', boxSizing:'border-box', marginBottom:10 }} />
+                    <div style={{ fontSize:11, fontWeight:700, color:'#aeaeb8', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Μέλη {newGroupMembers.length>0&&`(${newGroupMembers.length})`}</div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:220, overflowY:'auto' }}>
+                      {(networkData.connections||[]).map(c=>{ const sel=newGroupMembers.includes(c.email); const ci=contactInfo[c.email]; const nm=ci&&(ci.firstName||ci.lastName)?`${ci.firstName||''} ${ci.lastName||''}`.trim():(c.name||c.email);
+                        return <button key={c.email} onClick={()=>toggleGroupMember(c.email)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 12px', borderRadius:10, border:sel?'2px solid #16a34a':'1px solid #ebebeb', background:sel?'#f0fdf4':'#fafafa', cursor:'pointer', textAlign:'left' }}>
+                          <span style={{ flex:1, fontSize:13, color:'#1a1a1a' }}>{nm}</span>{sel&&<span style={{ color:'#16a34a', fontSize:15 }}>✓</span>}</button>;
+                      })}
+                    </div>
+                    <div style={{ display:'flex', gap:8, marginTop:12 }}>
+                      <button onClick={()=>setShowNewGroup(false)} style={{ flex:1, padding:'10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Ακύρωση</button>
+                      <button onClick={createGroup} disabled={!newGroupName.trim()||newGroupMembers.length===0} style={{ flex:1, padding:'10px', borderRadius:10, border:'none', background:(newGroupName.trim()&&newGroupMembers.length>0)?PALETTE.peach.deep:'#ccc', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Δημιουργία</button>
+                    </div>
                   </div>
-                  {(()=>{
-                    const flt = inboxFilter;
-                    const list = !flt ? networkData.inbox
-                      : Array.isArray(flt) ? networkData.inbox.filter(i=>flt.includes(i.fromEmail))
-                      : networkData.inbox.filter(i=>i.fromEmail===flt);
-                    const shown = inboxShowAll ? list : list.slice(0, 10);
-                    return shown;
-                  })().map((item, i) => {
-                    const isExp = expandedInbox === item.fileId+i;
-                    return (
-                      <div key={item.fileId+i} style={{ background: !item.seen ? '#fff9ed' : '#fff', border: `1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, borderRadius:14, marginBottom:8, overflow:'hidden', transition:'all 0.15s ease' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', cursor:'pointer' }}
-                          onClick={() => setExpandedInbox(isExp ? null : item.fileId+i)}>
-                          <div style={{ flexShrink:0, fontSize:18 }}>📄</div>
+                )}
+                {groups.length>0 && (
+                  <div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill,minmax(240px,1fr))', gap:12 }}>
+                    {groups.map(g=>(
+                      <div key={g.id} style={{ background:'#fff', borderRadius:14, border:'1px solid #ebebeb', padding:'14px 16px', display:'flex', flexDirection:'column', gap:6 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div style={{ width:36, height:36, borderRadius:10, background:PALETTE.peach.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>👥</div>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.fileName?.length > 20 ? item.fileName.slice(0,20)+'…' : item.fileName}</div>
-                            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
-                              {(()=>{ const tc=tagColor(item.fromEmail||''); const raw=(item.fromName||item.fromEmail||'').split('@')[0]; return <span style={{ fontSize:10, fontWeight:600, padding:'1px 8px', borderRadius:999, background:tc.bg, color:tc.text, whiteSpace:'nowrap', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', display:'inline-block' }} title={raw}>📚 {trunc(raw, 20)}</span>; })()}
-                              <span style={{ fontSize:10, color:'#aeaeb8' }}>{new Date(item.sentAt).toLocaleDateString('el-GR')}</span>
-                            </div>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{g.name}</div>
+                            <div style={{ fontSize:11, color:'#8a8a9a' }}>{(g.members||[]).length} μέλη</div>
                           </div>
-                          {!item.seen && <span style={{ width:8, height:8, borderRadius:'50%', background:'#dc2626', flexShrink:0 }} />}
-                          <span style={{ fontSize:11, color:'#aeaeb8', flexShrink:0, transition:'transform 0.15s', transform: isExp ? 'rotate(180deg)' : 'none' }}>▼</span>
+                          <button onClick={()=>deleteGroup(g.id)} title="Διαγραφή" style={{ background:'none', border:'none', color:'#dc2626', cursor:'pointer', fontSize:14, padding:'2px 6px' }}>✕</button>
                         </div>
-                        {isExp && (
-                          <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
-                            {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, marginBottom:4, lineHeight:1.5 }}>💬 {item.message}</div>}
-                            <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-                              <button onClick={()=>{
-                                markInboxSeen(item.fileId);
-                                const isHtml=/\.html?$/i.test(item.fileName||'');
-                                const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||'');
-                                const pUrl=isHtml
-                                  ?`/api/student-file?id=${item.fileId}`
-                                  :isOff
-                                  ?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`
-                                  :`https://drive.google.com/file/d/${item.fileId}/preview`;
-                                // Κινητό → άνοιγμα κατευθείαν σε νέα καρτέλα (όλες οι σελίδες, χωρίς ενδιάμεσο modal)
-                                if(isMobile){ window.open(pUrl,'_blank'); return; }
-                                setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true });
-                                setShowMetaPanel(false);
-                              }}
-                                style={{ marginTop:8, padding:'7px 16px', borderRadius:10, border:'1.5px solid #8a7d4a', background:'transparent', color:'#5c4a1e', fontSize:12, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
-                              <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`, '_blank'); }}
-                                style={{ marginTop:8, padding:'7px 12px', borderRadius:10, border:'1px solid #e0e0e0', background:'#f9f6ed', color:'#5c4a1e', fontSize:12, cursor:'pointer' }}>⬇ Λήψη</button>
-                              <button onClick={()=> setInboxSaveTarget(inboxSaveTarget === item.fileId+i ? null : item.fileId+i)}
-                                disabled={busy==='inbox-save'}
-                                style={{ marginTop:8, padding:'7px 14px', borderRadius:10, border: inboxSaveTarget===item.fileId+i ? '1.5px solid #16a34a' : '1px solid #e0e0e0',
-                                  background: inboxSaveTarget===item.fileId+i ? '#f0fdf4' : '#fff', color:'#15803d', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                                {busy==='inbox-save' ? '…' : '📁 Αποθήκευση'}
-                              </button>
-                            </div>
-                            {inboxSaveTarget === item.fileId+i && (
-                              <div style={{ marginTop:10, padding:10, background:'#f9fafb', borderRadius:12, border:'1px solid #e5e7eb' }}>
-                                <div style={{ fontSize:11, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Επιλογή φακέλου</div>
-                                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-                                  {(folders||[]).map(fld => (
-                                    <button key={fld.id}
-                                      onClick={() => saveInboxToDrive(item.fileId, item.fileName, fld.id)}
-                                      disabled={busy==='inbox-save'}
-                                      style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:10, cursor:'pointer',
-                                        background:'#fff', border:'1px solid #e0e0e0', textAlign:'left', fontSize:12, fontWeight:500, color:'#1a1a1a' }}>
-                                      <span>📁</span> <span style={{ flex:1 }}>{fld.name}</span> <span style={{ fontSize:11, color:'#16a34a' }}>→</span>
-                                    </button>
-                                  ))}
-                                  {(!folders || !folders.length) && <div style={{ fontSize:12, color:'#aeaeb8' }}>Δεν υπάρχουν φάκελοι.</div>}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                          {(g.members||[]).map(m=>{ const tc=tagColor(m); const c=(networkData.connections||[]).find(x=>x.email===m); const nm=(c?.name||m).split('@')[0]; return <span key={m} style={{ fontSize:10, padding:'2px 8px', borderRadius:999, background:tc.bg, color:tc.text }}>{nm}</span>; })}
+                        </div>
                       </div>
-                    );
-                  })}
-                  {(()=>{
-                    const flt = inboxFilter;
-                    const list = !flt ? networkData.inbox
-                      : Array.isArray(flt) ? networkData.inbox.filter(i=>flt.includes(i.fromEmail))
-                      : networkData.inbox.filter(i=>i.fromEmail===flt);
-                    if (list.length <= 10) return null;
-                    return (
-                      <button onClick={()=>setInboxShowAll(v=>!v)} style={{ width:'100%', padding:'10px', marginTop:4, borderRadius:10, border:'1px solid #ebebeb', background:'#fafafa', color:PALETTE.cream.deep, fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                        {inboxShowAll ? '▲ Λιγότερα' : `▼ Περισσότερα (${list.length - 10})`}
-                      </button>
-                    );
-                  })()}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>Συνδέσεις {(networkData.connections||[]).length > 0 && `(${networkData.connections.length})`}</div>
                 {networkLoading && <div style={{ color:'#aeaeb8', fontSize:13 }}>Φόρτωση…</div>}
@@ -1979,6 +1973,167 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* ΕΙΣΕΡΧ./ΑΠΕΣΤ. — πίνακας με κάρτες-φακέλους (όπως ο μαθητής) */}
+          {activeView === 'messages' && (() => {
+            const conns = networkData.connections || [];
+            const inboxAll = networkData.inbox || [];
+            const sentAll = allSentFiles();
+            const cName = (c) => { const ci = contactInfo[c.email]; return ci && (ci.firstName || ci.lastName) ? `${ci.firstName||''} ${ci.lastName||''}`.trim() : (c.name || c.email.split('@')[0]); };
+
+            const renderInbox = (item, key) => {
+              const isExp = expandedInbox === key;
+              return (
+                <div key={key} style={{ background: !item.seen ? '#fff9ed' : '#fff', border:`1px solid ${!item.seen?'#fecaca':'#ebebeb'}`, borderRadius:14, marginBottom:8, overflow:'hidden' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', cursor:'pointer' }} onClick={()=>setExpandedInbox(isExp?null:key)}>
+                    <div style={{ fontSize:18, flexShrink:0 }}>📄</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(item.fileName||'',22)}</div>
+                      <div style={{ fontSize:10, color:'#aeaeb8', marginTop:2 }}>{(()=>{const tc=tagColor(item.fromEmail||''); const raw=(item.fromName||item.fromEmail||'').split('@')[0]; return <span style={{ fontSize:10, fontWeight:600, padding:'1px 7px', borderRadius:999, background:tc.bg, color:tc.text }}>{trunc(raw,18)}</span>;})()} <span style={{ marginLeft:4 }}>{new Date(item.sentAt).toLocaleDateString('el-GR')}</span></div>
+                    </div>
+                    {!item.seen && <span style={{ width:8, height:8, borderRadius:'50%', background:'#dc2626', flexShrink:0 }} />}
+                    <span style={{ fontSize:11, color:'#aeaeb8', transition:'transform 0.15s', transform:isExp?'rotate(180deg)':'none' }}>▼</span>
+                  </div>
+                  {isExp && (
+                    <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
+                      {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, lineHeight:1.5 }}>💬 {item.message}</div>}
+                      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:8 }}>
+                        <button onClick={()=>{ markInboxSeen(item.fileId); const isHtml=/\.html?$/i.test(item.fileName||''); const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||''); const pUrl=isHtml?`/api/student-file?id=${item.fileId}`:isOff?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`:`https://drive.google.com/file/d/${item.fileId}/preview`; if(isMobile){window.open(pUrl,'_blank');return;} setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true }); setShowMetaPanel(false); }}
+                          style={{ ...btn('mini'), fontSize:12 }}>Άνοιγμα →</button>
+                        <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`,'_blank'); }} style={{ ...btn('mini'), fontSize:12 }}>⬇ Λήψη</button>
+                        <button onClick={()=> setInboxSaveTarget(inboxSaveTarget===key?null:key)} disabled={busy==='inbox-save'} style={{ ...btn('mini'), fontSize:12, color:'#15803d' }}>{busy==='inbox-save'?'…':'📁 Αποθήκευση'}</button>
+                      </div>
+                      {inboxSaveTarget===key && (
+                        <div style={{ marginTop:10, padding:10, background:'#f9fafb', borderRadius:12, border:'1px solid #e5e7eb' }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Επιλογή φακέλου</div>
+                          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                            {(folders||[]).map(fld => (
+                              <button key={fld.id} onClick={()=>saveInboxToDrive(item.fileId, item.fileName, fld.id)} disabled={busy==='inbox-save'}
+                                style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:10, cursor:'pointer', background:'#fff', border:'1px solid #e0e0e0', textAlign:'left', fontSize:12, fontWeight:500, color:'#1a1a1a' }}>
+                                <span>📁</span><span style={{ flex:1 }}>{fld.name}</span><span style={{ fontSize:11, color:'#16a34a' }}>→</span></button>
+                            ))}
+                            {(!folders||!folders.length) && <div style={{ fontSize:12, color:'#aeaeb8' }}>Δεν υπάρχουν φάκελοι.</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            };
+            const renderSent = (f, key) => (
+              <div key={key} className="ch" onClick={()=>openViewer(f)} style={{ background:'#fff', border:'1px solid #ebebeb', borderRadius:14, marginBottom:8, padding:'11px 14px', display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+                <div style={{ fontSize:18, flexShrink:0 }}>📄</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name,22)}</div>
+                  <div style={{ fontSize:10, color:'#aeaeb8', marginTop:2 }}>{f.visibility==='public'?'🌍 Δημόσιο':f.visibility==='connections'?'👥 Συνδέσεις':'👤 Προσωπικό'}</div>
+                </div>
+                <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
+              </div>
+            );
+
+            // ── Λεπτομέρεια φακέλου (διπλή στήλη) ──
+            if (msgFolder) {
+              const f = msgFolder;
+              const isUG = f.type==='user'||f.type==='group';
+              let leftList=[], rightList=[];
+              if (f.type==='inbox') leftList=inboxAll;
+              else if (f.type==='sent') rightList=sentAll;
+              else if (f.type==='user'){ leftList=inboxFromUser(f.email); rightList=sentToUser(f.email); }
+              else if (f.type==='group'){ leftList=inboxFromGroup(f.group); rightList=sentToGroup(f.group); }
+              else if (f.type==='search'){ const q=msgSearch.trim().toLowerCase(); leftList=q?inboxAll.filter(i=>(i.fileName||'').toLowerCase().includes(q)):[]; rightList=q?sentAll.filter(x=>(x.name||'').toLowerCase().includes(q)):[]; }
+              const showLeft=f.type==='inbox'||f.type==='search'||isUG;
+              const showRight=f.type==='sent'||f.type==='search'||isUG;
+              return (
+                <>
+                  <div style={S.pageHeader}>
+                    <button onClick={()=>{setMsgFolder(null);setMsgSearch('');setExpandedInbox(null);}} style={S.backBtn}>← Πίσω</button>
+                    <h1 style={S.pageTitle}>{f.type==='group'?'👥 ':f.type==='user'?'👤 ':f.type==='sent'?'📤 ':f.type==='search'?'🔍 ':'📥 '}{f.name}</h1>
+                  </div>
+                  {f.type==='search' && (
+                    <input autoFocus type="search" placeholder="Αναζήτηση σε εισερχόμενα & απεσταλμένα…" value={msgSearch} onChange={e=>setMsgSearch(e.target.value)}
+                      style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize:isMobile?16:14, background:'#fff', marginBottom:16, boxSizing:'border-box' }} />
+                  )}
+                  <div style={{ display:'flex', gap:20, flexWrap:'wrap', alignItems:'flex-start' }}>
+                    {showLeft && (
+                      <div style={{ flex:'1 1 320px', minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>📥 Εισερχόμενα {unseenInbox(leftList)>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'1px 8px', fontSize:11 }}>{unseenInbox(leftList)}</span>}</div>
+                        {leftList.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic', padding:16 }}>{f.type==='search'?'Πληκτρολόγησε για αναζήτηση.':'Κανένα εισερχόμενο.'}</div>
+                          : leftList.map((x,i)=>renderInbox(x,'min_'+(x.fileId||'')+'_'+(x.fromEmail||'')+'_'+i))}
+                      </div>
+                    )}
+                    {showRight && (
+                      <div style={{ flex:'1 1 320px', minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'#1a1a1a', marginBottom:10 }}>📤 Απεσταλμένα</div>
+                        {rightList.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic', padding:16 }}>{f.type==='search'?'Πληκτρολόγησε για αναζήτηση.':'Κανένα απεσταλμένο.'}</div>
+                          : rightList.map((x,i)=>renderSent(x,'mout_'+x.id+'_'+i))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            }
+
+            // ── Κάρτες ──
+            const fixed=[
+              {key:'inbox', type:'inbox', name:'Εισερχόμενα', icon:'📥', tone:'cream', sub:`${inboxAll.length} αρχεία`, badge:networkData.unseenCount||0},
+              {key:'sent', type:'sent', name:'Απεσταλμένα', icon:'📤', tone:'peach', sub:`${sentAll.length} αρχεία`, badge:0},
+              {key:'search', type:'search', name:'Αναζήτηση', icon:'🔍', tone:'mustard', sub:'εισερχόμενα & απεσταλμένα', badge:0},
+            ];
+            const openFixed=(o)=>{ setMsgSearch(''); setExpandedInbox(null); setMsgFolder({type:o.type,name:o.name}); };
+            const folderItems=[
+              ...groups.map(g=>{ const ic=inboxFromGroup(g), st=sentToGroup(g); return { type:'folder', view:'g_'+g.id, name:g.name, icon:'👥', tone:'peach', desc:`📥 ${ic.length} · 📤 ${st.length}`, badge:unseenInbox(ic), open:()=>{setExpandedInbox(null);setMsgFolder({type:'group',group:g,name:g.name});} }; }),
+              ...conns.map(c=>{ const nm=cName(c); const ic=inboxFromUser(c.email), st=sentToUser(c.email); return { type:'folder', view:'u_'+c.email, name:nm, icon:(nm.charAt(0)||'?').toUpperCase(), tone:'cream', desc:`📥 ${ic.length} · 📤 ${st.length}`, badge:unseenInbox(ic), open:()=>{setExpandedInbox(null);setMsgFolder({type:'user',email:c.email,name:nm});} }; }),
+            ];
+
+            return (
+              <>
+                <div style={S.pageHeader}><h1 style={S.pageTitle}>Εισερχ./Απεστ.</h1></div>
+                {isMobile ? (
+                  <>
+                    <div style={{ position:'relative', marginBottom:24, paddingBottom:8 }}>
+                      {renderWallet(fixed.map(o=>({type:'folder',view:o.key,name:o.name,icon:o.icon,tone:o.tone,desc:o.sub,open:()=>openFixed(o)})), msgStatActive, (item,isExp)=>{ if(isExp){setMsgStatActive(null);item.open();} else setMsgStatActive(item.view); })}
+                    </div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:12 }}>Χρήστες & ομάδες</div>
+                    {folderItems.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση/ομάδα. Πρόσθεσε από το «Δίκτυο».</div>
+                      : <div style={{ position:'relative', paddingBottom:8 }}>{renderWallet(folderItems, msgWalletActive, (item,isExp)=>{ if(isExp){setMsgWalletActive(null);item.open();} else setMsgWalletActive(item.view); })}</div>}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ ...S.statsGrid, gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:14, marginBottom:32 }}>
+                      {fixed.map(o=>{ const p=PALETTE[o.tone]; return (
+                        <div key={o.key} className="ch" onClick={()=>openFixed(o)} style={{ ...S.statCard, minHeight:120, cursor:'pointer', background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                            <div style={{ fontSize:30, marginBottom:8 }}>{o.icon}</div>
+                            {o.badge>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'2px 9px', fontSize:12, fontWeight:700 }}>{o.badge}</span>}
+                          </div>
+                          <div style={{ fontSize:18, fontWeight:700, color:p.text, marginBottom:4 }}>{o.name}</div>
+                          <div style={{ fontSize:13, color:p.text, opacity:0.65 }}>{o.sub}</div>
+                        </div>
+                      ); })}
+                    </div>
+                    <div style={{ fontSize:17, fontWeight:600, color:'#1a1a1a', marginBottom:18 }}>Χρήστες & ομάδες</div>
+                    {folderItems.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση/ομάδα. Πρόσθεσε από το «Δίκτυο».</div>
+                      : <div style={S.cardsGrid}>
+                          {folderItems.map((it,i)=>{ const p=PALETTE[TONES[i%TONES.length]]; return (
+                            <div key={it.view} className="ch" onClick={it.open} style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
+                              <div style={S.folderTop}>
+                                <div style={{ ...S.folderIcon, background:p.accent, color:p.deep, fontSize:20 }}>{it.icon}</div>
+                                {it.badge>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'2px 9px', fontSize:12, fontWeight:700 }}>{it.badge}</span>}
+                              </div>
+                              <h3 style={{ ...S.folderTitle, color:p.text }}>{trunc(it.name,24)}</h3>
+                              <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{it.desc}</p>
+                              <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
+                                <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
+                              </div>
+                            </div>
+                          ); })}
+                        </div>}
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           {/* FAVORITES / NEW */}
           {(activeView === 'favorites' || activeView === 'newFiles') && (
