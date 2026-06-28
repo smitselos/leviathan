@@ -279,9 +279,10 @@ function StudentView({myEmail,isMobile,router}){
       const allFiles=Array.isArray(dReg.files)?dReg.files:[];
       setSentFiles(allFiles.filter(f=>f.sent));
 
-      // Seen IDs
+      // Seen IDs (localStorage + server + προηγούμενα — ώστε να ΜΗΝ ξαναεμφανίζονται ως νέα)
       setSeenIds(prev => {
         const merged = new Set(dReg.seenFiles || []);
+        try { (JSON.parse(localStorage.getItem('lev_seen_'+(myEmail||''))||'[]')||[]).forEach(id=>merged.add(id)); } catch {}
         prev.forEach(id => merged.add(id));
         return merged;
       });
@@ -329,9 +330,13 @@ function StudentView({myEmail,isMobile,router}){
 
   const unseenCount=useMemo(()=>incoming.filter(f=>!seenIds.has(f.id)).length,[incoming,seenIds]);
 
+  // Κόκκινο σήμα στο εικονίδιο της εφαρμογής (PWA badge) — κινητό & desktop
+  useEffect(()=>{ try{ if('setAppBadge' in navigator){ if(unseenCount>0) navigator.setAppBadge(unseenCount); else navigator.clearAppBadge(); } }catch{} },[unseenCount]);
+
   const markSeen=async(fileId)=>{
     if(seenIds.has(fileId))return;
     const next=new Set(seenIds);next.add(fileId);setSeenIds(next);
+    try{ localStorage.setItem('lev_seen_'+(myEmail||''), JSON.stringify([...next])); }catch{}
     try{await fetch('/api/registry',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({seenFiles:[...next]})});}catch{}
   };
 
@@ -560,7 +565,7 @@ function StudentView({myEmail,isMobile,router}){
     const contactLine=(email)=>{ const c=contacts[email]; if(!c)return null; const parts=[c.roleTitle,c.school,c.phone].filter(Boolean); return parts.length?parts.join(' · '):null; };
     return(
       <div style={S.app}><Head><title>Δίκτυο — ΛΕΒΙΑΘΑΝ</title></Head><style>{css}</style>
-        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setNetView(false);setViewing(null);setPublicView(false);setOpenFolder(null);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} openNetwork={openNetwork} activeNetwork/>}
+        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setNetView(false);setViewing(null);setPublicView(false);setOpenFolder(null);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} openNetwork={openNetwork} dashBadge={unseenCount} activeNetwork/>}
         <div className="student-main" style={{...S.main,marginLeft:!isMobile?(sidebarOpen?220:56):0}}>
           {isMobile&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff'}}><span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>ΛΕΒΙΑΘΑΝ</span></div>}
           <div style={S.container}>
@@ -703,7 +708,7 @@ function StudentView({myEmail,isMobile,router}){
 
         {isMobile&&(
           <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-            <MobBtn icon={Ic.dashboard} label="Πίνακας" onClick={()=>{setNetView(false);setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
+            <MobBtn icon={Ic.dashboard} label="Πίνακας" badge={unseenCount} onClick={()=>{setNetView(false);setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
             <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
             <MobBtn icon={Ic.net} label="Δίκτυο" active onClick={openNetwork}/>
             <MobBtn icon={Ic.globe} label="Πρόσβαση" onClick={openPublicView}/>
@@ -720,7 +725,7 @@ function StudentView({myEmail,isMobile,router}){
     const shown=publicFiles.filter(f=>publicFrom==='__all__'||f.fromEmail===publicFrom);
     return(
       <div style={S.app}><Head><title>Ανοιχτή πρόσβαση — ΛΕΒΙΑΘΑΝ</title></Head><style>{css}</style>
-        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setPublicView(false);setViewing(null);setNetView(false);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} openNetwork={openNetwork} activePublic/>}
+        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setPublicView(false);setViewing(null);setNetView(false);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} openNetwork={openNetwork} dashBadge={unseenCount} activePublic/>}
         <div className="student-main" style={{...S.main,marginLeft:!isMobile?(sidebarOpen?220:56):0}}>
           {isMobile&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff'}}><span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>ΛΕΒΙΑΘΑΝ</span></div>}
           <div style={S.container}>
@@ -781,7 +786,7 @@ function StudentView({myEmail,isMobile,router}){
         </div>
         {isMobile&&(
           <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-            <MobBtn icon={Ic.dashboard} label="Πίνακας" onClick={()=>{setPublicView(false);setViewing(null);setOpenFolder(null);}}/>
+            <MobBtn icon={Ic.dashboard} label="Πίνακας" badge={unseenCount} onClick={()=>{setPublicView(false);setViewing(null);setOpenFolder(null);}}/>
             <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
             <MobBtn icon={Ic.net} label="Δίκτυο" onClick={openNetwork}/>
             <MobBtn icon={Ic.globe} label="Πρόσβαση" active onClick={openPublicView}/>
@@ -797,7 +802,7 @@ function StudentView({myEmail,isMobile,router}){
     const url=viewing.previewUrl||`https://drive.google.com/file/d/${viewing.id}/preview`;
     return(
       <div style={S.app}><Head><title>{viewing.name}</title></Head><style>{css}</style>
-        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setViewing(null);setPublicView(false);setNetView(false);setOpenFolder(null);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} openNetwork={openNetwork}/>}
+        {!isMobile&&<StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} goHome={()=>{setViewing(null);setPublicView(false);setNetView(false);setOpenFolder(null);}} isMobile={isMobile} myEmail={myEmail} openPublic={openPublicView} openNetwork={openNetwork} dashBadge={unseenCount}/>}
         <div style={{...S.main,marginLeft:sidebarOpen?220:56}}>
           <div style={{display:'flex',alignItems:'center',padding:'10px 16px',borderBottom:'1px solid #eee',background:'#fff',gap:10}}>
             <button onClick={()=>setViewing(null)} style={{background:'none',border:'1px solid #ddd',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:13,color:'#444'}}>← Πίσω</button>
@@ -978,7 +983,7 @@ function StudentView({myEmail,isMobile,router}){
       {/* Mobile bottom nav */}
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-          <MobBtn icon={Ic.dashboard} label="Πίνακας" active onClick={()=>{setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
+          <MobBtn icon={Ic.dashboard} label="Πίνακας" active badge={unseenCount} onClick={()=>{setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
           <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
           <MobBtn icon={Ic.net} label="Δίκτυο" onClick={openNetwork}/>
           <MobBtn icon={Ic.globe} label="Πρόσβαση" onClick={openPublicView}/>
@@ -1179,12 +1184,12 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 /* ══════════════════════════════════════════════════════════════
    SHARED COMPONENTS
    ══════════════════════════════════════════════════════════════ */
-function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,openNetwork,activePublic,activeNetwork}){
+function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,openNetwork,activePublic,activeNetwork,dashBadge}){
   return(
     <div style={{...S.sidebar,width:open?220:56}}>
       <div style={S.sidebarHeader}>{open&&<span style={{fontSize:15,fontWeight:500,color:'#ececec'}}>ΛΕΒΙΑΘΑΝ</span>}<button onClick={()=>setOpen(p=>!p)} style={S.collapseBtn}>{open?'◀':'▶'}</button></div>
       <nav style={S.nav}>
-        <button onClick={goHome} style={{...S.navItem,...((activePublic||activeNetwork)?{}:S.navActive)}}><span style={S.navIcon}>{Ic.dashboard}</span>{open&&'Πίνακας ελέγχου'}</button>
+        <button onClick={goHome} style={{...S.navItem,...((activePublic||activeNetwork)?{}:S.navActive),position:'relative'}}><span style={S.navIcon}>{Ic.dashboard}</span>{open&&'Πίνακας ελέγχου'}{dashBadge>0&&<span style={{ position:'absolute', top:6, ...(open?{right:10}:{left:26}), background:'#dc2626', color:'#fff', borderRadius:999, minWidth:16, height:16, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px' }}>{dashBadge}</span>}</button>
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live session'}</button>
         <div style={S.navDiv}/>
@@ -1254,8 +1259,8 @@ const S={
   emptyCol:{textAlign:'center',color:'#aeaeb8',padding:32,fontSize:13,background:'#fff',borderRadius:14,border:'1px dashed #e0e0e0'},
   openBtn:{background:'transparent',border:'1.5px solid '+P.cream.deep,borderRadius:10,padding:'6px 14px',fontSize:12,fontWeight:600,cursor:'pointer',color:P.cream.deep,flexShrink:0},
   miniBtn:{background:P.cream.bg,border:'1.5px solid '+P.cream.accent,borderRadius:8,width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:13,flexShrink:0,padding:0},
-  badge:{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:18,height:18,borderRadius:9,background:'#f59e0b',color:'#fff',fontSize:10,fontWeight:700,padding:'0 5px'},
-  badgeStyle:{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:16,height:16,borderRadius:8,background:'#f59e0b',color:'#fff',fontSize:9,fontWeight:700,padding:'0 4px'},
+  badge:{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:18,height:18,borderRadius:9,background:'#dc2626',color:'#fff',fontSize:10,fontWeight:700,padding:'0 5px'},
+  badgeStyle:{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:16,height:16,borderRadius:8,background:'#dc2626',color:'#fff',fontSize:9,fontWeight:700,padding:'0 4px'},
 };
 
 // Η σελίδα πρέπει να φορτώνει ΧΩΡΙΣ auth (δημόσια πρόσβαση)

@@ -331,6 +331,8 @@ export default function Home() {
   const allSuggestedUrls = customUrls.length > 0 ? customUrls : SUGGESTED_URLS;
 
   useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); loadContacts(); } }, [status, loadAll]);
+  // Περιοδική ανανέωση δικτύου ώστε να εμφανίζεται το κόκκινο σήμα όταν έρχεται νέα αποστολή
+  useEffect(() => { if (status !== 'authenticated') return; const iv = setInterval(() => { loadNetwork(); }, 30000); return () => clearInterval(iv); }, [status]);
 
   // ── Φάκελοι ──
   const addFolder = async () => {
@@ -950,6 +952,9 @@ export default function Home() {
   const inboxFromGroup = (g) => (networkData.inbox || []).filter(i => (g.members || []).includes(i.fromEmail));
   const unseenInbox = (list) => list.filter(i => !i.seen).length;
   const openMessages = async () => { setActiveView('messages'); setOpenFolder(null); setMsgFolder(null); setMsgSearch(''); setMsgWalletActive(null); setMsgStatActive(null); setNetworkLoading(true); await loadNetwork(); setNetworkLoading(false); };
+
+  // Κόκκινο σήμα στο εικονίδιο της εφαρμογής (PWA badge) — κινητό & desktop
+  useEffect(() => { try { if ('setAppBadge' in navigator) { const n = networkData.unseenCount || 0; if (n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch {} }, [networkData.unseenCount]);
 
   // ── Navigation helpers ──
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); setSearchCategory('texts'); };
