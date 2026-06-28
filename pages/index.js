@@ -2062,7 +2062,7 @@ export default function Home() {
                 <>
                   <div style={S.pageHeader}>
                     <button onClick={()=>{setMsgFolder(null);setMsgSearch('');setExpandedInbox(null);}} style={S.backBtn}>← Πίσω</button>
-                    <h1 style={S.pageTitle}>{f.type==='group'?'👥 ':f.type==='user'?'👤 ':f.type==='sent'?'📤 ':f.type==='search'?'🔍 ':'📥 '}{f.name}</h1>
+                    <h1 style={{ ...S.pageTitle, flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.type==='group'?'👥 ':f.type==='user'?'👤 ':f.type==='sent'?'📤 ':f.type==='search'?'🔍 ':'📥 '}{trunc(f.name, isMobile?16:40)}</h1>
                   </div>
                   {f.type==='search' && (
                     <input autoFocus type="search" placeholder="Αναζήτηση σε εισερχόμενα & απεσταλμένα…" value={msgSearch} onChange={e=>setMsgSearch(e.target.value)}
@@ -2110,7 +2110,7 @@ export default function Home() {
                     </div>
                     <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:12 }}>Χρήστες & ομάδες</div>
                     {folderItems.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση/ομάδα. Πρόσθεσε από το «Δίκτυο».</div>
-                      : <div style={{ position:'relative', paddingBottom:8 }}>{renderWallet(folderItems, msgWalletActive, (item,isExp)=>{ if(isExp){setMsgWalletActive(null);item.open();} else setMsgWalletActive(item.view); })}</div>}
+                      : <div style={{ position:'relative', paddingBottom:8 }}>{renderWallet(folderItems.map(it=>({ ...it, name:trunc(it.name,18), fw:500 })), msgWalletActive, (item,isExp)=>{ if(isExp){setMsgWalletActive(null);item.open();} else setMsgWalletActive(item.view); })}</div>}
                   </>
                 ) : (
                   <>
