@@ -1980,6 +1980,20 @@ export default function Home() {
             const inboxAll = networkData.inbox || [];
             const sentAll = allSentFiles();
             const cName = (c) => { const ci = contactInfo[c.email]; return ci && (ci.firstName || ci.lastName) ? `${ci.firstName||''} ${ci.lastName||''}`.trim() : (c.name || c.email.split('@')[0]); };
+            const nameOfEmail = (email) => { const ci = contactInfo[email]; if (ci && (ci.firstName || ci.lastName)) return `${ci.firstName||''} ${ci.lastName||''}`.trim(); const c = (networkData.connections||[]).find(x=>x.email===email); return (c?.name && !c.name.includes('@')) ? c.name : email.split('@')[0]; };
+            // Ετικέτα παραλήπτη/ων για κάρτα απεσταλμένου — δείχνει σε ποιον/ποια ομάδα στάλθηκε
+            const sentLabel = (f) => {
+              const v = f.visibility;
+              if (v === 'public') return '🌍 Δημόσιο';
+              if (v === 'connections') return '👥 Όλες οι συνδέσεις';
+              if (v && v.startsWith('user:')) return '👤 ' + nameOfEmail(v.slice(5));
+              if (v && v.startsWith('users:')) { try { const arr = JSON.parse(v.slice(6)); const names = arr.map(nameOfEmail);
+                // αν ταιριάζει ακριβώς με κάποια ομάδα, δείξε το όνομα της ομάδας
+                const grp = groups.find(g => (g.members||[]).length===arr.length && arr.every(e=>g.members.includes(e)));
+                return '👥 ' + (grp ? grp.name : names.join(', '));
+              } catch { return '👥 Πολλοί'; } }
+              return '';
+            };
 
             const renderInbox = (item, key) => {
               const isExp = expandedInbox === key;
@@ -2026,7 +2040,7 @@ export default function Home() {
                 <div style={{ fontSize:18, flexShrink:0 }}>📄</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trunc(f.name,22)}</div>
-                  <div style={{ fontSize:10, color:'#aeaeb8', marginTop:2 }}>{f.visibility==='public'?'🌍 Δημόσιο':f.visibility==='connections'?'👥 Συνδέσεις':'👤 Προσωπικό'}</div>
+                  <div style={{ fontSize:10, color:'#8a7d4a', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>→ {sentLabel(f)}</div>
                 </div>
                 <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
               </div>
