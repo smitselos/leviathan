@@ -66,6 +66,30 @@ export default async function handler(req, res) {
       return res.status(200).json({ folders: reg.folders, removedFiles: filesInFolder.length });
     }
 
+    if (req.method === 'PATCH') {
+      const { id } = req.body || {};
+      const name = (req.body?.name || '').trim();
+      if (!id) return res.status(400).json({ error: 'Λείπει το id' });
+      if (!name) return res.status(400).json({ error: 'Λείπει το όνομα φακέλου' });
+
+      const reg = await loadRegistry(drive);
+      const target = reg.folders.find((f) => f.id === id);
+      if (!target) return res.status(404).json({ error: 'Ο φάκελος δεν βρέθηκε' });
+
+      // αποφυγή διπλού ονόματος (εξαιρώντας τον ίδιο τον φάκελο)
+      if (reg.folders.some((f) => f.id !== id && f.name.toLowerCase() === name.toLowerCase())) {
+        return res.status(409).json({ error: 'Υπάρχει ήδη φάκελος με αυτό το όνομα' });
+      }
+
+      // μετονομασία του πραγματικού φακέλου στο Drive (server-side, αξιόπιστα)
+      try { await drive.files.update({ fileId: id, requestBody: { name } }); } catch (e) { /* ignore */ }
+
+      // μόνιμη ενημέρωση μητρώου
+      target.name = name;
+      await saveRegistry(drive, reg);
+      return res.status(200).json({ folder: target, folders: reg.folders });
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     console.error('[folders]', e.message);
