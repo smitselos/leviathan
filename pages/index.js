@@ -996,11 +996,11 @@ export default function Home() {
       const isBefore = hasExpanded && idx < expandedIdx;
       const isAfter = hasExpanded && idx > expandedIdx;
 
-      let mt = idx === 0 ? 0 : -52;
+      let mt = idx === 0 ? 0 : -30;
       let ty = 0;
       if (isExpanded)     { mt = idx===0 ? 0 : 16; ty = -8; }
-      else if (isBefore)  { mt = idx===0 ? 0 : -60; ty = -4; }
-      else if (isAfter)   { mt = -60; ty = 40; }
+      else if (isBefore)  { mt = idx===0 ? 0 : -38; ty = -4; }
+      else if (isAfter)   { mt = -38; ty = 40; }
 
       return (
         <div key={item.view} className="wallet-card" onClick={() => onTap(item, isExpanded)}
