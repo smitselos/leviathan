@@ -359,6 +359,23 @@ export default function Home() {
     } catch (e) { alert('Σφάλμα: ' + e.message); }
     setBusy('');
   };
+  const renameFolder = async (folder) => {
+    const name = prompt('Νέο όνομα φακέλου:', folder.name);
+    if (!name || !name.trim() || name.trim() === folder.name) return;
+    const newName = name.trim();
+    setBusy('folder');
+    // optimistic ενημέρωση UI
+    setFolders((prev) => prev.map((f) => f.id === folder.id ? { ...f, name: newName } : f));
+    if (openFolder?.id === folder.id) setOpenFolder((o) => o ? { ...o, name: newName } : o);
+    try {
+      // Μετονομασία του πραγματικού φακέλου στο Drive
+      try { await fetch(`https://www.googleapis.com/drive/v3/files/${folder.id}`, { method:'PATCH', headers:{ Authorization:'Bearer ' + session.accessToken, 'Content-Type':'application/json' }, body: JSON.stringify({ name: newName }) }); } catch {}
+      // Ενημέρωση μητρώου (χρειάζεται PATCH στο /api/folders για μόνιμη αποθήκευση)
+      const r = await fetch('/api/folders', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: folder.id, name: newName }) });
+      if (r.ok) { const d = await r.json(); if (d.folders) setFolders(d.folders); }
+    } catch (e) {}
+    setBusy('');
+  };
 
   // ── Μητρώο ──
   const registerFiles = async (items) => {
@@ -1147,6 +1164,7 @@ export default function Home() {
         *{box-sizing:border-box;}
         html,body{margin:0;padding:0;}
         .ch:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.04)!important;}
+        @media(hover:hover) and (min-width:768px){ .folder-ch{transition:filter 0.15s, transform 0.2s, box-shadow 0.2s;} .folder-ch:hover{filter:brightness(0.94);} }
         .nav-h:hover{background:rgba(255,255,255,0.06)!important;color:#ececec!important;}
         .ri-h:hover{background:#fcf0e5!important;}
         .del-h:hover{background:#fde8e8!important;color:#dc2626!important;border-color:#f5c6c6!important;}
@@ -1317,10 +1335,16 @@ export default function Home() {
                       {folders.map((fld, i) => {
                         const p = PALETTE[TONES[i % TONES.length]];
                         return (
-                          <div key={fld.id} className="ch" onClick={() => openFolderView(fld)}
+                          <div key={fld.id} className="ch folder-ch" onClick={() => openFolderView(fld)}
                             style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
                             <div style={S.folderTop}>
                               <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
+                              <div style={{ display:'flex', gap:4 }}>
+                                <button onClick={(e)=>{ e.stopPropagation(); renameFolder(fld); }} title="Μετονομασία"
+                                  style={{ background:'rgba(255,255,255,0.5)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:p.deep, fontSize:13, display:'flex', alignItems:'center', justifyContent:'center' }}>✎</button>
+                                <button onClick={(e)=>{ e.stopPropagation(); removeFolder(fld); }} title="Διαγραφή"
+                                  style={{ background:'rgba(255,255,255,0.5)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:'#dc2626', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                              </div>
                             </div>
                             <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
                             <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
