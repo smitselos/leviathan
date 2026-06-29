@@ -1339,12 +1339,6 @@ export default function Home() {
                             style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
                             <div style={S.folderTop}>
                               <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.folder}</div>
-                              <div style={{ display:'flex', gap:4 }}>
-                                <button onClick={(e)=>{ e.stopPropagation(); renameFolder(fld); }} title="Μετονομασία"
-                                  style={{ background:'rgba(255,255,255,0.5)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:p.deep, fontSize:13, display:'flex', alignItems:'center', justifyContent:'center' }}>✎</button>
-                                <button onClick={(e)=>{ e.stopPropagation(); removeFolder(fld); }} title="Διαγραφή"
-                                  style={{ background:'rgba(255,255,255,0.5)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:'#dc2626', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-                              </div>
                             </div>
                             <h3 style={{ ...S.folderTitle, color:p.text }}>{fld.name}</h3>
                             <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>{countFor(fld.id)} αρχεία</p>
@@ -1428,6 +1422,15 @@ export default function Home() {
               </div>
               <input type="search" placeholder="Αναζήτηση με όνομα ή ετικέτα στον φάκελο…" value={folderSearch} onChange={(e)=>setFolderSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:12 }} />
+              {/* Διαχείριση φακέλου (μόνο desktop) — μέσα στον φάκελο για αποφυγή κατά λάθος πατήματος */}
+              {!isMobile && !openFolder.isApps && (
+                <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+                  <button onClick={() => renameFolder(openFolder)} disabled={!!busy}
+                    style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', color:PALETTE.cream.deep, borderColor:PALETTE.cream.accent }} title="Μετονομασία φακέλου">✎ Μετονομασία</button>
+                  <button onClick={() => removeFolder(openFolder)} disabled={!!busy}
+                    style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', color:'#dc2626', borderColor:'#fca5a5' }} title="Διαγραφή φακέλου">✕ Διαγραφή φακέλου</button>
+                </div>
+              )}
               <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
             </>
           )}
