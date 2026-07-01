@@ -9,7 +9,6 @@ export default function Login() {
   const [checking, setChecking] = useState(true);
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [teacherName, setTeacherName] = useState('');
 
   // Μετά το OAuth, ελέγχουμε αν υπάρχει ρόλος
   useEffect(() => {
@@ -126,20 +125,12 @@ export default function Login() {
         <div style={{ ...S.card, flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📖</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Βιβλιοθήκη</div>
-          <p style={{ fontSize: 13, color: '#6b6b80', marginBottom: 16, lineHeight: 1.6 }}>
-            Γράψε το όνομα ή το email του εκπαιδευτικού για να δεις το δημοσιευμένο υλικό του — χωρίς σύνδεση.
+          <p style={{ fontSize: 13, color: '#6b6b80', marginBottom: 28, lineHeight: 1.6 }}>
+            Περιήγηση στο δημοσιευμένο εκπαιδευτικό υλικό χωρίς σύνδεση.
           </p>
-          <input
-            value={teacherName}
-            onChange={(e) => setTeacherName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && teacherName.trim()) window.open('/s/' + encodeURIComponent(teacherName.trim()), '_blank'); }}
-            placeholder="π.χ. smitselos ή email"
-            style={{ width: '100%', padding: '11px 14px', border: '1px solid #e0e0e0', borderRadius: 12, fontSize: 14, marginBottom: 10, boxSizing: 'border-box', textAlign: 'center' }}
-          />
           <button
-            onClick={() => { if (teacherName.trim()) window.open('/s/' + encodeURIComponent(teacherName.trim()), '_blank'); }}
-            disabled={!teacherName.trim()}
-            style={{ ...S.googleBtn, background: '#5c7a3a', opacity: teacherName.trim() ? 1 : 0.5, cursor: teacherName.trim() ? 'pointer' : 'default' }}
+            onClick={() => window.open('/s/smitselos', '_blank')}
+            style={{ ...S.googleBtn, background: '#5c7a3a' }}
           >
             Ανοικτό υλικό
           </button>
