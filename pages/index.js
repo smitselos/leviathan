@@ -213,6 +213,7 @@ export default function Home() {
   const [liveSending, setLiveSending] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
   const [visibilityPicker, setVisibilityPicker] = useState(null);
+  const [visibilityDraft, setVisibilityDraft] = useState('none'); // πρόχειρη επιλογή — αποθηκεύεται μόνο με «Αποθήκευση»
   const [shareMessage, setShareMessage] = useState('');
   const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[], inbox:[], unseenCount:0 });
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
@@ -793,16 +794,19 @@ export default function Home() {
   };
   const setVisibility = async (id, visibility) => {
     setPublishing(true);
+    let ok = false;
     try {
       const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, visibility, message: shareMessage.trim() || undefined }) });
-      if (r.ok) setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none' } : f));
+      if (r.ok) { setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none' } : f)); ok = true; }
     } catch(e) {}
     setPublishing(false);
-    setVisibilityPicker(null);
-    setShareMessage('');
+    if (ok) { setVisibilityPicker(null); setShareMessage(''); }
+    else alert('Σφάλμα αποθήκευσης — δοκιμάστε ξανά.');
+    return ok;
   };
   const togglePublish = (id) => {
     setShareMessage('');
+    setVisibilityDraft(fileOf(id).visibility || 'none'); // ξεκίνα από την αποθηκευμένη κατάσταση
     setVisibilityPicker(id);
   };
   const openNetwork = async () => {
@@ -2765,8 +2769,10 @@ export default function Home() {
       {/* Visibility Picker */}
       {visibilityPicker && (() => {
         const curFile = fileOf(visibilityPicker);
-        const curV = curFile?.visibility || 'none';
-        // Parse τρέχουσα λίστα χρηστών
+        const savedV = curFile?.visibility || 'none';
+        const curV = visibilityDraft; // οι επιλογές γίνονται τοπικά (draft) — αποστολή μόνο με «Αποθήκευση»
+        const isDirty = curV !== savedV;
+        // Parse τρέχουσα λίστα χρηστών (από το draft)
         const curUsers = curV.startsWith('users:') ? (() => { try { return JSON.parse(curV.slice(6)); } catch(e) { return []; } })()
           : curV.startsWith('user:') ? [curV.slice(5)] : [];
 
@@ -2774,16 +2780,18 @@ export default function Home() {
           const next = curUsers.includes(email)
             ? curUsers.filter(e => e !== email)
             : [...curUsers, email];
-          if (next.length === 0) setVisibility(visibilityPicker, 'none');
-          else if (next.length === 1) setVisibility(visibilityPicker, `user:${next[0]}`);
-          else setVisibility(visibilityPicker, `users:${JSON.stringify(next)}`);
+          if (next.length === 0) setVisibilityDraft('none');
+          else if (next.length === 1) setVisibilityDraft(`user:${next[0]}`);
+          else setVisibilityDraft(`users:${JSON.stringify(next)}`);
         };
+        const closePicker = () => { setVisibilityPicker(null); setShareMessage(''); };
 
         return (
-          <div onClick={()=>{setVisibilityPicker(null);setShareMessage('');}} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div onClick={closePicker} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+            <style>{`.vp-opt{transition:transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;} .vp-opt:active{transform:scale(0.97);background:#e8f7ee !important;}`}</style>
             <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'24px 20px', maxWidth:360, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', maxHeight:'90vh', overflowY:'auto' }}>
               <div style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>Ορατό σε…</div>
-              <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16 }}>Επίλεξε ποιος θα βλέπει αυτό το αρχείο. Μπορείς να επιλέξεις πολλούς χρήστες.</div>
+              <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16 }}>Επίλεξε ποιος θα βλέπει αυτό το αρχείο — μπορείς πολλούς χρήστες μαζί — και πάτησε «Αποθήκευση».</div>
 
               {/* Όλοι / Συνδέσεις */}
               {[
@@ -2792,7 +2800,7 @@ export default function Home() {
               ].map(opt => {
                 const isActive = curV === opt.value;
                 return (
-                  <button key={opt.value} onClick={()=>setVisibility(visibilityPicker, isActive ? 'none' : opt.value)}
+                  <button key={opt.value} className="vp-opt" onClick={()=>setVisibilityDraft(isActive ? 'none' : opt.value)}
                     style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'12px 14px', borderRadius:12,
                       border: isActive ? '2px solid #16a34a' : '1px solid #ebebeb',
                       background: isActive ? '#f0fdf4' : '#fafafa', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
@@ -2806,7 +2814,7 @@ export default function Home() {
                 );
               })}
 
-              {/* Συγκεκριμένοι χρήστες — additive */}
+              {/* Συγκεκριμένοι χρήστες — additive, πολλαπλή επιλογή χωρίς κλείσιμο */}
               {(networkData.connections||[]).length > 0 && <>
                 <div style={{ fontSize:11, color:'#aeaeb8', margin:'10px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>
                   Συγκεκριμένοι χρήστες {curUsers.length > 0 && <span style={{ background:'#1a1a1a', color:'#fff', borderRadius:999, padding:'1px 7px', fontSize:10 }}>{curUsers.length}</span>}
@@ -2814,7 +2822,7 @@ export default function Home() {
                 {networkData.connections.map(conn => {
                   const isSelected = curUsers.includes(conn.email);
                   return (
-                    <button key={conn.email} onClick={()=>toggleUser(conn.email)}
+                    <button key={conn.email} className="vp-opt" onClick={()=>toggleUser(conn.email)}
                       style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12,
                         border: isSelected ? '2px solid #16a34a' : '1px solid #ebebeb',
                         background: isSelected ? '#f0fdf4' : '#fafafa', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
@@ -2839,17 +2847,25 @@ export default function Home() {
               </div>
 
               <div style={{ height:1, background:'#f0f0f0', margin:'12px 0 8px' }} />
-              {curV !== 'none' && (
-                <button onClick={()=>setVisibility(visibilityPicker, 'none')}
-                  style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 14px', borderRadius:12, border:'1px solid #fee2e2', background:'#fff', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
+              {(curV !== 'none' || savedV !== 'none') && (
+                <button className="vp-opt" onClick={()=>setVisibilityDraft('none')}
+                  style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 14px', borderRadius:12, border: curV === 'none' ? '2px solid #dc2626' : '1px solid #fee2e2', background:'#fff', cursor:'pointer', marginBottom:8, textAlign:'left' }}>
                   <span style={{ fontSize:20, flexShrink:0 }}>🔒</span>
-                  <div>
+                  <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:'#dc2626' }}>Απόσυρση</div>
                     <div style={{ fontSize:11, color:'#6b6b80' }}>Αφαίρεση από τη σελίδα Student</div>
                   </div>
+                  {curV === 'none' && savedV !== 'none' && <span style={{ fontSize:16, color:'#dc2626', flexShrink:0 }}>✓</span>}
                 </button>
               )}
-              <button onClick={()=>{setVisibilityPicker(null);setShareMessage('');}} style={{ width:'100%', padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Κλείσιμο</button>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={closePicker} disabled={publishing}
+                  style={{ flex:1, padding:'11px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80', opacity:publishing?0.5:1 }}>Άκυρο</button>
+                <button onClick={()=>setVisibility(visibilityPicker, curV)} disabled={publishing || !isDirty}
+                  style={{ flex:2, padding:'11px', borderRadius:12, border:'none', background: (!isDirty||publishing) ? '#a7d7b9' : '#16a34a', color:'#fff', fontSize:13, fontWeight:700, cursor:(publishing||!isDirty)?'default':'pointer' }}>
+                  {publishing ? 'Αποθήκευση…' : 'Αποθήκευση'}
+                </button>
+              </div>
             </div>
           </div>
         );
