@@ -136,8 +136,6 @@ function PublicView({teacher,isMobile,hasSession}){
             <button onClick={()=>window.location.reload()} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.book}</span>{sidebarOpen&&'Βιβλιοθήκη'}</button>
             <div style={S.navDiv}/>
             <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{sidebarOpen&&'Live'}</button>
-            <div style={S.navDiv}/>
-            <button onClick={()=>window.location.href='/login'} style={S.navItem}><span style={S.navIcon}>{Ic.login}</span>{sidebarOpen&&'Σύνδεση'}</button>
           </nav>
           <div style={S.sidebarFooter}><div style={S.userCard}><div style={{...S.userAvatar,background:'#b8d4e3'}}>{Ic.user}</div>{sidebarOpen&&<div style={{fontSize:12,color:'#ececec'}}>Επισκέπτης</div>}</div></div>
         </div>
@@ -204,7 +202,6 @@ function PublicView({teacher,isMobile,hasSession}){
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
           <MobBtn icon={Ic.book} label="Βιβλιοθήκη" active onClick={()=>window.location.reload()}/>
           <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
-          <MobBtn icon={Ic.login} label="Σύνδεση" onClick={()=>window.location.href='/login'}/>
         </nav>
       )}
     </div>
@@ -1193,7 +1190,7 @@ function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,openNet
         <div style={S.navDiv}/>
         <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live session'}</button>
         <div style={S.navDiv}/>
-        <button onClick={openPublic?openPublic:()=>window.open('/s/smitselos','_blank')} style={{...S.navItem,...(activePublic?S.navActive:{})}}><span style={S.navIcon}>{Ic.globe}</span>{open&&'Ανοιχτή πρόσβαση'}</button>
+        <button onClick={openPublic?openPublic:()=>window.open('/s/'+((myEmail||'').split('@')[0]),'_blank')} style={{...S.navItem,...(activePublic?S.navActive:{})}}><span style={S.navIcon}>{Ic.globe}</span>{open&&'Ανοιχτή πρόσβαση'}</button>
         <div style={S.navDiv}/>
         <button onClick={openNetwork?openNetwork:()=>{window.location.href='/network';}} style={{...S.navItem,...(activeNetwork?S.navActive:{})}}><span style={S.navIcon}>{Ic.net}</span>{open&&'Δίκτυο'}</button>
       </nav>
