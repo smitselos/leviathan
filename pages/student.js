@@ -214,9 +214,8 @@ function PublicView({teacher,isMobile,hasSession}){
 
 /* ══════════════════════════════════════════════════════════════
    ΦΩΤΟΓΡΑΦΙΕΣ → PDF (client-side, χωρίς εξωτερική βιβλιοθήκη)
-   Κάθε φωτογραφία → μία σελίδα A4 σε ενιαίο PDF (JPEG/DCTDecode)
+   Χωρίς όριο φωτογραφιών — κάθε φωτογραφία γίνεται μία σελίδα A4
    ══════════════════════════════════════════════════════════════ */
-const MAX_PHOTOS=2; // πόσες φωτογραφίες επιτρέπονται (αλλάζει εύκολα)
 
 // Εικόνα (File) → JPEG bytes + διαστάσεις (με σμίκρυνση έως 1600px για μικρό μέγεθος)
 const fileToJpeg=(file)=>new Promise((resolve,reject)=>{
@@ -563,10 +562,10 @@ function StudentView({myEmail,isMobile,router}){
     e.target.value='';
   };
 
-  // ── Φωτογραφίες → PDF ──
+  // ── Φωτογραφίες → PDF (χωρίς όριο πλήθους) ──
   const addPhoto=(e)=>{
-    const f=e.target.files?.[0];
-    if(f&&photos.length<MAX_PHOTOS)setPhotos(p=>[...p,{file:f,url:URL.createObjectURL(f)}]);
+    const fs=Array.from(e.target.files||[]);
+    if(fs.length)setPhotos(p=>[...p,...fs.map(f=>({file:f,url:URL.createObjectURL(f)}))]);
     e.target.value='';
   };
   const removePhoto=(i)=>setPhotos(p=>{try{URL.revokeObjectURL(p[i].url);}catch{}return p.filter((_,j)=>j!==i);});
@@ -1069,9 +1068,9 @@ function StudentView({myEmail,isMobile,router}){
       {/* Φωτογραφίες → PDF modal */}
       {photoMode&&(
         <div onClick={photoBusy?undefined:closePhotos} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'24px 20px',maxWidth:380,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.25)'}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'24px 20px',maxWidth:420,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.25)',maxHeight:'85vh',overflowY:'auto'}}>
             <div style={{fontSize:16,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>📷 Φωτογραφίες → PDF</div>
-            <div style={{fontSize:12,color:'#6b6b80',marginBottom:14}}>Έως {MAX_PHOTOS} φωτογραφίες — ενώνονται σε ένα PDF και στέλνονται σε «{openFolder?.name}».</div>
+            <div style={{fontSize:12,color:'#6b6b80',marginBottom:14}}>Τράβηξε όσες φωτογραφίες θέλεις — ενώνονται σε ένα PDF (μία σελίδα η καθεμία) και στέλνονται σε «{openFolder?.name}».</div>
             <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:14,justifyContent:'center'}}>
               {photos.map((p,i)=>(
                 <div key={p.url} style={{position:'relative',width:110,height:140,borderRadius:12,overflow:'hidden',border:'1px solid #ebebeb'}}>
@@ -1080,10 +1079,10 @@ function StudentView({myEmail,isMobile,router}){
                   <span style={{position:'absolute',bottom:4,left:4,background:'rgba(0,0,0,0.55)',color:'#fff',fontSize:10,padding:'1px 7px',borderRadius:999}}>Σελίδα {i+1}</span>
                 </div>
               ))}
-              {photos.length<MAX_PHOTOS&&!photoBusy&&(
-                <label style={{width:110,height:140,borderRadius:12,border:'2px dashed '+P.peach.accent,background:P.peach.bgSoft,color:P.peach.deep,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',fontSize:12,fontWeight:600,boxSizing:'border-box'}}>
-                  <span style={{fontSize:22}}>📷</span>{photos.length===0?'Λήψη φωτογραφίας':'+ 2η φωτογραφία'}
-                  <input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={addPhoto}/>
+              {!photoBusy&&(
+                <label style={{width:110,height:140,borderRadius:12,border:'2px dashed '+P.peach.accent,background:P.peach.bgSoft,color:P.peach.deep,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',fontSize:12,fontWeight:600,boxSizing:'border-box',textAlign:'center'}}>
+                  <span style={{fontSize:22}}>📷</span>{photos.length===0?'Λήψη φωτογραφίας':'+ φωτογραφία'}
+                  <input type="file" accept="image/*" capture="environment" multiple style={{display:'none'}} onChange={addPhoto}/>
                 </label>
               )}
             </div>
