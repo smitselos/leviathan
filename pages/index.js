@@ -153,6 +153,69 @@ function loadPickerApi() {
   });
 }
 
+/* ── Φωτογραφίες → PDF (client-side, χωρίς εξωτερική βιβλιοθήκη) ──
+   Κάθε φωτογραφία γίνεται μία σελίδα A4 σε ενιαίο PDF (JPEG/DCTDecode) */
+const fileToJpeg = (file) => new Promise((resolve, reject) => {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const MAX = 1600;
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const sc = Math.min(1, MAX / Math.max(w, h));
+    w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    cv.toBlob(async b => {
+      if (!b) { reject(new Error('jpeg fail')); return; }
+      resolve({ data: new Uint8Array(await b.arrayBuffer()), w, h });
+    }, 'image/jpeg', 0.85);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img load fail')); };
+  img.src = url;
+});
+
+const buildPdfFromJpegs = (images) => {
+  const enc = new TextEncoder();
+  const chunks = []; let offset = 0; const xrefArr = [];
+  const push = (s) => { const b = typeof s === 'string' ? enc.encode(s) : s; chunks.push(b); offset += b.length; };
+  push('%PDF-1.4\n');
+  const objCount = 2 + images.length * 3;
+  const addObj = (num, body) => { xrefArr[num] = offset; push(`${num} 0 obj\n${body}\nendobj\n`); };
+  const pageNums = images.map((_, i) => 3 + i * 3);
+  addObj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  addObj(2, `<< /Type /Pages /Kids [${pageNums.map(n => n + ' 0 R').join(' ')}] /Count ${images.length} >>`);
+  images.forEach((im, i) => {
+    const pn = 3 + i * 3, cn = pn + 1, xn = pn + 2;
+    const A4W = 595, A4H = 842;
+    const scale = Math.min(A4W / im.w, A4H / im.h);
+    const w = im.w * scale, h = im.h * scale, x = (A4W - w) / 2, y = (A4H - h) / 2;
+    addObj(pn, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4W} ${A4H}] /Resources << /XObject << /Im${i} ${xn} 0 R >> >> /Contents ${cn} 0 R >>`);
+    const content = `q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im${i} Do Q`;
+    addObj(cn, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    xrefArr[xn] = offset;
+    push(`${xn} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.data.length} >>\nstream\n`);
+    push(im.data);
+    push('\nendstream\nendobj\n');
+  });
+  const xrefStart = offset;
+  let xr = `xref\n0 ${objCount + 1}\n0000000000 65535 f \n`;
+  for (let n = 1; n <= objCount; n++) xr += String(xrefArr[n]).padStart(10, '0') + ' 00000 n \n';
+  xr += `trailer\n<< /Size ${objCount + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  push(xr);
+  return new Blob(chunks, { type: 'application/pdf' });
+};
+
+async function photosToPdfFile(files) {
+  const jpegs = [];
+  for (const f of files) jpegs.push(await fileToJpeg(f));
+  const blob = buildPdfFromJpegs(jpegs);
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const name = `Φωτογραφίες_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.pdf`;
+  return new File([blob], name, { type: 'application/pdf' });
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -263,6 +326,10 @@ export default function Home() {
   const [msgFolder, setMsgFolder] = useState(null); // {type:'inbox'|'sent'|'search'|'user'|'group', email?, group?, name}
   const [msgSearch, setMsgSearch] = useState('');
   const [msgWalletActive, setMsgWalletActive] = useState(null);
+  const [msgSending, setMsgSending] = useState(false);      // αποστολή αρχείου από φάκελο χρήστη/ομάδας
+  const [msgPhotoMode, setMsgPhotoMode] = useState(false);  // modal «Φωτογραφίες → PDF»
+  const [msgPhotos, setMsgPhotos] = useState([]);           // [{file,url}]
+  const [msgPhotoBusy, setMsgPhotoBusy] = useState(false);
   const [msgStatActive, setMsgStatActive] = useState(null);
   const isTeacher = userRole === 'teacher';
   const isStudent = userRole === 'student';
@@ -972,10 +1039,67 @@ export default function Home() {
   const inboxFromUser = (email) => (networkData.inbox || []).filter(i => i.fromEmail === email);
   const inboxFromGroup = (g) => (networkData.inbox || []).filter(i => (g.members || []).includes(i.fromEmail));
   const unseenInbox = (list) => list.filter(i => !i.seen).length;
+  // Συνολικά νέα εισερχόμενα: υπολογίζεται και client-side (από το seen flag) ώστε το σήμα να δουλεύει πάντα
+  const unseenTotal = Math.max(networkData.unseenCount || 0, unseenInbox(networkData.inbox || []));
   const openMessages = async () => { setActiveView('messages'); setOpenFolder(null); setMsgFolder(null); setMsgSearch(''); setMsgWalletActive(null); setMsgStatActive(null); setNetworkLoading(true); await loadNetwork(); setNetworkLoading(false); };
 
+  // ── Αποστολή από φάκελο χρήστη/ομάδας (Εισερχ./Απεστ.): upload → register → publish ──
+  const msgRecipients = () => {
+    if (msgFolder?.type === 'user') return [msgFolder.email];
+    if (msgFolder?.type === 'group') return (msgFolder.group?.members) || [];
+    return [];
+  };
+  const teacherSendFile = async (file, recipients) => {
+    const parent = folders[0]?.id;
+    const metadata = { name: file.name, mimeType: file.type || 'application/octet-stream', ...(parent ? { parents: [parent] } : {}) };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', file);
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType',
+      { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken }, body: form });
+    const doc = await res.json();
+    if (!doc.id) throw new Error(doc.error?.message || 'Σφάλμα ανεβάσματος');
+    await registerFiles([{ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: parent || '' }]);
+    const visibility = recipients.length === 1 ? 'user:' + recipients[0] : 'users:' + JSON.stringify(recipients);
+    const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: doc.id, visibility }) });
+    if (!r.ok) throw new Error('Σφάλμα δημοσίευσης');
+    setFiles(p => p.map(f => f.id === doc.id ? { ...f, visibility, published: true } : f));
+    return doc;
+  };
+  const handleMsgFileSelect = async (e) => {
+    const list = Array.from(e.target.files || []); e.target.value = '';
+    if (!list.length || !msgFolder) return;
+    const rcp = msgRecipients();
+    if (!rcp.length) { alert('Ο φάκελος δεν έχει παραλήπτες.'); return; }
+    setMsgSending(true);
+    try { for (const f of list) await teacherSendFile(f, rcp); alert('✅ Εστάλη!'); }
+    catch (err) { alert('❌ ' + err.message); }
+    setMsgSending(false);
+  };
+  // Φωτογραφίες → PDF (χωρίς όριο πλήθους)
+  const addMsgPhoto = (e) => {
+    const fs = Array.from(e.target.files || []);
+    if (fs.length) setMsgPhotos(p => [...p, ...fs.map(f => ({ file: f, url: URL.createObjectURL(f) }))]);
+    e.target.value = '';
+  };
+  const removeMsgPhoto = (i) => setMsgPhotos(p => { try { URL.revokeObjectURL(p[i].url); } catch {} return p.filter((_, j) => j !== i); });
+  const closeMsgPhotos = () => { msgPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch {} }); setMsgPhotos([]); setMsgPhotoMode(false); };
+  const sendMsgPhotosPdf = async () => {
+    if (msgPhotos.length === 0 || msgPhotoBusy) return;
+    const rcp = msgRecipients();
+    if (!rcp.length) { alert('Ο φάκελος δεν έχει παραλήπτες.'); return; }
+    setMsgPhotoBusy(true);
+    try {
+      const pdf = await photosToPdfFile(msgPhotos.map(p => p.file));
+      await teacherSendFile(pdf, rcp);
+      closeMsgPhotos();
+      alert('✅ Εστάλη: ' + pdf.name);
+    } catch (err) { alert('❌ Σφάλμα δημιουργίας/αποστολής PDF'); }
+    setMsgPhotoBusy(false);
+  };
+
   // Κόκκινο σήμα στο εικονίδιο της εφαρμογής (PWA badge) — κινητό & desktop
-  useEffect(() => { try { if ('setAppBadge' in navigator) { const n = networkData.unseenCount || 0; if (n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch {} }, [networkData.unseenCount]);
+  useEffect(() => { try { if ('setAppBadge' in navigator) { const n = unseenTotal; if (n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch {} }, [unseenTotal]);
 
   // ── Navigation helpers ──
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); setSearchCategory('texts'); };
@@ -1052,6 +1176,7 @@ export default function Home() {
                 <div style={{ fontSize:16, fontWeight:item.fw||700, color:p.text, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
                 <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
               </div>
+              {item.badge>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'2px 9px', fontSize:12, fontWeight:700, flexShrink:0 }}>{item.badge}</span>}
               {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>{item.cta || 'Άνοιγμα →'}</span>}
             </div>
           )}
@@ -1196,12 +1321,12 @@ export default function Home() {
             onClick={() => { setCreateMenuFolder(''); setCreateMenu(true); }} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.net} label="Δίκτυο" active={activeView==='network'} onClick={openNetwork}
-            badge={(networkData.received?.length||0) + (networkData.unseenCount||0)} />
+            badge={(networkData.received?.length||0) + unseenTotal} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.send} label="Εισερχ./Απεστ." active={activeView==='messages'} onClick={openMessages}
-            badge={networkData.unseenCount||0} />
+            badge={unseenTotal} />
           <NavItem icon={Icon.live} label="Live" active={activeView==='liveCenter'} onClick={() => { setActiveView('liveCenter'); setOpenFolder(null); }} />
           <NavItem icon={Icon.globe} label="Ανοιχτή πρόσβαση" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
           {liveFile && (
@@ -1242,9 +1367,9 @@ export default function Home() {
           </button>
           <button className="btm-item" onClick={openNetwork} style={{ color: activeView==='network'?'#ececec':'#8e8ea0', position:'relative' }}>
             {Icon.net}<span style={{ fontSize:10 }}>Δίκτυο</span>
-            {((networkData.received?.length||0)+(networkData.unseenCount||0)) > 0 && (
+            {((networkData.received?.length||0)+unseenTotal) > 0 && (
               <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                {(networkData.received?.length||0)+(networkData.unseenCount||0)}
+                {(networkData.received?.length||0)+unseenTotal}
               </span>
             )}
           </button>
@@ -1253,8 +1378,8 @@ export default function Home() {
           </button>
           <button className="btm-item" onClick={openMessages} style={{ color: activeView==='messages'?'#ececec':'#8e8ea0', position:'relative' }}>
             {Icon.send}<span style={{ fontSize:10 }}>Εισερχ./Απεστ.</span>
-            {(networkData.unseenCount||0) > 0 && (
-              <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>{networkData.unseenCount}</span>
+            {unseenTotal > 0 && (
+              <span style={{ position:'absolute', top:0, right:4, background:'#dc2626', color:'#fff', borderRadius:'50%', minWidth:14, height:14, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>{unseenTotal}</span>
             )}
           </button>
           <button className="btm-item" onClick={()=>signOut({callbackUrl:'/login'})} style={{ color:'#dc2626' }}>
@@ -2104,6 +2229,59 @@ export default function Home() {
                     <input autoFocus type="search" placeholder="Αναζήτηση σε εισερχόμενα & απεσταλμένα…" value={msgSearch} onChange={e=>setMsgSearch(e.target.value)}
                       style={{ width:'100%', padding:'11px 16px', border:'1px solid #ebebeb', borderRadius:14, fontSize:isMobile?16:14, background:'#fff', marginBottom:16, boxSizing:'border-box' }} />
                   )}
+
+                  {/* Πλαίσιο αποστολής: αρχείο ή Φωτογραφίες → PDF */}
+                  {isUG && (
+                    <div style={{ background:'#fff', borderRadius:14, border:'1px solid '+PALETTE.peach.accent, padding:'14px 16px', marginBottom:18, textAlign:'center' }}>
+                      <div style={{ fontSize:13, fontWeight:600, marginBottom:4, color:'#1a1a1a' }}>📤 Αποστολή σε «{f.name}»</div>
+                      <div style={{ fontSize:11, color:'#aeaeb8', marginBottom:10 }}>
+                        {f.type==='group' ? `Στέλνεται αυτόματα σε ${(f.group?.members||[]).length} μέλη` : 'Στέλνεται αυτόματα στον χρήστη του φακέλου'}
+                      </div>
+                      <div style={{ display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' }}>
+                        <label style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 24px', borderRadius:12, background:PALETTE.peach.bg, color:PALETTE.peach.deep, fontSize:13, fontWeight:600, cursor:msgSending?'wait':'pointer', opacity:msgSending?0.5:1, border:'1.5px solid '+PALETTE.peach.accent }}>
+                          {msgSending ? 'Αποστολή…' : 'Επιλογή αρχείου'}
+                          <input type="file" multiple style={{ display:'none' }} onChange={handleMsgFileSelect} disabled={msgSending} />
+                        </label>
+                        <label style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 24px', borderRadius:12, background:PALETTE.cream.bgSoft, color:PALETTE.cream.deep, fontSize:13, fontWeight:600, cursor:msgSending?'wait':'pointer', opacity:msgSending?0.5:1, border:'1.5px solid '+PALETTE.cream.accent }}>
+                          📷 Φωτογραφία → PDF
+                          <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e=>{ setMsgPhotoMode(true); addMsgPhoto(e); }} disabled={msgSending} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Φωτογραφίες → PDF modal */}
+                  {msgPhotoMode && (
+                    <div onClick={msgPhotoBusy?undefined:closeMsgPhotos} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+                      <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'24px 20px', maxWidth:420, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', maxHeight:'85vh', overflowY:'auto' }}>
+                        <div style={{ fontSize:16, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>📷 Φωτογραφίες → PDF</div>
+                        <div style={{ fontSize:12, color:'#6b6b80', marginBottom:14 }}>Τράβηξε όσες φωτογραφίες θέλεις — ενώνονται σε ένα PDF (μία σελίδα η καθεμία) και στέλνονται σε «{f.name}».</div>
+                        <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, justifyContent:'center' }}>
+                          {msgPhotos.map((p,i)=>(
+                            <div key={p.url} style={{ position:'relative', width:110, height:140, borderRadius:12, overflow:'hidden', border:'1px solid #ebebeb' }}>
+                              <img src={p.url} alt={'Φωτογραφία '+(i+1)} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                              <button onClick={()=>removeMsgPhoto(i)} disabled={msgPhotoBusy} style={{ position:'absolute', top:4, right:4, width:22, height:22, borderRadius:'50%', border:'none', background:'rgba(0,0,0,0.6)', color:'#fff', fontSize:12, cursor:'pointer', lineHeight:'22px', padding:0 }}>✕</button>
+                              <span style={{ position:'absolute', bottom:4, left:4, background:'rgba(0,0,0,0.55)', color:'#fff', fontSize:10, padding:'1px 7px', borderRadius:999 }}>Σελίδα {i+1}</span>
+                            </div>
+                          ))}
+                          {!msgPhotoBusy && (
+                            <label style={{ width:110, height:140, borderRadius:12, border:'2px dashed '+PALETTE.peach.accent, background:PALETTE.peach.bgSoft, color:PALETTE.peach.deep, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6, cursor:'pointer', fontSize:12, fontWeight:600, boxSizing:'border-box', textAlign:'center' }}>
+                              <span style={{ fontSize:22 }}>📷</span>{msgPhotos.length===0?'Λήψη φωτογραφίας':'+ φωτογραφία'}
+                              <input type="file" accept="image/*" capture="environment" multiple style={{ display:'none' }} onChange={addMsgPhoto} />
+                            </label>
+                          )}
+                        </div>
+                        <div style={{ display:'flex', gap:8 }}>
+                          <button onClick={closeMsgPhotos} disabled={msgPhotoBusy} style={{ flex:1, padding:'10px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80', opacity:msgPhotoBusy?0.5:1 }}>Ακύρωση</button>
+                          <button onClick={sendMsgPhotosPdf} disabled={msgPhotos.length===0||msgPhotoBusy}
+                            style={{ flex:1, padding:'10px', borderRadius:12, border:'none', background:msgPhotos.length>0?PALETTE.peach.deep:'#ccc', color:'#fff', fontSize:13, fontWeight:600, cursor:msgPhotos.length>0&&!msgPhotoBusy?'pointer':'not-allowed', opacity:msgPhotoBusy?0.6:1 }}>
+                            {msgPhotoBusy?'Δημιουργία PDF…':`Αποστολή ως PDF${msgPhotos.length>0?` (${msgPhotos.length} σελ.)`:''}`}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ display:'flex', gap:20, flexWrap:'wrap', alignItems:'flex-start' }}>
                     {showLeft && (
                       <div style={{ flex:'1 1 320px', minWidth:0 }}>
@@ -2126,7 +2304,7 @@ export default function Home() {
 
             // ── Κάρτες ──
             const fixed=[
-              {key:'inbox', type:'inbox', name:'Εισερχόμενα', icon:'📥', tone:'cream', sub:`${inboxAll.length} αρχεία`, badge:networkData.unseenCount||0},
+              {key:'inbox', type:'inbox', name:'Εισερχόμενα', icon:'📥', tone:'cream', sub:`${inboxAll.length} αρχεία`, badge:unseenTotal},
               {key:'sent', type:'sent', name:'Απεσταλμένα', icon:'📤', tone:'peach', sub:`${sentAll.length} αρχεία`, badge:0},
               {key:'search', type:'search', name:'Αναζήτηση', icon:'🔍', tone:'mustard', sub:'εισερχόμενα & απεσταλμένα', badge:0},
             ];
@@ -2142,7 +2320,7 @@ export default function Home() {
                 {isMobile ? (
                   <>
                     <div style={{ position:'relative', marginBottom:24, paddingBottom:8 }}>
-                      {renderWallet(fixed.map(o=>({type:'folder',view:o.key,name:o.name,icon:o.icon,tone:o.tone,desc:o.sub,fw:500,open:()=>openFixed(o)})), msgStatActive, (item,isExp)=>{ if(isExp){setMsgStatActive(null);item.open();} else setMsgStatActive(item.view); })}
+                      {renderWallet(fixed.map(o=>({type:'folder',view:o.key,name:o.name,icon:o.icon,tone:o.tone,desc:o.sub,fw:500,badge:o.badge,open:()=>openFixed(o)})), msgStatActive, (item,isExp)=>{ if(isExp){setMsgStatActive(null);item.open();} else setMsgStatActive(item.view); })}
                     </div>
                     <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:12 }}>Χρήστες & ομάδες</div>
                     {folderItems.length===0 ? <div style={{ color:'#aeaeb8', fontSize:13, fontStyle:'italic' }}>Καμία σύνδεση/ομάδα. Πρόσθεσε από το «Δίκτυο».</div>
