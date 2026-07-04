@@ -213,6 +213,76 @@ function PublicView({teacher,isMobile,hasSession}){
 
 
 /* ══════════════════════════════════════════════════════════════
+   ΦΩΤΟΓΡΑΦΙΕΣ → PDF (client-side, χωρίς εξωτερική βιβλιοθήκη)
+   Κάθε φωτογραφία → μία σελίδα A4 σε ενιαίο PDF (JPEG/DCTDecode)
+   ══════════════════════════════════════════════════════════════ */
+const MAX_PHOTOS=2; // πόσες φωτογραφίες επιτρέπονται (αλλάζει εύκολα)
+
+// Εικόνα (File) → JPEG bytes + διαστάσεις (με σμίκρυνση έως 1600px για μικρό μέγεθος)
+const fileToJpeg=(file)=>new Promise((resolve,reject)=>{
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    const MAX=1600;
+    let w=img.naturalWidth,h=img.naturalHeight;
+    const sc=Math.min(1,MAX/Math.max(w,h));
+    w=Math.max(1,Math.round(w*sc)); h=Math.max(1,Math.round(h*sc));
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+    URL.revokeObjectURL(url);
+    cv.toBlob(async b=>{
+      if(!b){reject(new Error('jpeg fail'));return;}
+      resolve({data:new Uint8Array(await b.arrayBuffer()),w,h});
+    },'image/jpeg',0.85);
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('img load fail'));};
+  img.src=url;
+});
+
+// Ελάχιστο έγκυρο PDF με τις JPEG εικόνες ως σελίδες A4
+const buildPdfFromJpegs=(images)=>{
+  const enc=new TextEncoder();
+  const chunks=[]; let offset=0; const xref=[];
+  const push=(s)=>{const b=typeof s==='string'?enc.encode(s):s;chunks.push(b);offset+=b.length;};
+  push('%PDF-1.4\n');
+  const objCount=2+images.length*3;
+  const addObj=(num,body)=>{xref[num]=offset;push(`${num} 0 obj\n${body}\nendobj\n`);};
+  const pageNums=images.map((_,i)=>3+i*3);
+  addObj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  addObj(2,`<< /Type /Pages /Kids [${pageNums.map(n=>n+' 0 R').join(' ')}] /Count ${images.length} >>`);
+  images.forEach((im,i)=>{
+    const pn=3+i*3, cn=pn+1, xn=pn+2;
+    const A4W=595,A4H=842;
+    const scale=Math.min(A4W/im.w,A4H/im.h);
+    const w=im.w*scale,h=im.h*scale,x=(A4W-w)/2,y=(A4H-h)/2;
+    addObj(pn,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4W} ${A4H}] /Resources << /XObject << /Im${i} ${xn} 0 R >> >> /Contents ${cn} 0 R >>`);
+    const content=`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im${i} Do Q`;
+    addObj(cn,`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    xref[xn]=offset;
+    push(`${xn} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.data.length} >>\nstream\n`);
+    push(im.data);
+    push('\nendstream\nendobj\n');
+  });
+  const xrefStart=offset;
+  let xr=`xref\n0 ${objCount+1}\n0000000000 65535 f \n`;
+  for(let n=1;n<=objCount;n++)xr+=String(xref[n]).padStart(10,'0')+' 00000 n \n';
+  xr+=`trailer\n<< /Size ${objCount+1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  push(xr);
+  return new Blob(chunks,{type:'application/pdf'});
+};
+
+async function photosToPdfFile(files){
+  const jpegs=[];
+  for(const f of files) jpegs.push(await fileToJpeg(f));
+  const blob=buildPdfFromJpegs(jpegs);
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const name=`Φωτογραφίες_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.pdf`;
+  return new File([blob],name,{type:'application/pdf'});
+}
+
+
+/* ══════════════════════════════════════════════════════════════
    ΜΑΘΗΤΗΣ — μία σελίδα: invite + εισερχόμενα | upload + αποστολές
    ══════════════════════════════════════════════════════════════ */
 function StudentView({myEmail,isMobile,router}){
@@ -231,6 +301,9 @@ function StudentView({myEmail,isMobile,router}){
   const [viewing,setViewing]=useState(null);
   const [pendingFile,setPendingFile]=useState(null);
   const [sendRecipients,setSendRecipients]=useState([]);
+  const [photoMode,setPhotoMode]=useState(false);   // modal «Φωτογραφίες → PDF»
+  const [photos,setPhotos]=useState([]);            // [{file,url}]
+  const [photoBusy,setPhotoBusy]=useState(false);
   const [inboxFrom,setInboxFrom]=useState('__all__'); // φίλτρο εισερχομένων ανά αποστολέα
   const [publicView,setPublicView]=useState(false); // προβολή «Ανοιχτή πρόσβαση» (δημόσιο υλικό όλων των εκπαιδευτικών)
   const [publicFiles,setPublicFiles]=useState([]);
@@ -488,6 +561,27 @@ function StudentView({myEmail,isMobile,router}){
     if(rcp.length===0){alert('Ο φάκελος δεν έχει παραλήπτες.');e.target.value='';return;}
     doSend(file,rcp);
     e.target.value='';
+  };
+
+  // ── Φωτογραφίες → PDF ──
+  const addPhoto=(e)=>{
+    const f=e.target.files?.[0];
+    if(f&&photos.length<MAX_PHOTOS)setPhotos(p=>[...p,{file:f,url:URL.createObjectURL(f)}]);
+    e.target.value='';
+  };
+  const removePhoto=(i)=>setPhotos(p=>{try{URL.revokeObjectURL(p[i].url);}catch{}return p.filter((_,j)=>j!==i);});
+  const closePhotos=()=>{photos.forEach(p=>{try{URL.revokeObjectURL(p.url);}catch{}});setPhotos([]);setPhotoMode(false);};
+  const sendPhotosPdf=async()=>{
+    if(photos.length===0||photoBusy)return;
+    const rcp=folderRecipients();
+    if(rcp.length===0){alert('Ο φάκελος δεν έχει παραλήπτες.');return;}
+    setPhotoBusy(true);
+    try{
+      const pdf=await photosToPdfFile(photos.map(p=>p.file));
+      await doSend(pdf,rcp);
+      closePhotos();
+    }catch{alert('❌ Σφάλμα δημιουργίας PDF');}
+    setPhotoBusy(false);
   };
 
   // ── Μικρή κάρτα αρχείου (άνοιγμα/λήψη/αποθήκευση/QR) ──
@@ -929,10 +1023,16 @@ function StudentView({myEmail,isMobile,router}){
                     <div style={{fontSize:11,color:'#aeaeb8',marginBottom:10}}>
                       {f.type==='group'?`Στέλνεται αυτόματα σε ${(f.group?.members||[]).length} μέλη`:'Στέλνεται αυτόματα στον χρήστη του φακέλου'}
                     </div>
-                    <label style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',borderRadius:12,background:P.peach.bg,color:P.peach.deep,fontSize:13,fontWeight:600,cursor:uploading?'wait':'pointer',opacity:uploading?0.5:1,border:'1.5px solid '+P.peach.accent}}>
-                      {uploading?'Αποστολή…':'Επιλογή αρχείου'}
-                      <input type="file" style={{display:'none'}} onChange={handleFolderFileSelect} disabled={uploading}/>
-                    </label>
+                    <div style={{display:'flex',gap:8,justifyContent:'center',flexWrap:'wrap'}}>
+                      <label style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',borderRadius:12,background:P.peach.bg,color:P.peach.deep,fontSize:13,fontWeight:600,cursor:uploading?'wait':'pointer',opacity:uploading?0.5:1,border:'1.5px solid '+P.peach.accent}}>
+                        {uploading?'Αποστολή…':'Επιλογή αρχείου'}
+                        <input type="file" style={{display:'none'}} onChange={handleFolderFileSelect} disabled={uploading}/>
+                      </label>
+                      <label style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',borderRadius:12,background:P.cream.bgSoft,color:P.cream.deep,fontSize:13,fontWeight:600,cursor:uploading?'wait':'pointer',opacity:uploading?0.5:1,border:'1.5px solid '+P.cream.accent}}>
+                        📷 Φωτογραφία → PDF
+                        <input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={e=>{setPhotoMode(true);addPhoto(e);}} disabled={uploading}/>
+                      </label>
+                    </div>
                   </div>
                 )}
 
@@ -965,6 +1065,38 @@ function StudentView({myEmail,isMobile,router}){
 
         </div>
       </div>
+
+      {/* Φωτογραφίες → PDF modal */}
+      {photoMode&&(
+        <div onClick={photoBusy?undefined:closePhotos} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'24px 20px',maxWidth:380,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.25)'}}>
+            <div style={{fontSize:16,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>📷 Φωτογραφίες → PDF</div>
+            <div style={{fontSize:12,color:'#6b6b80',marginBottom:14}}>Έως {MAX_PHOTOS} φωτογραφίες — ενώνονται σε ένα PDF και στέλνονται σε «{openFolder?.name}».</div>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:14,justifyContent:'center'}}>
+              {photos.map((p,i)=>(
+                <div key={p.url} style={{position:'relative',width:110,height:140,borderRadius:12,overflow:'hidden',border:'1px solid #ebebeb'}}>
+                  <img src={p.url} alt={'Φωτογραφία '+(i+1)} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                  <button onClick={()=>removePhoto(i)} disabled={photoBusy} style={{position:'absolute',top:4,right:4,width:22,height:22,borderRadius:'50%',border:'none',background:'rgba(0,0,0,0.6)',color:'#fff',fontSize:12,cursor:'pointer',lineHeight:'22px',padding:0}}>✕</button>
+                  <span style={{position:'absolute',bottom:4,left:4,background:'rgba(0,0,0,0.55)',color:'#fff',fontSize:10,padding:'1px 7px',borderRadius:999}}>Σελίδα {i+1}</span>
+                </div>
+              ))}
+              {photos.length<MAX_PHOTOS&&!photoBusy&&(
+                <label style={{width:110,height:140,borderRadius:12,border:'2px dashed '+P.peach.accent,background:P.peach.bgSoft,color:P.peach.deep,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',fontSize:12,fontWeight:600,boxSizing:'border-box'}}>
+                  <span style={{fontSize:22}}>📷</span>{photos.length===0?'Λήψη φωτογραφίας':'+ 2η φωτογραφία'}
+                  <input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={addPhoto}/>
+                </label>
+              )}
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={closePhotos} disabled={photoBusy} style={{flex:1,padding:'10px',borderRadius:12,border:'1px solid #e0e0e0',background:'#fff',fontSize:13,cursor:'pointer',color:'#6b6b80',opacity:photoBusy?0.5:1}}>Ακύρωση</button>
+              <button onClick={sendPhotosPdf} disabled={photos.length===0||photoBusy}
+                style={{flex:1,padding:'10px',borderRadius:12,border:'none',background:photos.length>0?P.peach.deep:'#ccc',color:'#fff',fontSize:13,fontWeight:600,cursor:photos.length>0&&!photoBusy?'pointer':'not-allowed',opacity:photoBusy?0.6:1}}>
+                {photoBusy?'Δημιουργία PDF…':`Αποστολή ως PDF${photos.length>0?` (${photos.length} σελ.)`:''}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QR popup */}
       {qrFile&&(
