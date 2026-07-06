@@ -86,14 +86,17 @@ export default function LivePage() {
       if (r.status === 404) { setError('Δεν βρέθηκε παρουσίαση με αυτόν τον κωδικό.'); return; }
       const data = await r.json();
       if (data.updatedAt !== lastUpdated) {
+        // Reset καρτελών ΜΟΝΟ στην πρώτη φόρτωση ή αν άλλαξε το κύριο περιεχόμενο.
+        // Σε απλή προσθήκη στοιχείου (ίδιο κύριο src) ο θεατής μένει εκεί όπου βρίσκεται
+        // και η νέα καρτέλα απλώς εμφανίζεται στην μπάρα.
+        const isNewPresentation = !session || session.src !== data.src;
         setSession(data);
         setLastUpdated(data.updatedAt);
-        setActiveTab('pdf');
-        setSplitTab(0);
+        if (isNewPresentation) { setActiveTab('pdf'); setSplitTab(0); }
         setError(null);
       }
     } catch (e) {}
-  }, [code, entered, lastUpdated]);
+  }, [code, entered, lastUpdated, session]);
 
   useEffect(() => {
     if (!entered) return;
