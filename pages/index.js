@@ -289,6 +289,8 @@ export default function Home() {
   const [liveUrlName, setLiveUrlName] = useState('');
   const [liveCenterCode, setLiveCenterCode] = useState(null);
   const [liveCenterBusy, setLiveCenterBusy] = useState(false);
+  const [liveSentItems, setLiveSentItems] = useState([]); // στοιχεία που βρίσκονται ΗΔΗ στο ενεργό live
+  const [liveAddBusy, setLiveAddBusy] = useState(false);   // αποστολή προσθήκης σε εξέλιξη
   const [liveCenterSection, setLiveCenterSection] = useState(null); // ποιος φάκελος/εφαρμογές ανοιχτός
   const [createMenu, setCreateMenu] = useState(false); // μενού: Νέο / Συγχώνευση
   const [createMenuFolder, setCreateMenuFolder] = useState(''); // προεπιλεγμένος φάκελος (αν ανοίγει από φάκελο)
@@ -399,6 +401,31 @@ export default function Home() {
   const allSuggestedUrls = customUrls.length > 0 ? customUrls : SUGGESTED_URLS;
 
   useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); loadContacts(); } }, [status, loadAll]);
+
+  // ── Επαναφορά ενεργού Live (π.χ. μετά από ανανέωση σελίδας): ο server ξέρει το live_active:{email} ──
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    (async () => {
+      try {
+        const r = await fetch('/api/live?active=1');
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!d.code) return;
+        setLiveCenterCode(d.code);
+        // Ανασύσταση των στοιχείων του live → σήμανση «σε live» + αποφυγή διπλοεγγραφών
+        if (d.data) {
+          const sent = [];
+          if (d.data.fileId) sent.push({ kind:'file', id:d.data.fileId, name:d.data.title });
+          else if (d.data.isUrl && d.data.src) sent.push({ kind:'url', url:d.data.src, name:d.data.title });
+          (d.data.links || []).forEach(l => sent.push(l.type === 'url'
+            ? { kind:'url', url:l.url, name:l.name }
+            : { kind:'file', id:l.targetId, name:l.name }));
+          setLiveSentItems(sent);
+          setLiveItems(p => p.length ? p : sent); // αν η λίστα είναι κενή, δείξε το περιεχόμενο του live
+        }
+      } catch {}
+    })();
+  }, [status]);
   // Περιοδική ανανέωση δικτύου ώστε να εμφανίζεται το κόκκινο σήμα όταν έρχεται νέα αποστολή
   useEffect(() => { if (status !== 'authenticated') return; const iv = setInterval(() => { loadNetwork(); }, 30000); return () => clearInterval(iv); }, [status]);
 
@@ -829,12 +856,21 @@ export default function Home() {
         try { await navigator.clipboard.writeText(url); } catch(e) {}
         setLiveToast({ code:d.code, url });
         setTimeout(() => setLiveToast(null), 8000);
+        // Συγχρονισμός πίνακα ελέγχου: αυτό είναι πλέον το ενεργό live
+        const its = [{ kind:'file', id:f.id, name:f.name }, ...linksToItems(fLinks)];
+        setLiveCenterCode(d.code);
+        setLiveSentItems(its);
+        setLiveItems(its);
       }
     } catch(e) {}
     setLiveSending(false);
   };
 
   // ── Κέντρο Live: δημιουργία από πολλαπλά στοιχεία (αρχεία/εφαρμογές/URLs) ──
+  const linksToItems = (ls) => (ls || []).map(l => l.type === 'url'
+    ? { kind:'url', url:l.url, name:l.name }
+    : { kind:'file', id:l.targetId, name:l.name });
+  const isInLive = (it) => liveSentItems.some(x => (it.id && x.id === it.id) || (it.url && x.url === it.url));
   const addLiveItem = (it) => setLiveItems(p => p.find(x => (x.id&&x.id===it.id)||(x.url&&x.url===it.url)) ? p : [...p, it]);
   const removeLiveItem = (i) => setLiveItems(p => p.filter((_, idx) => idx !== i));
   const addLiveUrl = () => {
@@ -855,9 +891,38 @@ export default function Home() {
     try {
       const r = await fetch('/api/live', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ items: liveItems, title: liveItems[0].name }) });
       const d = await r.json();
-      if (d.code) setLiveCenterCode(d.code);
+      if (d.code) { setLiveCenterCode(d.code); setLiveSentItems([...liveItems]); }
     } catch(e) {}
     setLiveCenterBusy(false);
+  };
+
+  // ── Προσθήκη ΝΕΩΝ στοιχείων στο ήδη ενεργό live (PATCH /api/live) ──
+  const addNewItemsToLive = async () => {
+    const fresh = liveItems.filter(it => !isInLive(it));
+    if (!fresh.length || liveAddBusy) return;
+    setLiveAddBusy(true);
+    try {
+      for (const it of fresh) {
+        const r = await fetch('/api/live', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ item: it, code: liveCenterCode }) });
+        if (r.ok) {
+          setLiveSentItems(p => [...p, it]);
+        } else {
+          const d = await r.json().catch(() => ({}));
+          alert('✗ ' + (d.error || 'Σφάλμα προσθήκης στο live'));
+          if (r.status === 404) { setLiveCenterCode(null); setLiveSentItems([]); } // το live έληξε
+          break;
+        }
+      }
+    } catch(e) {}
+    setLiveAddBusy(false);
+  };
+
+  // ── Τερματισμός ενεργού live (DELETE /api/live) ──
+  const stopLive = async () => {
+    if (!confirm('Να τερματιστεί το ενεργό Live; Οι θεατές θα χάσουν την πρόσβαση.')) return;
+    try { await fetch('/api/live', { method:'DELETE' }); } catch(e) {}
+    setLiveCenterCode(null);
+    setLiveSentItems([]);
   };
   const setVisibility = async (id, visibility) => {
     setPublishing(true);
@@ -2439,6 +2504,9 @@ export default function Home() {
                         <span style={{ fontSize:16, flexShrink:0 }}>{it.kind==='url'?'🌐':it.kind==='app'?'🧩':'📄'}</span>
                         <span style={{ flex:1, fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>{it.name}</span>
                         {i===0 && <span style={{ fontSize:10, color:PALETTE.cream.deep, fontWeight:700, flexShrink:0 }}>ΚΥΡΙΟ</span>}
+                        {liveCenterCode && (isInLive(it)
+                          ? <span style={{ fontSize:10, color:'#15803d', background:'#dcfce7', fontWeight:700, flexShrink:0, padding:'2px 8px', borderRadius:999 }}>● ΣΕ LIVE</span>
+                          : <span style={{ fontSize:10, color:'#b45309', background:'#fef3c7', fontWeight:700, flexShrink:0, padding:'2px 8px', borderRadius:999 }}>ΝΕΟ</span>)}
                         <button onClick={()=>removeLiveItem(i)} style={{ background:'none', border:'none', color:'#aeaeb8', cursor:'pointer', fontSize:13, flexShrink:0 }}>✕</button>
                       </div>
                     ))}
@@ -2523,23 +2591,41 @@ export default function Home() {
                 })()}
               </div>
 
+              {/* Προσθήκη ΝΕΩΝ στοιχείων στο ενεργό Live */}
+              {liveCenterCode && (() => {
+                const fresh = liveItems.filter(it => !isInLive(it));
+                if (!fresh.length) return null;
+                return (
+                  <button onClick={addNewItemsToLive} disabled={liveAddBusy}
+                    style={{ width:'100%', padding:'14px', borderRadius:14, border:'none', background: liveAddBusy?'#e0e0e0':'#15803d', color:'#fff', fontSize:15, fontWeight:600, cursor: liveAddBusy?'default':'pointer', marginBottom:10 }}>
+                    {liveAddBusy ? '⏳ Προσθήκη…' : `➕ Προσθήκη ${fresh.length} ${fresh.length===1?'στοιχείου':'στοιχείων'} στο ενεργό Live ${liveCenterCode}`}
+                  </button>
+                );
+              })()}
+
               {/* Δημιουργία */}
               <button onClick={createLiveFromItems} disabled={!liveItems.length || liveCenterBusy}
                 style={{ width:'100%', padding:'14px', borderRadius:14, border:'none', background: liveItems.length&&!liveCenterBusy?'#1a1a1a':'#e0e0e0', color:'#fff', fontSize:15, fontWeight:600, cursor: liveItems.length&&!liveCenterBusy?'pointer':'default', marginBottom:16 }}>
-                {liveCenterBusy ? '⏳ Δημιουργία…' : '📡 Έναρξη Live'}
+                {liveCenterBusy ? '⏳ Δημιουργία…' : (liveCenterCode ? '📡 Νέο Live (νέος κωδικός)' : '📡 Έναρξη Live')}
               </button>
 
-              {/* Αποτέλεσμα: PIN */}
+              {/* Αποτέλεσμα: PIN — πίνακας ελέγχου ενεργού Live */}
               {liveCenterCode && (
                 <div style={{ padding:'24px', background:'linear-gradient(135deg,#1a1a1a,#2d2a1e)', borderRadius:18, textAlign:'center' }}>
-                  <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:2, color:'#e8c96a', marginBottom:10 }}>Κωδικός Live</div>
+                  <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:2, color:'#e8c96a', marginBottom:10 }}>
+                    <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:'#4ade80', marginRight:6, verticalAlign:'middle' }} />Ενεργό Live
+                  </div>
                   <div style={{ fontSize:52, fontWeight:700, color:'#fff', letterSpacing:'0.15em', fontFamily:'monospace', marginBottom:10 }}>{liveCenterCode}</div>
-                  <div style={{ fontSize:12, color:'#8e8ea0', marginBottom:16 }}>Δώσε αυτόν τον κωδικό — ισχύει για ~2 ώρες</div>
+                  <div style={{ fontSize:12, color:'#8e8ea0', marginBottom:16 }}>
+                    {liveSentItems.length} {liveSentItems.length===1?'στοιχείο':'στοιχεία'} στην παρουσίαση · οι θεατές βλέπουν κάθε προσθήκη αυτόματα (~5″)
+                  </div>
                   <div style={{ display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' }}>
                     <button onClick={()=>{ navigator.clipboard?.writeText(`${window.location.origin}/live?code=${liveCenterCode}`).catch(()=>{}); }}
                       style={{ padding:'10px 18px', borderRadius:10, border:'1px solid rgba(255,255,255,0.2)', background:'transparent', color:'#e8c96a', fontSize:13, cursor:'pointer' }}>📋 Αντιγραφή συνδέσμου</button>
                     <button onClick={()=>window.open(`/live?code=${liveCenterCode}`,'_blank')}
                       style={{ padding:'10px 18px', borderRadius:10, border:'none', background:'#e8c96a', color:'#1a1a1a', fontSize:13, fontWeight:600, cursor:'pointer' }}>Άνοιγμα →</button>
+                    <button onClick={stopLive}
+                      style={{ padding:'10px 18px', borderRadius:10, border:'1px solid rgba(239,68,68,0.5)', background:'transparent', color:'#f87171', fontSize:13, cursor:'pointer' }}>⏹ Τερματισμός</button>
                   </div>
                 </div>
               )}
