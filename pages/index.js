@@ -80,6 +80,8 @@ const shareLabel = (v) => !v || v === 'none' ? null
   : v === 'public' ? '🌍 Δημόσιο'
   : v === 'connections' ? '👥 Συνδέσεις'
   : '👤 Επιλεγμένοι';
+// Υποφάκελοι Drive μέσα στον φάκελο «Εφαρμογές»
+const isDriveFolder = (f) => (f?.mimeType || '') === 'application/vnd.google-apps.folder';
 const toEmbedUrl = (url) => {
   if (!url) return url;
   // YouTube → embed
@@ -336,6 +338,7 @@ export default function Home() {
   const [qrFile, setQrFile] = useState(null);
   const [qrCopied, setQrCopied] = useState(false);
   useEffect(() => { setQrCopied(false); }, [qrFile]);
+  const [appsSubfolder, setAppsSubfolder] = useState(null); // {id,name} — ανοιχτός υποφάκελος στις Εφαρμογές
   // ── Ομάδες χρηστών + όψη «Εισερχ./Απεστ.» ──
   const [groups, setGroups] = useState([]);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -1188,10 +1191,35 @@ export default function Home() {
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
     if (!appsFolderId) return;
+    setAppsSubfolder(null);
     setOpenFolder({ id: appsFolderId, name: 'Εφαρμογές', isApps: true });
     setActiveView('apps'); setActiveTagFilter(null);
     setAppsFilter(null); setAppsSearchOn(false); setAppsSearchText(''); setAppsTagFilter(null);
     setAppsStatActive(null); setAppsWalletActive(null);
+  };
+  // Άνοιγμα υποφακέλου εφαρμογών — μένουμε στην προβολή «Εφαρμογές», αλλάζει μόνο το scope
+  const openAppSubfolder = (f) => {
+    setAppsSubfolder({ id: f.id, name: f.name });
+    setOpenFolder({ id: f.id, name: f.name, isApps: true, isSub: true });
+    setAppsFilter(null); setAppsSearchOn(false); setAppsSearchText(''); setAppsTagFilter(null);
+    setAppsStatActive(null); setAppsWalletActive(null);
+  };
+  // Δημιουργία υποφακέλου στο Drive (μέσα στον φάκελο Εφαρμογών) + εγγραφή στο μητρώο
+  const addAppSubfolder = async () => {
+    if (!appsFolderId || !session?.accessToken) return;
+    const name = prompt('Όνομα νέου υποφακέλου εφαρμογών:');
+    if (!name || !name.trim()) return;
+    setBusy('subfolder');
+    try {
+      const res = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType', {
+        method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken, 'Content-Type':'application/json' },
+        body: JSON.stringify({ name: name.trim(), mimeType:'application/vnd.google-apps.folder', parents:[appsFolderId] }),
+      });
+      const doc = await res.json();
+      if (doc.id) await registerFiles([{ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: appsFolderId }]);
+      else alert('Σφάλμα δημιουργίας φακέλου' + (doc.error?.message ? ': ' + doc.error.message : ''));
+    } catch (e) { alert('Σφάλμα δημιουργίας φακέλου: ' + e.message); }
+    setBusy('');
   };
 
   // ── Wallet renderer (κινητό): στοιβαγμένες κάρτες — κοινό για φακέλους & εφαρμογές ──
@@ -1292,8 +1320,9 @@ export default function Home() {
   const userName = session.user?.email?.split('@')[0] || '';
   const countFor = (fid) => files.filter((f) => f.folderId === fid).length;
 
-  // Αρχεία εκτός του φακέλου «Εφαρμογές» (για τις κανονικές λίστες)
-  const normalFiles = files.filter((f) => !appsFolderId || f.folderId !== appsFolderId);
+  // Αρχεία εκτός του φακέλου «Εφαρμογές» (για τις κανονικές λίστες) — εξαιρούνται και όσα βρίσκονται σε υποφακέλους εφαρμογών
+  const appSubfolderIds = new Set(files.filter((f) => appsFolderId && f.folderId === appsFolderId && isDriveFolder(f)).map((f) => f.id));
+  const normalFiles = files.filter((f) => (!appsFolderId || f.folderId !== appsFolderId) && !appSubfolderIds.has(f.folderId));
   // Φάκελος «Πρότυπα» (με βάση το όνομα) + τα Google Docs μέσα του
   const templatesFolder = folders.find(f => f.name === 'Πρότυπα');
   const templateFiles = templatesFolder
@@ -1316,8 +1345,10 @@ export default function Home() {
   const appFiles = appsFolderId ? files.filter(f => f.folderId === appsFolderId) : [];
   const isNetworkFile = (f) => networkFileIds.has(f.id) || f._isNetwork;
 
-  // ── Παράγωγες λίστες «Εφαρμογών» (μόνο πραγματικές εφαρμογές, όχι δίκτυα-PDF) ──
-  const pureAppFiles = appFiles.filter(f => !isNetworkFile(f));
+  // ── Παράγωγες λίστες «Εφαρμογών» (μόνο πραγματικές εφαρμογές, όχι δίκτυα-PDF, όχι υποφάκελοι) ──
+  const appSubfolders = appFiles.filter(isDriveFolder);
+  const appScopeFiles = appsSubfolder ? files.filter(f => f.folderId === appsSubfolder.id) : appFiles;
+  const pureAppFiles = appScopeFiles.filter(f => !isNetworkFile(f) && !isDriveFolder(f));
   const appFavorites = pureAppFiles.filter(f => f.favorite);
   const appRecent = pureAppFiles.filter(f => f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
   const appPopular = pureAppFiles.filter(f => (f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
@@ -1326,7 +1357,7 @@ export default function Home() {
   const textOnlyFiles = normalFiles.filter(f => !isNetworkFile(f));
   const networkOnlyFiles = [...normalFiles.filter(f => isNetworkFile(f)), ...appFiles.filter(f => isNetworkFile(f))];
 
-  const searchPool = searchCategory === 'apps' ? appFiles.filter(f => !isNetworkFile(f))
+  const searchPool = searchCategory === 'apps' ? files.filter(f => (f.folderId === appsFolderId || appSubfolderIds.has(f.folderId)) && !isNetworkFile(f) && !isDriveFolder(f))
     : searchCategory === 'networks' ? networkOnlyFiles
     : textOnlyFiles;
   const searchPoolTags = [...new Set(searchPool.flatMap(f => f.tags || []))].sort();
@@ -1653,7 +1684,7 @@ export default function Home() {
                     style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', color:'#dc2626', borderColor:'#fca5a5' }} title="Διαγραφή φακέλου">✕ Διαγραφή φακέλου</button>
                 </div>
               )}
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
             </>
           )}
 
@@ -1679,19 +1710,26 @@ export default function Home() {
               setAppsFilter(prev => prev === key ? null : key);
             };
             const sectionTitle = appsFilter === 'favorites' ? 'Αγαπημένες εφαρμογές'
-              : appsFilter === 'popular' ? 'Δημοφιλείς εφαρμογές' : 'Οι εφαρμογές μου';
+              : appsFilter === 'popular' ? 'Δημοφιλείς εφαρμογές'
+              : appsSubfolder ? 'Εφαρμογές του φακέλου' : 'Οι εφαρμογές μου';
+            // Υποφάκελοι: εμφανίζονται μόνο στη ρίζα των Εφαρμογών, χωρίς ενεργό φίλτρο/αναζήτηση
+            const showSubs = !appsSubfolder && !appsFilter && !appsTagFilter && !appsSearchText.trim();
+            const subCount = (sub) => files.filter(x => x.folderId === sub.id && !isDriveFolder(x)).length;
             return (
             <>
               <div style={{ ...S.pageHeader, gap: isMobile ? 8 : 14 }}>
-                <button onClick={goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
-                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>Εφαρμογές</h1>
+                <button onClick={appsSubfolder ? openApps : goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
+                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{appsSubfolder ? <>📂 {trunc(appsSubfolder.name, isMobile ? 14 : 30)}</> : 'Εφαρμογές'}</h1>
                 <div style={{ flex:1 }} />
+                {!appsSubfolder && (
+                  <button onClick={addAppSubfolder} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding: isMobile ? '7px 11px' : '5px 10px', opacity:0.75 }} title="Νέος υποφάκελος">{busy==='subfolder'?'…':(isMobile?'📂＋':'＋ Φάκελος')}</button>
+                )}
                 <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding: isMobile ? '7px 11px' : '5px 10px', opacity:0.75 }} title="Επιλογή από Google Drive">{busy==='picker'?'…':(isMobile?'📁':'＋ Drive')}</button>
                 <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:11, padding: isMobile ? '7px 11px' : '5px 10px', opacity:0.75 }} title="Ανέβασμα">{busy==='upload'?'…':(isMobile?'⬆️':'＋ Ανέβασμα')}</button>
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:16 }}>
-                Κάθε εφαρμογή εμφανίζεται ως κάρτα-φάκελος. Πάτησέ την για να ανοίξει.
+                {appsSubfolder ? 'Υποφάκελος εφαρμογών — ό,τι ανεβάσεις εδώ αποθηκεύεται μέσα του.' : 'Κάθε εφαρμογή εμφανίζεται ως κάρτα-φάκελος. Πάτησέ την για να ανοίξει.'}
               </p>
 
               {isMobile ? (
@@ -1725,20 +1763,33 @@ export default function Home() {
                   <section style={{ marginBottom:24 }}>
                     <h2 style={{ ...S.secTitle, marginBottom:12, fontSize:15 }}>{sectionTitle}{appsTagFilter && <span style={{ fontSize:12, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}</h2>
                     {loading ? <div style={S.empty}>Φόρτωση…</div>
-                      : appCards.length === 0 ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με 📁 ή ⬆️.</div>
+                      : (appCards.length === 0 && !(showSubs && appSubfolders.length > 0)) ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με 📁 ή ⬆️.</div>
                       : <div style={{ position:'relative', marginBottom:8, paddingBottom:8 }}>
                           {renderWallet(
-                            appCards.map((f, i) => ({
-                              type:'folder', view: f.id, name: trunc(f.name, 22), icon: Icon.apps, cta:'Άνοιγμα →',
-                              desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : '') + (shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''),
-                              tone: TONES[i % TONES.length],
-                              actions: [
-                                { icon: Icon.send, label:'Κοινοποίηση', active: !!shareLabel(f.visibility), onClick: () => togglePublish(f.id) },
-                                { icon: QrIcon, label:'QR', onClick: () => setQrFile(f) },
-                              ],
-                            })),
+                            [
+                              // Υποφάκελοι — διακριτό εικονίδιο φακέλου + 📂 στο όνομα
+                              ...(showSubs ? appSubfolders.map((sub) => ({
+                                type:'folder', kind:'sub', view: sub.id, name: '📂 ' + trunc(sub.name, 20), icon: Icon.folder, cta:'Άνοιγμα φακέλου →',
+                                desc: `Υποφάκελος · ${subCount(sub)} εφαρμογές`, tone:'cream',
+                              })) : []),
+                              ...appCards.map((f, i) => ({
+                                type:'folder', view: f.id, name: trunc(f.name, 22), icon: Icon.apps, cta:'Άνοιγμα →',
+                                desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : '') + (shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''),
+                                tone: TONES[i % TONES.length],
+                                actions: [
+                                  { icon: Icon.send, label:'Κοινοποίηση', active: !!shareLabel(f.visibility), onClick: () => togglePublish(f.id) },
+                                  { icon: QrIcon, label:'QR', onClick: () => setQrFile(f) },
+                                ],
+                              })),
+                            ],
                             appsWalletActive,
                             (item, isExpanded) => {
+                              if (item.kind === 'sub') {
+                                const sub = appSubfolders.find(x => x.id === item.view);
+                                if (isExpanded) { setAppsWalletActive(null); if (sub) openAppSubfolder(sub); }
+                                else setAppsWalletActive(item.view);
+                                return;
+                              }
                               const f = appCards.find(x => x.id === item.view);
                               if (isExpanded) { setAppsWalletActive(null); if (f) openViewer(f); }
                               else setAppsWalletActive(item.view);
@@ -1788,8 +1839,26 @@ export default function Home() {
                   <section style={{ marginBottom:44 }}>
                     <h2 style={S.secTitle}>{sectionTitle}{appsTagFilter && <span style={{ fontSize:13, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}</h2>
                     {loading ? <div style={S.empty}>Φόρτωση…</div>
-                      : appCards.length === 0 ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με «＋ Drive» ή «＋ Ανέβασμα».</div>
+                      : (appCards.length === 0 && !(showSubs && appSubfolders.length > 0)) ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με «＋ Drive» ή «＋ Ανέβασμα».</div>
                       : <div style={S.cardsGrid}>
+                          {/* Υποφάκελοι — οπτικά διακριτοί: ουδέτερο φόντο, διακεκομμένο περίγραμμα, εικονίδιο φακέλου */}
+                          {showSubs && appSubfolders.map((sub) => (
+                            <div key={sub.id} className="ch" onClick={() => openAppSubfolder(sub)}
+                              style={{ ...S.folderCard, background:'#fbfaf4', border:'1.5px dashed #c9bd93' }}>
+                              <div style={S.folderTop}>
+                                <div style={{ ...S.folderIcon, background:'#efe9d5', color:'#8a7d4a' }}>{Icon.folder}</div>
+                                <div style={{ display:'flex', gap:6 }}>
+                                  <button onClick={(e)=>{ e.stopPropagation(); removeFile(sub.id); }} title="Αφαίρεση φακέλου"
+                                    style={{ background:'transparent', border:'none', cursor:'pointer', color:'#8a7d4a', opacity:0.5, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
+                                </div>
+                              </div>
+                              <h3 style={{ ...S.folderTitle, color:'#3d3a2e' }}>📂 {trunc(sub.name, 24)}</h3>
+                              <p style={{ ...S.folderDesc, color:'#3d3a2e', opacity:0.6 }}>Υποφάκελος · {subCount(sub)} εφαρμογές</p>
+                              <div style={{ ...S.folderFoot, borderTopColor:'#e5ddc2' }}>
+                                <button style={{ ...S.linkBtn, color:'#8a7d4a' }}>Άνοιγμα φακέλου →</button>
+                              </div>
+                            </div>
+                          ))}
                           {appCards.map((f, i) => {
                             const p = PALETTE[TONES[i % TONES.length]];
                             const nTags = (f.tags||[]).length;
@@ -2473,7 +2542,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
             </>
           )}
 
@@ -2519,7 +2588,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />}
             </>
           )}
 
