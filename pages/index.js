@@ -1347,6 +1347,9 @@ export default function Home() {
 
   // ── Παράγωγες λίστες «Εφαρμογών» (μόνο πραγματικές εφαρμογές, όχι δίκτυα-PDF, όχι υποφάκελοι) ──
   const appSubfolders = appFiles.filter(isDriveFolder);
+  // Ανήκει το αρχείο στον χώρο «Εφαρμογές» (ρίζα ή υποφάκελος); — για απόκρυψη ετικετών/ερωτήσεων
+  const appScopeFolderIds = new Set([appsFolderId, ...appSubfolderIds].filter(Boolean));
+  const isAppFile = (f) => !!f && appScopeFolderIds.has(f.folderId);
   const appScopeFiles = appsSubfolder ? files.filter(f => f.folderId === appsSubfolder.id) : appFiles;
   const pureAppFiles = appScopeFiles.filter(f => !isNetworkFile(f) && !isDriveFolder(f));
   const appFavorites = pureAppFiles.filter(f => f.favorite);
@@ -1729,7 +1732,7 @@ export default function Home() {
                 <input ref={uploadRef} type="file" multiple onChange={onUpload} style={{ display:'none' }} />
               </div>
               <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:16 }}>
-                {appsSubfolder ? 'Υποφάκελος εφαρμογών — ό,τι ανεβάσεις εδώ αποθηκεύεται μέσα του.' : 'Κάθε εφαρμογή εμφανίζεται ως κάρτα-φάκελος. Πάτησέ την για να ανοίξει.'}
+                {appsSubfolder ? 'Υποφάκελος εφαρμογών — ό,τι ανεβάσεις εδώ αποθηκεύεται μέσα του.' : 'Οι φάκελοι εμφανίζονται ως κάρτες-φάκελοι, οι εφαρμογές ως κάρτες αρχείων (όπως στη Βιβλιοθήκη). Πάτησε μια εφαρμογή για να ανοίξει.'}
               </p>
 
               {isMobile ? (
@@ -1764,38 +1767,29 @@ export default function Home() {
                     <h2 style={{ ...S.secTitle, marginBottom:12, fontSize:15 }}>{sectionTitle}{appsTagFilter && <span style={{ fontSize:12, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}</h2>
                     {loading ? <div style={S.empty}>Φόρτωση…</div>
                       : (appCards.length === 0 && !(showSubs && appSubfolders.length > 0)) ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με 📁 ή ⬆️.</div>
-                      : <div style={{ position:'relative', marginBottom:8, paddingBottom:8 }}>
-                          {renderWallet(
-                            [
-                              // Υποφάκελοι — διακριτό εικονίδιο φακέλου + 📂 στο όνομα
-                              ...(showSubs ? appSubfolders.map((sub) => ({
-                                type:'folder', kind:'sub', view: sub.id, name: '📂 ' + trunc(sub.name, 20), icon: Icon.folder, cta:'Άνοιγμα φακέλου →',
-                                desc: `Υποφάκελος · ${subCount(sub)} εφαρμογές`, tone:'cream',
-                              })) : []),
-                              ...appCards.map((f, i) => ({
-                                type:'folder', view: f.id, name: trunc(f.name, 22), icon: Icon.apps, cta:'Άνοιγμα →',
-                                desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : '') + (shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''),
-                                tone: TONES[i % TONES.length],
-                                actions: [
-                                  { icon: Icon.send, label:'Κοινοποίηση', active: !!shareLabel(f.visibility), onClick: () => togglePublish(f.id) },
-                                  { icon: QrIcon, label:'QR', onClick: () => setQrFile(f) },
-                                ],
-                              })),
-                            ],
-                            appsWalletActive,
-                            (item, isExpanded) => {
-                              if (item.kind === 'sub') {
-                                const sub = appSubfolders.find(x => x.id === item.view);
-                                if (isExpanded) { setAppsWalletActive(null); if (sub) openAppSubfolder(sub); }
-                                else setAppsWalletActive(item.view);
-                                return;
-                              }
-                              const f = appCards.find(x => x.id === item.view);
-                              if (isExpanded) { setAppsWalletActive(null); if (f) openViewer(f); }
-                              else setAppsWalletActive(item.view);
-                            }
+                      : <>
+                          {/* Υποφάκελοι — παραμένουν κάρτες-φάκελοι (wallet) ώστε να ξεχωρίζουν από τις εφαρμογές */}
+                          {showSubs && appSubfolders.length > 0 && (
+                            <div style={{ position:'relative', marginBottom:14, paddingBottom:8 }}>
+                              {renderWallet(
+                                appSubfolders.map((sub) => ({
+                                  type:'folder', kind:'sub', view: sub.id, name: '📂 ' + trunc(sub.name, 20), icon: Icon.folder, cta:'Άνοιγμα φακέλου →',
+                                  desc: `Υποφάκελος · ${subCount(sub)} εφαρμογές`, tone:'cream',
+                                })),
+                                appsWalletActive,
+                                (item, isExpanded) => {
+                                  const sub = appSubfolders.find(x => x.id === item.view);
+                                  if (isExpanded) { setAppsWalletActive(null); if (sub) openAppSubfolder(sub); }
+                                  else setAppsWalletActive(item.view);
+                                }
+                              )}
+                            </div>
                           )}
-                        </div>
+                          {/* Εφαρμογές — κάρτες αρχείων όπως στη Βιβλιοθήκη (άνοιγμα σε modal, χωρίς ερωτήσεις/ετικέτες) */}
+                          {appCards.length > 0 && (
+                            <FileList files={appCards} loading={false} empty="" onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={pureAppFiles} folders={folders} compact={true} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+                          )}
+                        </>
                     }
                   </section>
                 </>
@@ -1840,57 +1834,34 @@ export default function Home() {
                     <h2 style={S.secTitle}>{sectionTitle}{appsTagFilter && <span style={{ fontSize:13, fontWeight:500, color:'#6b6b80' }}> · #{appsTagFilter}</span>}</h2>
                     {loading ? <div style={S.empty}>Φόρτωση…</div>
                       : (appCards.length === 0 && !(showSubs && appSubfolders.length > 0)) ? <div style={S.empty}>Καμία εφαρμογή. Πρόσθεσε με «＋ Drive» ή «＋ Ανέβασμα».</div>
-                      : <div style={S.cardsGrid}>
-                          {/* Υποφάκελοι — οπτικά διακριτοί: ουδέτερο φόντο, διακεκομμένο περίγραμμα, εικονίδιο φακέλου */}
-                          {showSubs && appSubfolders.map((sub) => (
-                            <div key={sub.id} className="ch" onClick={() => openAppSubfolder(sub)}
-                              style={{ ...S.folderCard, background:'#fbfaf4', border:'1.5px dashed #c9bd93' }}>
-                              <div style={S.folderTop}>
-                                <div style={{ ...S.folderIcon, background:'#efe9d5', color:'#8a7d4a' }}>{Icon.folder}</div>
-                                <div style={{ display:'flex', gap:6 }}>
-                                  <button onClick={(e)=>{ e.stopPropagation(); removeFile(sub.id); }} title="Αφαίρεση φακέλου"
-                                    style={{ background:'transparent', border:'none', cursor:'pointer', color:'#8a7d4a', opacity:0.5, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
-                                </div>
-                              </div>
-                              <h3 style={{ ...S.folderTitle, color:'#3d3a2e' }}>📂 {trunc(sub.name, 24)}</h3>
-                              <p style={{ ...S.folderDesc, color:'#3d3a2e', opacity:0.6 }}>Υποφάκελος · {subCount(sub)} εφαρμογές</p>
-                              <div style={{ ...S.folderFoot, borderTopColor:'#e5ddc2' }}>
-                                <button style={{ ...S.linkBtn, color:'#8a7d4a' }}>Άνοιγμα φακέλου →</button>
-                              </div>
-                            </div>
-                          ))}
-                          {appCards.map((f, i) => {
-                            const p = PALETTE[TONES[i % TONES.length]];
-                            const nTags = (f.tags||[]).length;
-                            return (
-                              <div key={f.id} className="ch" onClick={() => openViewer(f)}
-                                style={{ ...S.folderCard, background:`linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.12) 45%, transparent 65%), ${p.bg}` }}>
-                                <div style={S.folderTop}>
-                                  <div style={{ ...S.folderIcon, background:p.accent, color:p.deep }}>{Icon.apps}</div>
-                                  <div style={{ display:'flex', gap:6 }}>
-                                    <button onClick={(e)=>toggleFavorite(f.id, e)} title="Αγαπημένο"
-                                      style={{ background:'transparent', border:'none', cursor:'pointer', color: f.favorite ? p.deep : p.text, opacity: f.favorite ? 1 : 0.4, padding:2, lineHeight:0 }}>
-                                      <svg width="18" height="18" viewBox="0 0 24 24" fill={f.favorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                    </button>
-                                    <button onClick={(e)=>{ e.stopPropagation(); togglePublish(f.id); }} title="Κοινοποίηση σε μαθητή / δημόσια"
-                                      style={{ background:'transparent', border:'none', cursor:'pointer', color: shareLabel(f.visibility) ? p.deep : p.text, opacity: shareLabel(f.visibility) ? 1 : 0.45, padding:2, lineHeight:0 }}>{Icon.send}</button>
-                                    <button onClick={(e)=>{ e.stopPropagation(); setQrFile(f); }} title="QR"
-                                      style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.45, padding:2, lineHeight:0 }}>{QrIcon}</button>
-                                    <button onClick={(e)=>{ e.stopPropagation(); removeFile(f.id); }} title="Αφαίρεση"
-                                      style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.4, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
+                      : <>
+                          {/* Υποφάκελοι — παραμένουν κάρτες-φάκελοι (διακεκομμένο περίγραμμα, εικονίδιο φακέλου) για να ξεχωρίζουν */}
+                          {showSubs && appSubfolders.length > 0 && (
+                            <div style={{ ...S.cardsGrid, marginBottom: appCards.length ? 22 : 0 }}>
+                              {appSubfolders.map((sub) => (
+                                <div key={sub.id} className="ch" onClick={() => openAppSubfolder(sub)}
+                                  style={{ ...S.folderCard, background:'#fbfaf4', border:'1.5px dashed #c9bd93' }}>
+                                  <div style={S.folderTop}>
+                                    <div style={{ ...S.folderIcon, background:'#efe9d5', color:'#8a7d4a' }}>{Icon.folder}</div>
+                                    <div style={{ display:'flex', gap:6 }}>
+                                      <button onClick={(e)=>{ e.stopPropagation(); removeFile(sub.id); }} title="Αφαίρεση φακέλου"
+                                        style={{ background:'transparent', border:'none', cursor:'pointer', color:'#8a7d4a', opacity:0.5, padding:2, fontSize:14, lineHeight:1 }}>✕</button>
+                                    </div>
+                                  </div>
+                                  <h3 style={{ ...S.folderTitle, color:'#3d3a2e' }}>📂 {trunc(sub.name, 24)}</h3>
+                                  <p style={{ ...S.folderDesc, color:'#3d3a2e', opacity:0.6 }}>Υποφάκελος · {subCount(sub)} εφαρμογές</p>
+                                  <div style={{ ...S.folderFoot, borderTopColor:'#e5ddc2' }}>
+                                    <button style={{ ...S.linkBtn, color:'#8a7d4a' }}>Άνοιγμα φακέλου →</button>
                                   </div>
                                 </div>
-                                <h3 style={{ ...S.folderTitle, color:p.text }}>{trunc(f.name, 26)}</h3>
-                                <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>
-                                  {(f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή'}{nTags > 0 ? ` · ${nTags} ετικέτες` : ''}{shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''}
-                                </p>
-                                <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
-                                  <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Εφαρμογές — κάρτες αρχείων όπως στη Βιβλιοθήκη (άνοιγμα σε modal, χωρίς ερωτήσεις/ετικέτες) */}
+                          {appCards.length > 0 && (
+                            <FileList files={appCards} loading={false} empty="" onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={pureAppFiles} folders={folders} compact={false} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+                          )}
+                        </>
                     }
                   </section>
                 </>
@@ -2921,10 +2892,11 @@ export default function Home() {
                 {showMetaPanel && (
                   <div style={{ flex:'0 0 50%', borderLeft:'1px solid #ebebeb', display:'flex', flexDirection:'column', background:PALETTE.cream.bgSoft }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb' }}>
-                      <span style={{ fontSize:13, fontWeight:700 }}>{isTeacher ? 'Ετικέτες · Πληροφορίες · Σχόλια · Ερωτήσεις · Συνδέσεις' : 'Ετικέτες · Πληροφορίες · Σχόλια · Σύνδεση'}</span>
+                      <span style={{ fontSize:13, fontWeight:700 }}>{isAppFile(viewing) ? 'Πληροφορίες · Σχόλια · Συνδέσεις' : (isTeacher ? 'Ετικέτες · Πληροφορίες · Σχόλια · Ερωτήσεις · Συνδέσεις' : 'Ετικέτες · Πληροφορίες · Σχόλια · Σύνδεση')}</span>
                       {metaSaving && <span style={{ fontSize:11, color:PALETTE.peach.deep }}>Αποθήκευση…</span>}
                     </div>
                     <div style={{ flex:1, overflowY:'auto', padding:14 }}>
+                      {!isAppFile(viewing) && <>
                       <div style={S.cpLabel}>Ετικέτες</div>
                       <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
                         {vTags.map((t) => { const c=tagColor(t); return (
@@ -2940,13 +2912,14 @@ export default function Home() {
                       <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:18 }}>
                         {suggested.map((t) => { const c=tagColor(t); return <span key={t} onClick={()=>addTag(viewing.id,t)} style={{ cursor:'pointer', background:c.bg, color:c.text, borderRadius:999, padding:'3px 9px', fontSize:12 }}>+{t}</span>; })}
                       </div>
+                      </>}
                       <div style={S.cpLabel}>Πληροφορίες</div>
                       <textarea placeholder="Πηγή, τίτλος, συγγραφέας…" value={fileInfo(viewing.id)} onChange={(e)=>updateInfo(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:60, padding:'8px 12px', border:'1px solid '+PALETTE.cream.accent, borderRadius:8, fontSize:13, lineHeight:1.5, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Σχόλια</div>
                       <textarea placeholder="Σημειώσεις για το αρχείο…" value={fileComment(viewing.id)} onChange={(e)=>updateComment(viewing.id,e.target.value)}
                         style={{ width:'100%', minHeight:200, padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:14, lineHeight:1.6, background:'#fff', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
-                      {isTeacher && !(appsFolderId && viewing.folderId === appsFolderId) && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις/Απαντήσεις</div>
+                      {isTeacher && !isAppFile(viewing) && <><div style={{ ...S.cpLabel, marginTop:18 }}>Ερωτήσεις/Απαντήσεις</div>
                       <QuestionsFields fileId={viewing.id} raw={fileQuestions(viewing.id)} onChange={updateQuestions} compact={false} readOnly={false} /></>}
 
                       <div style={{ ...S.cpLabel, marginTop:18 }}>Συνδέσεις</div>
@@ -3356,10 +3329,10 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 {!compact && (
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4, flexWrap:'wrap' }}>
                     {showFolder && folderName(f.folderId) && <span style={{ fontSize:10, color:'#aeaeb8' }}>📁 {folderName(f.folderId)}</span>}
-                    {tags.slice(0,3).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
-                    {tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
+                    {!isApp && tags.slice(0,3).map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:10, padding:'1px 6px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
+                    {!isApp && tags.length > 3 && <span style={{ fontSize:10, color:'#aeaeb8' }}>+{tags.length-3}</span>}
                     {hasInfo && <span style={{ fontSize:10, color:'#aeaeb8' }}>ℹ️</span>}
-                    {isTeacherRole && hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
+                    {!isApp && isTeacherRole && hasQuestions && <span style={{ fontSize:10, color:'#aeaeb8' }}>📝</span>}
                     {hasLinks && <span style={{ fontSize:10, color:'#aeaeb8' }}>🔗{fLinks.length}</span>}
                     {visIcon && <span style={{ fontSize:10 }}>{visIcon}</span>}
                   </div>
@@ -3415,7 +3388,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                     </button>
                   </div>
                 )}
-                {tags.length > 0 && (
+                {!isApp && tags.length > 0 && (
                   <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10, paddingLeft:2, paddingTop: compact ? 0 : 8 }}>
                     {tags.map((t)=>{ const c=tagColor(t); return <span key={t} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, background:c.bg, color:c.text }}>#{t}</span>; })}
                   </div>
