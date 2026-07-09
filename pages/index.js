@@ -65,6 +65,21 @@ function hasAnyQuestions(raw) {
 }
 const trunc = (s, max = 15) => s && s.length > max ? s.slice(0, max) + '…' : s || '';
 const getFileUrl = (f) => `https://drive.google.com/file/d/${f.id}/view`;
+// ── Κοινή χρήση εφαρμογών: HTML αρχεία ανοίγουν ΖΩΝΤΑΝΑ μέσω /api/student-file (όχι προεπισκόπηση Drive) ──
+const isHtmlApp = (f) => /\.html?$/i.test(f?.name || '') || (f?.mimeType || '') === 'text/html';
+const getShareUrl = (f) => {
+  if (!f) return '';
+  if (isHtmlApp(f)) {
+    const origin = (typeof window !== 'undefined') ? window.location.origin : 'https://leviathan-olive.vercel.app';
+    return `${origin}/api/student-file?id=${f.id}`;
+  }
+  return getFileUrl(f);
+};
+// Σύντομη ένδειξη κατάστασης κοινοποίησης (visibility)
+const shareLabel = (v) => !v || v === 'none' ? null
+  : v === 'public' ? '🌍 Δημόσιο'
+  : v === 'connections' ? '👥 Συνδέσεις'
+  : '👤 Επιλεγμένοι';
 const toEmbedUrl = (url) => {
   if (!url) return url;
   // YouTube → embed
@@ -319,6 +334,8 @@ export default function Home() {
   const [netTagInput, setNetTagInput] = useState('');
   const [openAccordions, setOpenAccordions] = useState({});
   const [qrFile, setQrFile] = useState(null);
+  const [qrCopied, setQrCopied] = useState(false);
+  useEffect(() => { setQrCopied(false); }, [qrFile]);
   // ── Ομάδες χρηστών + όψη «Εισερχ./Απεστ.» ──
   const [groups, setGroups] = useState([]);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -1235,6 +1252,7 @@ export default function Home() {
               )}
             </>
           ) : (
+            <>
             <div style={{ display:'flex', alignItems:'center', gap:14 }}>
               <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon || Icon.folder}</div>
               <div style={{ flex:1, minWidth:0 }}>
@@ -1244,6 +1262,18 @@ export default function Home() {
               {item.badge>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'2px 9px', fontSize:12, fontWeight:700, flexShrink:0 }}>{item.badge}</span>}
               {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>{item.cta || 'Άνοιγμα →'}</span>}
             </div>
+            {/* Προαιρετικές ενέργειες (π.χ. Κοινοποίηση/QR στις εφαρμογές) — μόνο σε ανοιχτή κάρτα */}
+            {isExpanded && item.actions && (
+              <div style={{ display:'flex', gap:8, marginTop:12, justifyContent:'flex-end' }} onClick={(e)=>e.stopPropagation()}>
+                {item.actions.map((a, ai) => (
+                  <button key={ai} onClick={a.onClick}
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderRadius:10, border:`1px solid ${p.accent}`, background:'rgba(255,255,255,0.55)', color:p.deep, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    {a.icon}{a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            </>
           )}
         </div>
       );
@@ -1702,8 +1732,12 @@ export default function Home() {
                           {renderWallet(
                             appCards.map((f, i) => ({
                               type:'folder', view: f.id, name: trunc(f.name, 22), icon: Icon.apps, cta:'Άνοιγμα →',
-                              desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : ''),
+                              desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : '') + (shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''),
                               tone: TONES[i % TONES.length],
+                              actions: [
+                                { icon: Icon.send, label:'Κοινοποίηση', onClick: () => togglePublish(f.id) },
+                                { icon: QrIcon, label:'QR', onClick: () => setQrFile(f) },
+                              ],
                             })),
                             appsWalletActive,
                             (item, isExpanded) => {
@@ -1771,6 +1805,8 @@ export default function Home() {
                                       style={{ background:'transparent', border:'none', cursor:'pointer', color: f.favorite ? p.deep : p.text, opacity: f.favorite ? 1 : 0.4, padding:2, lineHeight:0 }}>
                                       <svg width="18" height="18" viewBox="0 0 24 24" fill={f.favorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                                     </button>
+                                    <button onClick={(e)=>{ e.stopPropagation(); togglePublish(f.id); }} title="Κοινοποίηση σε μαθητή / δημόσια"
+                                      style={{ background:'transparent', border:'none', cursor:'pointer', color: shareLabel(f.visibility) ? p.deep : p.text, opacity: shareLabel(f.visibility) ? 1 : 0.45, padding:2, lineHeight:0 }}>{Icon.send}</button>
                                     <button onClick={(e)=>{ e.stopPropagation(); setQrFile(f); }} title="QR"
                                       style={{ background:'transparent', border:'none', cursor:'pointer', color:p.text, opacity:0.45, padding:2, lineHeight:0 }}>{QrIcon}</button>
                                     <button onClick={(e)=>{ e.stopPropagation(); removeFile(f.id); }} title="Αφαίρεση"
@@ -1779,7 +1815,7 @@ export default function Home() {
                                 </div>
                                 <h3 style={{ ...S.folderTitle, color:p.text }}>{trunc(f.name, 26)}</h3>
                                 <p style={{ ...S.folderDesc, color:p.text, opacity:0.65 }}>
-                                  {(f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή'}{nTags > 0 ? ` · ${nTags} ετικέτες` : ''}
+                                  {(f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή'}{nTags > 0 ? ` · ${nTags} ετικέτες` : ''}{shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''}
                                 </p>
                                 <div style={{ ...S.folderFoot, borderTopColor:p.accent }}>
                                   <button style={{ ...S.linkBtn, color:p.deep }}>Άνοιγμα →</button>
@@ -1805,6 +1841,7 @@ export default function Home() {
                           <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<appRecent.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
                             <span style={{ fontSize:16, flexShrink:0 }}>⚡</span>
                             <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
+                            <button onClick={(e)=>{e.stopPropagation();togglePublish(f.id);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0, color: shareLabel(f.visibility) ? '#16a34a' : undefined }} title="Κοινοποίηση">{Icon.send}</button>
                             <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
                           </div>
                         ))}
@@ -1819,6 +1856,7 @@ export default function Home() {
                           <div key={f.id} className="ri-h" style={{ ...S.recentItem, borderBottom: idx<appPopular.length-1?'1px solid #f0f0f0':'none' }} onClick={() => openViewer(f)}>
                             <div style={{ width:24, height:24, borderRadius:8, background:PALETTE.mustard.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:11, fontWeight:700, color:PALETTE.mustard.deep }}>{f.openCount}</div>
                             <div style={S.recentInfo}><div style={S.recentTitle}>{trunc(f.name, isMobile ? 15 : 30)}</div></div>
+                            <button onClick={(e)=>{e.stopPropagation();togglePublish(f.id);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0, color: shareLabel(f.visibility) ? '#16a34a' : undefined }} title="Κοινοποίηση">{Icon.send}</button>
                             <button onClick={(e)=>{e.stopPropagation();setQrFile(f);}} style={{ ...btn('mini'), padding:'3px 5px', flexShrink:0 }} title="QR">{QrIcon}</button>
                           </div>
                         ))}
@@ -3135,16 +3173,22 @@ export default function Home() {
         );
       })()}
 
-      {/* QR popup */}
+      {/* QR popup — για HTML εφαρμογές το QR/link ανοίγει τη ΖΩΝΤΑΝΗ εφαρμογή (μέσω /api/student-file) */}
       {qrFile && (
         <div onClick={() => setQrFile(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center', boxShadow:'0 12px 40px rgba(0,0,0,0.15)' }}>
             <div style={{ fontSize:15, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>QR Code</div>
             <div style={{ fontSize:12, color:'#6b6b80', marginBottom:16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{qrFile.name}</div>
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getFileUrl(qrFile))}`}
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getShareUrl(qrFile))}`}
               alt="QR" width={200} height={200} style={{ borderRadius:8, border:'1px solid #eee', margin:'0 auto', display:'block' }} />
-            <p style={{ fontSize:11, color:'#aeaeb8', marginTop:12 }}>Σκανάρετε με κινητό</p>
-            <button onClick={() => setQrFile(null)} style={{ marginTop:12, padding:'10px 28px', borderRadius:10, border:'none', background:'#1a1a1a', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Κλείσιμο</button>
+            <p style={{ fontSize:11, color:'#aeaeb8', marginTop:12 }}>{isHtmlApp(qrFile) ? 'Σκανάρετε με κινητό — ανοίγει τη ζωντανή εφαρμογή' : 'Σκανάρετε με κινητό'}</p>
+            <div style={{ display:'flex', gap:8, marginTop:12 }}>
+              <button onClick={() => { try { navigator.clipboard.writeText(getShareUrl(qrFile)); setQrCopied(true); setTimeout(() => setQrCopied(false), 2000); } catch(e) {} }}
+                style={{ flex:1, padding:'10px 12px', borderRadius:10, border:'1px solid #e0e0e0', background: qrCopied ? '#f0fdf4' : '#fff', color: qrCopied ? '#16a34a' : '#1a1a1a', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                {qrCopied ? '✓ Αντιγράφηκε' : 'Αντιγραφή συνδέσμου'}
+              </button>
+              <button onClick={() => setQrFile(null)} style={{ flex:1, padding:'10px 12px', borderRadius:10, border:'none', background:'#1a1a1a', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Κλείσιμο</button>
+            </div>
           </div>
         </div>
       )}
