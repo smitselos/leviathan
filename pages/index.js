@@ -1252,28 +1252,26 @@ export default function Home() {
               )}
             </>
           ) : (
-            <>
-            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
               <div style={{ ...S.statIcon, background:p.accent, color:p.deep }}>{item.icon || Icon.folder}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:16, fontWeight:item.fw||700, color:p.text, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
                 <div style={{ fontSize:12, color:p.text, opacity:0.6 }}>{item.desc}</div>
               </div>
+              {/* Μικρά εικονίδια ενεργειών πάνω στην κάρτα (π.χ. Κοινοποίηση/QR εφαρμογής) — πάντα ορατά */}
+              {item.actions && (
+                <div style={{ display:'flex', gap:5, flexShrink:0 }} onClick={(e)=>e.stopPropagation()}>
+                  {item.actions.map((a, ai) => (
+                    <button key={ai} onClick={a.onClick} title={a.label}
+                      style={{ background:'rgba(255,255,255,0.55)', border:`1px solid ${p.accent}`, borderRadius:9, padding:'6px 8px', color: a.active ? '#16a34a' : p.deep, cursor:'pointer', lineHeight:0 }}>
+                      {a.icon}
+                    </button>
+                  ))}
+                </div>
+              )}
               {item.badge>0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:999, padding:'2px 9px', fontSize:12, fontWeight:700, flexShrink:0 }}>{item.badge}</span>}
               {isExpanded && <span style={{ fontSize:13, fontWeight:600, color:p.deep, flexShrink:0 }}>{item.cta || 'Άνοιγμα →'}</span>}
             </div>
-            {/* Προαιρετικές ενέργειες (π.χ. Κοινοποίηση/QR στις εφαρμογές) — μόνο σε ανοιχτή κάρτα */}
-            {isExpanded && item.actions && (
-              <div style={{ display:'flex', gap:8, marginTop:12, justifyContent:'flex-end' }} onClick={(e)=>e.stopPropagation()}>
-                {item.actions.map((a, ai) => (
-                  <button key={ai} onClick={a.onClick}
-                    style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderRadius:10, border:`1px solid ${p.accent}`, background:'rgba(255,255,255,0.55)', color:p.deep, fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                    {a.icon}{a.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            </>
           )}
         </div>
       );
@@ -1735,7 +1733,7 @@ export default function Home() {
                               desc: ((f.openCount||0) > 0 ? `${f.openCount} ανοίγματα` : 'Καμία προβολή') + ((f.tags||[]).length ? ` · ${(f.tags||[]).length} ετικέτες` : '') + (shareLabel(f.visibility) ? ` · ${shareLabel(f.visibility)}` : ''),
                               tone: TONES[i % TONES.length],
                               actions: [
-                                { icon: Icon.send, label:'Κοινοποίηση', onClick: () => togglePublish(f.id) },
+                                { icon: Icon.send, label:'Κοινοποίηση', active: !!shareLabel(f.visibility), onClick: () => togglePublish(f.id) },
                                 { icon: QrIcon, label:'QR', onClick: () => setQrFile(f) },
                               ],
                             })),
