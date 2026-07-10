@@ -1,8 +1,33 @@
-// pages/api/auth/[...nextauth].js
+// pages/api/auth/[...nextauth].js — ΛΕΒΙΑΘΑΝ Cloud
+// Συγκατάθεση ΜΙΑ φορά: αφαιρέθηκε το prompt:'consent'. Το refresh token
+// αποθηκεύεται στο KV (Upstash) και επαναχρησιμοποιείται στις επόμενες συνδέσεις.
+//
+// ⚠ ΚΟΙΝΟ KV με τη light: το κλειδί έχει namespace 'cloud:' ώστε να ΜΗΝ
+// συγκρούεται με το 'refresh:{email}' της light. (Αν οι δύο εφαρμογές
+// χρησιμοποιούν ΤΟ ΙΔΙΟ GOOGLE_CLIENT_ID, θα μπορούσαν να μοιράζονται και το
+// ίδιο κλειδί — αλλά το namespace είναι ασφαλές και στις δύο περιπτώσεις.)
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import { createClient } from '@vercel/kv';
+
+function getKV() {
+  return createClient({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN });
+}
+const RT_KEY = (email) => `refresh:cloud:${email}`;
+
+async function saveRefresh(email, rt) {
+  if (!email || !rt) return;
+  try { await getKV().set(RT_KEY(email), rt); } catch (e) { console.error('saveRefresh', e.message); }
+}
+async function loadRefresh(email) {
+  if (!email) return null;
+  try { return await getKV().get(RT_KEY(email)); } catch (e) { console.error('loadRefresh', e.message); return null; }
+}
+
 async function refreshAccessToken(token) {
   try {
+    let refreshToken = token.refreshToken || (await loadRefresh(token.email));
+    if (!refreshToken) throw new Error('No refresh token available');
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -10,16 +35,23 @@ async function refreshAccessToken(token) {
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
         grant_type: 'refresh_token',
-        refresh_token: token.refreshToken,
+        refresh_token: refreshToken,
       }),
     });
     const refreshed = await response.json();
-    if (!response.ok) throw refreshed;
+    if (!response.ok) {
+      // Ανακλημένο/ληγμένο refresh token: σβήσ' το από το KV για να μη «δηλητηριάζει» τις επόμενες συνδέσεις
+      if (refreshed.error === 'invalid_grant') {
+        try { await getKV().del(RT_KEY(token.email)); } catch {}
+      }
+      throw refreshed;
+    }
+    if (refreshed.refresh_token) { await saveRefresh(token.email, refreshed.refresh_token); refreshToken = refreshed.refresh_token; }
     return {
       ...token,
       accessToken: refreshed.access_token,
       accessTokenExpires: Date.now() + refreshed.expires_in * 1000,
-      refreshToken: refreshed.refresh_token ?? token.refreshToken,
+      refreshToken,
       error: undefined,
     };
   } catch (error) {
@@ -27,6 +59,7 @@ async function refreshAccessToken(token) {
     return { ...token, error: 'RefreshAccessTokenError' };
   }
 }
+
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -34,10 +67,9 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          scope:
-            'openid email profile https://www.googleapis.com/auth/drive.file',
+          scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
           access_type: 'offline',
-          prompt: 'consent',
+          // Χωρίς prompt:'consent' → η οθόνη συναίνεσης εμφανίζεται μόνο την πρώτη φορά.
         },
       },
     }),
@@ -45,19 +77,27 @@ export const authOptions = {
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   jwt: { maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
-    async signIn() {
-      return true;
-    },
-    async jwt({ token, account }) {
+    async signIn() { return true; },
+    async jwt({ token, account, user, profile }) {
       if (account) {
+        const email = user?.email || profile?.email || token.email || null;
+        let refreshToken = account.refresh_token;
+        if (refreshToken) await saveRefresh(email, refreshToken);
+        else refreshToken = await loadRefresh(email);
         return {
           ...token,
+          email,
           accessToken: account.access_token,
-          refreshToken: account.refresh_token || token.refreshToken,
-          accessTokenExpires: Date.now() + account.expires_in * 1000,
+          refreshToken: refreshToken || token.refreshToken,
+          // Η Google δίνει expires_at (δευτ. εποχής), όχι expires_in — αλλιώς προκύπτει NaN
+          // και το σύστημα επιχειρεί ανανέωση αμέσως μετά τη σύνδεση.
+          accessTokenExpires: account.expires_at
+            ? account.expires_at * 1000
+            : Date.now() + ((account.expires_in ?? 3600) * 1000),
+          error: undefined,
         };
       }
-      if (Date.now() < token.accessTokenExpires - 5 * 60 * 1000) {
+      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires - 5 * 60 * 1000) {
         return token;
       }
       return refreshAccessToken(token);
