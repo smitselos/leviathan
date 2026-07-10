@@ -110,6 +110,14 @@ export default function LivePage() {
     return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
   }, [entered, fetchSession]);
 
+  // Έξοδος από το live: αν υπάρχει ιστορικό (ήρθες από την εφαρμογή) γύρνα πίσω·
+  // αλλιώς (π.χ. άνοιξες απευθείας σύνδεσμο ?code=) πήγαινε στην οθόνη κωδικού.
+  const goBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) { window.history.back(); return; }
+    setSession(null); setEntered(false); setError(null); setCode('');
+    router.replace('/live', undefined, { shallow: true });
+  };
+
   /* ── Code entry ── */
   if (!entered) {
     return (
@@ -123,6 +131,7 @@ export default function LivePage() {
           <link rel="manifest" href="/manifest.json" />
         </Head>
         <style>{css}</style>
+        <button onClick={goBack} title="Πίσω" style={S.floatBack}>←</button>
         <div style={S.entryCard}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:2, color:'#e8c96a', marginBottom:8 }}>ΛΕΒΙΑΘΑΝ</div>
           <h1 style={{ fontSize:24, fontWeight:700, color:'#1a1a1a', margin:'0 0 8px' }}>Live</h1>
@@ -153,6 +162,7 @@ export default function LivePage() {
           <link rel="manifest" href="/manifest.json" />
         </Head>
         <style>{css}</style>
+        <button onClick={goBack} title="Πίσω" style={S.floatBack}>←</button>
         <div style={{ color:'#e8c96a', fontSize:48, fontWeight:700, letterSpacing:'0.1em', marginBottom:12 }}>{code}</div>
         <div style={{ color:'#8e8ea0', fontSize:14, marginBottom:32 }}>{error || 'Αναμονή παρουσίασης…'}</div>
         {!error && (
@@ -182,9 +192,12 @@ export default function LivePage() {
       </Head>
       <style>{css}</style>
 
+      {/* Κουμπί εξόδου — πάντα ορατό πάνω από την παρουσίαση */}
+      <button onClick={goBack} title="Πίσω / Έξοδος" style={S.floatBackLive}>←</button>
+
       {/* Tab bar */}
       {hasLinks && (
-        <div style={{ display:'flex', background:'#1a1a1a', flexShrink:0, height:44 }}>
+        <div style={{ display:'flex', background:'#1a1a1a', flexShrink:0, height:44, paddingLeft:46 }}>
           <button onClick={()=>setActiveTab('pdf')}
             style={{ ...S.tabBtn, borderBottom: activeTab==='pdf'?'2px solid #e8c96a':'2px solid transparent', color: activeTab==='pdf'?'#e8c96a':'#8e8ea0', fontWeight: activeTab==='pdf'?700:400 }}>
             📄 {session.title.length>30?session.title.slice(0,30)+'…':session.title}
@@ -287,4 +300,6 @@ const S = {
   codeInput: { width:'100%', textAlign:'center', fontSize:36, fontWeight:700, letterSpacing:12, padding:'16px 0', border:'2px solid #ebebeb', borderRadius:16, outline:'none', marginBottom:20, fontFamily:'monospace' },
   enterBtn: { width:'100%', padding:'14px 0', borderRadius:14, border:'none', background:'#1a1a1a', color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer' },
   tabBtn: { flex:1, background:'transparent', border:'none', fontSize:13, cursor:'pointer', fontFamily:'sans-serif', padding:'0 8px' },
+  floatBack: { position:'fixed', top:14, left:14, width:38, height:38, background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:12, cursor:'pointer', fontSize:18, color:'#ececec', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 },
+  floatBackLive: { position:'absolute', top:6, left:6, width:34, height:32, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(6px)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:9, cursor:'pointer', fontSize:16, color:'#e8c96a', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50 },
 };
