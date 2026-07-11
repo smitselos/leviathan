@@ -16,6 +16,17 @@ const tagColor=t=>TAG_COLORS[Math.abs([...t].reduce((a,c)=>a+c.charCodeAt(0),0))
 const trunc=(s,n)=>s&&s.length>n?s.slice(0,n)+'…':s;
 const teacherColor=(email)=>TAG_COLORS[Math.abs([...(email||'')].reduce((a,c)=>a+c.charCodeAt(0),0))%TAG_COLORS.length];
 
+// PWA-safe άνοιγμα: σε εγκατεστημένο PWA (standalone) χρήση location.href ώστε το iOS
+// να δίνει μονοβηματική επιστροφή «◀» χωρίς ενδιάμεση λευκή σελίδα· στον Safari νέα καρτέλα.
+function openExternal(url){
+  const standalone = typeof window!=='undefined' && (
+    window.navigator.standalone===true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+  );
+  if(standalone){ window.location.href=url; }
+  else { window.open(url,'_blank'); }
+}
+
 const Ic={
   home:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
   live:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
@@ -98,13 +109,13 @@ function PublicView({teacher,isMobile,hasSession}){
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
-    if(isHtml){ window.open(`/api/student-file?id=${f.id}`,'_blank'); return; }
+    if(isHtml){ openExternal(`/api/student-file?id=${f.id}`); return; }
     if(isOffice){
       // Αν υπάρχει PDF αντίγραφο (από τη δημοσίευση) → προβολή· αλλιώς λήψη
-      if(f.pdfId){ window.open(`https://drive.google.com/file/d/${f.pdfId}/preview`,'_blank'); return; }
+      if(f.pdfId){ openExternal(`https://drive.google.com/file/d/${f.pdfId}/preview`); return; }
       window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank'); return;
     }
-    window.open(`https://drive.google.com/file/d/${f.id}/preview`,'_blank');
+    openExternal(`https://drive.google.com/file/d/${f.id}/preview`);
   };
 
   const getFileUrl=(f)=>{
@@ -422,7 +433,7 @@ function StudentView({myEmail,isMobile,router}){
       ? `https://drive.google.com/file/d/${f.pdfId}/preview`   // έτοιμο PDF αντίγραφο
       : `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`; // fallback on-the-fly
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
-    if(isMobile){window.open(url,'_blank');return;}
+    if(isMobile){openExternal(url);return;}
     setViewing({...f,previewUrl:url});
   };
 
@@ -1216,7 +1227,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
     if(isHtml) url=`/api/student-file?id=${f.id}`;
     else if(isOffice) url=`/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`;
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
-    if(isMobile){window.open(url,'_blank');return;}
+    if(isMobile){openExternal(url);return;}
     setViewing({...f, previewUrl:url});
   };
   const goHome=()=>{setViewing(null);setSearch('');setActiveTag(null);loadData();};
