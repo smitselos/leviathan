@@ -1071,7 +1071,13 @@ export default function Home() {
     // optimistic local bump + server record
     setFiles((p) => p.map((x) => x.id === f.id ? { ...x, openCount:(x.openCount||0)+1, openedAt: Date.now() } : x));
     fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
-    if (isMobile) { window.open('/api/file/' + f.id, '_blank'); return; }
+  if (isMobile) {
+      const isHtml = /\.html?$/i.test(f.name);
+      // PDF/Office/εικόνες → cross-origin Drive: ανοίγει στον system browser,
+      // απ' όπου το κλείνεις και επιστρέφεις στην εφαρμογή (όπως στη Light).
+      if (!isHtml) { window.open(getFileUrl(f), '_blank'); return; }
+      // HTML εφαρμογές: παραμένουν same-origin → πέφτουν στον in-app viewer παρακάτω.
+    }
     setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
   };
 
