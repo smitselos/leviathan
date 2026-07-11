@@ -65,6 +65,18 @@ function hasAnyQuestions(raw) {
 }
 const trunc = (s, max = 15) => s && s.length > max ? s.slice(0, max) + '…' : s || '';
 const getFileUrl = (f) => `https://drive.google.com/file/d/${f.id}/view`;
+// ── Άνοιγμα εξωτερικού συνδέσμου (π.χ. προβολή Drive) ──
+// Σε εγκατεστημένο PWA (standalone) το window.open('_blank') αφήνει κενό ενδιάμεσο
+// παράθυρο (λευκή σελίδα με «✕») → διπλό πάτημα για επιστροφή. Με window.location.href
+// το iOS ανοίγει τον cross-origin σύνδεσμο ως in-app browser πάνω από την εφαρμογή,
+// οπότε το «◀» επιστρέφει μονοβηματικά. Στον Safari κρατάμε τη νέα καρτέλα.
+const isStandalonePWA = () =>
+  (typeof navigator !== 'undefined' && navigator.standalone === true) ||
+  (typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+const openExternal = (url) => {
+  if (isStandalonePWA()) { window.location.href = url; }
+  else { window.open(url, '_blank'); }
+};
 // ── Κοινή χρήση εφαρμογών: HTML αρχεία ανοίγουν ΖΩΝΤΑΝΑ μέσω /api/student-file (όχι προεπισκόπηση Drive) ──
 const isHtmlApp = (f) => /\.html?$/i.test(f?.name || '') || (f?.mimeType || '') === 'text/html';
 const getShareUrl = (f) => {
@@ -1075,7 +1087,7 @@ export default function Home() {
       const isHtml = /\.html?$/i.test(f.name);
       // PDF/Office/εικόνες → cross-origin Drive: ανοίγει στον system browser,
       // απ' όπου το κλείνεις και επιστρέφεις στην εφαρμογή (όπως στη Light).
-      if (!isHtml) { window.open(`https://drive.google.com/file/d/${f.id}/preview`, '_blank'); return; }
+      if (!isHtml) { openExternal(`https://drive.google.com/file/d/${f.id}/preview`); return; }
       // HTML εφαρμογές: παραμένουν same-origin → πέφτουν στον in-app viewer παρακάτω.
     }
     setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
