@@ -1075,7 +1075,7 @@ export default function Home() {
       const isHtml = /\.html?$/i.test(f.name);
       // PDF/Office/εικόνες → cross-origin Drive: ανοίγει στον system browser,
       // απ' όπου το κλείνεις και επιστρέφεις στην εφαρμογή (όπως στη Light).
-      if (!isHtml) { window.open(getFileUrl(f), '_blank'); return; }
+      if (!isHtml) { window.open(`https://drive.google.com/file/d/${f.id}/preview`, '_blank'); return; }
       // HTML εφαρμογές: παραμένουν same-origin → πέφτουν στον in-app viewer παρακάτω.
     }
     setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
