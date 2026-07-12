@@ -1,7 +1,7 @@
 {
-  "name": "ΛΕΒΙΑΘΑΝ Cloud",
-  "short_name": "ΛΕΒΙΑΘΑΝ",
-  "description": "Εκπαιδευτική πλατφόρμα κειμένων",
+  "name": "Leviathan Cloud",
+  "short_name": "ΛΕVIΛTHΛN",
+  "description": "Εκπαιδευτική πλατφόρμα επεξεργασίας, σύνθεσης και διαμοιρασμού εκπαιδευτικού υλικού",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
