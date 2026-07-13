@@ -1,7 +1,7 @@
 {
   "name": "ΛΕΒΙΑΘΑΝ Τάξη",
   "short_name": "Τάξη",
-  "description": "Το υλικό της τάξης σου — ΛΕΒΙΑΘΑΝ",
+  "description": "Εκπαιδευτικό υλικό",
   "start_url": "/class",
   "scope": "/",
   "display": "standalone",
