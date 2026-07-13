@@ -109,7 +109,14 @@ function PublicView({teacher,isMobile,hasSession}){
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google (Docs/Slides/Sheets): χωρίς κατάληξη — το /api/publish δεν δίνει mimeType
     if(isHtml){ openExternal(`/api/student-file?id=${f.id}`); return; }
+    if(isGDoc){
+      // Read-only προβολή: αν υπάρχει PDF αντίγραφο → Drive preview· αλλιώς server redirect
+      // (/api/student-file?gdoc=1 → 302 σε docs.google.com/{type}/d/{id}/preview, cross-origin)
+      if(f.pdfId){ openExternal(`https://drive.google.com/file/d/${f.pdfId}/preview`); return; }
+      openExternal(`/api/student-file?id=${f.id}&gdoc=1`); return;
+    }
     if(isOffice){
       // Αν υπάρχει PDF αντίγραφο (από τη δημοσίευση) → προβολή· αλλιώς λήψη
       if(f.pdfId){ openExternal(`https://drive.google.com/file/d/${f.pdfId}/preview`); return; }
@@ -428,8 +435,12 @@ function StudentView({myEmail,isMobile,router}){
     markSeen(f.id);
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google: χωρίς κατάληξη
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isGDoc) url = f.pdfId
+      ? `https://drive.google.com/file/d/${f.pdfId}/preview`
+      : `/api/student-file?id=${f.id}&gdoc=1`; // 302 → docs.google.com/{type}/d/{id}/preview
     else if(isOffice) url = f.pdfId
       ? `https://drive.google.com/file/d/${f.pdfId}/preview`   // έτοιμο PDF αντίγραφο
       : `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`; // fallback on-the-fly
@@ -1225,8 +1236,12 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const openFile=f=>{
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google: χωρίς κατάληξη
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
+    else if(isGDoc) url = f.pdfId
+      ? `https://drive.google.com/file/d/${f.pdfId}/preview`
+      : `/api/student-file?id=${f.id}&gdoc=1`; // 302 → docs.google.com/{type}/d/{id}/preview
     else if(isOffice) url = f.pdfId
       ? `https://drive.google.com/file/d/${f.pdfId}/preview`   // έτοιμο PDF αντίγραφο — χωρίς νέα μετατροπή
       : `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`; // fallback on-the-fly

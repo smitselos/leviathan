@@ -146,7 +146,13 @@ function PublicView({teacher,isMobile,hasSession}){
   const openFile=(f)=>{
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+    const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google (Docs/Slides/Sheets): χωρίς κατάληξη
     if(isHtml){ openExternal(`/api/student-file?id=${f.id}`); return; }
+    if(isGDoc){
+      // Read-only προβολή: PDF αντίγραφο αν υπάρχει, αλλιώς server redirect (cross-origin)
+      if(f.pdfId){ openExternal(`https://drive.google.com/file/d/${f.pdfId}/preview`); return; }
+      openExternal(`/api/student-file?id=${f.id}&gdoc=1`); return;
+    }
     if(isOffice){
       // Αν υπάρχει PDF αντίγραφο (από τη δημοσίευση) → προβολή· αλλιώς λήψη
       if(f.pdfId){ openExternal(`https://drive.google.com/file/d/${f.pdfId}/preview`); return; }
