@@ -93,11 +93,45 @@ function hidePrintToast() {
   if (_printToastEl) { try { _printToastEl.remove(); } catch {} _printToastEl = null; }
 }
 
+// ── Κουμπί «Έτοιμο για εκτύπωση» (κινητό/PWA) ──
+// Το navigator.share απαιτεί φρέσκο user gesture: αν χάθηκε όσο ετοιμαζόταν το PDF,
+// δείχνουμε κουμπί — το πάτημά του δίνει νέο gesture και το φύλλο κοινής χρήσης ανοίγει.
+let _printBtnEl = null;
+function hidePrintReadyButton() {
+  if (_printBtnEl) { try { _printBtnEl.remove(); } catch {} _printBtnEl = null; }
+}
+function showPrintReadyButton(file, fname) {
+  hidePrintToast(); hidePrintReadyButton();
+  if (typeof document === 'undefined') return;
+  const el = document.createElement('button');
+  el.textContent = '🖨️ Έτοιμο — πάτησε για εκτύπωση';
+  el.style.cssText = 'position:fixed;bottom:calc(28px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:14px 22px;border:none;border-radius:14px;font-size:15px;font-weight:700;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,0.3);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap;cursor:pointer;';
+  el.onclick = () => {
+    hidePrintReadyButton();
+    try { navigator.share({ files: [file], title: fname }).catch(() => {}); } catch {}
+  };
+  document.body.appendChild(el);
+  _printBtnEl = el;
+  setTimeout(() => { if (_printBtnEl === el) hidePrintReadyButton(); }, 45000);
+}
+
+// Safari σε Mac (όχι Chrome/Firefox/Edge, όχι κινητό): η εκτύπωση PDF μέσα από
+// iframe έχει γνωστό bug WebKit — προειδοποίηση «δεν επιτρέπεται η εκτύπωση» και
+// εκτύπωση μόνο της 1ης σελίδας. Εκεί ανοίγουμε το PDF σε καρτέλα και η εκτύπωση
+// γίνεται από τον native PDF viewer του Safari (⌘P) — όλες οι σελίδες, χωρίς προειδοποίηση.
+const isSafariDesktop = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod|Android/i.test(ua)) return false;
+  return /safari/i.test(ua) && !/chrome|crios|chromium|edg|opr|fxios/i.test(ua);
+};
+
 // ── Εκτύπωση χωρίς «παράθυρο-παγίδα» στο PWA ──
 // Κινητό/PWA: navigator.share με το ίδιο το αρχείο → φύλλο κοινής χρήσης iOS/Android
 //   με επιλογή «Εκτύπωση» (AirPrint κ.λπ.) — και καθαρή επιστροφή στην εφαρμογή.
-// Desktop: κρυφό same-origin iframe → print() → κατευθείαν ο διάλογος εκτυπωτή.
-async function printPdfBlob(blob, name) {
+// Desktop Chrome/Firefox/Edge: κρυφό iframe → print() → κατευθείαν ο διάλογος εκτυπωτή.
+// Desktop Safari: preWin (προανοιγμένη καρτέλα) → native PDF viewer.
+async function printPdfBlob(blob, name, preWin) {
   hidePrintToast(); // το αρχείο είναι έτοιμο — το φύλλο/διάλογος αναλαμβάνει
   // Σεβόμαστε τον πραγματικό τύπο: το /api/file στέλνει PDF για Office/PDF, εικόνες ως έχουν.
   const isImage = (blob.type || '').startsWith('image/');
@@ -106,16 +140,27 @@ async function printPdfBlob(blob, name) {
   const outBlob = blob.type === type ? blob : new Blob([blob], { type });
   const isMobileUA = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   if (isMobileUA || isStandalonePWA()) {
-    try {
-      const file = new File([outBlob], fname, { type });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: fname });
+    // Σε κινητό/PWA ΔΕΝ χρησιμοποιούμε ποτέ iframe print (WebKit: προειδοποίηση
+    // «αυτόματη εκτύπωση» + μόνο 1η σελίδα). Μόνο share sheet — με κουμπί αν χρειάζεται.
+    const file = new File([outBlob], fname, { type });
+    const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+    if (canShareFiles) {
+      try { await navigator.share({ files: [file], title: fname }); return; }
+      catch (e) {
+        if (e && e.name === 'AbortError') return; // ο χρήστης έκλεισε το φύλλο — ΟΚ
+        // NotAllowedError κ.ά.: χάθηκε το user gesture όσο ετοιμαζόταν το PDF
+        showPrintReadyButton(file, fname);
         return;
       }
-    } catch (e) { if (e && e.name === 'AbortError') return; /* αλλιώς συνέχισε στο fallback */ }
+    }
+    // Χωρίς υποστήριξη Web Share αρχείων: άνοιξε το PDF — εκτύπωση από τον viewer
+    openExternal(URL.createObjectURL(outBlob));
+    return;
   }
-  // Desktop / fallback: κρυφό iframe → print()
+  // Desktop / fallback
   const url = URL.createObjectURL(outBlob);
+  // Safari (Mac): προανοιγμένη καρτέλα → native PDF viewer (αποφυγή του iframe bug)
+  if (preWin && !preWin.closed) { preWin.location.href = url; return; }
   const fr = document.createElement('iframe');
   fr.style.cssText = 'position:fixed;right:0;bottom:0;width:2px;height:2px;border:0;visibility:hidden;';
   fr.src = url;
@@ -130,6 +175,9 @@ async function printPdfBlob(blob, name) {
 // Εκτύπωση αρχείου βιβλιοθήκης: το /api/file σερβίρει ΔΙΚΑ μας αρχεία με το token
 // του χρήστη και μετατρέπει Office → PDF on-the-fly — δουλεύει και για μη δημοσιευμένα.
 async function printFileById(f) {
+  // Safari (Mac): άνοιγμα του PDF απευθείας σε καρτέλα (συγχρονισμένα — δεν
+  // μπλοκάρεται ως popup) και εκτύπωση από τον native viewer με ⌘P.
+  if (isSafariDesktop()) { window.open('/api/file/' + f.id, '_blank'); return; }
   showPrintToast();
   try {
     const r = await fetch('/api/file/' + f.id);
@@ -944,7 +992,13 @@ export default function Home() {
     const qs = f.questions;
     if (!hasAnyQuestions(qs)) return;
     // Χωρίς window.open: το PDF πάει κατευθείαν στο φύλλο κοινής χρήσης (κινητό)
-    // ή στον διάλογο εκτυπωτή (desktop) — καμία «παγίδα» παραθύρου στο PWA.
+    // ή στον διάλογο εκτυπωτή (desktop). Στον Safari (Mac) προανοίγουμε καρτέλα
+    // (σύγχρονα, στο user gesture) όπου θα φορτωθεί το PDF για εκτύπωση με ⌘P.
+    let preWin = null;
+    if (isSafariDesktop()) {
+      preWin = window.open('', '_blank');
+      if (preWin) preWin.document.write('<html><head><title>Εκτύπωση…</title></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888">⏳ Δημιουργία PDF…</body></html>');
+    }
     showPrintToast();
     try {
       const r = await fetch('/api/print-with-questions', {
@@ -952,10 +1006,10 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId: f.id, fileName: f.name, questions: qs }),
       });
-      if (!r.ok) { alert('✗ Σφάλμα δημιουργίας PDF'); return; }
+      if (!r.ok) { if (preWin) preWin.close(); alert('✗ Σφάλμα δημιουργίας PDF'); return; }
       const blob = await r.blob();
-      await printPdfBlob(blob, (f.name || 'αρχείο').replace(/\.[^.]+$/, '') + ' — ερωτήσεις');
-    } catch (e) { alert('✗ ' + e.message); }
+      await printPdfBlob(blob, (f.name || 'αρχείο').replace(/\.[^.]+$/, '') + ' — ερωτήσεις', preWin);
+    } catch (e) { if (preWin) preWin.close(); alert('✗ ' + e.message); }
     finally { hidePrintToast(); }
   };
 
