@@ -900,6 +900,7 @@ export default function Home() {
         setNetworks(prev => prev.map(n => n.id === net.id ? updated : n));
         setNetMsg('✓ PDF ενημερώθηκε');
         setTimeout(() => setNetMsg(''), 2500);
+        return d.pdfFileId; // νέο id του συγχωνευμένου PDF
       } else {
         setNetMsg('✗ Αποτυχία αναγέννησης PDF');
         setTimeout(() => setNetMsg(''), 2500);
@@ -908,6 +909,7 @@ export default function Home() {
       setNetMsg('✗ Σφάλμα αναγέννησης PDF');
       setTimeout(() => setNetMsg(''), 2500);
     }
+    return null;
   };
 
   // ── Ανανέωση συγχωνευμένου PDF με το ΤΡΕΧΟΝ περιεχόμενο των πηγαίων κειμένων ──
@@ -915,12 +917,29 @@ export default function Home() {
   // στα κείμενα ενσωματώνονται. Οι αποθηκευμένες ερωτήσεις του PDF διατηρούνται.
   const [netRefreshing, setNetRefreshing] = useState(null); // id δικτύου σε ανανέωση
   const refreshNetworkPdf = async (net) => {
-    if (!net?.pdfFileId || netRefreshing) return;
+    if (!net?.pdfFileId || netRefreshing) return null;
     setNetRefreshing(net.id);
+    showPrintToast('⏳ Ανανέωση από τα πηγαία κείμενα…');
     const f = files.find((x) => x.id === net.pdfFileId);
-    await regenerateNetworkPdf(net.pdfFileId, f?.questions || '');
+    const newId = await regenerateNetworkPdf(net.pdfFileId, f?.questions || '');
     await loadAll(); // το pdfFileId μπορεί να άλλαξε — φρέσκια λίστα αρχείων
+    hidePrintToast();
+    showPrintToast(newId ? '✓ Το PDF ενημερώθηκε' : '✗ Αποτυχία ανανέωσης — δοκίμασε ξανά');
+    setTimeout(hidePrintToast, 2500);
     setNetRefreshing(null);
+    return newId;
+  };
+  // Ανανέωση με αφετηρία την ΚΑΡΤΑ ή το modal του συγχωνευμένου αρχείου
+  const netOfFile = (id) => networks.find((n) => n.pdfFileId === id) || null;
+  const netRefreshByFile = async (f) => {
+    const net = netOfFile(f.id);
+    if (!net) { alert('Δεν βρέθηκε το δίκτυο αυτού του αρχείου.'); return null; }
+    return refreshNetworkPdf(net);
+  };
+  const refreshViewingNetwork = async () => {
+    if (!viewing) return;
+    const newId = await netRefreshByFile(viewing);
+    if (newId) setViewing((v) => v ? { ...v, id: newId, previewUrl: undefined } : v);
   };
 
   // ── Μεταδεδομένα δικτύου (ετικέτες, σχόλια, πληροφορίες) ──
@@ -1936,7 +1955,7 @@ export default function Home() {
                     style={{ ...btn('mini'), fontSize:11, padding:'5px 10px', color:'#dc2626', borderColor:'#fca5a5' }} title="Διαγραφή φακέλου">✕ Διαγραφή φακέλου</button>
                 </div>
               )}
-              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+              <FileList files={viewFiles} loading={loading} empty="Κανένα αρχείο σε αυτόν τον φάκελο." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} onNetRefresh={netRefreshByFile} />
             </>
           )}
 
@@ -2036,7 +2055,7 @@ export default function Home() {
                           )}
                           {/* Εφαρμογές — κάρτες αρχείων όπως στη Βιβλιοθήκη (άνοιγμα σε modal, χωρίς ερωτήσεις/ετικέτες) */}
                           {appCards.length > 0 && (
-                            <FileList files={appCards} loading={false} empty="" onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={pureAppFiles} folders={folders} compact={true} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+                            <FileList files={appCards} loading={false} empty="" onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={pureAppFiles} folders={folders} compact={true} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} onNetRefresh={netRefreshByFile} />
                           )}
                         </>
                     }
@@ -2108,7 +2127,7 @@ export default function Home() {
                           )}
                           {/* Εφαρμογές — κάρτες αρχείων όπως στη Βιβλιοθήκη (άνοιγμα σε modal, χωρίς ερωτήσεις/ετικέτες) */}
                           {appCards.length > 0 && (
-                            <FileList files={appCards} loading={false} empty="" onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={pureAppFiles} folders={folders} compact={false} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+                            <FileList files={appCards} loading={false} empty="" onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={pureAppFiles} folders={folders} compact={false} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} onNetRefresh={netRefreshByFile} />
                           )}
                         </>
                     }
@@ -2769,7 +2788,7 @@ export default function Home() {
               </div>
               <FileList files={viewFiles} loading={loading}
                 empty={activeView==='favorites'?'Δεν έχεις αγαπημένα ακόμη. Πάτησε το ☆ σε ένα αρχείο.':'Δεν υπάρχουν αρχεία ακόμη.'}
-                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />
+                onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} onNetRefresh={netRefreshByFile} />
             </>
           )}
 
@@ -2815,7 +2834,7 @@ export default function Home() {
               )}
               {(searchTags.length===0 && !searchText)
                 ? <div style={S.empty}>Διάλεξε ετικέτες ή πληκτρολόγησε για αναζήτηση.</div>
-                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} />}
+                : <FileList files={searchResults} loading={false} empty="Κανένα αρχείο δεν ταιριάζει." onOpen={openViewer} onRemove={removeFile} onFav={toggleFavorite} onComment={updateComment} onInfo={updateInfo} onQuestions={updateQuestions} onAddLink={addLink} onRemoveLink={removeLink} onLive={openLive} onPublish={togglePublish} liveSending={liveSending} allFiles={normalFiles} appFiles={appsFolderId ? files.filter(f => f.folderId === appsFolderId && !isDriveFolder(f)) : []} showFolder folders={folders} compact={isMobile} userRole={userRole} onQr={setQrFile} suggestedUrls={allSuggestedUrls} onPrint={printWithQuestions} networkFileIds={networkFileIds} onNetRefresh={netRefreshByFile} />}
             </>
           )}
 
@@ -3110,6 +3129,12 @@ export default function Home() {
                 <span style={{ fontSize:11, color:'#6b6b80', minWidth:32, textAlign:'center', cursor:'pointer' }} onClick={()=>setMobileZoom(1)}>{Math.round(mobileZoom*100)}%</span>
                 <button onClick={()=>setMobileZoom(z=>Math.min(2,z+0.1))} style={S.zoomBtn}>+</button>
               </div>
+              {netOfFile(viewing.id) && (
+                <button onClick={refreshViewingNetwork} disabled={!!netRefreshing} style={{ ...S.iconBtn, color:'#15803d' }}
+                  title="Ανανέωση του συγχωνευμένου PDF με το τρέχον περιεχόμενο των κειμένων">
+                  {netRefreshing ? '⏳' : '🔄'}
+                </button>
+              )}
               <button onClick={()=>window.open(viewing.previewUrl||'/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Νέα καρτέλα">↗</button>
             </div>
             {/* Action toolbar */}
@@ -3166,6 +3191,13 @@ export default function Home() {
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', gap:10 }}>
                 <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  {netOfFile(viewing.id) && (
+                    <button onClick={refreshViewingNetwork} disabled={!!netRefreshing}
+                      style={{ ...S.iconBtn, color:'#15803d', width:'auto', padding:'0 10px', fontSize:12, fontWeight:600 }}
+                      title="Ανανέωση του συγχωνευμένου PDF με το τρέχον περιεχόμενο των κειμένων">
+                      {netRefreshing ? '⏳' : '🔄 Ανανέωση'}
+                    </button>
+                  )}
                   <button onClick={()=>window.open(viewing.previewUrl||'/api/file/'+viewing.id,'_blank')} style={S.iconBtn} title="Άνοιγμα σε νέα καρτέλα">↗</button>
                   {!viewing.isInbox && getEditUrl(viewing) && <button onClick={()=>window.open(getEditUrl(viewing),'_blank')} style={{ ...S.iconBtn, color:'#1a73e8' }} title="Επεξεργασία στο Google">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -3564,7 +3596,7 @@ function QuestionsFields({ fileId, raw, onChange, compact, readOnly }) {
 }
 
 // ── Λίστα αρχείων (κοινό component) ──
-function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls, onPrint, networkFileIds }) {
+function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, onInfo, onQuestions, onAddLink, onRemoveLink, onLive, onPublish, liveSending, allFiles, appFiles, showFolder, folders, compact, userRole, onQr, suggestedUrls, onPrint, networkFileIds, onNetRefresh }) {
   const isTeacherRole = userRole === 'teacher';
   const [expanded, setExpanded] = useState(null);
   const [commentOpen, setCommentOpen] = useState(null);
@@ -3637,6 +3669,11 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation();onOpen(f);}} style={{ ...btn('mini'), padding: compact ? '4px 8px' : '5px 10px', fontSize: compact ? 11 : 12 }}>{compact ? 'Άνοιγμα' : 'Άνοιγμα / Επεξεργασία'}</button>
+              {isNet && onNetRefresh && (
+                <button onClick={(e)=>{e.stopPropagation(); onNetRefresh(f);}}
+                  style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12, color:'#15803d' }}
+                  title="Ανανέωση του συγχωνευμένου PDF με το τρέχον περιεχόμενο των κειμένων">🔄</button>
+              )}
               {!isApp && (hasQuestions && onPrint && !isNet ? (
                 <span style={{ position:'relative', display:'inline-block' }}>
                   <button onClick={(e)=>{e.stopPropagation(); setPrintOpen(printOpen===f.id ? null : f.id);}}
