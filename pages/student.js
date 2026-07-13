@@ -146,7 +146,7 @@ function PublicView({teacher,isMobile,hasSession}){
           <nav style={S.nav}>
             <button onClick={()=>window.location.reload()} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.book}</span>{sidebarOpen&&'Βιβλιοθήκη'}</button>
             <div style={S.navDiv}/>
-            <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{sidebarOpen&&'Live'}</button>
+            <button onClick={()=>openExternal('/live')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{sidebarOpen&&'Live'}</button>
             <div style={S.navDiv}/>
             <button onClick={()=>window.location.href='/login'} style={S.navItem}><span style={S.navIcon}>{Ic.login}</span>{sidebarOpen&&'Σύνδεση'}</button>
           </nav>
@@ -214,7 +214,7 @@ function PublicView({teacher,isMobile,hasSession}){
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
           <MobBtn icon={Ic.book} label="Βιβλιοθήκη" active onClick={()=>window.location.reload()}/>
-          <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+          <MobBtn icon={Ic.live} label="Live" onClick={()=>openExternal('/live')}/>
           <MobBtn icon={Ic.login} label="Σύνδεση" onClick={()=>window.location.href='/login'}/>
         </nav>
       )}
@@ -813,7 +813,7 @@ function StudentView({myEmail,isMobile,router}){
         {isMobile&&(
           <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
             <MobBtn icon={Ic.dashboard} label="Πίνακας" badge={unseenCount} onClick={()=>{setNetView(false);setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
-            <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+            <MobBtn icon={Ic.live} label="Live" onClick={()=>openExternal('/live')}/>
             <MobBtn icon={Ic.net} label="Δίκτυο" active onClick={openNetwork}/>
             <MobBtn icon={Ic.globe} label="Πρόσβαση" onClick={openPublicView}/>
             <MobBtn icon={Ic.out} label="Έξοδος" onClick={()=>signOut({callbackUrl:'/login'})}/>
@@ -891,7 +891,7 @@ function StudentView({myEmail,isMobile,router}){
         {isMobile&&(
           <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
             <MobBtn icon={Ic.dashboard} label="Πίνακας" badge={unseenCount} onClick={()=>{setPublicView(false);setViewing(null);setOpenFolder(null);}}/>
-            <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+            <MobBtn icon={Ic.live} label="Live" onClick={()=>openExternal('/live')}/>
             <MobBtn icon={Ic.net} label="Δίκτυο" onClick={openNetwork}/>
             <MobBtn icon={Ic.globe} label="Πρόσβαση" active onClick={openPublicView}/>
             <MobBtn icon={Ic.out} label="Έξοδος" onClick={()=>signOut({callbackUrl:'/login'})}/>
@@ -1126,7 +1126,7 @@ function StudentView({myEmail,isMobile,router}){
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
           <MobBtn icon={Ic.dashboard} label="Πίνακας" active badge={unseenCount} onClick={()=>{setViewing(null);setPublicView(false);setOpenFolder(null);}}/>
-          <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+          <MobBtn icon={Ic.live} label="Live" onClick={()=>openExternal('/live')}/>
           <MobBtn icon={Ic.net} label="Δίκτυο" onClick={openNetwork}/>
           <MobBtn icon={Ic.globe} label="Πρόσβαση" onClick={openPublicView}/>
           <MobBtn icon={Ic.out} label="Έξοδος" onClick={()=>signOut({callbackUrl:'/login'})}/>
@@ -1225,7 +1225,9 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     let url;
     if(isHtml) url=`/api/student-file?id=${f.id}`;
-    else if(isOffice) url=`/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`;
+    else if(isOffice) url = f.pdfId
+      ? `https://drive.google.com/file/d/${f.pdfId}/preview`   // έτοιμο PDF αντίγραφο — χωρίς νέα μετατροπή
+      : `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`; // fallback on-the-fly
     else url=`https://drive.google.com/file/d/${f.id}/preview`;
     if(isMobile){openExternal(url);return;}
     setViewing({...f, previewUrl:url});
@@ -1312,7 +1314,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
       )}
       {isMobile&&<nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#1a1a1a',display:'flex',justifyContent:'space-around',alignItems:'center',padding:'8px 0 max(8px,env(safe-area-inset-bottom))',zIndex:300,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
         <MobBtn icon={Ic.book} label="Βιβλιοθήκη" active onClick={()=>{goHome();loadData();}}/>
-        <MobBtn icon={Ic.live} label="Live" onClick={()=>window.open('/live','_blank')}/>
+        <MobBtn icon={Ic.live} label="Live" onClick={()=>openExternal('/live')}/>
         {hasSession
           ? <MobBtn icon={Ic.out} label="Επιστροφή" onClick={goBack}/>
           : <MobBtn icon={Ic.login} label="Σύνδεση" onClick={()=>window.location.href='/login'}/>
@@ -1333,7 +1335,7 @@ function StudentSidebar({open,setOpen,goHome,isMobile,myEmail,openPublic,openNet
       <nav style={S.nav}>
         <button onClick={goHome} style={{...S.navItem,...((activePublic||activeNetwork)?{}:S.navActive),position:'relative'}}><span style={S.navIcon}>{Ic.dashboard}</span>{open&&'Πίνακας ελέγχου'}{dashBadge>0&&<span style={{ position:'absolute', top:6, ...(open?{right:10}:{left:26}), background:'#dc2626', color:'#fff', borderRadius:999, minWidth:16, height:16, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px' }}>{dashBadge}</span>}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live session'}</button>
+        <button onClick={()=>openExternal('/live')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live session'}</button>
         <div style={S.navDiv}/>
         <button onClick={openPublic?openPublic:()=>window.open('/s/smitselos','_blank')} style={{...S.navItem,...(activePublic?S.navActive:{})}}><span style={S.navIcon}>{Ic.globe}</span>{open&&'Ανοιχτή πρόσβαση'}</button>
         <div style={S.navDiv}/>
@@ -1359,7 +1361,7 @@ function TeacherSidebar({open,setOpen,goHome,goBack,hasSession}){
       <nav style={S.nav}>
         <button onClick={goHome} style={{...S.navItem,...S.navActive}}><span style={S.navIcon}>{Ic.book}</span>{open&&'Βιβλιοθήκη'}</button>
         <div style={S.navDiv}/>
-        <button onClick={()=>window.open('/live','_blank')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
+        <button onClick={()=>openExternal('/live')} style={S.navItem}><span style={S.navIcon}>{Ic.live}</span>{open&&'Live'}</button>
         <div style={S.navDiv}/>
         {hasSession
           ? <button onClick={goBack} style={S.navItem}><span style={S.navIcon}>{Ic.out}</span>{open&&'Επιστροφή'}</button>
