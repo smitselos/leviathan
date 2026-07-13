@@ -15,6 +15,28 @@ function getKV() {
 }
 const RT_KEY = (email) => `refresh:cloud:${email}`;
 
+// ── Έλεγχος πρόσβασης: λίστα επιτρεπόμενων χρηστών στο KV ──
+// Διαχείριση από το /api/allowed-users (μόνο διαχειριστές).
+// ΚΕΝΗ λίστα = ελεύθερη είσοδος για όλους (όπως πριν).
+const ALLOWED_KEY = 'cloud:allowed_users';
+const adminEmails = () => (process.env.ADMIN_EMAILS || 'smitselos@gmail.com')
+  .split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+async function isEmailAllowed(email) {
+  const e = (email || '').toLowerCase();
+  if (!e) return false;
+  if (adminEmails().includes(e)) return true; // οι διαχειριστές περνούν ΠΑΝΤΑ
+  try {
+    const list = await getKV().get(ALLOWED_KEY);
+    if (!Array.isArray(list) || list.length === 0) return true; // κενή λίστα → ελεύθερα
+    return list.map((x) => String(x).toLowerCase()).includes(e);
+  } catch (err) {
+    // Σε σφάλμα KV μην κλειδώνεις τους πάντες έξω
+    console.error('[allowlist]', err.message);
+    return true;
+  }
+}
+
 async function saveRefresh(email, rt) {
   if (!email || !rt) return;
   try { await getKV().set(RT_KEY(email), rt); } catch (e) { console.error('saveRefresh', e.message); }
@@ -77,7 +99,9 @@ export const authOptions = {
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   jwt: { maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
-    async signIn() { return true; },
+    async signIn({ user, profile }) {
+      return isEmailAllowed(user?.email || profile?.email);
+    },
     async jwt({ token, account, user, profile }) {
       if (account) {
         const email = user?.email || profile?.email || token.email || null;
