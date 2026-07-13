@@ -4,8 +4,34 @@
 // DOCX/PPTX/XLSX → redirect σε Google Docs Viewer (χωρίς Drive JS)
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
-  const { id } = req.query;
+  const { id, gdoc } = req.query;
   if (!id) return res.status(400).end();
+
+  // ── Native Google αρχείο (Docs/Slides/Sheets) ──
+  // Δεν έχει κατάληξη ούτε δυαδικό περιεχόμενο· το uc?export=download δεν το χειρίζεται.
+  // Εντοπισμός τύπου με δοκιμή των δημόσιων export endpoints (200 + PDF μόνο στον σωστό
+  // τύπο, για anyone:reader αρχεία) → 302 στο read-only /preview (cross-origin → «◀»).
+  if (gdoc) {
+    const safeId = encodeURIComponent(id);
+    const probes = [
+      ['document',     `https://docs.google.com/document/d/${safeId}/export?format=pdf`],
+      ['presentation', `https://docs.google.com/presentation/d/${safeId}/export/pdf`],
+      ['spreadsheets', `https://docs.google.com/spreadsheets/d/${safeId}/export?format=pdf`],
+    ];
+    for (const [type, probeUrl] of probes) {
+      try {
+        const p = await fetch(probeUrl, { redirect: 'follow' });
+        const ct = p.headers.get('content-type') || '';
+        try { p.body?.cancel?.(); } catch {}
+        if (p.ok && ct.includes('pdf')) {
+          res.setHeader('Cache-Control', 'public, s-maxage=3600');
+          return res.redirect(302, `https://docs.google.com/${type}/d/${safeId}/preview`);
+        }
+      } catch {}
+    }
+    // Fallback: δεν είναι native Google (π.χ. δυαδικό με όνομα χωρίς κατάληξη) → Drive preview
+    return res.redirect(302, `https://drive.google.com/file/d/${safeId}/preview`);
+  }
 
   const downloadUrl = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}&confirm=t`;
 
