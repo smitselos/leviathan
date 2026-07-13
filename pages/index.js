@@ -457,6 +457,29 @@ export default function Home() {
     } catch (e) {}
     setLoading(false);
   }, []);
+
+  // ── Ανανέωση όταν το PWA επανέρχεται στο προσκήνιο ──
+  // Το εγκατεστημένο PWA μένει «ζωντανό» στο παρασκήνιο για μέρες: χωρίς αυτό,
+  // αρχεία που ανέβηκαν από άλλη συσκευή (π.χ. desktop) δεν φαίνονται παρά μόνο
+  // με πλήρη επανεκκίνηση της εφαρμογής.
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    let last = Date.now();
+    const onVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (Date.now() - last < 5000) return; // όχι καταιγισμός σε γρήγορα tab switches
+      last = Date.now();
+      loadAll();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    window.addEventListener('pageshow', onVisible); // επιστροφή από bfcache (Safari)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+      window.removeEventListener('pageshow', onVisible);
+    };
+  }, [status, loadAll]);
   const loadRole = async () => {
     try {
       const r = await fetch('/api/role');
@@ -1128,6 +1151,17 @@ export default function Home() {
         if (doc.id) added.push({ id:doc.id, name:doc.name, mimeType:doc.mimeType, folderId: openFolder.id });
       }
       if (added.length) await registerFiles(added);
+      // Προθέρμανση: για Office αρχεία η δημιουργία του PDF αντιγράφου ξεκινά ΤΩΡΑ
+      // (fire-and-forget), ώστε το πρώτο άνοιγμα/εκτύπωση από κινητό να είναι άμεσο
+      // και να μη σκοντάφτει σε timeout της πρώτης μετατροπής.
+      for (const a of added) {
+        if (/\.(docx?|pptx?|xlsx?)$/i.test(a.name || '')) {
+          fetch('/api/pdf-copy', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: a.id, name: a.name }) })
+            .then((r) => r.json())
+            .then((d) => { if (d.pdfId) setFiles((p) => p.map((x) => x.id === a.id ? { ...x, pdfId: d.pdfId } : x)); })
+            .catch(() => {});
+        }
+      }
     } catch (err) { alert('Σφάλμα ανεβάσματος: ' + err.message); }
     setBusy('');
   };
@@ -1151,17 +1185,28 @@ export default function Home() {
         // επιστροφή «◀» στο PWA). Office χωρίς έτοιμο αντίγραφο: δημιουργία on-demand
         // μέσω /api/pdf-copy (με το token του χρήστη — δουλεύει και για μη δημοσιευμένα).
         if (isOffice && !f.pdfId) {
+          // Με αυτόματο retry: αν η πρώτη μετατροπή κοπεί από timeout, η επόμενη
+          // προσπάθεια βρίσκει/ολοκληρώνει το αντίγραφο και ανοίγει κανονικά.
           showPrintToast('⏳ Προετοιμασία προβολής…');
-          fetch('/api/pdf-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, name: f.name }) })
-            .then((r) => r.json())
-            .then((d) => {
-              hidePrintToast();
-              if (d.pdfId) {
-                setFiles((p) => p.map((x) => x.id === f.id ? { ...x, pdfId: d.pdfId } : x));
-                window.location.href = `https://drive.google.com/file/d/${d.pdfId}/preview`;
-              } else alert('Δεν ήταν δυνατή η προετοιμασία PDF για προβολή.');
-            })
-            .catch(() => { hidePrintToast(); alert('Σφάλμα προετοιμασίας προβολής.'); });
+          const tryCopy = (left) => {
+            fetch('/api/pdf-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, name: f.name }) })
+              .then((r) => r.json())
+              .then((d) => {
+                if (d.pdfId) {
+                  hidePrintToast();
+                  setFiles((p) => p.map((x) => x.id === f.id ? { ...x, pdfId: d.pdfId } : x));
+                  window.location.href = `https://drive.google.com/file/d/${d.pdfId}/preview`;
+                } else if (left > 0) {
+                  showPrintToast('⏳ Η μετατροπή αργεί — νέα προσπάθεια…');
+                  setTimeout(() => tryCopy(left - 1), 1200);
+                } else { hidePrintToast(); alert('Δεν ήταν δυνατή η προετοιμασία PDF για προβολή. Δοκίμασε ξανά σε λίγο.'); }
+              })
+              .catch(() => {
+                if (left > 0) { showPrintToast('⏳ Η μετατροπή αργεί — νέα προσπάθεια…'); setTimeout(() => tryCopy(left - 1), 1200); }
+                else { hidePrintToast(); alert('Σφάλμα προετοιμασίας προβολής. Δοκίμασε ξανά σε λίγο.'); }
+              });
+          };
+          tryCopy(2);
           return;
         }
         const url = isOffice
