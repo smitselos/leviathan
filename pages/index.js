@@ -1315,12 +1315,15 @@ export default function Home() {
     if (v.startsWith('users:')) { try { return JSON.parse(v.slice(6)); } catch { return []; } }
     return null;
   };
-  const sentToUser = (email) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.includes(email); return false; });
-  const sentToGroup = (g) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.some(e => (g.members || []).includes(e)); return false; });
-  const allSentFiles = () => files.filter(f => { const v = f.visibility; return v && v !== 'none'; });
-  const msgInbox = () => networkData.inbox || [];
-  const inboxFromUser = (email) => (networkData.inbox || []).filter(i => i.fromEmail === email);
-  const inboxFromGroup = (g) => (networkData.inbox || []).filter(i => (g.members || []).includes(i.fromEmail));
+  // Νεότερο πρώτα: απεσταλμένα κατά δημοσίευση, εισερχόμενα κατά παραλαβή
+  const byNewestSent = (a, b) => ((b.publishedAt || '').localeCompare(a.publishedAt || '')) || ((b.addedAt || 0) - (a.addedAt || 0));
+  const byNewestInbox = (a, b) => (b.sentAt || 0) - (a.sentAt || 0);
+  const sentToUser = (email) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.includes(email); return false; }).sort(byNewestSent);
+  const sentToGroup = (g) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.some(e => (g.members || []).includes(e)); return false; }).sort(byNewestSent);
+  const allSentFiles = () => files.filter(f => { const v = f.visibility; return v && v !== 'none'; }).sort(byNewestSent);
+  const msgInbox = () => [...(networkData.inbox || [])].sort(byNewestInbox);
+  const inboxFromUser = (email) => (networkData.inbox || []).filter(i => i.fromEmail === email).sort(byNewestInbox);
+  const inboxFromGroup = (g) => (networkData.inbox || []).filter(i => (g.members || []).includes(i.fromEmail)).sort(byNewestInbox);
   const unseenInbox = (list) => list.filter(i => !i.seen).length;
   // Συνολικά νέα εισερχόμενα: υπολογίζεται και client-side (από το seen flag) ώστε το σήμα να δουλεύει πάντα
   const unseenTotal = Math.max(networkData.unseenCount || 0, unseenInbox(networkData.inbox || []));
@@ -1583,11 +1586,11 @@ export default function Home() {
   if (activeView === 'favorites') viewFiles = favoriteFiles;
   else if (activeView === 'newFiles') viewFiles = newFiles;
   else if (activeView === 'apps' && openFolder) {
-    viewFiles = files.filter((f) => f.folderId === openFolder.id);
+    viewFiles = files.filter((f) => f.folderId === openFolder.id).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)); // νεότερο πρώτα
     if (activeTagFilter) viewFiles = viewFiles.filter((f)=>(f.tags||[]).includes(activeTagFilter));
   }
   else if (activeView === 'folder' && openFolder) {
-    viewFiles = files.filter((f) => f.folderId === openFolder.id);
+    viewFiles = files.filter((f) => f.folderId === openFolder.id).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)); // νεότερο πρώτα
     if (activeTagFilter) viewFiles = viewFiles.filter((f)=>(f.tags||[]).includes(activeTagFilter));
     if (folderSearch.trim()) {
       const q = folderSearch.toLowerCase();
@@ -1892,7 +1895,7 @@ export default function Home() {
           {/* APPS VIEW — εφαρμογές ως κάρτες-φάκελοι (κινητό: wallet, desktop: grid) */}
           {activeView === 'apps' && openFolder && (() => {
             // Ποιες εφαρμογές εμφανίζονται ως κάρτες
-            let appCards = pureAppFiles;
+            let appCards = [...pureAppFiles].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)); // νεότερο πρώτα
             if (appsFilter === 'favorites') appCards = appFavorites;
             else if (appsFilter === 'popular') appCards = appPopular;
             if (appsTagFilter) appCards = appCards.filter(f => (f.tags||[]).includes(appsTagFilter));

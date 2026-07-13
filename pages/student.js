@@ -360,7 +360,8 @@ function StudentView({myEmail,isMobile,router}){
 
       // Sent files
       const allFiles=Array.isArray(dReg.files)?dReg.files:[];
-      setSentFiles(allFiles.filter(f=>f.sent));
+      // Νεότερο πρώτα — ό,τι μόλις στάλθηκε, πάνω πάνω
+      setSentFiles(allFiles.filter(f=>f.sent).sort((a,b)=>(b.sentAt||b.addedAt||0)-(a.sentAt||a.addedAt||0)));
 
       // Seen IDs (localStorage + server + προηγούμενα — ώστε να ΜΗΝ ξαναεμφανίζονται ως νέα)
       setSeenIds(prev => {
@@ -1216,7 +1217,8 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
 
   useEffect(()=>{loadData();const iv=setInterval(loadData,30000);return()=>clearInterval(iv);},[loadData]);
 
-  const files=data?.files||[];
+  // Νεότερο πρώτα (δημοσίευση, αλλιώς προσθήκη)
+  const files=(data?.files||[]).slice().sort((a,b)=>((b.publishedAt||'').localeCompare(a.publishedAt||''))||((b.addedAt||0)-(a.addedAt||0)));
   const allTags=useMemo(()=>{const m={};files.forEach(f=>(f.tags||[]).forEach(t=>{m[t]=(m[t]||0)+1;}));return Object.entries(m).sort((a,b)=>b[1]-a[1]);},[files]);
   const filtered=useMemo(()=>{let r=[...files];if(activeTag)r=r.filter(f=>(f.tags||[]).includes(activeTag));if(search.trim()){const q=search.toLowerCase();r=r.filter(f=>f.name.toLowerCase().includes(q)||(f.tags||[]).some(t=>t.toLowerCase().includes(q)));}return r;},[files,search,activeTag]);
 
