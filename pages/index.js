@@ -910,6 +910,19 @@ export default function Home() {
     }
   };
 
+  // ── Ανανέωση συγχωνευμένου PDF με το ΤΡΕΧΟΝ περιεχόμενο των πηγαίων κειμένων ──
+  // Ο server ξαναδιαβάζει τα πηγαία αρχεία σε κάθε συγχώνευση, οπότε τυχόν αλλαγές
+  // στα κείμενα ενσωματώνονται. Οι αποθηκευμένες ερωτήσεις του PDF διατηρούνται.
+  const [netRefreshing, setNetRefreshing] = useState(null); // id δικτύου σε ανανέωση
+  const refreshNetworkPdf = async (net) => {
+    if (!net?.pdfFileId || netRefreshing) return;
+    setNetRefreshing(net.id);
+    const f = files.find((x) => x.id === net.pdfFileId);
+    await regenerateNetworkPdf(net.pdfFileId, f?.questions || '');
+    await loadAll(); // το pdfFileId μπορεί να άλλαξε — φρέσκια λίστα αρχείων
+    setNetRefreshing(null);
+  };
+
   // ── Μεταδεδομένα δικτύου (ετικέτες, σχόλια, πληροφορίες) ──
   const addNetTag = (tag) => {
     if (!currentNetwork) return;
@@ -2201,6 +2214,13 @@ export default function Home() {
                             <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                               <button onClick={() => setCurrentNetwork(net)} style={{ ...btn('outline'), color:PALETTE.mustard.deep, borderColor:PALETTE.mustard.deep }}>Επεξεργασία →</button>
                               {net.pdfFileId && <button onClick={() => window.open('https://drive.google.com/file/d/' + net.pdfFileId + '/view', '_blank')} style={{ ...btn('mini'), color:'#6b6b80' }}>📄 PDF</button>}
+                              {net.pdfFileId && (
+                                <button onClick={() => refreshNetworkPdf(net)} disabled={!!netRefreshing}
+                                  title="Αναδημιουργία του συγχωνευμένου PDF με το τρέχον περιεχόμενο των κειμένων (οι ερωτήσεις διατηρούνται)"
+                                  style={{ ...btn('mini'), color:'#15803d', borderColor:'#bbf7d0', opacity: netRefreshing && netRefreshing !== net.id ? 0.5 : 1 }}>
+                                  {netRefreshing === net.id ? '⏳' : '🔄 Ανανέωση'}
+                                </button>
+                              )}
                               <button onClick={() => deleteNetworkItem(net)} style={{ ...btn('mini'), color:'#dc2626', borderColor:'#fca5a5' }}>✕</button>
                             </div>
                           </div>
