@@ -188,6 +188,11 @@ async function printFileById(f) {
 }
 // ── Κοινή χρήση εφαρμογών: HTML αρχεία ανοίγουν ΖΩΝΤΑΝΑ μέσω /api/student-file (όχι προεπισκόπηση Drive) ──
 const isHtmlApp = (f) => /\.html?$/i.test(f?.name || '') || (f?.mimeType || '') === 'text/html';
+// native Google editor (Docs/Sheets/Slides): δεν έχουν κατάληξη — ανίχνευση από mimeType.
+// Επιστρέφει το path για read-only cross-origin preview (docs.google.com/{type}/d/{id}/preview) ή '' αν δεν είναι Google editor.
+const gEditorType = (m) => m === 'application/vnd.google-apps.spreadsheet' ? 'spreadsheets'
+  : m === 'application/vnd.google-apps.presentation' ? 'presentation'
+  : m === 'application/vnd.google-apps.document' ? 'document' : '';
 const getShareUrl = (f) => {
   if (!f) return '';
   if (isHtmlApp(f)) {
@@ -1299,8 +1304,11 @@ export default function Home() {
           tryCopy(2);
           return;
         }
+        const gType = gEditorType(f.mimeType || '');
         const url = isOffice
           ? `https://drive.google.com/file/d/${f.pdfId}/preview`
+          : gType
+          ? `https://docs.google.com/${gType}/d/${f.id}/preview`
           : `https://drive.google.com/file/d/${f.id}/preview`;
         openExternal(url); return;
       }
@@ -2590,7 +2598,7 @@ export default function Home() {
                     <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
                       {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, lineHeight:1.5 }}>💬 {item.message}</div>}
                       <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:8 }}>
-                        <button onClick={()=>{ markInboxSeen(item.fileId); const isHtml=/\.html?$/i.test(item.fileName||''); const isOff=/\.(docx?|pptx?|xlsx?)$/i.test(item.fileName||''); const pUrl=isHtml?`/api/student-file?id=${item.fileId}`:isOff?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`:`https://drive.google.com/file/d/${item.fileId}/preview`; if(isMobile){openExternal(pUrl);return;} setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true }); setShowMetaPanel(false); }}
+                        <button onClick={()=>{ markInboxSeen(item.fileId); const isHtml=/\.html?$/i.test(item.fileName||''); const isBin=/\.(pdf|jpe?g|png|gif|webp|svg|mp4|mp3|zip)$/i.test(item.fileName||''); const pUrl=isHtml?`/api/student-file?id=${item.fileId}`:!isBin?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`:`https://drive.google.com/file/d/${item.fileId}/preview`; if(isMobile){openExternal(pUrl);return;} setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true }); setShowMetaPanel(false); }}
                           style={{ ...btn('mini'), fontSize:12 }}>Άνοιγμα →</button>
                         <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`,'_blank'); }} style={{ ...btn('mini'), fontSize:12 }}>⬇ Λήψη</button>
                         <button onClick={()=> setInboxSaveTarget(inboxSaveTarget===key?null:key)} disabled={busy==='inbox-save'} style={{ ...btn('mini'), fontSize:12, color:'#15803d' }}>{busy==='inbox-save'?'…':'📁 Αποθήκευση'}</button>
