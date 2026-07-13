@@ -78,7 +78,7 @@ const openExternal = (url) => {
   else { window.open(url, '_blank'); }
 };
 
-// ── Μικρό toast εκτύπωσης (εκτός React — καλείται από τους helpers εκτύπωσης) ──
+// ── Μικρό toast (εκτός React — καλείται από τους helpers εκτύπωσης/προβολής) ──
 let _printToastEl = null;
 function showPrintToast(text = '⏳ Προετοιμασία εκτύπωσης…') {
   hidePrintToast();
@@ -93,18 +93,21 @@ function hidePrintToast() {
   if (_printToastEl) { try { _printToastEl.remove(); } catch {} _printToastEl = null; }
 }
 
-// ── Εκτύπωση PDF χωρίς «παράθυρο-παγίδα» στο PWA ──
+// ── Εκτύπωση χωρίς «παράθυρο-παγίδα» στο PWA ──
 // Κινητό/PWA: navigator.share με το ίδιο το αρχείο → φύλλο κοινής χρήσης iOS/Android
-//   με επιλογή «Εκτύπωση» (AirPrint) — και καθαρή επιστροφή στην εφαρμογή.
+//   με επιλογή «Εκτύπωση» (AirPrint κ.λπ.) — και καθαρή επιστροφή στην εφαρμογή.
 // Desktop: κρυφό same-origin iframe → print() → κατευθείαν ο διάλογος εκτυπωτή.
 async function printPdfBlob(blob, name) {
-  hidePrintToast(); // το PDF είναι έτοιμο — το φύλλο/διάλογος αναλαμβάνει
-  const fname = /\.pdf$/i.test(name) ? name : name + '.pdf';
-  const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+  hidePrintToast(); // το αρχείο είναι έτοιμο — το φύλλο/διάλογος αναλαμβάνει
+  // Σεβόμαστε τον πραγματικό τύπο: το /api/file στέλνει PDF για Office/PDF, εικόνες ως έχουν.
+  const isImage = (blob.type || '').startsWith('image/');
+  const type = isImage ? blob.type : 'application/pdf';
+  const fname = isImage ? name : (/\.pdf$/i.test(name) ? name : name.replace(/\.(docx?|pptx?|xlsx?)$/i, '') + '.pdf');
+  const outBlob = blob.type === type ? blob : new Blob([blob], { type });
   const isMobileUA = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   if (isMobileUA || isStandalonePWA()) {
     try {
-      const file = new File([pdfBlob], fname, { type: 'application/pdf' });
+      const file = new File([outBlob], fname, { type });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: fname });
         return;
@@ -112,7 +115,7 @@ async function printPdfBlob(blob, name) {
     } catch (e) { if (e && e.name === 'AbortError') return; /* αλλιώς συνέχισε στο fallback */ }
   }
   // Desktop / fallback: κρυφό iframe → print()
-  const url = URL.createObjectURL(pdfBlob);
+  const url = URL.createObjectURL(outBlob);
   const fr = document.createElement('iframe');
   fr.style.cssText = 'position:fixed;right:0;bottom:0;width:2px;height:2px;border:0;visibility:hidden;';
   fr.src = url;
@@ -124,13 +127,12 @@ async function printPdfBlob(blob, name) {
   document.body.appendChild(fr);
 }
 
-// Εκτύπωση αρχείου βιβλιοθήκης: φέρνει το PDF same-origin (Office → μετατροπή) και τυπώνει.
+// Εκτύπωση αρχείου βιβλιοθήκης: το /api/file σερβίρει ΔΙΚΑ μας αρχεία με το token
+// του χρήστη και μετατρέπει Office → PDF on-the-fly — δουλεύει και για μη δημοσιευμένα.
 async function printFileById(f) {
-  const isOffice = /\.(docx?|pptx?|xlsx?)$/i.test(f.name || '');
-  const url = isOffice ? `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name || '')}` : '/api/file/' + f.id;
   showPrintToast();
   try {
-    const r = await fetch(url);
+    const r = await fetch('/api/file/' + f.id);
     if (!r.ok) throw new Error('αποτυχία λήψης του αρχείου');
     await printPdfBlob(await r.blob(), f.name || 'αρχείο');
   } catch (e) { alert('Σφάλμα εκτύπωσης: ' + e.message); }
@@ -1145,13 +1147,25 @@ export default function Home() {
       const isHtml = /\.html?$/i.test(f.name);
       const isOffice = /\.(docx?|pptx?|xlsx?)$/i.test(f.name);
       if (!isHtml) {
-        // Όλα προβάλλονται ως PDF (όπως στη Light): Office → έτοιμο PDF αντίγραφο (pdfId)
-        // ή μετατροπή on-the-fly· PDF/εικόνες → Drive preview. Πάντα με openExternal,
-        // ώστε στο PWA το «◀» να επιστρέφει μονοβηματικά στην εφαρμογή.
+        // Όλα προβάλλονται ως PDF μέσω Drive preview (cross-origin → μονοβηματική
+        // επιστροφή «◀» στο PWA). Office χωρίς έτοιμο αντίγραφο: δημιουργία on-demand
+        // μέσω /api/pdf-copy (με το token του χρήστη — δουλεύει και για μη δημοσιευμένα).
+        if (isOffice && !f.pdfId) {
+          showPrintToast('⏳ Προετοιμασία προβολής…');
+          fetch('/api/pdf-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, name: f.name }) })
+            .then((r) => r.json())
+            .then((d) => {
+              hidePrintToast();
+              if (d.pdfId) {
+                setFiles((p) => p.map((x) => x.id === f.id ? { ...x, pdfId: d.pdfId } : x));
+                window.location.href = `https://drive.google.com/file/d/${d.pdfId}/preview`;
+              } else alert('Δεν ήταν δυνατή η προετοιμασία PDF για προβολή.');
+            })
+            .catch(() => { hidePrintToast(); alert('Σφάλμα προετοιμασίας προβολής.'); });
+          return;
+        }
         const url = isOffice
-          ? (f.pdfId
-              ? `https://drive.google.com/file/d/${f.pdfId}/preview`
-              : `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name)}`)
+          ? `https://drive.google.com/file/d/${f.pdfId}/preview`
           : `https://drive.google.com/file/d/${f.id}/preview`;
         openExternal(url); return;
       }
