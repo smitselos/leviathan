@@ -1,0 +1,14 @@
+{
+  "name": "ΛΕΒΙΑΘΑΝ Τάξη",
+  "short_name": "Τάξη",
+  "description": "Το υλικό της τάξης σου — ΛΕΒΙΑΘΑΝ",
+  "start_url": "/class",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f0e1",
+  "theme_color": "#5c7a3a",
+  "icons": [
+    { "src": "/class-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/class-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
