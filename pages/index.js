@@ -77,6 +77,65 @@ const openExternal = (url) => {
   if (isStandalonePWA()) { window.location.href = url; }
   else { window.open(url, '_blank'); }
 };
+
+// ── Μικρό toast εκτύπωσης (εκτός React — καλείται από τους helpers εκτύπωσης) ──
+let _printToastEl = null;
+function showPrintToast(text = '⏳ Προετοιμασία εκτύπωσης…') {
+  hidePrintToast();
+  if (typeof document === 'undefined') return;
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = 'position:fixed;bottom:calc(28px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,0.25);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap;';
+  document.body.appendChild(el);
+  _printToastEl = el;
+}
+function hidePrintToast() {
+  if (_printToastEl) { try { _printToastEl.remove(); } catch {} _printToastEl = null; }
+}
+
+// ── Εκτύπωση PDF χωρίς «παράθυρο-παγίδα» στο PWA ──
+// Κινητό/PWA: navigator.share με το ίδιο το αρχείο → φύλλο κοινής χρήσης iOS/Android
+//   με επιλογή «Εκτύπωση» (AirPrint) — και καθαρή επιστροφή στην εφαρμογή.
+// Desktop: κρυφό same-origin iframe → print() → κατευθείαν ο διάλογος εκτυπωτή.
+async function printPdfBlob(blob, name) {
+  hidePrintToast(); // το PDF είναι έτοιμο — το φύλλο/διάλογος αναλαμβάνει
+  const fname = /\.pdf$/i.test(name) ? name : name + '.pdf';
+  const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+  const isMobileUA = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobileUA || isStandalonePWA()) {
+    try {
+      const file = new File([pdfBlob], fname, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fname });
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; /* αλλιώς συνέχισε στο fallback */ }
+  }
+  // Desktop / fallback: κρυφό iframe → print()
+  const url = URL.createObjectURL(pdfBlob);
+  const fr = document.createElement('iframe');
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:2px;height:2px;border:0;visibility:hidden;';
+  fr.src = url;
+  fr.onload = () => {
+    try { fr.contentWindow.focus(); fr.contentWindow.print(); }
+    catch { openExternal(url); }
+    setTimeout(() => { try { URL.revokeObjectURL(url); fr.remove(); } catch {} }, 60000);
+  };
+  document.body.appendChild(fr);
+}
+
+// Εκτύπωση αρχείου βιβλιοθήκης: φέρνει το PDF same-origin (Office → μετατροπή) και τυπώνει.
+async function printFileById(f) {
+  const isOffice = /\.(docx?|pptx?|xlsx?)$/i.test(f.name || '');
+  const url = isOffice ? `/api/inbox-pdf?id=${f.id}&name=${encodeURIComponent(f.name || '')}` : '/api/file/' + f.id;
+  showPrintToast();
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('αποτυχία λήψης του αρχείου');
+    await printPdfBlob(await r.blob(), f.name || 'αρχείο');
+  } catch (e) { alert('Σφάλμα εκτύπωσης: ' + e.message); }
+  finally { hidePrintToast(); }
+}
 // ── Κοινή χρήση εφαρμογών: HTML αρχεία ανοίγουν ΖΩΝΤΑΝΑ μέσω /api/student-file (όχι προεπισκόπηση Drive) ──
 const isHtmlApp = (f) => /\.html?$/i.test(f?.name || '') || (f?.mimeType || '') === 'text/html';
 const getShareUrl = (f) => {
@@ -859,21 +918,20 @@ export default function Home() {
   const printWithQuestions = async (f) => {
     const qs = f.questions;
     if (!hasAnyQuestions(qs)) return;
-    // Άνοιγμα παραθύρου ΠΡΙΝ το fetch (σύγχρονο, user gesture)
-    const win = window.open('', '_blank');
-    if (!win) { alert('Επίτρεψε τα αναδυόμενα παράθυρα για αυτόν τον ιστότοπο.'); return; }
-    win.document.write('<html><head><title>Εκτύπωση…</title></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888">⏳ Δημιουργία PDF…</body></html>');
+    // Χωρίς window.open: το PDF πάει κατευθείαν στο φύλλο κοινής χρήσης (κινητό)
+    // ή στον διάλογο εκτυπωτή (desktop) — καμία «παγίδα» παραθύρου στο PWA.
+    showPrintToast();
     try {
       const r = await fetch('/api/print-with-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId: f.id, fileName: f.name, questions: qs }),
       });
-      if (!r.ok) { win.document.body.innerText = '✗ Σφάλμα δημιουργίας PDF'; return; }
+      if (!r.ok) { alert('✗ Σφάλμα δημιουργίας PDF'); return; }
       const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      win.location.href = url;
-    } catch (e) { win.document.body.innerText = '✗ ' + e.message; }
+      await printPdfBlob(blob, (f.name || 'αρχείο').replace(/\.[^.]+$/, '') + ' — ερωτήσεις');
+    } catch (e) { alert('✗ ' + e.message); }
+    finally { hidePrintToast(); }
   };
 
   const openLive = async (f) => {
@@ -3382,7 +3440,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   {printOpen === f.id && (
                     <div onClick={e => e.stopPropagation()}
                       style={{ position:'absolute', top:'100%', right:0, marginTop:4, zIndex:50, background:'#fff', borderRadius:12, boxShadow:'0 6px 20px rgba(0,0,0,0.15)', border:'1px solid #e0e0e0', padding:6, display:'flex', flexDirection:'column', gap:4, minWidth:180 }}>
-                      <button onClick={() => { setPrintOpen(null); window.open('/api/file/'+f.id, '_blank'); }}
+                      <button onClick={() => { setPrintOpen(null); printFileById(f); }}
                         style={{ padding:'8px 12px', borderRadius:8, border:'none', background:'#fafafa', cursor:'pointer', fontSize:12, fontWeight:500, color:'#3d3a2e', textAlign:'left', display:'flex', alignItems:'center', gap:6 }}>
                         📄 Μόνο κείμενο
                       </button>
@@ -3394,7 +3452,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
                   )}
                 </span>
               ) : (
-                <button onClick={(e)=>{e.stopPropagation(); window.open('/api/file/'+f.id, '_blank');}}
+                <button onClick={(e)=>{e.stopPropagation(); printFileById(f);}}
                   style={{ ...btn('mini'), padding: compact ? '4px 7px' : '5px 9px', fontSize: compact ? 11 : 12 }} title="Εκτύπωση">🖨️</button>
               ))}
               {onQr && <button onClick={(e)=>{e.stopPropagation();onQr(f);}} style={{ ...btn('mini'), padding: compact ? '4px 6px' : '5px 8px' }} title="QR Code">{QrIcon}</button>}
