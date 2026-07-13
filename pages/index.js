@@ -430,6 +430,9 @@ export default function Home() {
   const [liveSentItems, setLiveSentItems] = useState([]); // στοιχεία που βρίσκονται ΗΔΗ στο ενεργό live
   const [liveAddBusy, setLiveAddBusy] = useState(false);   // αποστολή προσθήκης σε εξέλιξη
   const [liveCenterSection, setLiveCenterSection] = useState(null); // ποιος φάκελος/εφαρμογές ανοιχτός
+  // 📷 Φωτογραφίες → PDF για την παρουσίαση Live
+  const [livePhotos, setLivePhotos] = useState([]); // [{file,url}]
+  const [livePhotoBusy, setLivePhotoBusy] = useState(false);
   const [createMenu, setCreateMenu] = useState(false); // μενού: Νέο / Συγχώνευση
   const [createMenuFolder, setCreateMenuFolder] = useState(''); // προεπιλεγμένος φάκελος (αν ανοίγει από φάκελο)
   const [newDocForm, setNewDocForm] = useState(false); // φόρμα νέου εγγράφου
@@ -1384,6 +1387,35 @@ export default function Home() {
     setMsgPhotoBusy(false);
   };
 
+  // ── Live: φωτογραφίες → ενιαίο PDF → ανέβασμα → προσθήκη στη σύνθεση ──
+  const addLivePhoto = (e) => {
+    const fs = Array.from(e.target.files || []);
+    if (fs.length) setLivePhotos(p => [...p, ...fs.map(f => ({ file: f, url: URL.createObjectURL(f) }))]);
+    e.target.value = '';
+  };
+  const removeLivePhoto = (i) => setLivePhotos(p => { try { URL.revokeObjectURL(p[i].url); } catch {} return p.filter((_, j) => j !== i); });
+  const clearLivePhotos = () => { livePhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch {} }); setLivePhotos([]); };
+  const finishLivePhotos = async () => {
+    if (!livePhotos.length || livePhotoBusy) return;
+    setLivePhotoBusy(true);
+    try {
+      const pdf = await photosToPdfFile(livePhotos.map(p => p.file));
+      const parent = folders[0]?.id;
+      const metadata = { name: pdf.name, mimeType: 'application/pdf', ...(parent ? { parents: [parent] } : {}) };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', pdf);
+      const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType',
+        { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken }, body: form });
+      const doc = await res.json();
+      if (!doc.id) throw new Error(doc.error?.message || 'Αποτυχία ανεβάσματος');
+      await registerFiles([{ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: parent || '' }]);
+      addLiveItem({ kind: 'file', id: doc.id, name: doc.name });
+      clearLivePhotos();
+    } catch (err) { alert('Σφάλμα: ' + (err.message || 'δημιουργίας PDF')); }
+    setLivePhotoBusy(false);
+  };
+
   // Κόκκινο σήμα στο εικονίδιο της εφαρμογής (PWA badge) — κινητό & desktop
   useEffect(() => { try { if ('setAppBadge' in navigator) { const n = unseenTotal; if (n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch {} }, [unseenTotal]);
 
@@ -1553,6 +1585,9 @@ export default function Home() {
   const isAppFile = (f) => !!f && appScopeFolderIds.has(f.folderId);
   const appScopeFiles = appsSubfolder ? files.filter(f => f.folderId === appsSubfolder.id) : appFiles;
   const pureAppFiles = appScopeFiles.filter(f => !isNetworkFile(f) && !isDriveFolder(f));
+  // ΟΛΕΣ οι εφαρμογές (ρίζα «Εφαρμογών» + υποφάκελοι) για το Live picker —
+  // χωρίς τους ίδιους τους υποφακέλους, που εμφανίζονταν λανθασμένα ως «αρχεία».
+  const allAppFiles = files.filter(f => appScopeFolderIds.has(f.folderId) && !isDriveFolder(f) && !isNetworkFile(f));
   const appFavorites = pureAppFiles.filter(f => f.favorite);
   const appRecent = pureAppFiles.filter(f => f.openedAt).sort((a,b)=>(b.openedAt||0)-(a.openedAt||0)).slice(0,8);
   const appPopular = pureAppFiles.filter(f => (f.openCount||0)>0).sort((a,b)=>(b.openCount||0)-(a.openCount||0)).slice(0,8);
@@ -2832,7 +2867,7 @@ export default function Home() {
                     );
                   })}
                   {appsFolderId && (() => {
-                    const af = files.filter(x => x.folderId===appsFolderId && !liveItems.some(it=>it.id===x.id));
+                    const af = allAppFiles.filter(x => !liveItems.some(it=>it.id===x.id));
                     if (!af.length) return null;
                     const isOpen = liveCenterSection === 'apps';
                     return (
@@ -2849,7 +2884,7 @@ export default function Home() {
                 </div>
                 {liveCenterSection && (()=> {
                   const list = liveCenterSection === 'apps'
-                    ? files.filter(x => x.folderId===appsFolderId && !liveItems.some(it=>it.id===x.id))
+                    ? allAppFiles.filter(x => !liveItems.some(it=>it.id===x.id))
                     : normalFiles.filter(x => x.folderId===liveCenterSection && !liveItems.some(it=>it.id===x.id));
                   if (!list.length) return <div style={{ padding:10, color:'#aeaeb8', fontSize:12, textAlign:'center' }}>Κανένα αρχείο</div>;
                   const kind = liveCenterSection === 'apps' ? 'app' : 'file';
@@ -2866,6 +2901,39 @@ export default function Home() {
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* 📷 Φωτογραφίες → ενιαίο PDF για την παρουσίαση */}
+              <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>📷 Φωτογραφίες</div>
+                <div style={{ fontSize:12, color:'#6b6b80', marginBottom:10 }}>Τράβηξε ή διάλεξε φωτογραφίες (π.χ. σελίδες βιβλίου, πίνακας) — συγχωνεύονται σε ένα PDF και μπαίνουν στην παρουσίαση.</div>
+                {livePhotos.length > 0 && (
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(80px,1fr))', gap:8, marginBottom:10 }}>
+                    {livePhotos.map((p, i) => (
+                      <div key={p.url} style={{ position:'relative', border:'1px solid #e8e0c8', borderRadius:10, overflow:'hidden', background:'#fff' }}>
+                        <img src={p.url} alt={'Σελίδα ' + (i + 1)} style={{ width:'100%', height:90, objectFit:'cover', display:'block' }} />
+                        <span style={{ position:'absolute', top:4, left:4, background:'rgba(26,26,26,0.75)', color:'#fff', fontSize:10, fontWeight:700, borderRadius:6, padding:'1px 5px' }}>{i + 1}</span>
+                        <button onClick={() => removeLivePhoto(i)} title="Αφαίρεση"
+                          style={{ position:'absolute', top:4, right:4, background:'rgba(26,26,26,0.75)', color:'#fff', border:'none', borderRadius:6, width:18, height:18, fontSize:10, cursor:'pointer', lineHeight:'18px', padding:0 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display:'flex', gap:8 }}>
+                  <label style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px', borderRadius:10, border:'2px dashed #e8e0c8', background:PALETTE.cream.bgSoft, color:PALETTE.cream.deep, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    📷 {livePhotos.length ? '+ φωτογραφία' : 'Λήψη / επιλογή φωτογραφιών'}
+                    <input type="file" accept="image/*" multiple onChange={addLivePhoto} style={{ display:'none' }} />
+                  </label>
+                  {livePhotos.length > 0 && (
+                    <button onClick={finishLivePhotos} disabled={livePhotoBusy}
+                      style={{ padding:'10px 16px', borderRadius:10, border:'none', background: livePhotoBusy ? '#e0e0e0' : '#1a1a1a', color:'#fff', fontSize:13, fontWeight:600, cursor: livePhotoBusy ? 'default' : 'pointer', whiteSpace:'nowrap' }}>
+                      {livePhotoBusy ? '⏳ PDF…' : `Συγχώνευση → PDF (${livePhotos.length} σελ.)`}
+                    </button>
+                  )}
+                </div>
+                {livePhotos.length > 0 && (
+                  <button onClick={clearLivePhotos} style={{ background:'none', border:'none', color:'#aeaeb8', fontSize:12, cursor:'pointer', marginTop:8, padding:0 }}>Καθαρισμός όλων</button>
+                )}
               </div>
 
               {/* Προσθήκη ΝΕΩΝ στοιχείων στο ενεργό Live */}
