@@ -4,7 +4,7 @@
 // DELETE → { ok }         auth — αποδημοσίευση
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile } from '../../lib/drive';
+import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile, unsharePdfCopies } from '../../lib/drive';
 import { createClient } from '@vercel/kv';
 
 /* ── KV client ── */
@@ -119,6 +119,8 @@ export default async function handler(req, res) {
       // Αποθήκευση μηνύματος στο registry
       if (message !== undefined) reg.files[idx].shareMessage = message || '';
 
+      let pdfFailed = false; // Office χωρίς PDF αντίγραφο → ο μαθητής θα κάνει λήψη αντί για προβολή
+
       if (visibility !== 'none') {
         const shareResult = await sharePublic(drive, id);
         // Αποθήκευσε mimeType αν δεν υπάρχει ήδη
@@ -134,9 +136,12 @@ export default async function handler(req, res) {
             const pdfId = await ensurePdfCopy(drive, id, file.name);
             reg.files[idx].pdfId = pdfId || null;
           } catch { reg.files[idx].pdfId = null; }
+          pdfFailed = !reg.files[idx].pdfId;
         }
       } else {
         await unsharePublic(drive, id);
+        // Και το PDF αντίγραφο παύει να είναι δημόσιο (μένει στο Drive για επαναχρήση)
+        await unsharePdfCopies(drive, id);
       }
       await saveRegistry(drive, reg);
 
@@ -172,7 +177,7 @@ export default async function handler(req, res) {
         }));
       }
 
-      return res.status(200).json({ ok: true, items });
+      return res.status(200).json({ ok: true, items, pdfFailed });
     }
 
     /* ── DELETE: αφαίρεση visibility ── */
@@ -184,6 +189,7 @@ export default async function handler(req, res) {
         reg.files[idx].visibility = 'none';
         reg.files[idx].published = false;
         await unsharePublic(drive, key);
+        await unsharePdfCopies(drive, key);
       }
       await saveRegistry(drive, reg);
       const items = buildItems(reg);

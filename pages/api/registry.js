@@ -6,7 +6,7 @@
 // DELETE → αφαίρεση αρχείου             body:{ id, deleteFromDrive:bool }
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive, loadRegistry, saveRegistry, trashDriveFile } from '../../lib/drive';
+import { getDrive, loadRegistry, saveRegistry, trashDriveFile, trashPdfCopies } from '../../lib/drive';
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Unauthorized' });
@@ -37,6 +37,7 @@ export default async function handler(req, res) {
           links: Array.isArray(f.links) ? f.links : (prev.links || []),
           published: typeof f.published === 'boolean' ? f.published : (prev.published || false),
           visibility: typeof f.visibility === 'string' ? f.visibility : (prev.visibility || 'none'),
+          pdfId: f.pdfId || prev.pdfId || null, // PDF αντίγραφο Office — να μη χάνεται σε re-POST
           favorite: typeof f.favorite === 'boolean' ? f.favorite : (prev.favorite || false),
           openCount: prev.openCount || 0,
           openedAt: prev.openedAt || null,
@@ -76,7 +77,11 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       reg.files = reg.files.filter((f) => f.id !== id);
-      if (deleteFromDrive) { try { await trashDriveFile(drive, id); } catch (e) {} }
+      if (deleteFromDrive) {
+        try { await trashDriveFile(drive, id); } catch (e) {}
+        // Και τα PDF αντίγραφα του «Live PDF» — να μην ορφανεύουν στο Drive
+        try { await trashPdfCopies(drive, id); } catch (e) {}
+      }
       await saveRegistry(drive, reg);
       return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
