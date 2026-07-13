@@ -6,7 +6,7 @@
 // POST { id, name } → { pdfId }
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile } from '../../lib/drive';
+import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile, isGoogleNative } from '../../lib/drive';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -14,13 +14,13 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'Unauthorized' });
   if (session.error) return res.status(401).json({ error: session.error });
 
-  const { id, name } = req.body || {};
+  const { id, name, mimeType } = req.body || {};
   if (!id || !name) return res.status(400).json({ error: 'Missing id/name' });
-  if (!isOfficeFile(name)) return res.status(400).json({ error: 'Not an Office file' });
+  if (!isOfficeFile(name) && !isGoogleNative(mimeType)) return res.status(400).json({ error: 'Not a convertible file' });
 
   const drive = getDrive(session.accessToken);
   try {
-    const pdfId = await ensurePdfCopy(drive, id, name);
+    const pdfId = await ensurePdfCopy(drive, id, name, mimeType);
     if (!pdfId) return res.status(500).json({ error: 'PDF conversion failed' });
 
     // Αποθήκευση του pdfId στο registry — την επόμενη φορά το άνοιγμα είναι άμεσο

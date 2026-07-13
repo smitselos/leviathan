@@ -4,7 +4,7 @@
 // DELETE → { ok }         auth — αποδημοσίευση
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
-import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile, unsharePdfCopies } from '../../lib/drive';
+import { getDrive, loadRegistry, saveRegistry, ensurePdfCopy, isOfficeFile, isGoogleNative, unsharePdfCopies } from '../../lib/drive';
 import { createClient } from '@vercel/kv';
 
 /* ── KV client ── */
@@ -138,10 +138,12 @@ export default async function handler(req, res) {
             reg.files[idx].mimeType = fm.data.mimeType || '';
           } catch {}
         }
-        // Για Office αρχεία → φτιάξε/βρες PDF αντίγραφο (προβολή χωρίς auth στη δημόσια σελίδα)
-        if (isOfficeFile(file.name)) {
+        // Για Office ΚΑΙ native Google αρχεία → φτιάξε/βρες PDF αντίγραφο
+        // (προβολή χωρίς auth στη δημόσια σελίδα — και σε iOS το docs.google.com
+        // δεν σέβεται το /preview, οπότε τα native Docs ΧΡΕΙΑΖΟΝΤΑΙ το PDF)
+        if (isOfficeFile(file.name) || isGoogleNative(reg.files[idx].mimeType)) {
           try {
-            const pdfId = await ensurePdfCopy(drive, id, file.name);
+            const pdfId = await ensurePdfCopy(drive, id, file.name, reg.files[idx].mimeType);
             reg.files[idx].pdfId = pdfId || null;
           } catch { reg.files[idx].pdfId = null; }
           pdfFailed = !reg.files[idx].pdfId;
@@ -166,6 +168,7 @@ export default async function handler(req, res) {
           fromEmail: myEmail, fromName: myName,
           visibility, sentAt: Date.now(), seen: false,
           message: message || '',
+          pdfId: reg.files[idx].pdfId || null, // ώστε το inbox να προτιμά το PDF αντίγραφο
         };
         const conns = await kv.get(`conn:${myEmail}`) || [];
         let recipients = [];

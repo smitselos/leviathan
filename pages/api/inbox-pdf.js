@@ -39,8 +39,30 @@ export default async function handler(req, res) {
   const ext = (name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
   const gMime = EXT_TO_GOOGLE[ext];
 
-  // Αν δεν είναι Office → δεν μετατρέπουμε εδώ (ο client στέλνει μόνο Office)
-  if (!gMime) return res.status(400).send('Not an Office file');
+  // Αν δεν είναι Office: πιθανό native Google αρχείο (χωρίς κατάληξη) — δεν έχει bytes
+  // για λήψη/μετατροπή, αλλά εξάγεται PDF από τα δημόσια export endpoints (anyone:reader).
+  // Μόνο ο σωστός τύπος (Doc/Slides/Sheet) απαντά με PDF.
+  if (!gMime) {
+    const safeId = encodeURIComponent(id);
+    const exportUrls = [
+      `https://docs.google.com/document/d/${safeId}/export?format=pdf`,
+      `https://docs.google.com/presentation/d/${safeId}/export/pdf`,
+      `https://docs.google.com/spreadsheets/d/${safeId}/export?format=pdf`,
+    ];
+    for (const u of exportUrls) {
+      try {
+        const r = await fetch(u, { redirect: 'follow' });
+        if (r.ok && (r.headers.get('content-type') || '').includes('pdf')) {
+          const pdfBuffer = Buffer.from(await r.arrayBuffer());
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(baseName)}.pdf"`);
+          res.setHeader('Cache-Control', 'no-store');
+          return res.send(pdfBuffer);
+        }
+      } catch {}
+    }
+    return res.status(400).send('Not an Office file');
+  }
 
   let tempId = null;
   try {
