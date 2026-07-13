@@ -1275,16 +1275,17 @@ export default function Home() {
   if (isMobile) {
       const isHtml = /\.html?$/i.test(f.name);
       const isOffice = /\.(docx?|pptx?|xlsx?)$/i.test(f.name);
+      const isGNative = !!gEditorType(f.mimeType || ''); // native Google: PDF ροή (το docs.google.com σε iOS ανοίγει επεξεργαστή)
       if (!isHtml) {
         // Όλα προβάλλονται ως PDF μέσω Drive preview (cross-origin → μονοβηματική
-        // επιστροφή «◀» στο PWA). Office χωρίς έτοιμο αντίγραφο: δημιουργία on-demand
-        // μέσω /api/pdf-copy (με το token του χρήστη — δουλεύει και για μη δημοσιευμένα).
-        if (isOffice && !f.pdfId) {
+        // επιστροφή «◀» στο PWA). Office/native Google χωρίς έτοιμο αντίγραφο: δημιουργία
+        // on-demand μέσω /api/pdf-copy (με το token του χρήστη — δουλεύει και για μη δημοσιευμένα).
+        if ((isOffice || isGNative) && !f.pdfId) {
           // Με αυτόματο retry: αν η πρώτη μετατροπή κοπεί από timeout, η επόμενη
           // προσπάθεια βρίσκει/ολοκληρώνει το αντίγραφο και ανοίγει κανονικά.
           showPrintToast('⏳ Προετοιμασία προβολής…');
           const tryCopy = (left) => {
-            fetch('/api/pdf-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, name: f.name }) })
+            fetch('/api/pdf-copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, name: f.name, mimeType: f.mimeType || '' }) })
               .then((r) => r.json())
               .then((d) => {
                 if (d.pdfId) {
@@ -1304,11 +1305,8 @@ export default function Home() {
           tryCopy(2);
           return;
         }
-        const gType = gEditorType(f.mimeType || '');
-        const url = isOffice
+        const url = (isOffice || isGNative)
           ? `https://drive.google.com/file/d/${f.pdfId}/preview`
-          : gType
-          ? `https://docs.google.com/${gType}/d/${f.id}/preview`
           : `https://drive.google.com/file/d/${f.id}/preview`;
         openExternal(url); return;
       }
