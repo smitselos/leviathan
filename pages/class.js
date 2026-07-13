@@ -58,8 +58,19 @@ export default function StudentPage({ teacher: ssrTeacher }){
   const teacher = router.query.teacher || ssrTeacher || null;
   const [isMobile,setIsMobile]=useState(false);
   useEffect(()=>{const c=()=>setIsMobile(window.innerWidth<768);c();window.addEventListener("resize",c);return()=>window.removeEventListener("resize",c);},[]);
-  if(!teacher) return <ClassEntry isMobile={isMobile} />;
-  return <PublicView teacher={teacher} isMobile={isMobile} hasSession={false} />;
+  // Δικό της PWA manifest & εικονίδιο — διαφορετικά από την κανονική εφαρμογή cloud:
+  // όποιος προσθέτει τη σελίδα Τάξης στην αρχική οθόνη παίρνει το εικονίδιο «Τάξη».
+  const classHead = (
+    <Head>
+      <title>ΛΕΒΙΑΘΑΝ — Τάξη</title>
+      <link rel="manifest" href="/manifest-class.json" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/class-icon-180.png" />
+      <meta name="apple-mobile-web-app-title" content="Τάξη" />
+      <meta name="theme-color" content="#5c7a3a" />
+    </Head>
+  );
+  if(!teacher) return <>{classHead}<ClassEntry isMobile={isMobile} /></>;
+  return <>{classHead}<PublicView teacher={teacher} isMobile={isMobile} hasSession={false} /></>;
 }
 
 function ClassEntry({isMobile}){
@@ -162,7 +173,7 @@ function PublicView({teacher,isMobile,hasSession}){
 
   return(
     <div style={S.app}>
-      <Head><title>Βιβλιοθήκη — ΛΕΒΙΑΘΑΝ</title></Head>
+      <Head><title>Τάξη — ΛΕΒΙΑΘΑΝ</title></Head>
       <style>{css}</style>
 
       {/* Sidebar */}
