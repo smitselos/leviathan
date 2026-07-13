@@ -76,15 +76,23 @@ export default async function handler(req, res) {
 
   /* ── GET: δημόσιο, φιλτράρει βάσει visitor ── */
   if (req.method === 'GET') {
-    const { email: teacherEmail, visitor } = req.query;
+    const { email: teacherEmail, visitor, noreal } = req.query;
     if (!teacherEmail) return res.status(400).json({ error: 'Missing teacher email' });
     try {
       const [items, conns] = await Promise.all([
         kv.get(KV_KEY(teacherEmail)),
         visitor ? kv.get(`conn:${teacherEmail}`) : Promise.resolve([]),
       ]);
-      const isOwner = visitor === teacherEmail;
-      const filtered = filterForVisitor(items || [], visitor || null, conns || [], isOwner);
+      // noreal=1 (σελίδα τάξης /class): δέξου ΜΟΝΟ ψευδομέιλ. Αν το email που δόθηκε
+      // ανήκει σε συνδεδεμένο (πραγματικό) μαθητή ή στον ίδιο τον εκπαιδευτικό,
+      // αγνοήσου — να μην αντλείται προσωπικό υλικό πραγματικών λογαριασμών
+      // από όποιον τυχαίνει να ξέρει το gmail τους. Επίσης χωρίς πρόσβαση
+      // στα κοινοποιημένα «σε όλες τις συνδέσεις».
+      const classMode = noreal === '1' || noreal === 'true';
+      const isRealUser = classMode && ((conns || []).includes(visitor) || visitor === teacherEmail);
+      const effVisitor = isRealUser ? null : (visitor || null);
+      const isOwner = !classMode && visitor === teacherEmail;
+      const filtered = filterForVisitor(items || [], effVisitor, classMode ? [] : (conns || []), isOwner);
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ items: filtered });
     } catch(e) {
