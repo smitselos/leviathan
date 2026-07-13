@@ -415,6 +415,7 @@ export default function Home() {
   const [liveToast, setLiveToast] = useState(null);
   const [visibilityPicker, setVisibilityPicker] = useState(null);
   const [visibilityDraft, setVisibilityDraft] = useState('none'); // πρόχειρη επιλογή — αποθηκεύεται μόνο με «Αποθήκευση»
+  const [customRecipient, setCustomRecipient] = useState(''); // ψευδομέιλ εκτός συνδέσεων (όπως στη Light)
   const [shareMessage, setShareMessage] = useState('');
   const [networkData, setNetworkData] = useState({ connections:[], received:[], sent:[], inbox:[], unseenCount:0 });
   const [networkInviteEmail, setNetworkInviteEmail] = useState('');
@@ -3447,7 +3448,17 @@ export default function Home() {
           else if (next.length === 1) setVisibilityDraft(`user:${next[0]}`);
           else setVisibilityDraft(`users:${JSON.stringify(next)}`);
         };
-        const closePicker = () => { setVisibilityPicker(null); setShareMessage(''); };
+        const closePicker = () => { setVisibilityPicker(null); setShareMessage(''); setCustomRecipient(''); };
+        // Ψευδομέιλ: ομαλοποίηση όπως στη Light — πεζά, χωρίς κενά, @gmail.com αν λείπει το @
+        const addCustomRecipient = () => {
+          let v = (customRecipient || '').trim().toLowerCase().replace(/\s+/g, '');
+          if (!v) return;
+          if (!v.includes('@')) v += '@gmail.com';
+          if (!curUsers.includes(v)) toggleUser(v);
+          setCustomRecipient('');
+        };
+        const connEmails = new Set((networkData.connections || []).map((c) => c.email));
+        const customSelected = curUsers.filter((e) => !connEmails.has(e));
 
         return (
           <div onClick={closePicker} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
@@ -3500,6 +3511,27 @@ export default function Home() {
                 })}
               </>}
               {(networkData.connections||[]).length === 0 && <div style={{ fontSize:12, color:'#aeaeb8', fontStyle:'italic', padding:'4px 0 8px' }}>Δεν έχεις συνδέσεις — πήγαινε στα Δίκτυα.</div>}
+
+              {/* Ψευδομέιλ — αποστολή σε παραλήπτη ΕΚΤΟΣ συνδέσεων (θα το δει στη σελίδα μαθητή/class) */}
+              <div style={{ fontSize:11, color:'#aeaeb8', margin:'10px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>✉️ Άλλος παραλήπτης (ψευδομέιλ)</div>
+              {customSelected.map((e) => (
+                <button key={e} className="vp-opt" onClick={()=>toggleUser(e)} title="Πάτησε για αφαίρεση"
+                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12,
+                    border:'2px solid #16a34a', background:'#f0fdf4', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
+                  <span style={{ fontSize:18 }}>✉️</span>
+                  <div style={{ flex:1, fontSize:13, fontWeight:500, color:'#1a1a1a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e}</div>
+                  <span style={{ fontSize:16, color:'#16a34a', flexShrink:0 }}>✓</span>
+                </button>
+              ))}
+              <div style={{ display:'flex', gap:6, marginBottom:4 }}>
+                <input value={customRecipient} onChange={(e)=>setCustomRecipient(e.target.value)}
+                  onKeyDown={(e)=>{ if (e.key === 'Enter') { e.preventDefault(); addCustomRecipient(); } }}
+                  placeholder="π.χ. mathitis1 ή email@gmail.com"
+                  style={{ flex:1, padding:'9px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, boxSizing:'border-box' }} />
+                <button onClick={addCustomRecipient} disabled={!customRecipient.trim()}
+                  style={{ padding:'9px 14px', borderRadius:10, border:'none', background: customRecipient.trim() ? '#16a34a' : '#e0e0e0', color:'#fff', fontSize:13, fontWeight:600, cursor: customRecipient.trim() ? 'pointer' : 'default', flexShrink:0 }}>+</button>
+              </div>
+              <div style={{ fontSize:10.5, color:'#aeaeb8', marginBottom:4 }}>Χωρίς @ συμπληρώνεται @gmail.com. Ο μαθητής το βλέπει βάζοντας το ψευδομέιλ του στη σελίδα της τάξης.</div>
 
               {/* Μήνυμα προς παραλήπτες */}
               <div style={{ marginTop:10 }}>
