@@ -7,7 +7,7 @@ const nextConfig = {
       // (τη σελίδα όπου ο μαθητής γράφει το όνομα του εκπαιδευτικού και τον κωδικό τάξης).
       {
         source: '/',
-        has: [{ type: 'host', value: 'leviathan-taxi.vercel.app' }],
+        has: [{ type: 'host', value: 'leviathan-class.vercel.app' }],
         destination: '/class',
         permanent: false,
       },
