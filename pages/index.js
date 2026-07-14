@@ -904,6 +904,7 @@ export default function Home() {
       if (r.ok) {
         const updated = { ...net, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
         setNetworks(prev => prev.map(n => n.id === net.id ? updated : n));
+        saveNetworkData(updated); // μονιμοποίηση του νέου pdfFileId — αλλιώς μετά από reload το δίκτυο «χάνει» το PDF του
         setNetMsg('✓ PDF ενημερώθηκε');
         setTimeout(() => setNetMsg(''), 2500);
         return d.pdfFileId; // νέο id του συγχωνευμένου PDF
@@ -922,11 +923,12 @@ export default function Home() {
   // Ο server ξαναδιαβάζει τα πηγαία αρχεία σε κάθε συγχώνευση, οπότε τυχόν αλλαγές
   // στα κείμενα ενσωματώνονται. Οι αποθηκευμένες ερωτήσεις του PDF διατηρούνται.
   const [netRefreshing, setNetRefreshing] = useState(null); // id δικτύου σε ανανέωση
-  const refreshNetworkPdf = async (net) => {
+  const refreshNetworkPdf = async (net, srcFile) => {
     if (!net?.pdfFileId || netRefreshing) return null;
     setNetRefreshing(net.id);
     showPrintToast('⏳ Ανανέωση από τα πηγαία κείμενα…');
-    const f = files.find((x) => x.id === net.pdfFileId);
+    // Ερωτήσεις: από το αρχείο που πατήθηκε (σίγουρα το σωστό) — αλλιώς αναζήτηση με pdfFileId
+    const f = srcFile || files.find((x) => x.id === net.pdfFileId);
     const newId = await regenerateNetworkPdf(net.pdfFileId, f?.questions || '');
     await loadAll(); // το pdfFileId μπορεί να άλλαξε — φρέσκια λίστα αρχείων
     hidePrintToast();
@@ -936,11 +938,16 @@ export default function Home() {
     return newId;
   };
   // Ανανέωση με αφετηρία την ΚΑΡΤΑ ή το modal του συγχωνευμένου αρχείου
-  const netOfFile = (id) => networks.find((n) => n.pdfFileId === id) || null;
+  // Εύρεση δικτύου: πρώτα με pdfFileId, αλλιώς με όνομα αρχείου (pdfFilename) —
+  // δίχτυ για δίκτυα που έμειναν με ξεπερασμένο pdfFileId από παλιές αναγεννήσεις.
+  const netOfFile = (id, name) =>
+    networks.find((n) => n.pdfFileId === id)
+    || (name ? networks.find((n) => n.pdfFilename && n.pdfFilename === name) : null)
+    || null;
   const netRefreshByFile = async (f) => {
-    const net = netOfFile(f.id);
+    const net = netOfFile(f.id, f.name);
     if (!net) { alert('Δεν βρέθηκε το δίκτυο αυτού του αρχείου.'); return null; }
-    return refreshNetworkPdf(net);
+    return refreshNetworkPdf(net, f);
   };
   const refreshViewingNetwork = async () => {
     if (!viewing) return;
@@ -3136,7 +3143,7 @@ export default function Home() {
                 <span style={{ fontSize:11, color:'#6b6b80', minWidth:32, textAlign:'center', cursor:'pointer' }} onClick={()=>setMobileZoom(1)}>{Math.round(mobileZoom*100)}%</span>
                 <button onClick={()=>setMobileZoom(z=>Math.min(2,z+0.1))} style={S.zoomBtn}>+</button>
               </div>
-              {netOfFile(viewing.id) && (
+              {netOfFile(viewing.id, viewing.name) && (
                 <button onClick={refreshViewingNetwork} disabled={!!netRefreshing} style={{ ...S.iconBtn, color:'#15803d' }}
                   title="Ανανέωση του συγχωνευμένου PDF με το τρέχον περιεχόμενο των κειμένων">
                   {netRefreshing ? '⏳' : '🔄'}
@@ -3198,7 +3205,7 @@ export default function Home() {
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #ebebeb', gap:10 }}>
                 <strong style={{ fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{viewing.name}</strong>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  {netOfFile(viewing.id) && (
+                  {netOfFile(viewing.id, viewing.name) && (
                     <button onClick={refreshViewingNetwork} disabled={!!netRefreshing}
                       style={{ ...S.iconBtn, color:'#15803d', width:'auto', padding:'0 10px', fontSize:12, fontWeight:600 }}
                       title="Ανανέωση του συγχωνευμένου PDF με το τρέχον περιεχόμενο των κειμένων">
