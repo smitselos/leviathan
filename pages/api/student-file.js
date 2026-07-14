@@ -4,7 +4,7 @@
 // DOCX/PPTX/XLSX → redirect σε Google Docs Viewer (χωρίς Drive JS)
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
-  const { id, gdoc } = req.query;
+  const { id, gdoc, dl } = req.query;
   if (!id) return res.status(400).end();
 
   // ── Native Google αρχείο (Docs/Slides/Sheets) ──
@@ -25,7 +25,8 @@ export default async function handler(req, res) {
         try { p.body?.cancel?.(); } catch {}
         if (p.ok && ct.includes('pdf')) {
           res.setHeader('Cache-Control', 'public, s-maxage=3600');
-          return res.redirect(302, `https://docs.google.com/${type}/d/${safeId}/preview`);
+          // dl=1 → κατέβασμα του PDF (redirect στο ίδιο το export URL)· αλλιώς read-only preview
+          return res.redirect(302, dl ? probeUrl : `https://docs.google.com/${type}/d/${safeId}/preview`);
         }
       } catch {}
     }
