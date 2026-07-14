@@ -527,6 +527,7 @@ export default function Home() {
       if (Date.now() - last < 5000) return; // όχι καταιγισμός σε γρήγορα tab switches
       last = Date.now();
       loadAll();
+      loadNetworks(); // και τα δίκτυα — αλλιώς αποτυχία στο κρύο ξεκίνημα τα αφήνει άδεια για πάντα
     };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
@@ -776,9 +777,11 @@ export default function Home() {
     try {
       const r = await fetch('/api/networks');
       const d = await r.json();
+      if (!r.ok) return null; // π.χ. 401 στο κρύο ξεκίνημα — ΜΗΝ μηδενίσεις τη λίστα
       const normalized = (d.networks || []).map(n => ({ ...n, items: Array.isArray(n.items) ? n.items : [], tags: Array.isArray(n.tags) ? n.tags : [], comment: n.comment || '', info: n.info || '' }));
       setNetworks(normalized);
-    } catch (e) { setNetworks([]); }
+      return normalized;
+    } catch (e) { return null; } // αποτυχία δικτύου: κράτα ό,τι υπάρχει, θα ξαναδοκιμαστεί
   };
   const saveNetworkData = async (net) => {
     setNetSaving(true); setNetMsg('');
@@ -948,13 +951,20 @@ export default function Home() {
   // Ανανέωση με αφετηρία την ΚΑΡΤΑ ή το modal του συγχωνευμένου αρχείου
   // Εύρεση δικτύου: μόνιμη ταυτότητα networkId → pdfFileId → αποθηκευμένο pdfFilename
   // → σύμβαση ονόματος {όνομα δικτύου}.pdf (καλύπτει παλιά αντίγραφα χωρίς μεταδεδομένα).
-  const netOfFile = (id, name, nid) =>
-    (nid ? networks.find((n) => n.id === nid) : null)
-    || networks.find((n) => n.pdfFileId === id)
-    || (name ? networks.find((n) => (n.pdfFilename && n.pdfFilename === name) || name === n.name + '.pdf') : null)
+  const matchNet = (list, id, name, nid) =>
+    (nid ? list.find((n) => n.id === nid) : null)
+    || list.find((n) => n.pdfFileId === id)
+    || (name ? list.find((n) => (n.pdfFilename && n.pdfFilename === name) || name === n.name + '.pdf') : null)
     || null;
+  const netOfFile = (id, name, nid) => matchNet(networks, id, name, nid);
   const netRefreshByFile = async (f) => {
-    const net = netOfFile(f.id, f.name, f.networkId);
+    let net = netOfFile(f.id, f.name, f.networkId);
+    if (!net) {
+      // Η λίστα δικτύων μπορεί να μη φορτώθηκε (π.χ. 401 στο κρύο ξεκίνημα του PWA) —
+      // φρέσκια φόρτωση και δεύτερη προσπάθεια πριν παραδοθούμε.
+      const fresh = await loadNetworks();
+      if (fresh) net = matchNet(fresh, f.id, f.name, f.networkId);
+    }
     if (!net) { alert('Δεν βρέθηκε το δίκτυο αυτού του αρχείου. Άνοιξε το δίκτυο στα «Δίκτυα» και πάτησε Συγχώνευση για να ξαναδεθεί.'); return null; }
     return refreshNetworkPdf(net, f);
   };
