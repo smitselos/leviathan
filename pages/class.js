@@ -39,6 +39,16 @@ function openExternal(url){
   else { window.open(url,'_blank'); }
 }
 
+// Λήψη: τα native Google (χωρίς κατάληξη) δεν έχουν bytes στο uc?export=download —
+// δίνουμε το δημόσιο PDF αντίγραφο (pdfId), αλλιώς server export (gdoc=1&dl=1).
+function downloadUrl(f){
+  const noExt=!/\.[a-z0-9]{2,6}$/i.test(f.name||'');
+  if(noExt) return f.pdfId
+    ? `https://drive.google.com/uc?id=${f.pdfId}&export=download`
+    : `/api/student-file?id=${f.id}&gdoc=1&dl=1`;
+  return `https://drive.google.com/uc?id=${f.id}&export=download`;
+}
+
 const Ic={
   home:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
   live:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
@@ -260,7 +270,7 @@ function PublicView({teacher,isMobile,hasSession}){
                     {f.info&&<div style={{fontSize:12,color:P.cream.deep,padding:'8px 0 6px',lineHeight:1.5}}>ℹ️ {f.info}</div>}
                     <div style={{display:'flex',gap:6,marginTop:6,flexWrap:'wrap',alignItems:'center'}}>
                       <button onClick={()=>openFile(f)} style={S.openBtn}>Άνοιγμα</button>
-                      <button onClick={()=>window.open(`https://drive.google.com/uc?id=${f.id}&export=download`,'_blank')} style={S.miniBtn} title="Λήψη">⬇</button>
+                      <button onClick={()=>window.open(downloadUrl(f),'_blank')} style={S.miniBtn} title="Λήψη">⬇</button>
                       <button onClick={()=>setQrFile(f)} style={S.miniBtn} title="QR Code">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
                       </button>
