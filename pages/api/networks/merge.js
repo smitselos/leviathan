@@ -11,9 +11,34 @@ import { getDrive, loadRegistry, saveRegistry } from '../../../lib/drive';
 import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { Readable } from 'stream';
+import fs from 'fs';
+import path from 'path';
 
+// ── Γραμματοσειρές: ΠΡΩΤΑ τοπικά από τον φάκελο fonts/ του repo (ανεξαρτησία
+// από τρίτους) — τα remote URLs μένουν μόνο ως δίχτυ αν λείψει κάποιο αρχείο.
 const FONT_URL = 'https://raw.githubusercontent.com/ONLYOFFICE/core-fonts/master/crosextra/Carlito-Regular.ttf';
 const FONT_BOLD_URL = 'https://raw.githubusercontent.com/ONLYOFFICE/core-fonts/master/crosextra/Carlito-Bold.ttf';
+// Impact (MS core fonts, με ελληνικά γλυφά) — για τον τίτλο «ΕΡΩΤΗΣΕΙΣ»
+const FONT_TITLE_URL = 'https://raw.githubusercontent.com/daggy1234/oldapi/master/impact.ttf';
+
+async function fetchRemote(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch { return null; }
+}
+// Τα τρία readFileSync γράφονται με ΣΤΑΘΕΡΑ paths (όχι μεταβλητή) ώστε το
+// file tracing του Vercel να συμπεριλάβει σίγουρα τα fonts/ στο deployment.
+function localCarlito() {
+  try { return fs.readFileSync(path.join(process.cwd(), 'fonts', 'carlito.ttf')); } catch { return null; }
+}
+function localCarlitoBold() {
+  try { return fs.readFileSync(path.join(process.cwd(), 'fonts', 'carlito-bold.ttf')); } catch { return null; }
+}
+function localImpact() {
+  try { return fs.readFileSync(path.join(process.cwd(), 'fonts', 'impact.ttf')); } catch { return null; }
+}
 
 function bufferToStream(buffer) {
   const readable = new Readable();
@@ -23,12 +48,14 @@ function bufferToStream(buffer) {
 }
 
 async function fetchFont() {
-  const res = await fetch(FONT_URL);
-  return Buffer.from(await res.arrayBuffer());
+  return localCarlito() || await fetchRemote(FONT_URL);
 }
 async function fetchBoldFont() {
-  const res = await fetch(FONT_BOLD_URL);
-  return Buffer.from(await res.arrayBuffer());
+  return localCarlitoBold() || await fetchRemote(FONT_BOLD_URL);
+}
+// Επιστρέφει null σε ολική αποτυχία → ο τίτλος πέφτει σε Carlito Bold (να μη σπάει η συγχώνευση)
+async function fetchTitleFont() {
+  return localImpact() || await fetchRemote(FONT_TITLE_URL);
 }
 
 /**
@@ -149,8 +176,10 @@ export default async function handler(req, res) {
     if (allQuestions.length > 0) {
       const fontBytes = await fetchFont();
       const boldBytes = await fetchBoldFont();
+      const titleBytes = await fetchTitleFont();
       const font = await mergedPdf.embedFont(fontBytes);
       const fontBold = await mergedPdf.embedFont(boldBytes);
+      const fontTitle = titleBytes ? await mergedPdf.embedFont(titleBytes) : fontBold;
 
       const pageWidth = 595;
       const pageHeight = 842;
@@ -162,9 +191,9 @@ export default async function handler(req, res) {
       let page = mergedPdf.addPage([pageWidth, pageHeight]);
       let y = pageHeight - margin;
 
-      // Τίτλος — bold
+      // Τίτλος — Impact 24pt, 80% μαύρο
       page.drawText('ΕΡΩΤΗΣΕΙΣ', {
-        x: margin, y, size: 16, font: fontBold, color: rgb(0, 0, 0),
+        x: margin, y, size: 24, font: fontTitle, color: rgb(0.2, 0.2, 0.2),
       });
       y -= lineHeight * 2.5;
 
