@@ -289,15 +289,22 @@ export default async function handler(req, res) {
     const targetFolder = network.folderId || null;
 
     if (pdfFileId) {
-      // Ενημέρωση υπάρχοντος PDF
-      await drive.files.update({
-        fileId: pdfFileId,
-        media: {
-          mimeType: 'application/pdf',
-          body: bufferToStream(pdfBuffer),
-        },
-      });
-    } else {
+      // Ενημέρωση υπάρχοντος PDF — αν το id είναι ξεπερασμένο/διαγραμμένο,
+      // ΜΗΝ αποτύχει όλη η συγχώνευση: συνέχισε με δημιουργία νέου.
+      try {
+        await drive.files.update({
+          fileId: pdfFileId,
+          media: {
+            mimeType: 'application/pdf',
+            body: bufferToStream(pdfBuffer),
+          },
+        });
+      } catch (e) {
+        console.error('[merge] update failed for', pdfFileId, '→ creating new:', e.message);
+        pdfFileId = null;
+      }
+    }
+    if (!pdfFileId) {
       // Δημιουργία νέου PDF στον επιλεγμένο φάκελο
       const requestBody = { name: filename, mimeType: 'application/pdf' };
       if (targetFolder) requestBody.parents = [targetFolder];
@@ -336,6 +343,7 @@ export default async function handler(req, res) {
         id: pdfFileId,
         name: filename,
         mimeType: 'application/pdf',
+        networkId: network.id, // μόνιμη ταυτότητα: το αρχείο «ξέρει» το δίκτυό του
         folderId: targetFolder,
         tags: ['Δίκτυο'],
         comment: `Δίκτυο: ${network.name}`,
@@ -353,6 +361,7 @@ export default async function handler(req, res) {
         // Ενημέρωση υπάρχοντος — κρατάμε tags/comment/info, ενημερώνουμε ερωτήσεις
         reg.files[existingIdx].name = filename;
         reg.files[existingIdx].mimeType = 'application/pdf';
+        reg.files[existingIdx].networkId = network.id; // μόνιμη ταυτότητα
         reg.files[existingIdx].questions = questionsJson;
       } else {
         reg.files.push(fileEntry);
