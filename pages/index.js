@@ -955,6 +955,29 @@ export default function Home() {
     if (newId) setViewing((v) => v ? { ...v, id: newId, previewUrl: undefined } : v);
   };
 
+  // ── Αυτο-επιδιόρθωση δεσμού δικτύου↔PDF μετά τη φόρτωση ──
+  // Δίκτυα από παλαιότερες εκδόσεις δεν έχουν αποθηκευμένο pdfFileId/pdfFilename
+  // στο JSON τους → μετά από reload η κάρτα «ξεχνά» ότι το PDF είναι δίκτυο
+  // (χάνει το 🔄, εμφανίζει διπλή εκτύπωση+ερωτήσεις). Εδώ ο δεσμός ξαναχτίζεται
+  // με τη σύμβαση ονομασίας του merge ({όνομα δικτύου}.pdf) και ΑΠΟΘΗΚΕΥΕΤΑΙ — μία φορά.
+  const netHealRan = useRef(false);
+  useEffect(() => {
+    if (netHealRan.current || !networks.length || !files.length) return;
+    netHealRan.current = true;
+    const fixes = [];
+    for (const n of networks) {
+      if (n.pdfFileId && files.some((f) => f.id === n.pdfFileId)) continue; // δεσμός υγιής
+      const pdfName = `${n.name}.pdf`;
+      const cand = files.find((f) => f.name === pdfName && ((f.tags || []).includes('Δίκτυο') || (f.comment || '').startsWith('Δίκτυο:') || f._isNetwork))
+        || files.find((f) => f.name === pdfName);
+      if (cand && cand.id !== n.pdfFileId) fixes.push({ ...n, pdfFileId: cand.id, pdfFilename: cand.name });
+    }
+    if (fixes.length) {
+      setNetworks((prev) => prev.map((p) => fixes.find((x) => x.id === p.id) || p));
+      fixes.forEach((x) => saveNetworkData(x));
+    }
+  }, [networks, files]);
+
   // ── Μεταδεδομένα δικτύου (ετικέτες, σχόλια, πληροφορίες) ──
   const addNetTag = (tag) => {
     if (!currentNetwork) return;
@@ -1020,7 +1043,9 @@ export default function Home() {
         // Ο server αποθήκευσε ήδη τις ερωτήσεις (ομαδοποιημένες) στο registry.
         // PATCH μόνο tags/comment/info — ΟΧΙ questions (τα χειρίζεται ο server).
         const metaPatch = { _isNetwork: true };
-        if (allTags.length) metaPatch.tags = allTags;
+        // ΠΡΟΣΟΧΗ: διατήρηση της ετικέτας «Δίκτυο» — χωρίς αυτήν η κάρτα «ξεχνά»
+        // ότι είναι δίκτυο μετά από reload (χάνει το 🔄, εμφανίζει διπλή εκτύπωση+ερωτήσεις)
+        if (allTags.length) metaPatch.tags = [...new Set(['Δίκτυο', ...allTags])];
         if (allComment) metaPatch.comment = allComment;
         if (allInfo) metaPatch.info = allInfo;
         if (Object.keys(metaPatch).length) {
@@ -1616,13 +1641,14 @@ export default function Home() {
   const allTags = [...new Set(normalFiles.flatMap((f)=>f.tags||[]))].sort();
 
   // Αναζήτηση κατά κατηγορία: Κείμενα / Δίκτυα / Εφαρμογές
-  // Αναγνώριση δικτύων: pdfFileId + driveFileId + flag _isNetwork στο registry
+  // Αναγνώριση δικτύων: pdfFileId + driveFileId + pdfFilename (δίχτυ για ξεπερασμένα ids) + flag _isNetwork
   const networkFileIds = new Set([
     ...networks.map(n => n.pdfFileId),
     ...networks.map(n => n.driveFileId),
+    ...networks.map(n => n.pdfFilename),
   ].filter(Boolean));
   const appFiles = appsFolderId ? files.filter(f => f.folderId === appsFolderId) : [];
-  const isNetworkFile = (f) => networkFileIds.has(f.id) || f._isNetwork;
+  const isNetworkFile = (f) => networkFileIds.has(f.id) || networkFileIds.has(f.name) || f._isNetwork;
 
   // ── Παράγωγες λίστες «Εφαρμογών» (μόνο πραγματικές εφαρμογές, όχι δίκτυα-PDF, όχι υποφάκελοι) ──
   const appSubfolders = appFiles.filter(isDriveFolder);
@@ -3663,7 +3689,7 @@ function FileList({ files, loading, empty, onOpen, onRemove, onFav, onComment, o
       {files.map((f) => {
         const tags = f.tags || []; const hasComment = !!(f.comment||'').trim(); const hasQuestions = hasAnyQuestions(f.questions); const hasInfo = !!(f.info||'').trim();
         const isApp = (appFiles||[]).some(a => a.id === f.id); // εφαρμογή; → χωρίς εκτύπωση/ερωτήσεις
-        const isNet = !!(f._isNetwork || networkFileIds?.has(f.id) || (f.tags||[]).includes('Δίκτυο')); // συγχωνευμένο (δίκτυο) → μία μόνο εκτύπωση
+        const isNet = !!(f._isNetwork || networkFileIds?.has(f.id) || networkFileIds?.has(f.name) || (f.tags||[]).includes('Δίκτυο')); // συγχωνευμένο (δίκτυο) → μία μόνο εκτύπωση
         const fLinks = f.links || []; const hasLinks = fLinks.length > 0;
         const isPublished = !!(f.published || (f.visibility && f.visibility !== 'none'));
         const visIcon = f.visibility === 'public' ? '🌍' : f.visibility === 'connections' ? '👥' : (f.visibility?.startsWith('user:') || f.visibility?.startsWith('users:')) ? '👤' : null;
