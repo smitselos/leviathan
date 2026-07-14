@@ -932,10 +932,12 @@ export default function Home() {
     if ((!net?.pdfFileId && !srcFile?.id) || netRefreshing) return null;
     setNetRefreshing(net.id);
     showPrintToast('⏳ Ανανέωση από τα πηγαία κείμενα…');
-    // Στόχος & ερωτήσεις: το αρχείο που πατήθηκε (σίγουρα το σωστό αντίγραφο)
+    // Στόχος: το αρχείο που πατήθηκε. Ερωτήσεις: ΠΑΝΤΑ από τη ζωντανή κατάσταση
+    // (το srcFile μπορεί να είναι παγωμένο στιγμιότυπο του modal με παλιές ερωτήσεις —
+    // αν περάσει, η αναγέννηση επαναφέρει/ξαναγράφει τα αρχικά ερωτήματα).
     const targetId = srcFile?.id || net.pdfFileId;
-    const f = srcFile || files.find((x) => x.id === net.pdfFileId);
-    const newId = await regenerateNetworkPdf(targetId, f?.questions || '', net);
+    const fresh = files.find((x) => x.id === targetId);
+    const newId = await regenerateNetworkPdf(targetId, (fresh?.questions ?? srcFile?.questions) || '', net);
     await loadAll(); // το pdfFileId μπορεί να άλλαξε — φρέσκια λίστα αρχείων
     hidePrintToast();
     showPrintToast(newId ? '✓ Το PDF ενημερώθηκε' : '✗ Αποτυχία ανανέωσης — δοκίμασε ξανά');
