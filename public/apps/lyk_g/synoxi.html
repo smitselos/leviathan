@@ -1,1 +1,2116 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Συνοχής & Συνεκτικότητας - Α' Λυκείου</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 16px;
+            line-height: 1.6;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .card.full-height {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .header h1 { font-size: 1.5rem; color: #1e293b; }
+        .header-subtitle { color: #64748b; font-size: 0.875rem; }
+        
+        .question-counter { text-align: right; }
+        .question-counter p {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+        .question-counter span {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        
+        .copyright-notice {
+            text-align: center;
+            margin-top: 24px;
+            padding: 16px;
+        }
+        
+        .copyright-notice a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+        
+        .copyright-notice a:hover {
+            color: #64748b;
+        }
+        
+        @media (max-width: 600px) {
+            .header {
+                gap: 8px;
+                flex-wrap: nowrap;
+                justify-content: flex-end;
+            }
+            .header > div:first-child {
+                display: none;
+            }
+            .question-counter {
+                flex-shrink: 0;
+            }
+            .question-counter p {
+                font-size: 0.7rem;
+                margin-bottom: 0;
+            }
+            .question-counter span {
+                font-size: 1.2rem;
+            }
+            .card {
+                padding: 10px;
+            }
+            .progress-bar {
+                margin-top: 6px;
+                height: 6px;
+            }
+        }
+        
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 999px;
+            height: 8px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: #4f46e5;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .selection-screen { text-align: center; }
+        .selection-screen h2 {
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 1.75rem;
+        }
+        .selection-screen p {
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+        
+        .filter-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .filter-section h3 {
+            color: #374151;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .filter-btn {
+            padding: 10px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover { border-color: #94a3b8; }
+        
+        .filter-btn.selected {
+            border-color: #4f46e5;
+            background: #4f46e5;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .start-btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            background: #4f46e5;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        
+        .start-btn:hover { background: #3730a3; }
+        .start-btn:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #e2e8f0;
+            border-top-color: #7c3aed;
+            border-right-color: #7c3aed;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+        }
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+        
+        .text-label {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .question-text {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #1e293b;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            border-radius: 12px;
+            line-height: 1.8;
+            font-size: 1rem;
+            border-left: 4px solid #4f46e5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .question-prompt {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .options-container {
+            background: #faf5ff;
+            border: 1px solid #e9d5ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option-btn {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            position: relative;
+        }
+        
+        .option-btn:hover:not(:disabled) { border-color: #94a3b8; }
+        .option-btn.selected { border-color: #4f46e5; background: #eef2ff; }
+        .option-btn.correct-answer { 
+            border-color: #047857; 
+            background: #059669; 
+            color: white;
+            font-weight: 600;
+        }
+        .option-btn.correct-answer::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .option-btn.wrong-answer { 
+            border-color: #b91c1c; 
+            background: #dc2626; 
+            color: white;
+            font-weight: 600;
+        }
+        .option-btn.wrong-answer::after {
+            content: '✗';
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .option-btn:disabled { cursor: default; }
+        
+        .syndesmoi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        
+        .syndesmos-btn {
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .syndesmos-btn:hover:not(:disabled) {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        
+        .syndesmos-btn.selected {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        
+        .syndesmos-btn.correct-answer {
+            border-color: #047857;
+            background: #059669;
+            color: white;
+            font-weight: 600;
+            animation: glow 1.5s ease-in-out infinite;
+        }
+        
+        .syndesmos-btn.correct-answer.was-selected::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #047857;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .syndesmos-btn.wrong-answer {
+            border-color: #b91c1c;
+            background: #dc2626;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .syndesmos-btn.wrong-answer::after {
+            content: '✗';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #b91c1c;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 5px #059669, 0 0 10px #059669;
+            }
+            50% {
+                box-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #10b981;
+            }
+        }
+        
+        .gap-text-container {
+            font-size: 1.05rem;
+            line-height: 2.5;
+            color: #1e293b;
+            padding: 20px;
+        }
+        
+        .gap-text-container span {
+            display: inline;
+        }
+        
+        .gap-input {
+            display: inline-block;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 150px;
+            transition: all 0.2s;
+            margin: 0 4px;
+            vertical-align: middle;
+        }
+        
+        .gap-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: #f0f9ff;
+        }
+        
+        .gap-input.correct {
+            border-color: #059669;
+            background: #d1fae5;
+            color: #047857;
+            font-weight: 600;
+        }
+        
+        .gap-input.wrong {
+            border-color: #dc2626;
+            background: #fee2e2;
+            color: #b91c1c;
+            font-weight: 600;
+        }
+        
+        .gap-input:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+        .gap-input-container {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 14px;
+            font-size: 1rem;
+            border-radius: 10px;
+            border: 2px solid #c7d2fe;
+            transition: all 0.2s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        
+        input.correct {
+            background: #ecfdf5;
+            border-color: #059669;
+        }
+        
+        input.wrong {
+            background: #fee2e2;
+            border-color: #dc2626;
+        }
+        
+        .check-gap-btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            background: #4f46e5;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .check-gap-btn:hover { background: #3730a3; }
+        .check-gap-btn:disabled { 
+            background: #e2e8f0; 
+            color: #94a3b8; 
+            cursor: not-allowed; 
+        }
+        
+        .matching-hint {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #1e40af;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+        
+        .drag-drop-text {
+            font-size: 1.05rem;
+            line-height: 2.2;
+            color: #1e293b;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #7c3aed;
+        }
+        
+        .inline-drop-zone {
+            display: inline-block;
+            min-width: 150px;
+            height: 36px;
+            border: 3px dashed #94a3b8;
+            border-radius: 8px;
+            background: #f8fafc;
+            vertical-align: middle;
+            margin: 0 6px;
+            padding: 6px 12px;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 24px;
+            font-size: 1rem;
+            position: relative;
+        }
+        
+        .inline-drop-zone:empty::before {
+            content: '📥';
+            color: #94a3b8;
+            font-size: 0.9rem;
+            opacity: 0.6;
+        }
+        
+        .inline-drop-zone.drag-over {
+            border-color: #7c3aed;
+            background: #f5f3ff;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        
+        .inline-drop-zone.filled {
+            border: 2px solid #7c3aed;
+            background: #f5f3ff;
+        }
+        
+        .inline-drop-zone.correct {
+            border-color: #059669;
+            background: #d1fae5;
+        }
+        
+        .inline-drop-zone.wrong {
+            border-color: #dc2626;
+            background: #fee2e2;
+        }
+        
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .draggable-word {
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: grab;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #1e293b;
+            user-select: none;
+        }
+        
+        .draggable-word:hover {
+            border-color: #7c3aed;
+            background: #faf5ff;
+            transform: translateY(-2px);
+        }
+        
+        .draggable-word.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .draggable-word.used {
+            display: none;
+        }
+        
+        .dropped-word {
+            font-weight: 600;
+            color: #7c3aed;
+        }
+        
+        .matching-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .matching-column {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 200px;
+        }
+        
+        .matching-column h4 {
+            color: #374151;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .matching-item {
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: grab;
+            transition: all 0.2s;
+            position: relative;
+            user-select: none;
+        }
+        
+        .matching-item:active {
+            cursor: grabbing;
+        }
+        
+        .matching-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .matching-item.drag-over {
+            border-color: #4f46e5;
+            background: #eef2ff;
+            border-style: dashed;
+        }
+        
+        .matching-item.matched {
+            border-color: #059669;
+            background: #ecfdf5;
+            cursor: default;
+        }
+        
+        .matching-item.matched::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            color: #059669;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .matching-item.wrong {
+            border-color: #dc2626;
+            background: #fee2e2;
+        }
+        
+        .matching-item.wrong::after {
+            content: '✗';
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            color: #dc2626;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .matching-label {
+            display: inline-block;
+            background: #4f46e5;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .drop-zone {
+            min-height: 50px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8fafc;
+            transition: all 0.2s;
+        }
+        
+        .drop-zone.drag-over {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        
+        .drop-zone.filled {
+            border-style: solid;
+            border-color: #94a3b8;
+            background: white;
+        }
+        
+        .drop-zone-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .pick-words-hint {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #1e40af;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+        
+        .pick-words-text {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            line-height: 2;
+            font-size: 1rem;
+            border-left: 4px solid #4f46e5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .pickable-word {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: inline-block;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            font-size: inherit;
+        }
+        
+        .non-pickable-word {
+            padding: 2px 4px;
+            display: inline-block;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            font-size: inherit;
+        }
+        
+        .pickable-word:hover {
+            background: #fef3c7;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .pickable-word:active {
+            transform: translateY(0);
+        }
+        
+        .pickable-word.selected {
+            background: #ecfdf5;
+            color: #047857;
+            font-weight: 600;
+            border-bottom: 2px solid #059669;
+        }
+        
+        .pickable-word.correct {
+            background: #ecfdf5;
+            color: #047857;
+            font-weight: 600;
+            border-bottom: 2px solid #059669;
+            animation: pulse-green 0.6s ease-in-out;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .pick-words-counter {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 12px;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #92400e;
+            font-weight: 500;
+        }
+        
+        .feedback-container {
+            margin-top: 20px;
+        }
+        
+        .correct-answer-box {
+            background: #ecfdf5;
+            border: 1px solid #059669;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .correct-answer-box h4 {
+            color: #065f46;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+        
+        .correct-answer-box p {
+            color: #047857;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .notes-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .notes-box h4 {
+            color: #92400e;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+        
+        .notes-box p {
+            color: #78350f;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+        
+        .main-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .main-btn.primary { background: #4f46e5; color: white; }
+        .main-btn.primary:hover { background: #3730a3; }
+        .main-btn.success { background: #16a34a; color: white; }
+        .main-btn.success:hover { background: #15803d; }
+        .main-btn:disabled { 
+            background: #e2e8f0; 
+            color: #94a3b8; 
+            cursor: not-allowed; 
+        }
+        
+        .hint-btn {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .hint-btn:hover {
+            background: #fde68a;
+            border-color: #f59e0b;
+            transform: translateY(-2px);
+        }
+        
+        .hint-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .hint-box.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hint-box h4 {
+            color: #92400e;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .hint-box p {
+            color: #78350f;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+        
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .sound-toggle:hover {
+            border-color: #4f46e5;
+            transform: scale(1.05);
+        }
+        
+        .sound-toggle svg {
+            width: 24px;
+            height: 24px;
+            color: #4f46e5;
+        }
+        
+        .sound-toggle.muted {
+            background: #fee2e2;
+            border-color: #dc2626;
+        }
+        
+        .sound-toggle.muted svg {
+            color: #dc2626;
+        }
+        
+        .results-card { text-align: center; padding: 40px 24px; }
+        .results-emoji { font-size: 4rem; margin-bottom: 16px; }
+        .results-title { font-size: 1.75rem; color: #1e293b; margin-bottom: 24px; }
+        
+        .results-score-box {
+            background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .results-score { font-size: 3rem; font-weight: 700; color: #4f46e5; }
+        .results-percentage { color: #64748b; font-size: 1.1rem; }
+        
+        .wrong-questions-section {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .wrong-questions-section h3 {
+            color: #92400e;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+        
+        .repeat-btn {
+            background: #f59e0b;
+            color: white;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        
+        .repeat-btn:hover { background: #d97706; }
+        
+        @media (max-width: 600px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            .gap-input-container { flex-direction: column; }
+            .matching-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div class="card loading">
+            <div class="loading-spinner"></div>
+            <p>Φόρτωση δεδομένων...</p>
+        </div>
+    </div>
 
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSBmZdhLakrSUcbxWqSdNo5O07jxI7YRJ_J890qyb-u0qqoOqe1RMl18UQx0SFbLBo2Ihdm6gOOnelY/pub?output=csv';
+
+        const syndesmoi = [
+            "Χρόνος",
+            "Σειρά/αρίθμηση",
+            "Αιτία",
+            "Αποτέλεσμα/σκοπός",
+            "Συμπέρασμα",
+            "Παράδειγμα",
+            "Επεξήγηση",
+            "Αντίθεση",
+            "Βεβαιότητα",
+            "Έμφαση",
+            "Προσθήκη",
+            "Διάζευξη",
+            "Προϋπόθεση",
+            "Αναλογία"
+        ];
+
+        let allData = [];
+        let questions = [];
+        let wrongQuestions = [];
+        
+        let state = {
+            screen: 'loading',
+            selectedLevel: 1,
+            selectedCount: 10,
+            currentQuestion: 0,
+            answered: false,
+            correctCount: 0,
+            soundEnabled: true,
+            matchingPairs: {},
+            draggedItem: null,
+            selectedWords: new Set(),
+            requiredWords: []
+        };
+
+        function playCorrectSound() {
+            if (!state.soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        function playWrongSound() {
+            if (!state.soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 200;
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            updateSoundButton();
+        }
+        
+        function updateSoundButton() {
+            const btn = document.getElementById('soundToggle');
+            if (!btn) return;
+            
+            if (state.soundEnabled) {
+                btn.classList.remove('muted');
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M15.54 8.46C16.4774 9.39764 17.0039 10.6692 17.0039 11.995C17.0039 13.3208 16.4774 14.5924 15.54 15.53" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.07 4.93C20.9447 6.80528 21.9979 9.34836 21.9979 12C21.9979 14.6516 20.9447 17.1947 19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                `;
+                btn.title = 'Απενεργοποίηση ήχου';
+            } else {
+                btn.classList.add('muted');
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                `;
+                btn.title = 'Ενεργοποίηση ήχου';
+            }
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [], cell = '', inQuotes = false;
+            
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i], next = text[i + 1];
+                if (ch === '"' && inQuotes && next === '"') { cell += '"'; i++; }
+                else if (ch === '"') { inQuotes = !inQuotes; }
+                else if (ch === ',' && !inQuotes) { row.push(cell); cell = ''; }
+                else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+                    if (cell || row.length) { row.push(cell); rows.push(row); }
+                    row = []; cell = '';
+                } else cell += ch;
+            }
+            if (cell || row.length) { row.push(cell); rows.push(row); }
+            
+            const headers = rows.shift();
+            return rows.map(r => {
+                let obj = {};
+                headers.forEach((k, i) => obj[k] = r[i] || '');
+                return obj;
+            });
+        }
+        
+        function normalize(str) {
+            return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        }
+        
+        async function loadData() {
+            try {
+                const response = await fetch(CSV_URL);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const csv = await response.text();
+                allData = parseCSV(csv);
+                
+                if (allData.length === 0) {
+                    console.warn('No data loaded from CSV');
+                }
+                
+                state.screen = 'selection';
+                render();
+            } catch (error) {
+                console.error('Σφάλμα φόρτωσης:', error);
+                try {
+                    const directUrl = CSV_URL.replace('/pub?', '/pub?gid=0&single=true&');
+                    const response2 = await fetch(directUrl);
+                    const csv2 = await response2.text();
+                    allData = parseCSV(csv2);
+                    state.screen = 'selection';
+                    render();
+                } catch (error2) {
+                    console.error('Δεύτερη προσπάθεια απέτυχε:', error2);
+                    state.screen = 'selection';
+                    render();
+                    
+                    setTimeout(() => {
+                        const app = document.getElementById('app');
+                        if (allData.length === 0) {
+                            app.innerHTML = `
+                                <div class="card" style="text-align: center; padding: 40px;">
+                                    <h2 style="color: #dc2626; margin-bottom: 16px;">⚠️ Πρόβλημα Φόρτωσης</h2>
+                                    <p style="color: #64748b; margin-bottom: 20px;">
+                                        Δεν μπόρεσαν να φορτώσουν τα δεδομένα από το Google Sheet.<br>
+                                        Παρακαλώ ελέγξτε τη σύνδεσή σας στο internet.
+                                    </p>
+                                    <button class="start-btn" onclick="location.reload()">
+                                        🔄 Δοκιμάστε Ξανά
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }, 500);
+                }
+            }
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            
+            switch (state.screen) {
+                case 'loading':
+                    app.innerHTML = renderLoading();
+                    break;
+                case 'selection':
+                    app.innerHTML = renderSelection();
+                    break;
+                case 'quiz':
+                    app.innerHTML = renderQuiz();
+                    if (!document.getElementById('soundToggle')) {
+                        const soundBtn = document.createElement('button');
+                        soundBtn.id = 'soundToggle';
+                        soundBtn.className = 'sound-toggle';
+                        document.body.appendChild(soundBtn);
+                        updateSoundButton();
+                        soundBtn.addEventListener('click', toggleSound);
+                    }
+                    break;
+                case 'results':
+                    app.innerHTML = renderResults();
+                    const existingBtn = document.getElementById('soundToggle');
+                    if (existingBtn) existingBtn.remove();
+                    break;
+            }
+            
+            attachEventListeners();
+        }
+        
+        function renderLoading() {
+            return `
+                <div class="card loading">
+                    <div class="loading-spinner"></div>
+                    <p>Φόρτωση δεδομένων...</p>
+                </div>
+            `;
+        }
+        
+        function renderSelection() {
+            return `
+                <div class="card selection-screen full-height">
+                    <h2>📝 Quiz Συνοχής & Συνεκτικότητας</h2>
+                    <p>Νεοελληνική Γλώσσα - Λύκειο</p>
+                    
+                    <div class="filter-section">
+                        <h3>📊 Επιλέξτε Επίπεδο</h3>
+                        <div class="filter-options">
+                            <button class="filter-btn ${state.selectedLevel === 1 ? 'selected' : ''}" data-level="1">
+                                Επίπεδο 1 - Πολλαπλή Επιλογή
+                            </button>
+                            <button class="filter-btn ${state.selectedLevel === 2 ? 'selected' : ''}" data-level="2">
+                                Επίπεδο 2 - Αντιστοίχιση
+                            </button>
+                            <button class="filter-btn ${state.selectedLevel === 3 ? 'selected' : ''}" data-level="3">
+                                Επίπεδο 3 - Συμπλήρωση Κενού
+                            </button>
+                            <button class="filter-btn ${state.selectedLevel === 4 ? 'selected' : ''}" data-level="4">
+                                Επίπεδο 4 - Επιλογή Λέξεων
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <h3>🔢 Αριθμός Ασκήσεων</h3>
+                        <div class="filter-options">
+                            <button class="filter-btn ${state.selectedCount === 1 ? 'selected' : ''}" data-count="1">1</button>
+                            <button class="filter-btn ${state.selectedCount === 10 ? 'selected' : ''}" data-count="10">10</button>
+                            <button class="filter-btn ${state.selectedCount === 'all' ? 'selected' : ''}" data-count="all">Όλες</button>
+                        </div>
+                    </div>
+                    
+                    <button class="start-btn" id="startBtn" ${state.selectedLevel === null || state.selectedCount === null ? 'disabled' : ''}>
+                        Ξεκινήστε το Quiz
+                    </button>
+                    
+                    <div class="copyright-notice">
+                        <a href="http://nea-ellinika.blog" target="_blank" rel="noopener">
+                            Α & Σ Μητσέλος, Νέα Ελληνικά για το Λύκειο, 2026
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderQuiz() {
+            const q = questions[state.currentQuestion];
+            const progress = ((state.currentQuestion + 1) / questions.length) * 100;
+            
+            return `
+                <div class="card">
+                    <div class="header">
+                        <div>
+                            <h1>📝 Συνοχή & Συνεκτικότητα</h1>
+                            <p class="header-subtitle">Νεοελληνική Γλώσσα - Λύκειο</p>
+                        </div>
+                        <div class="question-counter">
+                            <p style="color: #64748b; font-size: 0.875rem;">Άσκηση</p>
+                            <span>${state.currentQuestion + 1}/${questions.length}</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <span class="text-label">Κείμενο ${state.currentQuestion + 1}</span>
+                    ${q.question_type === 'multiple_choice' ? `
+                        <div class="question-text">${q.text}</div>
+                        <div class="question-prompt">${q.question}</div>
+                    ` : ''}
+                    ${q.question_type === 'matching' ? `
+                        <div class="question-prompt">${q.question}</div>
+                    ` : ''}
+                    ${q.question_type === 'pick_words' ? `
+                        <div class="question-prompt">${q.question}</div>
+                    ` : ''}
+                    
+                    ${q['Βοήθεια'] && q['Βοήθεια'].trim() !== '' && !state.answered ? `
+                        <button class="hint-btn" id="hintBtn">
+                            💡 Βοήθεια
+                        </button>
+                        <div class="hint-box" id="hintBox">
+                            <h4>💡 Υπόδειξη:</h4>
+                            <p>${q['Βοήθεια']}</p>
+                        </div>
+                    ` : ''}
+                </div>
+
+                ${renderQuestionType(q)}
+
+                <div id="feedback"></div>
+            `;
+        }
+        
+        function renderQuestionType(q) {
+            switch(q.question_type) {
+                case 'multiple_choice':
+                    return renderMultipleChoice(q);
+                case 'fill_gap':
+                    return renderFillGap(q);
+                case 'matching':
+                    return renderMatching(q);
+                case 'pick_words':
+                    return renderPickWords(q);
+                default:
+                    return '';
+            }
+        }
+        
+        function renderMultipleChoice(q) {
+            return `
+                <div class="card" style="padding: 24px;">
+                    <h3 style="color: #374151; font-size: 1rem; margin-bottom: 16px; text-align: center;">
+                        Τι δηλώνει η τονισμένη λέξη/φράση;
+                    </h3>
+                    <div class="syndesmoi-grid">
+                        ${syndesmoi.map((syndesmos, i) => {
+                            const isCorrect = parseInt(q.answer) === (i + 1);
+                            const isSelected = state.answered && parseInt(q.answer) === (i + 1);
+                            
+                            let classes = 'syndesmos-btn';
+                            if (state.answered) {
+                                if (isCorrect) classes += ' correct-answer';
+                                if (isSelected) classes += ' was-selected';
+                            }
+                            
+                            return `
+                                <button class="${classes}" data-value="${i + 1}" ${state.answered ? 'disabled' : ''}>
+                                    ${syndesmos}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderFillGap(q) {
+            const gapCount = (q.text.match(/______/g) || []).length;
+            const correctAnswers = q.answer ? q.answer.split(',').map(a => a.trim()) : [];
+            const textParts = q.text.split('______');
+            
+            let textHTML = '';
+            textParts.forEach((part, i) => {
+                textHTML += `<span>${part}</span>`;
+                if (i < textParts.length - 1) {
+                    textHTML += `<input type="text" class="gap-input" data-gap-index="${i}" placeholder="..." ${state.answered ? 'disabled' : ''}>`;
+                }
+            });
+            
+            return `
+                <div class="card" style="padding: 24px;">
+                    <div class="gap-text-container">
+                        ${textHTML}
+                    </div>
+                    ${!state.answered ? `
+                        <button class="main-btn primary" id="checkGapBtn" style="margin-top: 16px;">
+                            Έλεγχος Απαντήσεων
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        function renderMatching(q) {
+            const availableWords = q.left_column ? q.left_column.split(',').map(s => s.trim()) : [];
+            let textHTML = q.text;
+            const gapMatches = [...textHTML.matchAll(/\[(\d+)\]______/g)];
+            const gapCount = gapMatches.length;
+            
+            gapMatches.reverse().forEach(match => {
+                const gapNumber = match[1];
+                const gapIndex = match.index;
+                const dropZone = `<span class="inline-drop-zone" data-gap-number="${gapNumber}"></span>`;
+                textHTML = textHTML.substring(0, gapIndex) + dropZone + textHTML.substring(gapIndex + match[0].length);
+            });
+            
+            return `
+                <div class="card" style="padding: 24px;">
+                    <div class="drag-drop-text">
+                        ${textHTML}
+                    </div>
+                    
+                    <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 12px;">
+                        <h4 style="font-size: 0.9rem; color: #64748b; margin-bottom: 12px;">
+                            💡 Σύρετε τις λέξεις στα κενά 
+                            <span style="font-size: 0.85rem; opacity: 0.8;">(πατήστε, κρατήστε, σύρετε)</span>
+                        </h4>
+                        <div class="word-bank">
+                            ${availableWords.map((word, i) => `
+                                <div class="draggable-word" draggable="true" data-word-id="${i}" data-word="${word}">
+                                    ${word}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    ${!state.answered ? `
+                        <button class="main-btn primary" id="checkMatchingBtn" style="margin-top: 16px;" ${Object.keys(state.matchingPairs).length < gapCount ? 'disabled' : ''}>
+                            Έλεγχος Απαντήσεων
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        function renderPickWords(q) {
+            state.requiredWords = q.answer ? q.answer.split(',').map(w => w.trim()).filter(Boolean) : [];
+            
+            let textHTML = q.text;
+            const replacements = [];
+            
+            state.requiredWords.forEach((phrase) => {
+                let startIndex = 0;
+                while (true) {
+                    const index = textHTML.toLowerCase().indexOf(phrase.toLowerCase(), startIndex);
+                    if (index === -1) break;
+                    
+                    replacements.push({
+                        start: index,
+                        end: index + phrase.length,
+                        original: textHTML.substring(index, index + phrase.length),
+                        phrase: phrase
+                    });
+                    
+                    startIndex = index + 1;
+                }
+            });
+            
+            replacements.sort((a, b) => b.start - a.start);
+            
+            const filtered = [];
+            replacements.forEach(r => {
+                const hasOverlap = filtered.some(f => 
+                    (r.start >= f.start && r.start < f.end) ||
+                    (r.end > f.start && r.end <= f.end)
+                );
+                if (!hasOverlap) {
+                    filtered.push(r);
+                }
+            });
+            
+            let finalHTML = textHTML;
+            filtered.forEach(r => {
+                const isSelected = Array.from(state.selectedWords).some(sw => 
+                    normalize(sw) === normalize(r.phrase)
+                );
+                const span = `<span class="pickable-word ${isSelected ? 'selected' : ''}" data-word="${r.phrase.trim()}" data-is-correct="true">${r.original}</span>`;
+                finalHTML = finalHTML.substring(0, r.start) + span + finalHTML.substring(r.end);
+            });
+            
+            return `
+                <div class="options-container">
+                    <div class="pick-words-hint">
+                        💡 Κάντε κλικ στις λέξεις/φράσεις που πιστεύετε ότι είναι σωστές.
+                    </div>
+                    <div class="pick-words-text">
+                        ${finalHTML}
+                    </div>
+                    <div class="pick-words-counter">
+                        Έχετε επιλέξει: ${state.selectedWords.size} / ${state.requiredWords.length}
+                    </div>
+                    <button class="main-btn primary" id="checkPickWordsBtn" style="margin-top: 16px;" ${state.selectedWords.size !== state.requiredWords.length ? 'disabled' : ''}>
+                        Έλεγχος Απαντήσεων
+                    </button>
+                </div>
+            `;
+        }
+        
+        function renderResults() {
+            const percentage = Math.round((state.correctCount / questions.length) * 100);
+            const emoji = percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚';
+            
+            return `
+                <div class="card results-card">
+                    <div class="results-emoji">${emoji}</div>
+                    <h2 class="results-title">Ολοκλήρωσες το Quiz!</h2>
+                    
+                    <div class="results-score-box">
+                        <p class="results-score">${state.correctCount} / ${questions.length}</p>
+                        <p class="results-percentage">(${percentage}%)</p>
+                    </div>
+
+                    ${wrongQuestions.length > 0 ? `
+                        <div class="wrong-questions-section">
+                            <h3>📌 Έχεις ${wrongQuestions.length} λανθασμένη/ες απάντηση/εις</h3>
+                            <button class="repeat-btn" id="repeatBtn">
+                                🔁 Επανάληψη Λανθασμένων
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    <button class="main-btn primary" id="homeBtn">
+                        ⬅ Επιστροφή στην Αρχή
+                    </button>
+                </div>
+            `;
+        }
+
+        function attachEventListeners() {
+            document.querySelectorAll('[data-level]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.selectedLevel = parseInt(btn.dataset.level);
+                    render();
+                });
+            });
+            
+            document.querySelectorAll('[data-count]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const count = btn.dataset.count;
+                    state.selectedCount = count === 'all' ? 'all' : parseInt(count);
+                    render();
+                });
+            });
+            
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                startBtn.addEventListener('click', startQuiz);
+            }
+            
+            let selectedOption = null;
+            let checkTimeout = null;
+            
+            const hintBtn = document.getElementById('hintBtn');
+            const hintBox = document.getElementById('hintBox');
+            if (hintBtn && hintBox) {
+                hintBtn.addEventListener('click', () => {
+                    if (hintBox.classList.contains('show')) {
+                        hintBox.classList.remove('show');
+                        hintBtn.textContent = '💡 Βοήθεια';
+                    } else {
+                        hintBox.classList.add('show');
+                        hintBtn.textContent = '🔼 Απόκρυψη';
+                    }
+                });
+            }
+            
+            document.querySelectorAll('.syndesmos-btn[data-value]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!state.answered) {
+                        if (checkTimeout) {
+                            clearTimeout(checkTimeout);
+                            checkTimeout = null;
+                        }
+                        
+                        document.querySelectorAll('.syndesmos-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        selectedOption = parseInt(btn.dataset.value);
+                        
+                        checkTimeout = setTimeout(() => {
+                            if (selectedOption !== null && !state.answered) {
+                                checkMultipleChoice(btn, selectedOption);
+                            }
+                        }, 1000);
+                    }
+                });
+            });
+            
+            const homeFromQuizBtn = document.getElementById('homeFromQuizBtn');
+            if (homeFromQuizBtn) {
+                homeFromQuizBtn.addEventListener('click', () => {
+                    if (confirm('Θέλεις να επιστρέψεις στην αρχή; Η πρόοδός σου θα χαθεί.')) {
+                        resetState();
+                        render();
+                    }
+                });
+            }
+            
+            const checkGapBtn = document.getElementById('checkGapBtn');
+            if (checkGapBtn) {
+                checkGapBtn.addEventListener('click', checkGap);
+            }
+            
+            const gapInput = document.getElementById('gapInput');
+            if (gapInput) {
+                gapInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !state.answered) {
+                        checkGap();
+                    }
+                });
+            }
+            
+            attachMatchingListeners();
+            
+            const checkMatchingBtn = document.getElementById('checkMatchingBtn');
+            if (checkMatchingBtn) {
+                checkMatchingBtn.addEventListener('click', checkMatching);
+            }
+            
+            attachPickWordsListeners();
+            
+            const checkPickWordsBtn = document.getElementById('checkPickWordsBtn');
+            if (checkPickWordsBtn) {
+                checkPickWordsBtn.addEventListener('click', checkPickWords);
+            }
+            
+            const repeatBtn = document.getElementById('repeatBtn');
+            if (repeatBtn) {
+                repeatBtn.addEventListener('click', repeatWrong);
+            }
+            
+            const homeBtn = document.getElementById('homeBtn');
+            if (homeBtn) {
+                homeBtn.addEventListener('click', () => {
+                    resetState();
+                    render();
+                });
+            }
+        }
+        
+        function resetState() {
+            state.screen = 'selection';
+            state.selectedLevel = null;
+            state.selectedCount = null;
+            state.currentQuestion = 0;
+            state.answered = false;
+            state.correctCount = 0;
+            state.matchingPairs = {};
+            state.selectedWords = new Set();
+            questions = [];
+            wrongQuestions = [];
+        }
+        
+        function attachMatchingListeners() {
+            const draggableWords = document.querySelectorAll('.draggable-word');
+            const dropZones = document.querySelectorAll('.inline-drop-zone');
+            
+            draggableWords.forEach(word => {
+                word.addEventListener('dragstart', (e) => {
+                    state.draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                word.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                });
+                
+                word.addEventListener('touchstart', handleTouchStartMatching, { passive: false });
+                word.addEventListener('touchmove', handleTouchMoveMatching, { passive: false });
+                word.addEventListener('touchend', handleTouchEndMatching, { passive: false });
+            });
+            
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-over');
+                });
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    performMatchingDrop(zone);
+                });
+            });
+        }
+        
+        let touchClone = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        function handleTouchStartMatching(e) {
+            e.preventDefault();
+            state.draggedItem = e.target.closest('.draggable-word');
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            
+            touchClone = state.draggedItem.cloneNode(true);
+            touchClone.style.position = 'fixed';
+            touchClone.style.opacity = '0.8';
+            touchClone.style.pointerEvents = 'none';
+            touchClone.style.zIndex = '10000';
+            touchClone.style.width = state.draggedItem.offsetWidth + 'px';
+            touchClone.style.left = touch.clientX - state.draggedItem.offsetWidth / 2 + 'px';
+            touchClone.style.top = touch.clientY - state.draggedItem.offsetHeight / 2 + 'px';
+            document.body.appendChild(touchClone);
+            
+            state.draggedItem.classList.add('dragging');
+        }
+        
+        function handleTouchMoveMatching(e) {
+            e.preventDefault();
+            if (!state.draggedItem || !touchClone) return;
+            
+            const touch = e.touches[0];
+            touchClone.style.left = touch.clientX - state.draggedItem.offsetWidth / 2 + 'px';
+            touchClone.style.top = touch.clientY - state.draggedItem.offsetHeight / 2 + 'px';
+            
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const dropZone = elementBelow?.closest('.inline-drop-zone');
+            
+            document.querySelectorAll('.inline-drop-zone').forEach(z => z.classList.remove('drag-over'));
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+        }
+        
+        function handleTouchEndMatching(e) {
+            e.preventDefault();
+            if (!state.draggedItem) return;
+            
+            const touch = e.changedTouches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const dropZone = elementBelow?.closest('.inline-drop-zone');
+            
+            if (dropZone) {
+                performMatchingDrop(dropZone);
+            }
+            
+            if (touchClone) {
+                touchClone.remove();
+                touchClone = null;
+            }
+            state.draggedItem.classList.remove('dragging');
+            document.querySelectorAll('.inline-drop-zone').forEach(z => z.classList.remove('drag-over'));
+        }
+        
+        function performMatchingDrop(dropZone) {
+            if (state.draggedItem) {
+                const gapNumber = dropZone.dataset.gapNumber;
+                const wordId = state.draggedItem.dataset.wordId;
+                const word = state.draggedItem.dataset.word;
+                
+                if (state.matchingPairs[gapNumber]) {
+                    const oldWordId = state.matchingPairs[gapNumber].wordId;
+                    const oldWord = document.querySelector(`.draggable-word[data-word-id="${oldWordId}"]`);
+                    if (oldWord) oldWord.classList.remove('used');
+                }
+                
+                Object.keys(state.matchingPairs).forEach(key => {
+                    if (state.matchingPairs[key].wordId === wordId) {
+                        const oldZone = document.querySelector(`.inline-drop-zone[data-gap-number="${key}"]`);
+                        if (oldZone) {
+                            oldZone.textContent = '';
+                            oldZone.classList.remove('filled');
+                        }
+                        delete state.matchingPairs[key];
+                    }
+                });
+                
+                dropZone.textContent = word;
+                dropZone.classList.add('filled');
+                state.draggedItem.classList.add('used');
+                
+                state.matchingPairs[gapNumber] = {
+                    wordId: wordId,
+                    word: word
+                };
+                
+                const gapCount = document.querySelectorAll('.inline-drop-zone').length;
+                const checkBtn = document.getElementById('checkMatchingBtn');
+                if (checkBtn && Object.keys(state.matchingPairs).length >= gapCount) {
+                    checkBtn.disabled = false;
+                }
+            }
+        }
+        
+        function attachPickWordsListeners() {
+            document.querySelectorAll('.pickable-word').forEach(word => {
+                word.addEventListener('click', () => {
+                    const wordText = word.dataset.word;
+                    const isCorrect = word.dataset.isCorrect === 'true';
+                    
+                    if (isCorrect) {
+                        const allInstances = document.querySelectorAll(`.pickable-word[data-word="${wordText}"]`);
+                        
+                        if (state.selectedWords.has(wordText)) {
+                            state.selectedWords.delete(wordText);
+                            allInstances.forEach(instance => {
+                                instance.classList.remove('selected');
+                            });
+                        } else {
+                            state.selectedWords.add(wordText);
+                            allInstances.forEach(instance => {
+                                instance.classList.add('selected');
+                            });
+                        }
+                        
+                        const counter = document.querySelector('.pick-words-counter');
+                        if (counter) {
+                            counter.textContent = `Έχετε επιλέξει: ${state.selectedWords.size} / ${state.requiredWords.length}`;
+                        }
+                        
+                        const checkBtn = document.getElementById('checkPickWordsBtn');
+                        if (checkBtn) {
+                            checkBtn.disabled = state.selectedWords.size !== state.requiredWords.length;
+                        }
+                    }
+                });
+            });
+        }
+
+        function startQuiz() {
+            const typeMap = { 
+                1: 'multiple_choice', 
+                2: 'matching',
+                3: 'fill_gap',
+                4: 'pick_words'
+            };
+            let pool = allData.filter(q => q.question_type === typeMap[state.selectedLevel]);
+            pool = shuffleArray(pool);
+            
+            if (state.selectedCount !== 'all') {
+                pool = pool.slice(0, state.selectedCount);
+            }
+            
+            questions = pool;
+            wrongQuestions = [];
+            state.currentQuestion = 0;
+            state.answered = false;
+            state.correctCount = 0;
+            state.matchingPairs = {};
+            state.selectedWords = new Set();
+            state.screen = 'quiz';
+            render();
+        }
+        
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+        
+        function checkMultipleChoice(btn, value) {
+            state.answered = true;
+            const q = questions[state.currentQuestion];
+            
+            let correctIndex;
+            if (!isNaN(q.answer)) {
+                correctIndex = Number(q.answer) - 1;
+            } else {
+                const answerNormalized = q.answer.toLowerCase().trim();
+                correctIndex = syndesmoi.findIndex(syndesmos => {
+                    const syndesmosNormalized = syndesmos.toLowerCase();
+                    return syndesmosNormalized === answerNormalized || 
+                           syndesmosNormalized.includes(answerNormalized) ||
+                           answerNormalized.includes(syndesmosNormalized);
+                });
+            }
+            
+            const buttons = document.querySelectorAll('.syndesmos-btn');
+            buttons.forEach(b => b.disabled = true);
+            
+            if (value === correctIndex + 1) {
+                btn.classList.add('correct-answer');
+                btn.classList.add('was-selected');
+                state.correctCount++;
+                playCorrectSound();
+            } else {
+                btn.classList.add('wrong-answer');
+                
+                if (correctIndex >= 0 && correctIndex < buttons.length) {
+                    buttons[correctIndex].classList.add('correct-answer');
+                }
+                
+                wrongQuestions.push(q);
+                playWrongSound();
+            }
+            
+            showFeedback(q);
+        }
+        
+        function checkGap() {
+            if (state.answered) return;
+            
+            state.answered = true;
+            const q = questions[state.currentQuestion];
+            const inputs = document.querySelectorAll('.gap-input');
+            const correctAnswers = q.answer.split(',').map(a => a.trim());
+            
+            let allCorrect = true;
+            
+            inputs.forEach((input, index) => {
+                const userAnswer = input.value.trim();
+                const possibleAnswers = correctAnswers[index] ? correctAnswers[index].split('|').map(a => a.trim()) : [];
+                const isCorrect = possibleAnswers.some(ans => normalize(ans) === normalize(userAnswer));
+                
+                input.classList.add(isCorrect ? 'correct' : 'wrong');
+                input.disabled = true;
+                
+                if (!isCorrect) {
+                    allCorrect = false;
+                }
+            });
+            
+            if (allCorrect) {
+                state.correctCount++;
+                playCorrectSound();
+            } else {
+                wrongQuestions.push(q);
+                playWrongSound();
+            }
+            
+            showFeedback(q, !allCorrect);
+        }
+        
+        function checkMatching() {
+            state.answered = true;
+            const q = questions[state.currentQuestion];
+            
+            const correctPairs = {};
+            const pairs = q.answer.split(',').map(p => p.trim());
+            
+            pairs.forEach(pair => {
+                const match = pair.match(/(\d+)-(.+)/);
+                if (match) {
+                    const gapNumber = match[1];
+                    const correctWord = match[2].trim();
+                    correctPairs[gapNumber] = correctWord;
+                }
+            });
+            
+            let allCorrect = true;
+            const dropZones = document.querySelectorAll('.inline-drop-zone');
+            
+            dropZones.forEach(zone => {
+                const gapNumber = zone.dataset.gapNumber;
+                const userWord = state.matchingPairs[gapNumber]?.word;
+                const correctWord = correctPairs[gapNumber];
+                
+                if (userWord && correctWord) {
+                    const isCorrect = normalize(userWord) === normalize(correctWord);
+                    zone.classList.add(isCorrect ? 'correct' : 'wrong');
+                    
+                    if (!isCorrect) {
+                        allCorrect = false;
+                        zone.textContent += ` ✗ (Σωστό: ${correctWord})`;
+                    } else {
+                        zone.textContent += ' ✓';
+                    }
+                } else {
+                    zone.classList.add('wrong');
+                    allCorrect = false;
+                }
+            });
+            
+            if (allCorrect) {
+                state.correctCount++;
+                playCorrectSound();
+            } else {
+                wrongQuestions.push(q);
+                playWrongSound();
+            }
+            
+            showFeedback(q, !allCorrect);
+        }
+        
+        function checkPickWords() {
+            state.answered = true;
+            const q = questions[state.currentQuestion];
+            
+            const selectedArray = Array.from(state.selectedWords);
+            const allCorrect = selectedArray.every(word => 
+                state.requiredWords.some(rw => normalize(rw) === normalize(word))
+            ) && selectedArray.length === state.requiredWords.length;
+            
+            document.querySelectorAll('.pickable-word.selected').forEach(word => {
+                word.classList.add('correct');
+            });
+            
+            document.getElementById('checkPickWordsBtn').disabled = true;
+            
+            if (allCorrect) {
+                state.correctCount++;
+                playCorrectSound();
+            } else {
+                wrongQuestions.push(q);
+                playWrongSound();
+            }
+            
+            showFeedback(q, !allCorrect, `Σωστές λέξεις: ${state.requiredWords.join(', ')}`);
+        }
+        
+        function showFeedback(q, showCorrect = false, correctText = null) {
+            let html = '<div class="feedback-container">';
+            
+            if (showCorrect && correctText) {
+                html += `
+                    <div class="correct-answer-box">
+                        <h4>Σωστή απάντηση:</h4>
+                        <p>${correctText}</p>
+                    </div>
+                `;
+            } else if (showCorrect && q.answer) {
+                html += `
+                    <div class="correct-answer-box">
+                        <h4>Σωστή απάντηση:</h4>
+                        <p>${q.answer}</p>
+                    </div>
+                `;
+            }
+            
+            if (q['Παρατηρήσεις'] && q['Παρατηρήσεις'].trim() !== '') {
+                html += `
+                    <div class="notes-box">
+                        <h4>💡 Παρατήρηση:</h4>
+                        <p>${q['Παρατηρήσεις']}</p>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+                    <button class="main-btn" id="homeBtn" style="background: #64748b; color: white;">
+                        ⬅ Επιστροφή
+                    </button>
+                    <button class="main-btn success" id="nextBtn">
+                        ${state.currentQuestion < questions.length - 1 ? 'Επόμενη →' : 'Αποτελέσματα'}
+                    </button>
+                </div>
+            </div>`;
+            
+            document.getElementById('feedback').innerHTML = html;
+            
+            document.getElementById('homeBtn').addEventListener('click', () => {
+                if (confirm('Θέλεις να επιστρέψεις στην αρχή; Η πρόοδός σου θα χαθεί.')) {
+                    resetState();
+                    render();
+                }
+            });
+            
+            document.getElementById('nextBtn').addEventListener('click', () => {
+                if (state.currentQuestion < questions.length - 1) {
+                    state.currentQuestion++;
+                    state.answered = false;
+                    state.matchingPairs = {};
+                    state.selectedWords = new Set();
+                    render();
+                } else {
+                    state.screen = 'results';
+                    render();
+                }
+            });
+        }
+        
+        function repeatWrong() {
+            questions = [...wrongQuestions];
+            wrongQuestions = [];
+            state.currentQuestion = 0;
+            state.answered = false;
+            state.correctCount = 0;
+            state.matchingPairs = {};
+            state.selectedWords = new Set();
+            state.screen = 'quiz';
+            render();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
