@@ -25,7 +25,12 @@ function titleOf(file, fallback) {
   try {
     const html = fs.readFileSync(file, 'utf8');
     const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (m && m[1].trim()) return m[1].trim();
+    if (m && m[1].trim()) {
+      // Αποκωδικοποίηση βασικών HTML entities (&amp; &lt; &gt; &quot; &#39; ...)
+      return m[1].trim()
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&#0*39;|&apos;/g, "'").replace(/&nbsp;/g, ' ');
+    }
   } catch (e) {}
   return fallback;
 }
