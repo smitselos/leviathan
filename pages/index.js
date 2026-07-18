@@ -584,13 +584,15 @@ export default function Home() {
   // customUrls = πλήρης λίστα ιστοτόπων (defaults + custom), fallback σε SUGGESTED_URLS
   const allSuggestedUrls = customUrls.length > 0 ? customUrls : SUGGESTED_URLS;
 
-  // Φόρτωση manifest εφαρμογών GitHub — παράγεται σε κάθε build από το scripts/generate-apps-manifest.js
-  useEffect(() => {
-    fetch('/apps-manifest.json?ts=' + Date.now())
+  // Φόρτωση manifest εφαρμογών GitHub — παράγεται σε κάθε build από το scripts/generate-apps-manifest.js.
+  // Καλείται στο άνοιγμα της σελίδας ΚΑΙ κάθε φορά που ανοίγει η προβολή «Εφαρμογές» (φρέσκια λίστα, παρακάμπτει κάθε cache).
+  const loadGhApps = useCallback(() => {
+    fetch('/apps-manifest.json?ts=' + Date.now(), { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : Promise.reject(new Error('missing')))
-      .then((d) => setGhApps({ folders: d.folders || [], root: d.root || [] }))
-      .catch(() => { setGhApps({ folders: [], root: [] }); setGhAppsError(true); });
+      .then((d) => { setGhApps({ folders: d.folders || [], root: d.root || [] }); setGhAppsError(false); })
+      .catch(() => { setGhApps((prev) => prev || { folders: [], root: [] }); setGhAppsError(true); });
   }, []);
+  useEffect(() => { loadGhApps(); }, [loadGhApps]);
 
   useEffect(() => { if (status === 'authenticated') { loadAll(); loadNetwork(); loadNetworks(); loadRole(); loadCustomUrls(); loadContacts(); } }, [status, loadAll]);
 
@@ -1532,6 +1534,7 @@ export default function Home() {
   const goHome = () => { setActiveView('home'); setOpenFolder(null); setActiveTagFilter(null); setWalletActive(null); setStatActive(null); setCurrentNetwork(null); setShowNewNetForm(false); setInboxFilter(null); setSearchCategory('texts'); };
   const openFolderView = (fld) => { setOpenFolder(fld); setActiveView('folder'); setActiveTagFilter(null); setFolderSearch(''); setWalletActive(null); };
   const openApps = () => {
+    loadGhApps();
     setGhOpenFolder(null); setGhSearch('');
     setAppsSubfolder(null);
     setOpenFolder({ id: appsFolderId || 'gh-apps', name: 'Εφαρμογές', isApps: true });
