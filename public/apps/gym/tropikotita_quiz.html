@@ -335,6 +335,18 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
   .sound-toggle svg{width:18px;height:18px}
 }
 
+/* ══ Close app button (fixed top-right, αριστερά του ήχου) ══ */
+.close-app-btn{position:fixed;top:20px;right:78px;background:var(--white);border:2px solid var(--border);border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:var(--sh);z-index:1000;padding:0;color:var(--ko)}
+.close-app-btn svg{width:20px;height:20px}
+@media(hover:hover) and (pointer:fine){
+  .close-app-btn:hover{border-color:var(--ko);background:var(--ko-bg);transform:scale(1.05);box-shadow:var(--sh-h)}
+}
+.close-app-btn:active{transform:scale(0.95)}
+@media(max-width:600px){
+  .close-app-btn{top:14px;right:64px;width:40px;height:40px}
+  .close-app-btn svg{width:17px;height:17px}
+}
+
 /* ══ Zoom controls (fixed top-left, ίδιο στυλ με sound-toggle) ══ */
 .zoom-controls{position:fixed;top:20px;left:20px;display:flex;gap:6px;z-index:1000}
 .zoom-btn{background:var(--white);border:2px solid var(--border);border-radius:var(--r-sm);width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:var(--sh);padding:0;font-size:1.2rem;font-weight:700;color:var(--accent);font-family:inherit;line-height:1}
@@ -406,6 +418,9 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
   <button id="zoomMinus" class="zoom-btn" title="Σμίκρυνση" onclick="zoomOut()">−</button>
   <button id="zoomPlus" class="zoom-btn" title="Μεγέθυνση" onclick="zoomIn()">+</button>
 </div>
+<button id="closeApp" class="close-app-btn" type="button" title="Κλείσιμο εφαρμογής" aria-label="Κλείσιμο εφαρμογής" onclick="closeApp()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+</button>
 <div class="wrap">
   <div id="app"><div class="card loading"><div class="spin"></div><p style="color:var(--muted)">Φόρτωση ερωτήσεων…</p></div></div>
 </div>
@@ -487,6 +502,30 @@ function toggleSound() {
   soundEnabled = !soundEnabled;
   try { localStorage.setItem('syntaxi_sound', soundEnabled ? '1' : '0'); } catch(e) {}
   updateSoundButton();
+}
+
+// ══ Κλείσιμο εφαρμογής ══
+function closeApp() {
+  if (!confirm('Κλείσιμο εφαρμογής;')) return;
+  // 1η προσπάθεια: άμεσο κλείσιμο (λειτουργεί σε PWA standalone ή σε παράθυρα που άνοιξαν με script)
+  try { window.close(); } catch(e) {}
+  // 2η προσπάθεια: κόλπο για καρτέλες που δεν άνοιξαν με script
+  try { window.open('', '_self'); window.close(); } catch(e) {}
+  // Fallback: αν το πρόγραμμα περιήγησης δεν επιτρέψει το κλείσιμο, εμφανίζουμε οθόνη αποχαιρετισμού
+  setTimeout(function(){ if (!window.closed) showCloseFallback(); }, 250);
+}
+
+function showCloseFallback() {
+  if (document.getElementById('closeFallback')) return;
+  const ov = document.createElement('div');
+  ov.id = 'closeFallback';
+  ov.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px';
+  ov.innerHTML =
+    '<div style="font-size:2.6rem;margin-bottom:14px">👋</div>' +
+    '<p style="font-family:\'IBM Plex Serif\',serif;font-size:1.3rem;font-weight:700;color:var(--ink);margin-bottom:10px">Η εφαρμογή έκλεισε</p>' +
+    '<p style="color:var(--muted);font-size:.9rem;max-width:340px;line-height:1.55">Το πρόγραμμα περιήγησης δεν επιτρέπει το αυτόματο κλείσιμο αυτής της καρτέλας. Μπορείτε να κλείσετε την καρτέλα ή να επιστρέψετε στην εφαρμογή.</p>' +
+    '<button type="button" onclick="var e=document.getElementById(\'closeFallback\');if(e)e.remove()" style="margin-top:22px;padding:11px 28px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);cursor:pointer;font-size:.92rem;font-weight:700;font-family:inherit">Επιστροφή στην εφαρμογή</button>';
+  document.body.appendChild(ov);
 }
 
 function ensureSoundButton() {
@@ -2395,9 +2434,9 @@ function setZoom(percent) {
   document.body.style.zoom = String(currentZoom / 100);
   // Τα fixed buttons (ήχος, zoom) πρέπει να αντισταθμίσουν το zoom
   const inv = 1 / (currentZoom / 100);
-  document.querySelectorAll('.sound-toggle, .zoom-controls').forEach(el => {
+  document.querySelectorAll('.sound-toggle, .close-app-btn, .zoom-controls').forEach(el => {
     el.style.transform = 'scale(' + inv + ')';
-    el.style.transformOrigin = el.classList.contains('sound-toggle') ? 'top right' : 'top left';
+    el.style.transformOrigin = el.classList.contains('zoom-controls') ? 'top left' : 'top right';
   });
   updateZoomUI();
   try { localStorage.setItem('syntaxi_zoom', currentZoom); } catch(e) {}
