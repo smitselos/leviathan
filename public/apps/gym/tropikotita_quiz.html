@@ -1213,7 +1213,7 @@ function renderAdaptive() {
     </div>
   </div>
   ${theoryHtml}
-  ${q.excerpt ? `<div class="card" style="margin-bottom:14px">${renderExcerpt(q, 'adp')}</div>` : ''}
+  ${(q.excerpt && !(q.type==='GAP' && (q.excerpt.includes('__________') || q.excerpt.includes('_____')))) ? `<div class="card" style="margin-bottom:14px">${renderExcerpt(q, 'adp')}</div>` : ''}
   <div class="${'answers-card' + (adp.answered ? (isOk ? ' answered-ok' : ' answered-ko') : '')}" id="answersCard">
     <p class="q-lbl">${qTypeLabel(q.type)}</p>
     ${q.type==='GAP' && (q.q.includes('__________') || q.q.includes('_____')) ? '' : `<p class="q-txt">${q.q}</p>`}`;
@@ -1421,7 +1421,7 @@ function renderSel() {
   </div>
   `;
 
-  if (q.excerpt) {
+  if (q.excerpt && !(q.type==='GAP' && (q.excerpt.includes('__________') || q.excerpt.includes('_____')))) {
     html += `<div class="card" style="margin-bottom:14px">${renderExcerpt(q, 'sel')}</div>`;
   }
 
