@@ -629,6 +629,8 @@ Object.values(THEORY_CARDS).forEach(card => {
 let allQ = [];
 let catsByKey = {};
 let catOrder = [];
+// Κατάσταση «κλειδωμένου σετ»: true όταν η εφαρμογή άνοιξε μέσω συνδέσμου σετ (QR)
+let setLockMode = false;
 
 // Adaptive Learning State
 let adp = {
@@ -1370,8 +1372,10 @@ function renderSel() {
       <span style="font-size:.8rem;opacity:.88">${scoreDisplay} &nbsp;·&nbsp; ${stepLabel}</span>
     </div>
     <div style="display:flex;gap:6px">
-      <button onclick="screen='home';render();" class="hbtn">🏠<span class="hbtn-lbl">Αρχική</span></button>
-      <button onclick="screen='sel_setup';render();" class="hbtn">⏮<span class="hbtn-lbl">Έναρξη</span></button>
+      ${setLockMode
+        ? `<span class="hbtn" style="opacity:.7;cursor:default;pointer-events:none">🔒<span class="hbtn-lbl">Σετ ασκήσεων</span></span>`
+        : `<button onclick="screen='home';render();" class="hbtn">🏠<span class="hbtn-lbl">Αρχική</span></button>
+      <button onclick="screen='sel_setup';render();" class="hbtn">⏮<span class="hbtn-lbl">Έναρξη</span></button>`}
     </div>
   </div>
   `;
@@ -1409,8 +1413,10 @@ function renderSelResults() {
       <div class="sc a"><p>Σύνολο</p><p>${total}</p></div>
     </div>
   </div>
-  <button class="btn-go" id="btnSelAgain" style="margin-top:4px">🔄 Νέα εξάσκηση</button>
-  <button class="btn-sec" id="btnSelHome2" style="margin-top:8px">↩ Αρχική</button>`;
+  ${setLockMode
+    ? `<button class="btn-go" id="btnSelReplay" style="margin-top:4px">🔄 Ξανά το ίδιο σετ</button>`
+    : `<button class="btn-go" id="btnSelAgain" style="margin-top:4px">🔄 Νέα εξάσκηση</button>
+  <button class="btn-sec" id="btnSelHome2" style="margin-top:8px">↩ Αρχική</button>`}`;
 }
 
 // ══════════════════════════════════════════════
@@ -1657,6 +1663,14 @@ function attachEvents() {
   if (btnSelNextFab) btnSelNextFab.addEventListener('click', doSelNext);
   const btnSelAgain = document.getElementById('btnSelAgain');
   if (btnSelAgain) btnSelAgain.addEventListener('click', ()=>{ screen='sel_setup'; render(); });
+  const btnSelReplay = document.getElementById('btnSelReplay');
+  if (btnSelReplay) btnSelReplay.addEventListener('click', ()=>{
+    sel.qIdx=0; sel.answer=null; sel.answered=false;
+    sel.ddPairs={}; sel.clkSelected=[];
+    sel.correct=0; sel.total=0; sel.results=[];
+    if (sel._autoTimer){ clearTimeout(sel._autoTimer); sel._autoTimer=null; }
+    screen='sel'; render();
+  });
   const btnSelHome2 = document.getElementById('btnSelHome2');
   if (btnSelHome2) btnSelHome2.addEventListener('click', ()=>{ screen='home'; render(); });
 
@@ -2596,24 +2610,30 @@ function printSelWorksheet(questions, s) {
   const setIds = questions.map(q => q.id).filter(v => v != null && v !== '');
   const setUrl = buildSetLink(setIds);
   const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=4&data=' + encodeURIComponent(setUrl);
-  const qrHTML = setIds.length ? `<div style="text-align:right;margin-bottom:10px;page-break-inside:avoid">
-    <a href="${setUrl}" style="display:inline-block;text-align:center;text-decoration:none;color:#000">
-      <img src="${qrSrc}" alt="QR σετ ερωτήσεων" style="width:92px;height:92px;border:1px solid #ddd;border-radius:6px" loading="eager">
-      <div style="font-size:8.5pt;color:#555;margin-top:3px;max-width:150px;line-height:1.25">Σκανάρετε ή πατήστε για το<br>ίδιο σετ στην εφαρμογή</div>
-    </a></div>` : '';
 
-  const logoCell = s.logoUrl ? `
+  // Περιεχόμενο QR για την 3η στήλη (πιο μικρό, ώστε να χωρά δίπλα στα στοιχεία)
+  const qrCornerInner = setIds.length ? `
+      <a href="${setUrl}" style="display:inline-block;text-align:center;text-decoration:none;color:#000">
+        <img src="${qrSrc}" alt="QR σετ ερωτήσεων" style="width:76px;height:76px;border:1px solid #ddd;border-radius:6px" loading="eager">
+        <div style="font-size:7pt;color:#666;margin-top:2px;line-height:1.2;max-width:92px">Σκανάρετε για το ίδιο σετ</div>
+      </a>` : '';
+
+  // 3η στήλη: αν υπάρχει λογότυπο → λογότυπο (χωρίς QR)· αλλιώς → QR (αν υπάρχει σετ).
+  const cornerCell = s.logoUrl ? `
     <td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:${s.logoW}px">
       <img src="${s.logoUrl}" style="width:${s.logoW}px;height:${s.logoH==='auto'?'auto':s.logoH+'px'};object-fit:contain" onerror="this.style.display='none'">
-    </td>` : '';
+    </td>`
+    : (qrCornerInner ? `
+    <td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:96px">${qrCornerInner}
+    </td>` : '');
 
   let headerHTML = '';
-  if (s.school || s.subject || s.className || s.date || s.showName || s.logoUrl) {
+  if (s.school || s.subject || s.className || s.date || s.showName || s.logoUrl || setIds.length) {
     headerHTML = `<table class="hdr-table">`;
     headerHTML += `<tr>`;
     headerHTML += s.school ? `<td><strong>Σχολείο:</strong> ${s.school}</td>` : `<td></td>`;
     headerHTML += s.subject ? `<td><strong>Μάθημα:</strong> ${s.subject}</td>` : `<td></td>`;
-    headerHTML += logoCell;
+    headerHTML += cornerCell;
     headerHTML += `</tr><tr>`;
     if (s.showName) headerHTML += `<td><strong>Ονοματεπώνυμο:</strong> ___________________________</td>`;
     else if (s.className) headerHTML += `<td><strong>Τμήμα:</strong> ${s.className}</td>`;
@@ -2681,7 +2701,6 @@ function printSelWorksheet(questions, s) {
   }
 </style></head><body>
   ${s.watermark ? `<div class="watermark">${s.watermarkText}</div>` : ''}
-  ${qrHTML}
   ${headerHTML}
   <div class="print-title">${s.title}</div>
   ${s.instructions ? `<p class="print-instr">${s.instructions}</p>` : ''}
@@ -2718,6 +2737,7 @@ function loadSetFromHash() {
   sel.ddPairs = {}; sel.clkSelected = [];
   sel.correct = 0; sel.total = 0; sel.results = [];
   if (sel._autoTimer) { clearTimeout(sel._autoTimer); sel._autoTimer = null; }
+  setLockMode = true;   // άνοιξε μέσω συνδέσμου σετ → κλείδωμα στο σετ
   return true;
 }
 
