@@ -1434,6 +1434,10 @@ function renderSel() {
   if (!sel.answered && !isAutoCheckType(q)) {
     html += `<button class="btn-check quiz-btn-full" id="btnSelCheck" ${canSelCheck()?'':'disabled'} style="margin-top:10px">Έλεγξε</button>`;
     html += `<div class="fab-action"><button class="fab-btn check" id="btnSelCheckFab" ${canSelCheck()?'':'disabled'} title="Έλεγχος">✓</button></div>`;
+  } else if (sel.answered) {
+    const last = sel.qIdx >= sel.queue.length - 1;
+    html += `<button class="btn-next quiz-btn-full" id="btnSelNext">${last ? 'Αποτελέσματα →' : 'Επόμενο →'}</button>`;
+    html += `<div class="fab-action"><button class="fab-btn next" id="btnSelNextFab" title="${last ? 'Αποτελέσματα' : 'Επόμενο'}">→</button></div>`;
   }
 
   return html;
@@ -2104,9 +2108,8 @@ function doSelCheck() {
   if (ok) sel.correct++;
   playSound(ok ? 'correct' : 'wrong');
   render();
-  // Αυτόματη μετάβαση στην επόμενη ερώτηση 3 δευτ. μετά τον έλεγχο (σωστό ή λάθος)
-  if (sel._autoTimer) clearTimeout(sel._autoTimer);
-  sel._autoTimer = setTimeout(()=>doSelNext(), 3000);
+  // Χωρίς αυτόματη μετάβαση: ο χρήστης προχωρά με το κουμπί «Επόμενο».
+  if (sel._autoTimer) { clearTimeout(sel._autoTimer); sel._autoTimer = null; }
 }
 
 function doSelNext() {
