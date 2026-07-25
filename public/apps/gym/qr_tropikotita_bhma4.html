@@ -23,7 +23,7 @@
     color:var(--ink);font-family:"Alegreya",Georgia,serif;
     min-height:100dvh;display:flex;align-items:stretch;justify-content:center;
     /* κενό φόντου: κάθετα περισσότερο πάνω-κάτω */
-    padding:12dvh 6vw;overflow:hidden;
+    padding:8dvh 6vw;overflow:hidden;
   }
   /* λεπτές ζώνες αφής στις άκρες + φαρδιά ζώνη αναστροφής στο κέντρο */
   #slot{flex:1 1 auto;min-width:0;position:relative;display:flex;--gutter:clamp(30px,7%,74px)}
@@ -188,7 +188,7 @@
 
   /* Οριζόντια / πλατιά οθόνη: περισσότερο κενό αριστερά-δεξιά */
   @media (min-width:820px),(orientation:landscape){
-    body{padding:8dvh}
+    body{padding:6dvh 8dvh}
     .options.two{grid-template-columns:1fr 1fr}
     .options:not(.two){grid-template-columns:1fr 1fr}
     .face{display:grid;grid-template-columns:1.05fr 1fr;column-gap:clamp(60px,10vw,180px);align-content:stretch}
@@ -554,6 +554,7 @@ const STEPSYN = {
 
 let MIN_PER_SUB = 3;          /* ελάχιστες ερωτήσεις ανά υποβήμα */
 let HIST=[], p=0, flipped=false, __ready=false;
+let __startKind='intro';
 const ENG={ steps:[], si:0, ui:0, queue:[], mode:'learn', free:null,
             stats:{asked:0,right:0} };
 
@@ -731,8 +732,8 @@ function render(dir){
   slot.classList.toggle('no-prev', p===0);
   slot.classList.toggle('no-next', item.kind==='finish' || locked);
   document.getElementById('hintMid').classList.toggle('dim', !isTh);
-  document.getElementById('cuePrev').classList.toggle('dim', p===0);
-  document.getElementById('cueNext').classList.toggle('dim', item.kind==='finish' || locked);
+  document.getElementById('cuePrev').classList.toggle('dim', !canGo(-1));
+  document.getElementById('cueNext').classList.toggle('dim', !canGo(1));
   if(item.kind==='intro'){ renderIntro(); fitCard(); }
   else if(item.kind==='ex'){ renderEx(item); fitCard(); }
   else if(item.kind==='theory'){ renderTheory(item); }
@@ -1152,7 +1153,7 @@ function go(dir){
   p+=dir; flipped=false; render(dir);
 }
 
-document.getElementById('btnHome').addEventListener('click',()=>{if(!__ready)return;p=0;flipped=false;render(0);});
+document.getElementById('btnHome').addEventListener('click',()=>{if(!__ready)return;restartAll();HIST=[{kind:__startKind}];p=0;flipped=false;render(0);});
 document.getElementById('btnClose').addEventListener('click',()=>{try{window.close();}catch(e){}if(!window.closed){history.length>1?history.back():location.replace('about:blank');}});
 document.getElementById('zLeft').addEventListener('click',()=>go(-1));
 document.getElementById('zRight').addEventListener('click',()=>go(1));
@@ -1273,7 +1274,7 @@ async function boot(){
     const ck=parseInt(q['check'],10); if(ck>=0) CHECK_MS=ck;
     ENG.steps=buildEngine(EX); ENG.si=0; ENG.ui=0; loadSub();
     __ready=true;
-    HIST=[{kind:'intro'}]; p=0; flipped=false; render(0);
+    HIST=[{kind:'intro'}]; p=0; flipped=false; render(0); __startKind=HIST[0].kind;
   }catch(err){
     console.error('[quiz] αποτυχία φόρτωσης:',err);
     statusCard('Σφάλμα','Οι ασκήσεις δεν φορτώθηκαν',
