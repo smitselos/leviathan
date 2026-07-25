@@ -593,6 +593,12 @@ function drawNear(sub,d){
   for(let i=0;i<order.length;i++){ q=drawDiff(sub,order[i]); if(q) return q; }
   return null;
 }
+/* Μια «κοντινή» σχετική άσκηση του ίδιου υποβήματος (μπορεί να επαναληφθεί). */
+function relatedQ(sub, exclude){
+  const all=[]; sub.diffs.forEach(d=>sub.pool[d].forEach(q=>all.push(q)));
+  const pool=all.filter(q=>q!==exclude);
+  return pool.length? pool[Math.floor(Math.random()*pool.length)] : null;
+}
 function mkEx(data,sub,extra){
   return Object.assign({kind:'ex', data:data, sub:sub,
                         state:{answered:false,correct:false}}, extra||{});
@@ -601,13 +607,8 @@ function mkEx(data,sub,extra){
 function loadSub(){
   ENG.queue=[];
   const sub=curSub(); if(!sub) return;
-  sub.diffs.forEach(d=>{ const q=drawDiff(sub,d); if(q) ENG.queue.push(mkEx(q,sub)); });
-  let guard=0;
-  while(ENG.queue.length<MIN_PER_SUB && guard++<30){
-    const d=sub.diffs[ENG.queue.length % sub.diffs.length];
-    const q=drawNear(sub,d); if(!q) break;
-    ENG.queue.push(mkEx(q,sub));
-  }
+  /* Όλες οι ασκήσεις του υποβήματος, κατ' αύξουσα δυσκολία. */
+  sub.diffs.forEach(d=>{ let q; while((q=drawDiff(sub,d))) ENG.queue.push(mkEx(q,sub)); });
   ENG.queue.forEach((c,i)=>{ c.n=i+1; c.total=ENG.queue.length; });
 }
 
@@ -634,7 +635,7 @@ function onAnswered(item, ok){
   const inject=[];
   if(!item.remedial){
     inject.push({kind:'theory', th:sub.theory, sub:sub});
-    const alt=drawNear(sub, item.data.diff||1);
+    const alt=relatedQ(sub, item.data);
     if(alt) inject.push(mkEx(alt, sub, {remedial:1}));
     inject.push(mkEx(item.data, sub, {remedial:1, again:true}));
   }else{
@@ -766,7 +767,7 @@ function renderStepDone(item){
   const boxes=(syn.boxes||[]).map(b=>`<div class="box"><h4>${b.h}</h4><p>${b.p}</p></div>`).join("");
   const isLast = ENG.si >= ENG.steps.length-1;
   host.innerHTML=`<div class="card bridge">
-    <div class="head"><span class="eyebrow">Ολοκλήρωσες το βήμα ${st.id}</span><span class="badge">${errs? (errs===1?'1 λάθος':errs+' λάθη') : 'χωρίς λάθη'}</span></div>
+    <div class="head"><span class="eyebrow">Ολοκλήρωσες το βήμα ${st.id}</span><span class="badge">Σύνοψη</span></div>
     <div class="title">${syn.title||('Βήμα '+st.id)}</div>
     <div class="lead">${syn.lead||''}</div>
     <div class="evid">${boxes}</div>
@@ -799,15 +800,12 @@ function renderStepDone(item){
 
 /* Τελική κάρτα */
 function renderFinish(){
-  const a=ENG.stats.asked, r=ENG.stats.right;
-  const errs=ENG.steps.reduce((x,s)=>x+s.errors,0);
   host.innerHTML=`<div class="card gate end">
-    <div class="head"><span class="eyebrow">Τέλος διαδρομής</span><span class="badge">${ENG.steps.length} βήματα</span></div>
-    <div class="title">Ολοκλήρωσες όλα τα βήματα</div>
-    <div class="score">${r}<small> / ${a} με την πρώτη</small></div>
-    <div class="lead">${errs? 'Χρειάστηκαν <b>'+errs+'</b> επαναλήψεις. Μπορείς να ξαναπεράσεις τα βήματα ή να εξασκηθείς ελεύθερα.' : 'Πέρασες όλα τα βήματα χωρίς λάθος.'}</div>
+    <div class="head"><span class="eyebrow">Ολοκλήρωση</span><span class="badge">Όλες οι ασκήσεις</span></div>
+    <div class="title">Ολοκλήρωσες όλες τις ασκήσεις</div>
+    <div class="lead">Πέρασες από όλες τις ασκήσεις της ενότητας. Μπορείς να ξεκινήσεις ξανά όποτε θέλεις.</div>
     <div class="actions">
-      <button class="reveal-btn" id="againAllBtn">↻ Επανάληψη βημάτων μάθησης</button>
+      <button class="reveal-btn" id="againAllBtn">↻ Ξεκίνα ξανά από την αρχή</button>
     </div>
   </div>`;
   host.querySelector('#againAllBtn').addEventListener('click',()=>{
