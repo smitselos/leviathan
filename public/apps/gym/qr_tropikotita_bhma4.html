@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="el"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Βήμα 4 · Σημασίες των εγκλίσεων</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&family=GFS+Didot&display=swap">
+<style>
+  :root{
+    --ink:#182131; --ink-2:#212d42;
+    --parchment:#efe7d6; --parchment-2:#e6dcc6;
+    --gold:#b6883f; --gold-soft:#cda85f;
+    --page-bg:#d9d2c4;
+    --ok:#4e7d3e; --ok-bg:#e5efd7; --ok-bd:#bcd3a3;
+    --ko:#b54a2a; --ko-bg:#f6ded3; --ko-bd:#e8bda8;
+    --shadow:rgba(20,26,38,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 90% at 50% 0%, #e3ddd0 0%, var(--page-bg) 60%, #cfc7b7 100%);
+    color:var(--ink);font-family:"Alegreya",Georgia,serif;
+    min-height:100dvh;display:flex;align-items:stretch;justify-content:center;
+    /* κενό φόντου: κάθετα περισσότερο πάνω-κάτω */
+    padding:12dvh 6vw;overflow:hidden;
+  }
+  /* λεπτές ζώνες αφής στις άκρες + φαρδιά ζώνη αναστροφής στο κέντρο */
+  #slot{flex:1 1 auto;min-width:0;position:relative;display:flex;--gutter:clamp(30px,7%,74px)}
+  #cardhost{position:absolute;inset:0;display:flex}
+  .zone{position:absolute;top:0;bottom:0;border:none;background:transparent;cursor:pointer;padding:0;z-index:5}
+  .zone:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+  .zone.left{left:0;width:var(--gutter)}
+  .zone.right{right:0;width:var(--gutter)}
+  .zone.center{left:var(--gutter);right:var(--gutter);z-index:4;pointer-events:none;cursor:default}
+  #slot.flippable .zone.center{pointer-events:auto;cursor:pointer}
+
+  /* ── Κάρτα ασκήσεων / γέφυρας ── */
+  .card{--sc:1;width:100%;height:100%;position:relative;border-radius:18px;
+    background:linear-gradient(150deg,var(--parchment) 0%,var(--parchment-2) 100%);
+    border:1px solid rgba(24,33,49,.12);box-shadow:0 18px 40px -14px var(--shadow);
+    padding:clamp(22px,4vw,40px) var(--gutter);display:flex;flex-direction:column;justify-content:center;
+    overflow:hidden}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes slideR{from{opacity:0;transform:translateX(14%)}to{opacity:1;transform:none}}
+  @keyframes slideL{from{opacity:0;transform:translateX(-14%)}to{opacity:1;transform:none}}
+  #cardhost.slideR{animation:slideR .55s cubic-bezier(.25,.8,.25,1)}
+  #cardhost.slideL{animation:slideL .55s cubic-bezier(.25,.8,.25,1)}
+  #cardhost.fadeIn{animation:fade .38s cubic-bezier(.25,.8,.25,1)}
+
+  /* ένδειξη πλοήγησης */
+  .navhint{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);
+    display:flex;gap:12px;align-items:center;pointer-events:none;z-index:20;
+    font-family:"Alegreya Sans",sans-serif;font-size:.72rem;letter-spacing:.05em;color:#7a6a48;
+    background:rgba(247,242,232,.72);border:1px solid rgba(182,136,63,.28);border-radius:22px;
+    padding:6px 15px;box-shadow:0 4px 14px rgba(20,26,38,.12);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .navhint .cue{white-space:nowrap}
+  .navhint .cue.prev,.navhint .cue.next,.navhint .cue.mid{pointer-events:auto;cursor:pointer;border-radius:12px;padding:2px 7px;margin:-2px 0;transition:background .15s,opacity .15s}
+  @media(hover:hover){.navhint .cue.prev:hover,.navhint .cue.next:hover,.navhint .cue.mid:hover{background:rgba(182,136,63,.18);color:#5f5136}}
+  .navhint .cue.dim{opacity:.32;pointer-events:none}
+  .navhint .mid{color:#5f5136;font-weight:700}
+  .navhint .mid.dim{opacity:.32;font-weight:500}
+  .navhint .sep{width:1px;height:12px;background:rgba(182,136,63,.4)}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+  .eyebrow{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:calc(clamp(.8rem,1.8vw,.95rem) * var(--sc));
+    letter-spacing:.2em;text-transform:uppercase;color:#9a7a35}
+  .badge{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.6rem;letter-spacing:.1em;
+    text-transform:uppercase;color:#6a5836;background:rgba(182,136,63,.16);
+    border:1px solid rgba(182,136,63,.3);border-radius:20px;padding:3px 10px;white-space:nowrap}
+  .prompt{font-family:"Alegreya Sans",sans-serif;font-weight:600;font-size:calc(clamp(1.1rem,3.4vw,1.3rem) * var(--sc));
+    color:var(--ink-2);margin-bottom:calc(14px * var(--sc));line-height:1.4}
+  .sentence{font-family:"GFS Didot",serif;font-size:calc(clamp(1.2rem,4.2vw,1.55rem) * var(--sc));line-height:1.35;
+    color:#26201a;background:#fff8ec;border:1px solid rgba(182,136,63,.28);border-radius:12px;
+    padding:calc(16px * var(--sc)) calc(18px * var(--sc));margin-bottom:calc(16px * var(--sc))}
+  .sentence.clk .tok{cursor:pointer;border-radius:5px;padding:0 1px;transition:background .15s}
+  @media(hover:hover){.sentence.clk .tok:hover{background:rgba(182,136,63,.2)}}
+  .sentence .tok.correct{background:var(--ok-bg);box-shadow:inset 0 0 0 1px var(--ok-bd);color:#2f5222}
+  .sentence .tok.wrong{background:var(--ko-bg);box-shadow:inset 0 0 0 1px var(--ko-bd);color:#7a2f1a}
+  .clk-hint{font-family:"Alegreya Sans",sans-serif;font-size:calc(clamp(.9rem,2.4vw,1rem) * var(--sc));color:#9a875f;margin:-6px 0 calc(14px * var(--sc))}
+  .options{display:grid;gap:calc(10px * var(--sc))}
+  .options.two{grid-template-columns:1fr 1fr}
+  .opt{font-family:"Alegreya Sans",sans-serif;font-weight:400;font-size:calc(clamp(1.05rem,3vw,1.2rem) * var(--sc));
+    text-align:left;padding:calc(13px * var(--sc)) calc(16px * var(--sc));border-radius:12px;cursor:pointer;color:var(--ink);
+    background:#fff8ec;border:1px solid rgba(24,33,49,.16);transition:all .15s}
+  .opt:hover:not(:disabled){border-color:var(--gold);background:#fff}
+  .opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:var(--ok-bg);border-color:var(--ok-bd);color:#2f5222}
+  .opt.wrong{background:var(--ko-bg);border-color:var(--ko-bd);color:#7a2f1a}
+  .opt .mark{float:right;font-weight:700}
+  .matchwrap{display:flex;flex-direction:column;gap:calc(12px * var(--sc));margin-top:calc(4px * var(--sc))}
+  .mpool{display:flex;flex-wrap:wrap;gap:calc(8px * var(--sc));min-height:calc(24px * var(--sc));padding:calc(6px * var(--sc));border:1px dashed rgba(24,33,49,.22);border-radius:12px;background:rgba(255,248,236,.5)}
+  .mzones{display:grid;grid-template-columns:1fr 1fr;gap:calc(10px * var(--sc))}
+  .mzone{min-height:calc(78px * var(--sc));border:1px solid rgba(24,33,49,.16);border-radius:12px;background:#fff8ec;padding:calc(8px * var(--sc));display:flex;flex-direction:column;gap:calc(6px * var(--sc));transition:border-color .15s,background .15s}
+  .mzone.over{border-color:var(--gold);background:#fff;box-shadow:inset 0 0 0 1px var(--gold-soft)}
+  .mzlabel{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:calc(clamp(.72rem,2.2vw,.85rem) * var(--sc));letter-spacing:.04em;color:var(--gold);text-transform:uppercase}
+  .mitem{font-family:"GFS Didot",serif;font-size:calc(clamp(1rem,3.2vw,1.2rem) * var(--sc));line-height:1.25;color:var(--ink);background:var(--parchment);border:1px solid rgba(24,33,49,.2);border-radius:10px;padding:calc(9px * var(--sc)) calc(12px * var(--sc));cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 1px 3px rgba(20,26,38,.12)}
+  .mitem.mdragging{opacity:.35}
+  .mitem.correct{background:var(--ok-bg);border-color:var(--ok-bd);color:#2f5222}
+  .mitem.wrong{background:var(--ko-bg);border-color:var(--ko-bd);color:#7a2f1a}
+  .mitem.locked{cursor:default}
+  .sentence.gap{line-height:1.95}
+  .gapinput{font-family:"GFS Didot",serif;font-size:inherit;color:var(--ink);background:#fff8ec;border:none;border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;padding:1px 10px;min-width:6.5em;width:auto;text-align:center;outline:none;transition:background .15s,border-color .15s}
+  .gapinput:focus{background:#fff;border-bottom-color:var(--ink)}
+  .gapinput.correct{background:var(--ok-bg);border-bottom-color:var(--ok-bd);color:#2f5222}
+  .gapinput.wrong{background:var(--ko-bg);border-bottom-color:var(--ko-bd);color:#7a2f1a}
+  .gaprow{margin-top:calc(12px * var(--sc));display:flex;justify-content:flex-start}
+  .opt.gapcheck{flex:0 0 auto;text-align:center;font-weight:700;background:var(--ink);color:var(--parchment);border-color:var(--ink)}
+  .opt.gapcheck:hover:not(:disabled){background:var(--ink-2);border-color:var(--ink-2)}
+  .mghost{position:fixed;z-index:99999;pointer-events:none;font-family:"GFS Didot",serif;font-size:calc(clamp(1rem,3.2vw,1.2rem) * var(--sc));line-height:1.25;color:var(--ink);background:#fff;border:1px solid var(--gold);border-radius:10px;padding:calc(9px * var(--sc)) calc(12px * var(--sc));box-shadow:0 6px 18px rgba(20,26,38,.28);transform:rotate(-1.5deg)}
+  .feedback{margin-top:calc(14px * var(--sc));border-radius:12px;padding:calc(13px * var(--sc)) calc(16px * var(--sc));font-size:calc(clamp(.9rem,2.7vw,.98rem) * var(--sc));
+    line-height:1.4;display:none}
+  .feedback.show{display:block;animation:fade .25s ease}
+  .feedback.ok{background:var(--ok-bg);border:1px solid var(--ok-bd);color:#2f5222}
+  .feedback.ko{background:var(--ko-bg);border:1px solid var(--ko-bd);color:#7a2f1a}
+  .feedback b{font-weight:700}
+
+  /* ── Γέφυρα ── */
+  .bridge .title{font-family:"GFS Didot",serif;font-size:calc(clamp(1.5rem,5.4vw,2rem) * var(--sc));line-height:1.12;
+    color:var(--ink);margin-bottom:calc(12px * var(--sc))}
+  .bridge .lead{font-size:calc(clamp(1rem,3vw,1.12rem) * var(--sc));line-height:1.45;color:#3a3226;margin-bottom:calc(14px * var(--sc))}
+  .evid{display:grid;grid-template-columns:1fr;gap:calc(10px * var(--sc));margin-bottom:calc(16px * var(--sc))}
+  @media(min-width:620px){.evid{grid-template-columns:1fr 1fr}}
+  .evid .box{background:#fff8ec;border:1px solid rgba(182,136,63,.28);border-radius:12px;padding:calc(12px * var(--sc)) calc(14px * var(--sc))}
+  .evid .box h4{font-family:"Alegreya Sans",sans-serif;font-size:calc(clamp(.8rem,2vw,.95rem) * var(--sc));letter-spacing:.14em;
+    text-transform:uppercase;color:#9a7a35;margin-bottom:6px}
+  .evid .box p{font-style:italic;color:#3a3226;font-size:calc(clamp(1.1rem,3vw,1.25rem) * var(--sc));line-height:1.4}
+  .reveal-btn{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:calc(.9rem * var(--sc));cursor:pointer;
+    color:var(--parchment);background:var(--ink);border:none;border-radius:12px;padding:calc(12px * var(--sc)) calc(18px * var(--sc));
+    transition:background .2s;align-self:flex-start}
+  .reveal-btn:hover{background:var(--ink-2)}
+  .reveal-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .reveal{margin-top:calc(14px * var(--sc));display:none}
+  .reveal.show{display:block;animation:fade .3s ease}
+  .reveal .term{font-family:"GFS Didot",serif;font-size:calc(clamp(1.6rem,6vw,2.2rem) * var(--sc));color:var(--ink);margin-bottom:8px}
+  .reveal .term .initial{color:var(--gold)}
+  .reveal p{font-size:calc(clamp(1rem,3vw,1.1rem) * var(--sc));line-height:1.45;color:#3a3226}
+  .reveal .go{margin-top:calc(12px * var(--sc));font-family:"Alegreya Sans",sans-serif;font-weight:700;color:var(--gold);
+    font-size:calc(.9rem * var(--sc))}
+
+  /* ── Θεωρία (flip) — πιο ήπια αναστροφή ── */
+  .thwrap{width:100%;height:100%;perspective:min(2200px,180vmin);perspective-origin:50% 50%;display:flex;align-items:stretch}
+  .thcard{position:relative;width:100%;height:100%;transform-style:preserve-3d;cursor:pointer;border-radius:16px;transition:transform .55s cubic-bezier(.4,.02,.2,1)}
+  .thcard.flipped{transform:rotateY(180deg)}
+  .thcard.animBack{animation:flipToBack .55s cubic-bezier(.4,.02,.2,1) forwards}
+  .thcard.animFront{animation:flipToFront .55s cubic-bezier(.4,.02,.2,1) forwards}
+  @keyframes flipToBack{from{transform:rotateY(0deg)}to{transform:rotateY(180deg)}}
+  @keyframes flipToFront{from{transform:rotateY(180deg)}to{transform:rotateY(0deg)}}
+  .thcard:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    border-radius:16px;padding:clamp(22px,4vw,40px) var(--gutter);
+    box-shadow:0 18px 40px -12px var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .col{display:flex;flex-direction:column;min-height:0;overflow:hidden;font-size:var(--fs,18px)}
+  .col.main{flex:3 1 0}
+  .col.aside{flex:2 1 0}
+  .front{background:linear-gradient(160deg,var(--ink-2) 0%,var(--ink) 70%);color:var(--parchment)}
+  .front::after{content:"";position:absolute;inset:12px;border:1px solid rgba(182,136,63,.35);border-radius:9px;pointer-events:none}
+  .kicker{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.62em;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--gold-soft);line-height:1.2}
+  .main .kicker{margin-bottom:auto}
+  .term{font-family:"GFS Didot",serif;font-size:2.15em;line-height:1.03;color:#fff;margin:.18em 0 .32em}
+  .term .initial{color:var(--gold-soft)}
+  .def{font-size:1em;line-height:1.46;color:var(--parchment)}
+  .scholion{margin-top:.7em;padding-top:.6em;border-top:1px solid rgba(182,136,63,.3)}
+  .scholion .h{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.58em;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:.4em}
+  .scholion p{font-size:.86em;line-height:1.42;color:rgba(239,231,214,.86)}
+  .flip-hint{flex:0 0 auto;margin-top:.5em;padding-top:.6em;display:flex;align-items:center;gap:.5em;
+    font-family:"Alegreya Sans",sans-serif;font-size:.72rem;letter-spacing:.06em;color:rgba(239,231,214,.6)}
+  .flip-hint svg{width:15px;height:15px;opacity:.8;flex:0 0 auto}
+  .back .flip-hint{color:rgba(24,33,49,.6)}
+  .bookref{font-family:"Alegreya Sans",sans-serif;font-size:.74em;letter-spacing:.02em;font-style:italic;color:var(--gold-soft);margin-top:.8em;padding-top:.55em;border-top:1px solid rgba(182,136,63,.28)}
+  .back{transform:rotateY(180deg);background:linear-gradient(150deg,var(--parchment) 0%,var(--parchment-2) 100%);color:var(--ink)}
+  .back::after{content:"";position:absolute;inset:12px;border:1px solid rgba(24,33,49,.14);border-radius:9px;pointer-events:none}
+  .back .kicker{color:#9a7a35}
+  .back .def{color:var(--ink)}
+  .term-small{font-family:"GFS Didot",serif;font-size:1.28em;line-height:1.1;color:var(--ink);margin:.25em 0 auto}
+  .ex-list{margin-top:.5em;display:flex;flex-direction:column;gap:.5em}
+  .ex-line{font-family:"Alegreya",serif;font-style:italic;font-size:.98em;line-height:1.3;color:#2a2016;position:relative;padding-left:.7em}
+  .ex-line::before{content:"";position:absolute;left:0;top:.15em;bottom:.15em;width:2px;background:var(--gold);border-radius:2px}
+  .ex-note{margin-top:.7em;padding-top:.6em;border-top:1px solid rgba(24,33,49,.14);font-size:.86em;line-height:1.4;color:#4a4232}
+  .ex-note .h{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.6em;letter-spacing:.18em;text-transform:uppercase;color:#9a7a35;margin-bottom:.4em}
+
+  .kbd-hint{margin-top:11px;font-family:"Alegreya Sans",sans-serif;font-size:.68rem;
+    letter-spacing:.05em;color:#8a7a58;text-align:center}
+  .kbd-hint b{color:#5f5136;font-weight:700}
+  @media (hover:none){.kbd-hint{display:none}}
+
+  /* Οριζόντια / πλατιά οθόνη: περισσότερο κενό αριστερά-δεξιά */
+  @media (min-width:820px),(orientation:landscape){
+    body{padding:8dvh}
+    .options.two{grid-template-columns:1fr 1fr}
+    .options:not(.two){grid-template-columns:1fr 1fr}
+    .face{display:grid;grid-template-columns:1.05fr 1fr;column-gap:clamp(60px,10vw,180px);align-content:stretch}
+    .col.aside{justify-content:flex-start;padding-left:clamp(18px,2.2vw,28px);max-height:75%}
+    .front .col.aside{border-left:1px solid rgba(182,136,63,.32)}
+    .back .col.aside{border-left:1px solid rgba(24,33,49,.16)}
+    .scholion,.ex-note{border-top:none;margin-top:0;padding-top:0}
+    .flip-hint{position:absolute;bottom:clamp(18px,2.6vw,28px);right:var(--gutter);left:auto;margin:0;padding:0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .thcard.animBack{animation-duration:.3s}
+    .thcard.animFront{animation-duration:.3s}
+    #cardhost.slideR,#cardhost.slideL,#cardhost.fadeIn{animation-duration:.2s}
+  }
+  #slot.no-prev .zone.left{display:none}
+  /* ── Desktop nav arrows (pulsing) ── */
+  @media (hover:hover) and (pointer:fine){
+    .zone.left::before,.zone.right::before{
+      content:''; position:absolute; top:50%; transform:translateY(-50%);
+      width:44px; height:44px; border-radius:50%;
+      background:rgba(255,255,255,.72); backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      box-shadow:0 4px 14px rgba(20,26,38,.18);
+      border:1px solid rgba(24,33,49,.14);
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23182131' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='15 6 9 12 15 18'/></svg>");
+      background-repeat:no-repeat; background-position:center; background-size:22px 22px;
+      animation:navpulse 1.6s ease-in-out infinite;
+      pointer-events:none; opacity:.9;
+    }
+    .zone.left::before{ left:16px; }
+    .zone.right::before{ right:16px;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23182131' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 6 15 12 9 18'/></svg>");
+      animation-delay:.4s;
+    }
+    .zone.left:hover::before,.zone.right:hover::before{ opacity:1; transform:translateY(-50%) scale(1.06); }
+    #slot.no-prev .zone.left::before, #slot.no-next .zone.right::before{ display:none; }
+  }
+  @keyframes navpulse{
+    0%,100%{ transform:translateY(-50%) scale(1); opacity:.55; }
+    50%{ transform:translateY(-50%) scale(1.12); opacity:1; }
+  }
+  #slot.no-next .zone.right{display:none}
+  /* ── Σύρσιμο (drag) ── */
+  #cardhost.dragging{transition:none!important}
+  #cardhost.snapback{transition:transform .26s cubic-bezier(.2,.7,.3,1), opacity .26s ease}
+  #slot{touch-action:pan-y}
+  /* Εισαγωγή / Τέλος */
+  .card.gate .title{font-family:"GFS Didot",serif;font-size:calc(clamp(1.8rem,6vw,2.6rem) * var(--sc));line-height:1.08;color:var(--ink);margin-bottom:calc(14px * var(--sc))}
+  .card.gate .title .initial{color:var(--gold)}
+  .card.gate .lead{font-size:calc(clamp(1rem,3vw,1.15rem) * var(--sc));line-height:1.5;color:#3a3226;margin-bottom:calc(20px * var(--sc))}
+  .card.gate .actions{display:flex;gap:calc(10px * var(--sc));flex-wrap:wrap}
+  .card.gate .btn-secondary{background:transparent;color:var(--ink);border:1px solid rgba(24,33,49,.35)}
+  .card.gate .btn-secondary:hover{background:rgba(24,33,49,.05)}
+  .card.gate .score{font-family:"GFS Didot",serif;font-size:calc(clamp(2.2rem,7vw,3rem) * var(--sc));color:var(--gold);line-height:1;margin:calc(6px * var(--sc)) 0 calc(18px * var(--sc))}
+  .card.gate .score small{font-family:"Alegreya Sans",sans-serif;font-size:.4em;color:#6a5836;letter-spacing:.06em;font-weight:600}
+  #topbar{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));display:flex;gap:8px;z-index:60}
+  .tb-btn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(24,33,49,.18);background:rgba(255,255,255,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#182131;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .18s ease,transform .12s ease,box-shadow .18s ease;box-shadow:0 2px 8px rgba(20,26,38,.12)}
+  .tb-btn:hover{background:rgba(255,255,255,.92);transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,26,38,.18)}
+  .tb-btn:active{transform:translateY(0)}
+  .tb-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  #copyright{position:fixed;left:calc(6vw + 4px);top:max(14px,env(safe-area-inset-top));z-index:15;pointer-events:none;font-family:"Alegreya Sans",sans-serif;font-size:.6rem;letter-spacing:.04em;font-style:italic;color:rgba(122,106,72,.62);max-width:60vw;line-height:1.25}
+  @media (min-width:820px),(orientation:landscape){#copyright{font-size:.64rem;left:calc(8dvh + 4px)}}
+  .tb-btn svg{width:18px;height:18px}
+
+/* ── προσαρμοστική ροή ── */
+.tagrow{display:flex;align-items:center;gap:.6em;margin:-.2em 0 .5em}
+.warnbadge{background:var(--terracotta,#b5563f);color:#fff;border-color:transparent}
+.diffdots{font-size:.62em;letter-spacing:.18em;opacity:.5}
+.nexthint{margin-top:.7em;font-size:.66em;opacity:.72;font-style:italic;text-align:right}
+.thwarn{margin:0 0 .5em;padding:.45em .7em;border-left:3px solid var(--terracotta,#b5563f);
+  background:rgba(181,86,63,.09);font-size:.62em;line-height:1.4;border-radius:0 4px 4px 0}
+.thtable{display:flex;flex-direction:column;gap:.42em;margin-top:.5em}
+.throw{display:grid;grid-template-columns:minmax(6.5em,30%) 1fr;gap:.7em;align-items:start;
+  padding-bottom:.42em;border-bottom:1px solid rgba(0,0,0,.08)}
+.throw:last-child{border-bottom:0}
+.throw .k{font-weight:600;font-size:.94em;opacity:.85}
+.throw .v{font-style:italic;opacity:.92}
+.setup{margin:.6em 0}
+.setup .h{font-size:.66em;opacity:.7;margin-bottom:.35em;letter-spacing:.03em}
+.setup .h small{opacity:.65;font-weight:400}
+.picks{display:flex;flex-wrap:wrap;gap:.4em}
+.picks .opt{flex:0 0 auto;padding:.35em .8em;font-size:.72em}
+.opt.sel{background:var(--ink,#1c1c1c);color:#fff;border-color:transparent}
+
+/* ── φάση ελέγχου ── */
+.checkbar{margin-top:.85em}
+.cb-label{font-size:.58em;letter-spacing:.09em;text-transform:uppercase;opacity:.55;margin-bottom:.4em}
+.cb-track{height:3px;border-radius:2px;background:rgba(0,0,0,.1);overflow:hidden}
+.cb-fill{height:100%;width:0;border-radius:2px;background:currentColor;opacity:.5;
+  transition-property:width;transition-timing-function:linear}
+.card.checking .feedback{display:none}
+.card.checking .mark{visibility:hidden}
+.card.checking .tok.correct,.card.checking .tok.wrong{background:transparent;box-shadow:none;color:inherit}
+.card.checking .opt.correct,.card.checking .opt.wrong{background:transparent;border-color:rgba(0,0,0,.16);color:inherit}
+.card.checking .mitem.correct,.card.checking .mitem.wrong{background:transparent;border-color:rgba(0,0,0,.16);color:inherit}
+.card.checking .gapinput.correct,.card.checking .gapinput.wrong{background:transparent;border-bottom-color:rgba(0,0,0,.28);color:inherit}
+</style>
+
+</head>
+<body>
+
+  <div id="topbar" aria-hidden="false">
+    <button id="btnHome" class="tb-btn" aria-label="Επιστροφή στην αρχή"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5 10v9h14v-9"></path><path d="M10 19v-5h4v5"></path></svg></button>
+    <button id="btnClose" class="tb-btn" aria-label="Κλείσιμο"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+  </div>
+
+  <div id="copyright" aria-label="Πνευματικά δικαιώματα">© Α &amp; Σ Μητσέλος — ΕΛΛΗΝΟΕΚΔΟΤΙΚΗ, 2026</div>
+
+  <div id="slot">
+    <div id="cardhost"></div>
+    <button class="zone left" id="zLeft" aria-label="Προηγούμενο"></button>
+    <button class="zone center" id="zCenter" aria-label="Αναστροφή"></button>
+    <button class="zone right" id="zRight" aria-label="Επόμενο"></button>
+  </div>
+
+  <div class="navhint" role="toolbar" aria-label="Πλοήγηση">
+    <span class="cue prev" id="cuePrev" role="button" tabindex="0">‹ προηγούμενη</span><span class="sep"></span><span class="cue mid" id="hintMid" role="button" tabindex="0">↻ αναστροφή</span><span class="sep"></span><span class="cue next" id="cueNext" role="button" tabindex="0">επόμενη ›</span>
+  </div>
+
+<!-- ══ ΕΝΣΩΜΑΤΩΜΕΝΑ ΔΕΔΟΜΕΝΑ ΑΣΚΗΣΕΩΝ (offline) ══
+     Πηγή: tropikotita_quiz_data.xlsx · 79 ενεργές ασκήσεις.
+     Δεν εκτελείται· διαβάζεται ως κείμενο από loadEX(). -->
+<script type="text/csv" id="__EX_CSV__">
+ID,Ενεργό,Κατηγορία,Δυσκολία,Τύπος,Απόσπασμα,Κείμενο Ερώτησης,Επιλογή Α,Επιλογή Β,Επιλογή Γ,Επιλογή Δ,Σωστή Απάντηση,Αριστερά 1,Αριστερά 2,Αριστερά 3,Αριστερά 4,Δεξιά 1,Δεξιά 2,Δεξιά 3,Δεξιά 4,Λέξη-Στόχος,Διόρθωση 1,Διόρθωση 2,Διόρθωση 3,Διόρθωση 4,Θεωρία
+T060,True,4.1,3,DD,,Αντιστοίχισε κάθε πρόταση με τη σημασία που δηλώνει η οριστική έγκλιση.,,,,,Αριστερά 1→Δεξιά 1| Αριστερά 2→Δεξιά 2| Αριστερά 3→Δεξιά 3| Αριστερά 4→Δεξιά 4|,Η Γη γυρίζει.,Θα έκανα τα πάντα για τον φίλο μου.,Δεν είναι εδώ. Θα έχει πάει στο γήπεδο.,Μου δίνεις ένα ποτήρι νερό;,Βεβαιότητα,Δυνατότητα,Πιθανότητα,Παράκληση,,"1: βέβαιο/πραγματικό. 2: δυνητική οριστική (θα + Παρατατικός) → δυνατότητα. 3: πιθανολογική οριστική (θα + Παρακείμενος) → πιθανότητα. 4: απλή οριστική σε ερώτηση, ισοδύναμη προστακτικής → παράκληση.",,,,8
+T061,True,4.1,3,DD,,Αντιστοίχισε κάθε πρόταση με τη σημασία που δηλώνει η οριστική έγκλιση.,,,,,Αριστερά 1→Δεξιά 1| Αριστερά 2→Δεξιά 2| Αριστερά 3→Δεξιά 3| Αριστερά 4→Δεξιά 4|,Το νερό της θάλασσας δεν πίνεται.,Στη θέση σου δεν θα έκανα τα ίδια.,Θα είσαι κουρασμένος μετά από τόση δουλειά.,Μου αφήνεις πέντε ευρώ για τσιγάρα;,Βεβαιότητα,Δυνατότητα,Πιθανότητα,Παράκληση,,"1: βέβαιο/πραγματικό. 2: δυνητική οριστική (θα + Παρατατικός) → δυνατότητα. 3: πιθανολογική οριστική (θα + Ενεστώτας) → πιθανότητα. 4: απλή οριστική σε ερώτηση, ισοδύναμη προστακτικής → παράκληση.",,,,8
+T062,True,4.1,2,MC,"Αν οι άνθρωποι τηρούσαν τους κανόνες ασφαλούς οδήγησης, θα μειωνόταν ο αριθμός των ατυχημάτων.",Ο τύπος «θα μειωνόταν» (οριστική) δηλώνει:,Βεβαιότητα,Δυνατότητα (δυνητική οριστική),Οδηγία,,Β,,,,,,,,,,«θα» + παρελθοντικός χρόνος σε υποθετικό λόγο → δυνητική οριστική: δηλώνει το δυνατό/υποθετικό.,,,,8
+T063,True,4.1,1,YN,"Κάθεσαι λίγο πιο δεξιά, για να βλέπω ;",Ο τύπος «Κάθεσαι» βρίσκεται σε προστακτική έγκλιση;,Ναι,Όχι,,,Β,,,,,,,,,,"Όχι. Ο τύπος «Κάθεσαι» είναι β΄ ενικό οριστικής Ενεστώτα σε ερώτηση, που εδώ λειτουργεί ως ήπια παράκληση (ισοδύναμη προστακτικής). Η προστακτική δεν χρησιμοποιείται σε ερωτηματικές προτάσεις ούτε συνοδεύεται από μόρια.",,,,8
+T064,True,4.1,2,MC,Δεν θέλει να παίξει μαζί μας σήμερα· θα κουράστηκε στο σχολείο.,Ο τύπος «θα κουράστηκε» (οριστική) δηλώνει:,Βεβαιότητα,Πιθανότητα (πιθανολογική οριστική),Ευχή,,Β,,,,,,,,,,«θα» + Αόριστος εδώ δεν δηλώνει βεβαιότητα αλλά εικασία (μάλλον κουράστηκε): πιθανολογική οριστική.,,,,8
+T065,True,4.1,1,YN,Ο πλανήτης μας βρίσκεται σε κίνδυνο.,Η υπογραμμισμένη οριστική «βρίσκεται» δηλώνει βεβαιότητα;,Ναι,Όχι,,,Α,,,,,,,,,,Ναι. Απλή οριστική Ενεστώτα χωρίς μόρια εικασίας → δηλώνει το βέβαιο/πραγματικό.,,,,8
+T066,True,4.1,2,MC,"Βάζεις τα αβγά, τα χτυπάς με τη ζάχαρη και μετά προσθέτεις το αλεύρι.","Η οριστική («βάζεις, χτυπάς, προσθέτεις») εδώ χρησιμοποιείται και δηλώνει:","Οδηγία (αντί προστακτικής, σε κείμενο οδηγιών)",Πιθανότητα,Ευχή,,Α,,,,,,,,,,Σε κείμενα οδηγιών (π.χ. συνταγές) η οριστική Ενεστώτα β΄ προσώπου χρησιμοποιείται αντί προστακτικής: δηλώνει οδηγία.,,,,8
+T067,True,4.1,1,YN,Η Γη γυρίζει,Στην πρόταση η οριστική δηλώνει βεβαιότητα;,Ναι,Όχι,,,Α,,,,,,,,,,Η βασική λειτουργία της απλής οριστικής είναι η δήλωση του πραγματικού / βεβαιότητας. Ο συντάκτης αναφέρεται σε κάτι αναμφισβήτητο.,,,,8
+T068,True,4.2,3,DD,,Αντιστοίχισε κάθε υποτακτική με τη σημασία που δηλώνει.,,,,,Αριστερά 1→Δεξιά 1| Αριστερά 2→Δεξιά 2| Αριστερά 3→Δεξιά 3| Αριστερά 4→Δεξιά 4|,Μην καπνίζεις μέσα στο σπίτι!,Ας είναι. Δε με πειράζει.,Ίσως μια μέρα να μετανιώσω.,Τι να κάνω; Πού να πάω;,Απαγόρευση,Παραχώρηση,Ενδεχόμενο,Απορία,,1: αποτρεπτική υποτακτική («μην») → απαγόρευση. 2: παραχωρητική («ας») → συγκατάθεση. 3: «ίσως… να» → ενδεχόμενο. 4: απορηματική υποτακτική → αμηχανία/απορία.,,,,9
+T069,True,4.2,3,DD,,Αντιστοίχισε κάθε υποτακτική με τη σημασία που δηλώνει.,,,,,Αριστερά 1→Δεξιά 1| Αριστερά 2→Δεξιά 2| Αριστερά 3→Δεξιά 3| Αριστερά 4→Δεξιά 4|,Μην αργήσεις να επιστρέψεις στο σπίτι!,"Ας κάνει ό,τι θέλει. Κακό του κεφαλιού του!",Ας αγωνιστούμε για έναν καλύτερο κόσμο.,Πώς να σε πιστέψω μετά από όσα έκανες;,Απαγόρευση,Παραχώρηση,Προτροπή,Απορία,,1: αποτρεπτική υποτακτική («μην») → απαγόρευση. 2: παραχωρητική («ας») → συγκατάθεση. 3: «ας + υπτκτ.» → προτροπή. 4: απορηματική υποτακτική → αμηχανία/απορία.,,,,9
+T070,True,4.2,2,MC,Μακάρι να ακούσεις τη συμβουλή μου!,Η υποτακτική «να ακούσεις» εδώ δηλώνει:,Απαγόρευση,Ευχή,Απορία,,Β,,,,,,,,,,Το ευχετικό «μακάρι να» εισάγει ευχετική υποτακτική: δηλώνει ευχή (εδώ εκπληρώσιμη).,,,,9
+T071,True,4.2,2,MC,Ας δούμε λοιπόν πόσο κακό κάνουμε στον εαυτό μας με τις κακές συνήθειες.,Η υποτακτική «ας δούμε» δηλώνει:,Προτροπή/παρακίνηση,Απαγόρευση,Ενδεχόμενο,,Α,,,,,,,,,,Το μόριο «ας» σε α΄ πληθυντικό εκφράζει προτρεπτική υποτακτική: παρακίνηση σε κοινή δράση.,,,,9
+T072,True,4.2,1,YN,"Ας έρθει κι αυτός μαζί μας στην εκδρομή, αφού το θέλει τόσο πολύ.",Η υποτακτική «ας έρθει» εδώ δηλώνει παραχώρηση/συγκατάθεση;,Ναι,Όχι,,,Α,,,,,,,,,,Το «ας» εκφράζει εδώ υποχώρηση/συγκατάθεση του ομιλητή: παραχωρητική υποτακτική.,,,,9
+T073,True,4.2,1,YN,Τέτοια μάχη να μη νιώσει άνθρωπος στα μέσα του!,Η υποτακτική «να μη νιώσει» εδώ δηλώνει ευχή;,Ναι,Όχι,,,Α,,,,,,,,,,"Το «να» εδώ ισοδυναμεί με το  «μακάρι να», εκφράζοντας ευχή: ευχετική υποτακτική.",,,,9
+T074,True,4.3,3,DD,,Αντιστοίχισε κάθε υπογραμμισμένη προστακτική με τη σημασία που δηλώνει.,,,,,Αριστερά 1→Δεξιά 1| Αριστερά 2→Δεξιά 2| Αριστερά 3→Δεξιά 3| Αριστερά 4→Δεξιά 4|,Κλείσε γρήγορα την πόρτα!,Προσπάθησε ξανά και θα τα καταφέρεις.,Λυπήσου με.,Σύρε παιδί μου στο καλό!,Προσταγή,Προτροπή/συμβουλή,Παράκληση,Ευχή,,1: άμεση εντολή → προσταγή. 2: συμβουλή/ενθάρρυνση → προτροπή. 3: τόνος παρακλητικός → παράκληση. 4: αποχαιρετιστήρια ευχή → ευχή (σπάνια σημασία της προστακτικής).,,,,10
+T075,True,4.3,3,DD,,Αντιστοίχισε κάθε υπογραμμισμένη προστακτική με τη σημασία που δηλώνει.,,,,,Αριστερά 1→Δεξιά 1| Αριστερά 2→Δεξιά 2| Αριστερά 3→Δεξιά 3| Αριστερά 4→Δεξιά 4|,"Φύγε, χάσου αποδώ, παλιόγατε!","Ντυθείτε ζεστά, γιατί το βράδυ έχει αρκετή υγρασία στον οικισμό.",Βοηθήστε με! Δεν μπορώ να μετακινηθώ.,Πήγαινε στην ευχή του θεού!,Προσταγή,Προτροπή/συμβουλή,Παράκληση,Ευχή,,1: άμεση εντολή → προσταγή. 2: συμβουλή/ενθάρρυνση → προτροπή. 3: τόνος παρακλητικός → παράκληση. 4: αποχαιρετιστήρια ευχή → ευχή (σπάνια σημασία της προστακτικής).,,,,10
+T076,True,4.3,2,MC,"Άντε, κάνε μου γρήγορα την αίτηση.",Η προστακτική εδώ δηλώνει:,Παράκληση/έκκληση,Προσταγή,Προτροπή ,,Β,,,,,,,,,,Ο τόνος είναι προστακτικός: προσταγή.,,,,10
+T077,True,4.3,2,MC,"Διαλέξτε προσεκτικά τους φίλους σας, είναι το πιο σημαντικό πράγμα.",Η προστακτική «Διαλέξτε» εδώ δηλώνει:,Προσταγή/αυστηρή εντολή,Προτροπή/συμβουλή,Παράκληση,,Β,,,,,,,,,,Δεν πρόκειται για αυστηρή εντολή αλλά για συμβουλή ζωής προς τον αναγνώστη: προτροπή/συμβουλή.,,,,10
+T078,True,4.3,1,YN,"Φύγετε αμέσως από εδώ, ο χώρος είναι εξαιρετικά επικίνδυνος!",Η προστακτική «Φύγετε» εδώ δηλώνει προσταγή/άμεση εντολή;,Ναι,Όχι,,,Α,,,,,,,,,,Ναι. Ο επιτακτικός τόνος και η αμεσότητα («αμέσως») δείχνουν προσταγή/άμεση εντολή.,,,,10
+T079,True,4.3,1,YN,Χρήμα: αξιοποιήστε το.,Η προστακτική δηλώνει προσταγή/άμεση εντολή;,Ναι,Όχι,,,Β,,,,,,,,,,"Όχι. Ο τόνος εδώ δεν είναι επιτακτικός αλλά προτρεπτικός/συμβουλευτικός: πρόκειται για προτροπή, όχι για προσταγή.",,,,10
+</script>
+<script>
+/* ══ ΠΗΓΗ ΔΕΔΟΜΕΝΩΝ — Google Sheet (δημοσιευμένο ως CSV) ══
+   Οι ασκήσεις ΔΕΝ είναι πλέον ενσωματωμένες. Φορτώνονται κατά την εκκίνηση
+   από το παρακάτω φύλλο. Αλλαγή τράπεζας ερωτήσεων = αλλαγή μόνο του SHEET_CSV. */
+const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVLnlkI2QSgVGoCj9zWUxXk__nySUJwkRztluKahHwmM_qI3KZS2jWTdJxf7n_Cg/pub?gid=1571144441&single=true&output=csv";
+
+/* Ετικέτα κάρτας (eyebrow) ανά κωδικό κατηγορίας του φύλλου. */
+const CAT_LABEL = { "4.1":"Σημασίες της οριστικής", "4.2":"Σημασίες της υποτακτικής", "4.3":"Σημασίες της προστακτικής" };
+
+let EX = [];   /* γεμίζει από το CSV στο boot() */
+
+/* ── Παράμετροι URL: #cat=1.1,1.2 · #max=10 · #shuffle=1 ── */
+function urlParams(){
+  const out={};
+  const s=(location.hash||'').replace(/^#/,'')+'&'+(location.search||'').replace(/^\?/,'');
+  s.split('&').forEach(kv=>{
+    const i=kv.indexOf('='); if(i<1) return;
+    try{ out[decodeURIComponent(kv.slice(0,i)).toLowerCase()]=decodeURIComponent(kv.slice(i+1)); }catch(_){}
+  });
+  return out;
+}
+
+/* ── Ελάχιστος parser CSV (RFC 4180: εισαγωγικά, κόμματα & αλλαγές γραμμής εντός πεδίου) ── */
+function parseCSV(text){
+  const rows=[]; let row=[], f='', q=false;
+  text=String(text).replace(/^\uFEFF/,'');
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ f+='"'; i++; } else q=false; }
+      else f+=c;
+    }else{
+      if(c==='"') q=true;
+      else if(c===','){ row.push(f); f=''; }
+      else if(c==='\n'){ row.push(f); f=''; rows.push(row); row=[]; }
+      else if(c!=='\r') f+=c;
+    }
+  }
+  if(f!==''||row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r=>r.some(x=>String(x).trim()!==''));
+}
+
+/* ── Βοηθητικά μετασχηματισμού γραμμής → άσκηση ── */
+const S = v => (v==null?'':String(v)).replace(/\s+$/,'').replace(/^\s+/,'');
+const TRUEY = v => { const s=S(v).toLowerCase();
+  return s===''||s==='true'||s==='ναι'||s==='1'||s==='yes'||s==='x'||s==='αληθές'; };
+const LETTER = {'Α':0,'Β':1,'Γ':2,'Δ':3,'A':0,'B':1,'C':2,'D':3};
+
+/* Το fb() προσθέτει ήδη «✓ Σωστά.» / «✗ Όχι ακριβώς.» — αφαιρούμε τυχόν διπλό προοίμιο. */
+const cleanExplain = t => S(t).replace(/^(Όχι\s+ακριβώς|Σωστά|Λάθος)\s*[.:·]\s*/i,'');
+
+/* Κανονικοποίηση κενού GAP: δέχεται «___» αλλά και ενδολεκτικό «κλ__στε». */
+function gapify(raw){
+  const t=S(raw);
+  const m=t.match(/([^\s_]*)(_{2,})([^\s_]*)/);
+  if(!m) return { sentence:(t?t+' ':'')+'___', hint:null };
+  const pre=m[1], post=m[3], tok=m[0];
+  /* Ενδολεκτικό κενό (π.χ. «κλ__στε»): γράμματα και πριν και μετά. */
+  if(/\p{L}/u.test(pre) && /\p{L}/u.test(post))
+    return { sentence:t.replace(tok,'___'),
+             hint:'Ζητούμενος τύπος: «'+tok+'» — γράψε ολόκληρη τη λέξη.' };
+  /* Αλλιώς κενό λέξης· προσθέτουμε διαστήματα, γιατί στο φύλλο συχνά λείπουν. */
+  return { sentence:t.replace(/_{2,}/g,' ___ ').replace(/\s{2,}/g,' ').trim(), hint:null };
+}
+
+/* Εντοπίζει τον στόχο του CLK μέσα στην πρόταση, ακόμη κι όταν εκτείνεται
+   σε περισσότερες λέξεις («πρέπει να»). Επιστρέφει θέση και μήκος σε λέξεις. */
+function clkSpan(sentence, target){
+  const words=String(sentence||'').split(/\s+/).filter(Boolean);
+  const tgt=norm(target).split(' ').filter(Boolean);
+  if(!tgt.length) return {start:-1,len:0,words:words};
+  for(let i=0;i+tgt.length<=words.length;i++){
+    let hit=true;
+    for(let k=0;k<tgt.length;k++) if(norm(words[i+k])!==tgt[k]){ hit=false; break; }
+    if(hit) return {start:i, len:tgt.length, words:words};
+  }
+  return {start:-1, len:0, words:words};
+}
+
+function rowToEx(o){
+  const type=S(o['Τύπος']).toUpperCase();
+  const cat=S(o['Κατηγορία']);
+  const base={ cat:cat,
+               diff: parseInt(S(o['Δυσκολία']),10)||1,
+               theory: parseInt(S(o['Θεωρία']),10)||0,
+               domain: CAT_LABEL[cat] || (cat?('Ενότητα '+cat):'Άσκηση'),
+               prompt: S(o['Κείμενο Ερώτησης']),
+               sentence: S(o['Απόσπασμα']),
+               explain: cleanExplain(o['Διόρθωση 1']) };
+  if(!base.prompt && !base.sentence) return null;
+
+  if(type==='MC'||type==='YN'){
+    const opts=['Επιλογή Α','Επιλογή Β','Επιλογή Γ','Επιλογή Δ'].map(k=>S(o[k])).filter(Boolean);
+    const ans=LETTER[S(o['Σωστή Απάντηση']).charAt(0).toUpperCase()];
+    if(opts.length<2 || ans==null || ans>=opts.length) return null;
+    base.type = (type==='YN'?'yesno':'mc'); base.options=opts; base.answer=ans;
+    return base;
+  }
+  if(type==='CLK'){
+    const w=S(o['Λέξη-Στόχος']);
+    if(!w || !base.sentence) return null;
+    /* Δίχτυ ασφαλείας: αν ο στόχος δεν εντοπίζεται στην πρόταση, η ερώτηση
+       είναι αδύνατο να απαντηθεί — απορρίπτεται με προειδοποίηση. */
+    if(clkSpan(base.sentence, w).start < 0){
+      console.warn('[quiz] CLK '+S(o['ID'])+': ο στόχος «'+w+'» δεν βρέθηκε στο απόσπασμα — παραλείπεται.');
+      return null;
+    }
+    base.type='clk'; base.answerWord=w;
+    base.clkHint='Κάνε κλικ στη λέξη-δείκτη μέσα στην πρόταση.';
+    return base;
+  }
+  if(type==='GAP'){
+    const acc=S(o['Σωστή Απάντηση']).split(/[|\/]/).map(x=>x.trim()).filter(Boolean);
+    if(!acc.length) return null;
+    const g=gapify(base.sentence);
+    base.type='gap'; base.sentence=g.sentence; base.gapHint=g.hint; base.answers=acc;
+    return base;
+  }
+  if(type==='DD'){
+    const L=[1,2,3,4].map(i=>S(o['Αριστερά '+i]));
+    const R=[1,2,3,4].map(i=>S(o['Δεξιά '+i]));
+    const pairs=[], re=/Αριστερά\s*(\d)\s*(?:→|->|=>|-)\s*Δεξιά\s*(\d)/g;
+    let m; const key=S(o['Σωστή Απάντηση']);
+    while((m=re.exec(key))!==null){
+      const li=+m[1]-1, ri=+m[2]-1;
+      if(L[li]&&R[ri]) pairs.push({text:L[li], cat:R[ri]});
+    }
+    if(pairs.length<2) return null;
+    base.type='match'; base.pairs=pairs;
+    return base;
+  }
+  return null;
+}
+
+async function loadEX(){
+  /* Offline: οι ασκήσεις είναι ενσωματωμένες στο #__EX_CSV__ block. */
+  const el=document.getElementById('__EX_CSV__');
+  const csv=el?el.textContent:'';
+  if(!csv.trim()) throw new Error('Δεν βρέθηκαν ενσωματωμένα δεδομένα ασκήσεων.');
+  const rows=parseCSV(csv);
+  if(rows.length<2) throw new Error('Το φύλλο δεν περιέχει δεδομένα.');
+  const hdr=rows[0].map(h=>S(h));
+  let list=rows.slice(1).map(r=>{ const o={}; hdr.forEach((h,i)=>o[h]=r[i]); return o; })
+                .filter(o=>S(o['ID']) && TRUEY(o['Ενεργό']))
+                .map(rowToEx).filter(Boolean);
+
+  const q=urlParams();
+  const sel=q['cat']||q['set'];
+  if(sel){
+    const wanted=sel.split(/[,;]/).map(x=>x.trim()).filter(Boolean);
+    list=list.filter(e=>wanted.some(w=>e.cat===w||e.cat.indexOf(w+'.')===0||(w.indexOf('.')<0&&e.cat.split('.')[0]===w)));
+  }
+  if(q['shuffle']==='1'||q['shuffle']==='true') shuffle(list);
+  const mx=parseInt(q['max'],10);
+  if(mx>0) list=list.slice(0,mx);
+  return list;
+}
+
+/* ══ ΘΕΩΡΙΑ — μία κάρτα ανά υποβήμα. Τα κλειδιά 1–10 αντιστοιχούν στη
+   στήλη «Θεωρία» του φύλλου. Πηγή περιεχομένου: ΚΕΦΑΛΑΙΟ 5 «Τροπικότητα
+   & Εγκλίσεις». Μπρος όψη: ορισμός + αναγνωριστικά. Πίσω όψη: πίνακας ή
+   παραδείγματα + σημείωση. ══ */
+const TH = {
+
+ 8:{sub:"4.1", cat:"Βήμα 4 · Σημασιολογία", term:"Οριστική",
+   def:"Είναι η έγκλιση των προτάσεων κρίσης και εκφράζει κυρίως το <b>πραγματικό</b> και το <b>βέβαιο</b>. Ανάλογα όμως με τα γλωσσικά μέσα που τη συνοδεύουν και τα συμφραζόμενα, μπορεί να δηλώνει και άλλα.",
+   means:"Το κλειδί είναι ο <b>συνδυασμός</b>: «θα» + παρελθοντικός χρόνος, «μακάρι να» + παρελθοντικός, ερωτηματική πρόταση κ.ο.κ. Η ίδια μορφή αλλάζει σημασία ανάλογα με το περιβάλλον.",
+   rowsTitle:"Τι δηλώνει",
+   rows:[{k:"Βεβαιότητα", v:"Οριστική κάθε χρόνου, με ή χωρίς βεβαιωτικά επιρρήματα → «Το αεροπλάνο (σίγουρα) προσγειώθηκε στις 3.»"},
+         {k:"Δυνατότητα<br><i>δυνητική</i>", v:"<b>θα</b> + οριστική <b>παρελθοντικού</b> → «Θα έκανα τα πάντα για σένα.» <i>(= θα μπορούσα να κάνω)</i>"},
+         {k:"Πιθανότητα<br><i>πιθανολογική</i>", v:"<b>θα</b> + οριστική κάθε χρόνου · <b>πρέπει να</b> + οριστική → «Θα είναι στο γραφείο τέτοια ώρα.» <i>(= μάλλον είναι)</i>"},
+         {k:"Ευχή<br><i>ευχετική</i>", v:"<b>μακάρι να / ας</b> + οριστική <b>παρελθοντικού</b> → «Μακάρι να ήσουν εδώ.» <i>(ανεκπλήρωτη)</i>"},
+         {k:"Παράκληση", v:"Απλή οριστική ή «να» + οριστική σε <b>ερώτηση</b> → «Μου φέρνεις λίγο το βιβλίο;» <i>(αντί προστακτικής)</i>"},
+         {k:"Οδηγία", v:"Αντί προστακτικής σε κείμενα οδηγιών → «Βάζεις τα αβγά, τα χτυπάς και μετά προσθέτεις το αλεύρι.»"}],
+   note:"Πρόσεξε τη διαφορά δυνητικής και πιθανολογικής: και οι δύο έχουν «θα», αλλά η δυνητική δηλώνει κάτι που <b>δεν έγινε</b>, ενώ η πιθανολογική εικασία για κάτι που μάλλον <b>ισχύει</b>."},
+
+ 9:{sub:"4.2", cat:"Βήμα 4 · Σημασιολογία", term:"Υποτακτική",
+   def:"Είναι η έγκλιση των προτάσεων επιθυμίας και εκφράζει γενικά το <b>ενδεχόμενο</b> και το <b>επιθυμητό</b>. Το μόριο που την εισάγει και ο τόνος καθορίζουν την ακριβή σημασία.",
+   means:"Δείκτες: <b>ας</b> (προτροπή, παραχώρηση), <b>να</b> (προσταγή, παράκληση), <b>μην</b> (απαγόρευση), <b>μακάρι να / είθε</b> (ευχή), <b>ίσως / πιθανόν να</b> (ενδεχόμενο), ερώτηση (απορία).",
+   rowsTitle:"Τι δηλώνει",
+   rows:[{k:"Προτροπή", v:"«Ας κινητοποιηθούμε για την επίλυση του προβλήματος.» · «Να προσέχεις!»"},
+         {k:"Αποτροπή / απαγόρευση", v:"«Ας μην κάνουμε το ίδιο λάθος.» · «Μην καπνίζετε.»"},
+         {k:"Προσταγή", v:"«Να γυρίσετε σπίτι γρήγορα!» <i>(ύφος επιτακτικό)</i>"},
+         {k:"Επιθυμία / Ευχή", v:"«Ας έρθουν γρήγορα οι διακοπές!» · «Μακάρι να τα καταφέρεις.» <i>(εκπληρώσιμη)</i>"},
+         {k:"Παραχώρηση", v:"«Ας μείνει σπίτι μας απόψε. Δε με πειράζει.» <i>(συγκατάθεση)</i>"},
+         {k:"Απορία", v:"«Τι να κάνω; Πού να πάω;» <i>(αμηχανία)</i>"},
+         {k:"Ενδεχόμενο", v:"«Ίσως μια μέρα (να) μετανιώσω για όλα αυτά.»"},
+         {k:"Παράκληση", v:"«Να με βοηθήσεις λίγο να κουβαλήσω τα πράγματα;» <i>(ήπιο αίτημα)</i>"}],
+   note:"Το «ας» είναι πολυσήμαντο: σε α΄ πληθυντικό δίνει <b>προτροπή</b> («ας συνεργαστούμε»), σε γ΄ πρόσωπο συνήθως <b>παραχώρηση</b> («ας μείνει»), με άρνηση <b>αποτροπή</b> («ας μην κάνουμε»)."},
+
+ 10:{sub:"4.3", cat:"Βήμα 4 · Σημασιολογία", term:"Προστακτική",
+   def:"Δηλώνει την άμεση, ανυπόκριτη επιθυμία του ομιλητή προς τον δέκτη. Η βασική της σημασία είναι η <b>προσταγή</b>, αλλά ο τόνος και τα συμφραζόμενα την αποδυναμώνουν σε προτροπή, παράκληση ή ακόμη και ευχή.",
+   means:"Δεν υπάρχουν εδώ μόρια που να ξεχωρίζουν τις σημασίες — <b>μόνο ο τόνος και τα συμφραζόμενα</b>. Ρώτησε: επιβάλλει, συμβουλεύει, ικετεύει ή εύχεται;",
+   rowsTitle:"Τι δηλώνει",
+   rows:[{k:"Προσταγή", v:"«Έλα δω παιδί μου. Πες φχαριστώ στους κυρίους.» <i>(εντολές)</i>"},
+         {k:"Προτροπή", v:"«Ερωτευτείτε, ταξιδέψτε, διασκεδάστε! Ζήστε τη ζωή σας!» <i>(συμβουλές ζωής)</i>"},
+         {k:"Παράκληση", v:"«Λυπηθείτε με!» <i>(τόνος παρακλητικός)</i>"},
+         {k:"Ευχή <i>(σπάνια)</i>", v:"«Σύρε παιδί μου στο καλό!» · «Πήγαινε στην ευχή του θεού!» <i>(αποχαιρετισμός)</i>"}],
+   note:"Η ευχετική προστακτική είναι η σπανιότερη σημασία και επιβιώνει κυρίως σε παγιωμένες εκφράσεις αποχαιρετισμού."}
+};
+
+/* ══ ΣΥΝΘΕΣΗ ΒΗΜΑΤΟΣ — εμφανίζεται όταν ολοκληρώνονται όλα τα υποβήματα ══ */
+const STEPSYN = {
+ "4":{title:"Οι εγκλίσεις — σημασιολογική προσέγγιση",
+   lead:"Η ίδια έγκλιση δεν δηλώνει πάντοτε το ίδιο πράγμα. Τα <b>γλωσσικά μέσα</b> που τη συνοδεύουν και τα <b>συμφραζόμενα</b> μεταβάλλουν τη σημασία της.",
+   boxes:[{h:"Οριστική", p:"Βεβαιότητα · δυνατότητα · πιθανότητα · ευχή · παράκληση · οδηγία"},
+          {h:"Υποτακτική", p:"Προτροπή · απαγόρευση · προσταγή · ευχή · παραχώρηση · απορία · ενδεχόμενο"},
+          {h:"Προστακτική", p:"Προσταγή · προτροπή · παράκληση · ευχή"}],
+   term:"Το ζητούμενο",
+   reveal:"Οι τρεις εγκλίσεις <b>επικαλύπτονται</b> σημασιολογικά: η προσταγή δηλώνεται και με προστακτική («Έλα») και με υποτακτική («Να γυρίσετε!»)· η παράκληση και με τις τρεις («Λυπηθείτε με!», «Να με βοηθήσεις;», «Μου φέρνεις το βιβλίο;»). Γι' αυτό η ανάλυση δεν σταματά στην αναγνώριση του τύπου: ρωτάς πάντοτε τι <b>κάνει</b> ο τύπος μέσα στη συγκεκριμένη πρόταση."}
+};
+
+/* ══ ΜΗΧΑΝΗ ΠΡΟΣΑΡΜΟΣΤΙΚΗΣ ΜΑΘΗΣΗΣ ══
+   Βήματα → υποβήματα → βαθμοί δυσκολίας. Οι ερωτήσεις αντλούνται τυχαία μέσα
+   στο υποβήμα, αλλά η σειρά βημάτων/υποβημάτων/δυσκολίας είναι δεσμευτική.
+   Λάθος → κάρτα θεωρίας → νέα ερώτηση ίδιας δυσκολίας → επανάληψη της ίδιας.
+   Νέο λάθος στον κύκλο αποκατάστασης → η θεωρία ξανά, με προειδοποίηση. */
+
+let MIN_PER_SUB = 3;          /* ελάχιστες ερωτήσεις ανά υποβήμα */
+let HIST=[], p=0, flipped=false, __ready=false;
+const ENG={ steps:[], si:0, ui:0, queue:[], mode:'learn', free:null,
+            stats:{asked:0,right:0} };
+
+const curStep = ()=>ENG.steps[ENG.si]||null;
+const curSub  = ()=>{ const s=curStep(); return s? s.subs[ENG.ui]||null : null; };
+
+function buildEngine(list){
+  const bySub={};
+  list.forEach(e=>{ (bySub[e.cat]=bySub[e.cat]||[]).push(e); });
+  const cmp=(a,b)=>{ const A=String(a).split('.').map(Number), B=String(b).split('.').map(Number);
+                     return (A[0]-B[0])||((A[1]||0)-(B[1]||0)); };
+  const steps=[];
+  Object.keys(bySub).sort(cmp).forEach(id=>{
+    const stepId=String(id).split('.')[0];
+    let st=steps.find(s=>s.id===stepId);
+    if(!st){ st={id:stepId, subs:[], errors:0}; steps.push(st); }
+    const pool={};
+    bySub[id].forEach(e=>{ const d=e.diff||1; (pool[d]=pool[d]||[]).push(e); });
+    Object.keys(pool).forEach(d=>shuffle(pool[d]));
+    st.subs.push({ id:id, theory:bySub[id][0].theory||0, label:bySub[id][0].domain,
+                   diffs:Object.keys(pool).map(Number).sort((a,b)=>a-b),
+                   pool:pool, errors:0 });
+  });
+  return steps;
+}
+
+function drawDiff(sub,d){
+  const arr=sub.pool[d]||[];
+  for(let i=0;i<arr.length;i++) if(!arr[i].__used){ arr[i].__used=true; return arr[i]; }
+  return null;
+}
+/* Ίδια δυσκολία· αν εξαντληθεί, η πλησιέστερη διαθέσιμη του ίδιου υποβήματος. */
+function drawNear(sub,d){
+  let q=drawDiff(sub,d); if(q) return q;
+  const order=sub.diffs.slice().sort((a,b)=>Math.abs(a-d)-Math.abs(b-d)||a-b);
+  for(let i=0;i<order.length;i++){ q=drawDiff(sub,order[i]); if(q) return q; }
+  return null;
+}
+function mkEx(data,sub,extra){
+  return Object.assign({kind:'ex', data:data, sub:sub,
+                        state:{answered:false,correct:false}}, extra||{});
+}
+
+function loadSub(){
+  ENG.queue=[];
+  const sub=curSub(); if(!sub) return;
+  sub.diffs.forEach(d=>{ const q=drawDiff(sub,d); if(q) ENG.queue.push(mkEx(q,sub)); });
+  let guard=0;
+  while(ENG.queue.length<MIN_PER_SUB && guard++<30){
+    const d=sub.diffs[ENG.queue.length % sub.diffs.length];
+    const q=drawNear(sub,d); if(!q) break;
+    ENG.queue.push(mkEx(q,sub));
+  }
+  ENG.queue.forEach((c,i)=>{ c.n=i+1; c.total=ENG.queue.length; });
+}
+
+function nextCard(){
+  if(ENG.mode==='free') return nextFree();
+  if(ENG.queue.length) return ENG.queue.shift();
+  const st=curStep();
+  if(!st) return {kind:'finish'};
+  while(ENG.ui < st.subs.length-1){
+    ENG.ui++; loadSub();
+    if(ENG.queue.length) return ENG.queue.shift();
+  }
+  return {kind:'stepdone', step:st};
+}
+
+/* Καλείται μία φορά ανά κάρτα, από το fb(). */
+function onAnswered(item, ok){
+  if(!item || item.kind!=='ex') return;
+  if(ENG.mode==='free'){ ENG.free.done++; if(ok) ENG.free.right++; return; }
+  const sub=item.sub, st=curStep();
+  if(!item.remedial){ ENG.stats.asked++; if(ok) ENG.stats.right++; }
+  if(ok) return;
+  sub.errors++; if(st) st.errors++;
+  const inject=[];
+  if(!item.remedial){
+    inject.push({kind:'theory', th:sub.theory, sub:sub});
+    const alt=drawNear(sub, item.data.diff||1);
+    if(alt) inject.push(mkEx(alt, sub, {remedial:1}));
+    inject.push(mkEx(item.data, sub, {remedial:1, again:true}));
+  }else{
+    inject.push({kind:'theory', th:sub.theory, sub:sub, warn:true});
+  }
+  Array.prototype.unshift.apply(ENG.queue, inject);
+}
+
+/* Επανάληψη βήματος: μηδενισμός χρήσης και σφαλμάτων. */
+function restartStep(si){
+  const st=ENG.steps[si]; if(!st) return;
+  st.errors=0;
+  st.subs.forEach(sub=>{ sub.errors=0;
+    Object.keys(sub.pool).forEach(d=>{ sub.pool[d].forEach(q=>{delete q.__used;}); shuffle(sub.pool[d]); }); });
+  ENG.si=si; ENG.ui=0; ENG.mode='learn'; loadSub();
+}
+function restartAll(){
+  ENG.stats={asked:0,right:0};
+  ENG.steps.forEach((s,i)=>restartStep(i));
+  ENG.si=0; ENG.ui=0; loadSub();
+}
+
+/* ── Ελεύθερη εξάσκηση ── */
+function startFree(count, types){
+  const all=[];
+  ENG.steps.forEach(s=>s.subs.forEach(sub=>
+    sub.diffs.forEach(d=>sub.pool[d].forEach(q=>all.push(q)))));
+  let pick=all.filter(q=>!types || !types.length || types.indexOf(q.type)>=0);
+  shuffle(pick);
+  if(count>0) pick=pick.slice(0,count);
+  ENG.mode='free';
+  ENG.free={ list:pick, i:0, done:0, right:0, total:pick.length };
+  return pick.length;
+}
+function nextFree(){
+  const f=ENG.free;
+  if(!f || f.i>=f.list.length) return {kind:'freedone'};
+  const q=f.list[f.i++];
+  return mkEx(q, null, {n:f.i, total:f.total, free:true});
+}
+
+const slot=document.getElementById('slot');
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[«».,;:!·()"'\u2018\u2019\u2013\u2014?]/g,'').replace(/\s+/g,' ').trim();
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;};
+const firstLetter=t=>`<span class="initial">${t.charAt(0)}</span>${t.slice(1)}`;
+
+const host=document.getElementById('cardhost');
+
+/* ── auto-fit ανά τμήμα για τη θεωρία ── */
+function fitCol(col){
+  let lo=10,hi=Math.max(52, Math.min(180, col.clientHeight*0.16));
+  for(let it=0;it<14;it++){const mid=(lo+hi)/2;col.style.setProperty('--fs',mid+'px');
+    const of=col.scrollHeight>col.clientHeight+1||col.scrollWidth>col.clientWidth+1;
+    if(of)hi=mid;else lo=mid;}
+  col.style.setProperty('--fs',Math.floor(lo)+'px');
+}
+function fitTheory(){requestAnimationFrame(()=>host.querySelectorAll('.face .col').forEach(fitCol));}
+
+/* ── auto-fit ασκήσεων/γέφυρας: μεγαλώνει/σμικραίνει τη γραμματοσειρά ανάλογα με το
+   διαθέσιμο ύψος της κάρτας — χωρίς κύλιση ── */
+function fitCard(){
+  const card=host.querySelector('.card');
+  if(!card) return;
+  requestAnimationFrame(()=>{
+    /* γενναιόδωρο άνω όριο: με βάση μικρότερη διάσταση (ύψος ή πλάτος) */
+    const ref = Math.min(card.clientHeight, card.clientWidth*0.62);
+    const areaCap = Math.min(4.5, Math.max(1, ref/360));
+    let lo=0.6, hi=areaCap;
+    card.style.setProperty('--sc',hi);
+    if(card.scrollHeight<=card.clientHeight+1){ return; }
+    for(let it=0; it<16; it++){
+      const mid=(lo+hi)/2;
+      card.style.setProperty('--sc',mid);
+      if(card.scrollHeight>card.clientHeight+1) hi=mid; else lo=mid;
+    }
+    card.style.setProperty('--sc',lo);
+  });
+}
+
+/* ── render dispatch ── */
+let __swipeInProgress=false;
+function animateHost(dir){
+  if(__swipeInProgress) return;
+  host.classList.remove('slideR','slideL','fadeIn');
+  void host.offsetWidth;
+  host.classList.add(dir>0?'slideR':dir<0?'slideL':'fadeIn');
+}
+function render(dir){
+  clearCheck();
+  const item=HIST[p]; if(!item) return;
+  const isTh = item.kind==='theory';
+  const locked = item.kind==='ex' && !item.state.answered;
+  slot.classList.toggle('flippable', isTh);
+  slot.classList.toggle('no-prev', p===0);
+  slot.classList.toggle('no-next', item.kind==='finish' || locked);
+  document.getElementById('hintMid').classList.toggle('dim', !isTh);
+  document.getElementById('cuePrev').classList.toggle('dim', p===0);
+  document.getElementById('cueNext').classList.toggle('dim', item.kind==='finish' || locked);
+  if(item.kind==='intro'){ renderIntro(); fitCard(); }
+  else if(item.kind==='ex'){ renderEx(item); fitCard(); }
+  else if(item.kind==='theory'){ renderTheory(item); }
+  else if(item.kind==='stepdone'){ renderStepDone(item); fitCard(); }
+  else if(item.kind==='finish'){ renderFinish(); fitCard(); }
+  else if(item.kind==='freesetup'){ renderFreeSetup(); fitCard(); }
+  else if(item.kind==='freedone'){ renderFreeDone(); fitCard(); }
+  animateHost(dir||0);
+}
+
+/* Εισαγωγική κάρτα */
+function renderIntro(){
+  const nSteps=ENG.steps.length;
+  const nSubs=ENG.steps.reduce((a,s)=>a+s.subs.length,0);
+  host.innerHTML=`<div class="card gate intro">
+    <div class="head"><span class="eyebrow">Καλωσόρισες</span><span class="badge">Προσαρμοστική μάθηση</span></div>
+    <div class="title">${firstLetter("Σημασίες")}</div>
+    <div class="lead"><b>Βήμα 4 — Οι εγκλίσεις: σημασιολογική προσέγγιση.</b> Τρία κεφάλαια, 20 ασκήσεις. Η ίδια έγκλιση δηλώνει διαφορετικά πράγματα ανάλογα με τα συμφραζόμενα.<br><br>Σε κάθε λάθος εμφανίζεται η <b>θεωρία</b> και ακολουθεί επανάληψη.</div>
+    <div class="actions">
+      <button class="reveal-btn" id="startBtn">Ξεκίνα →</button>
+    </div>
+  </div>`;
+  host.querySelector('#startBtn').addEventListener('click',()=>go(1));
+}
+
+/* Ολοκλήρωση βήματος: σύνθεση θεωρίας + επιλογή πορείας */
+function renderStepDone(item){
+  const st=item.step, syn=STEPSYN[st.id]||{};
+  const subs=st.subs.length, errs=st.errors;
+  const boxes=(syn.boxes||[]).map(b=>`<div class="box"><h4>${b.h}</h4><p>${b.p}</p></div>`).join("");
+  const isLast = ENG.si >= ENG.steps.length-1;
+  host.innerHTML=`<div class="card bridge">
+    <div class="head"><span class="eyebrow">Ολοκλήρωσες το βήμα ${st.id}</span><span class="badge">${errs? (errs===1?'1 λάθος':errs+' λάθη') : 'χωρίς λάθη'}</span></div>
+    <div class="title">${syn.title||('Βήμα '+st.id)}</div>
+    <div class="lead">${syn.lead||''}</div>
+    <div class="evid">${boxes}</div>
+    <button class="reveal-btn" id="revealBtn">Σύνθεση του βήματος →</button>
+    <div class="reveal" id="reveal">
+      <div class="term">${firstLetter(syn.term||'Σύνοψη')}</div>
+      <p>${syn.reveal||''}</p>
+    </div>
+    <div class="actions" style="margin-top:.7em">
+      <button class="reveal-btn" id="nextStepBtn">${isLast?'Δες τα αποτελέσματα →':'Συνέχεια στο βήμα '+(+st.id+1)+' →'}</button>
+      ${errs?`<button class="reveal-btn btn-secondary" id="againStepBtn">↻ Επανάληψη του βήματος ${st.id}</button>`:''}
+    </div>
+  </div>`;
+  host.querySelector('#revealBtn').addEventListener('click',function(){
+    host.querySelector('#reveal').classList.add('show'); this.style.display='none'; fitCard();
+  });
+  host.querySelector('#nextStepBtn').addEventListener('click',()=>{
+    if(isLast){ HIST=HIST.slice(0,p+1); HIST.push({kind:'finish'}); }
+    else { ENG.si++; ENG.ui=0; loadSub();
+           HIST=HIST.slice(0,p+1); const nx=nextCard(); if(nx) HIST.push(nx); }
+    p=HIST.length-1; flipped=false; render(1);
+  });
+  const ag=host.querySelector('#againStepBtn');
+  if(ag) ag.addEventListener('click',()=>{
+    restartStep(ENG.si);
+    HIST=HIST.slice(0,p+1); const nx=nextCard(); if(nx) HIST.push(nx);
+    p=HIST.length-1; flipped=false; render(1);
+  });
+}
+
+/* Τελική κάρτα */
+function renderFinish(){
+  const a=ENG.stats.asked, r=ENG.stats.right;
+  const errs=ENG.steps.reduce((x,s)=>x+s.errors,0);
+  host.innerHTML=`<div class="card gate end">
+    <div class="head"><span class="eyebrow">Τέλος διαδρομής</span><span class="badge">${ENG.steps.length} βήματα</span></div>
+    <div class="title">Ολοκλήρωσες όλα τα βήματα</div>
+    <div class="score">${r}<small> / ${a} με την πρώτη</small></div>
+    <div class="lead">${errs? 'Χρειάστηκαν <b>'+errs+'</b> επαναλήψεις. Μπορείς να ξαναπεράσεις τα βήματα ή να εξασκηθείς ελεύθερα.' : 'Πέρασες όλα τα βήματα χωρίς λάθος.'}</div>
+    <div class="actions">
+      <button class="reveal-btn" id="againAllBtn">↻ Επανάληψη βημάτων μάθησης</button>
+    </div>
+  </div>`;
+  host.querySelector('#againAllBtn').addEventListener('click',()=>{
+    restartAll(); HIST=[{kind:'intro'}]; const nx=nextCard(); if(nx) HIST.push(nx);
+    p=1; flipped=false; render(1);
+  });
+}
+
+/* Ρυθμίσεις ελεύθερης εξάσκησης */
+const FREE_TYPES=[["mc","Πολλαπλή επιλογή"],["yesno","Ναι / Όχι"],["clk","Κλικ στη λέξη"],
+                  ["gap","Συμπλήρωση κενού"],["match","Αντιστοίχιση"]];
+let freeSel={count:10, types:[]};
+function renderFreeSetup(){
+  const counts=[5,10,15,20,0];
+  const cbtn=counts.map(c=>`<button class="opt pick${freeSel.count===c?' sel':''}" data-c="${c}">${c===0?'Όλες':c}</button>`).join("");
+  const tbtn=FREE_TYPES.map(t=>`<button class="opt pick${freeSel.types.indexOf(t[0])>=0?' sel':''}" data-t="${t[0]}">${t[1]}</button>`).join("");
+  host.innerHTML=`<div class="card gate intro">
+    <div class="head"><span class="eyebrow">Ελεύθερη εξάσκηση</span><span class="badge">Χωρίς βήματα</span></div>
+    <div class="title">Γρήγορη εξάσκηση</div>
+    <div class="lead">Τυχαίες ερωτήσεις από όλη την ύλη, χωρίς θεωρία και χωρίς προσαρμοστική λογική.</div>
+    <div class="setup"><div class="h">Πόσες ερωτήσεις;</div><div class="picks">${cbtn}</div></div>
+    <div class="setup"><div class="h">Τύποι ερωτήσεων <small>(κανένας επιλεγμένος = όλοι)</small></div><div class="picks">${tbtn}</div></div>
+    <div class="actions"><button class="reveal-btn" id="goFree">Ξεκίνα →</button></div>
+  </div>`;
+  host.querySelectorAll('.pick[data-c]').forEach(b=>b.addEventListener('click',()=>{
+    freeSel.count=+b.dataset.c; renderFreeSetup(); fitCard(); }));
+  host.querySelectorAll('.pick[data-t]').forEach(b=>b.addEventListener('click',()=>{
+    const t=b.dataset.t, i=freeSel.types.indexOf(t);
+    if(i>=0) freeSel.types.splice(i,1); else freeSel.types.push(t);
+    renderFreeSetup(); fitCard(); }));
+  host.querySelector('#goFree').addEventListener('click',()=>{
+    const n=startFree(freeSel.count, freeSel.types);
+    if(!n){ alert('Δεν υπάρχουν ερωτήσεις με αυτά τα κριτήρια.'); return; }
+    HIST=HIST.slice(0,p+1); const nx=nextCard(); if(nx) HIST.push(nx);
+    p=HIST.length-1; flipped=false; render(1);
+  });
+}
+function renderFreeDone(){
+  const f=ENG.free||{done:0,right:0};
+  host.innerHTML=`<div class="card gate end">
+    <div class="head"><span class="eyebrow">Ελεύθερη εξάσκηση</span><span class="badge">Ολοκληρώθηκε</span></div>
+    <div class="title">Τέλος εξάσκησης</div>
+    <div class="score">${f.right}<small> / ${f.done} σωστές</small></div>
+    <div class="actions">
+      <button class="reveal-btn" id="againFree">↻ Νέα εξάσκηση</button>
+      <button class="reveal-btn btn-secondary" id="toStart">← Στην αρχή</button>
+    </div>
+  </div>`;
+  host.querySelector('#againFree').addEventListener('click',()=>{
+    HIST=HIST.slice(0,p+1); HIST.push({kind:'freesetup'}); p++; flipped=false; render(1); });
+  host.querySelector('#toStart').addEventListener('click',()=>{
+    ENG.mode='learn'; p=0; flipped=false; render(-1); });
+}
+
+/* Ασκήσεις */
+function renderEx(item){
+  const e=item.data, st=item.state;
+  const typeLabel=e.type==="clk"?"Κλικ στη λέξη":(e.type==="gap"?"Συμπλήρωση κενού":(e.type==="match"?"Αντιστοίχιση":(e.type==="yesno"?"Ναι / Όχι":"Πολλαπλή επιλογή")));
+  let eyebrow;
+  if(item.free) eyebrow=`Εξάσκηση ${item.n}/${item.total}`;
+  else eyebrow=`Βήμα ${String(item.sub.id).split('.')[0]} · Κεφάλαιο ${item.sub.id}`+
+       (item.n?` · ${item.n}/${item.total}`:'');
+  const tag = item.again ? '<span class="badge warnbadge">Ξανά</span>'
+            : item.remedial ? '<span class="badge warnbadge">Επανάληψη</span>' : '';
+  let b=`<div class="card"><div class="head"><span class="eyebrow">${eyebrow}</span><span class="badge">${typeLabel}</span></div>`;
+  if(tag) b+=`<div class="tagrow">${tag}<span class="diffdots">${'●'.repeat(e.diff||1)}${'○'.repeat(Math.max(0,4-(e.diff||1)))}</span></div>`;
+  b+=`<div class="prompt">${e.prompt}</div>`;
+  if(e.type==="clk"){
+    const sp=clkSpan(e.sentence, e.answerWord);
+    const units=[];
+    for(let i=0;i<sp.words.length;i++){
+      if(i===sp.start){ units.push(sp.words.slice(i, i+sp.len).join(' ')); i+=sp.len-1; }
+      else units.push(sp.words[i]);
+    }
+    const toks=units.map((w,idx)=>`<span class="tok" data-idx="${idx}">${w}</span>`).join(" ");
+    b+=`<div class="sentence clk">${toks}</div>`;
+    if(!st.answered) b+=`<div class="clk-hint">${e.clkHint||"Κάνε κλικ στη λέξη που φανερώνει πιθανότητα."}</div>`;
+  }else if(e.type==="gap"){
+    const parts=e.sentence.split("___");
+    b+=`<div class="sentence gap">${parts.join('<input class="gapinput" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">')}</div>`;
+    b+=`<div class="gaprow"><button class="opt gapcheck">Έλεγχος</button></div>`;
+    if(!st.answered) b+=`<div class="clk-hint">${e.gapHint||"Πληκτρολόγησε τη λέξη και πάτησε «Έλεγχος» (ή Enter)."}</div>`;
+  }else if(e.type==="match"){
+    const order=st.order||(st.order=shuffle([...e.pairs.keys()]));
+    const chips=order.map(i=>`<div class="mitem" data-cat="${e.pairs[i].cat}">${e.pairs[i].text}</div>`).join("");
+    const zones=e.pairs.map(pr=>`<div class="mzone" data-cat="${pr.cat}"><span class="mzlabel">${pr.cat}</span></div>`).join("");
+    b+=`<div class="matchwrap"><div class="mpool">${chips}</div><div class="mzones">${zones}</div></div>`;
+    if(!st.answered) b+=`<div class="clk-hint">Σύρε κάθε πρόταση στο σωστό πλαίσιο.</div>`;
+  }else{
+    if(e.sentence) b+=`<div class="sentence">${e.sentence}</div>`;
+    const two=e.options.length===2?" two":"";
+    b+=`<div class="options${two}">`+e.options.map((o,idx)=>`<button class="opt" data-idx="${idx}">${o}</button>`).join("")+`</div>`;
+  }
+  b+=`<div class="feedback"></div></div>`;
+  host.innerHTML=b;
+  const card=host.querySelector('.card'); card.scrollTop=0;
+  if(e.type==="clk") bindClk(e,st,card); else if(e.type==="match") bindMatch(e,st,card); else if(e.type==="gap") bindGap(e,st,card); else bindOptions(e,st,card);
+  if(st.answered) replay(e,st,card);
+}
+/* ── Φάση ελέγχου: το αποτέλεσμα κρύβεται όσο γεμίζει η μπάρα ── */
+let CHECK_MS=1000, __checkTimer=null, __checking=false;
+function clearCheck(){ if(__checkTimer){ clearTimeout(__checkTimer); __checkTimer=null; } __checking=false; }
+function startCheck(card, done){
+  if(CHECK_MS<=0){ done(); return; }
+  __checking=true;
+  card.classList.add('checking');
+  const bar=document.createElement('div');
+  bar.className='checkbar';
+  bar.innerHTML='<div class="cb-label">Έλεγχος απάντησης…</div><div class="cb-track"><div class="cb-fill"></div></div>';
+  card.appendChild(bar);
+  fitCard();
+  const fill=bar.querySelector('.cb-fill');
+  requestAnimationFrame(()=>{ fill.style.transitionDuration=CHECK_MS+'ms'; fill.style.width='100%'; });
+  __checkTimer=setTimeout(()=>{
+    __checkTimer=null; __checking=false;
+    card.classList.remove('checking');
+    if(bar.parentNode) bar.remove();
+    done();
+  }, CHECK_MS);
+}
+function fb(card,ok,e){
+  card.dataset.answered='1';
+  card.querySelectorAll('.clk-hint').forEach(h=>h.style.display='none');
+  const f=card.querySelector('.feedback');f.className='feedback show '+(ok?'ok':'ko');
+  f.innerHTML=(ok?'✓ Σωστά. ':'✗ Όχι ακριβώς. ')+(e.explain||'');
+  const it=HIST[p];
+  const first = !!(it && it.kind==='ex' && !it.__scored);
+  if(first){ it.__scored=true; onAnswered(it,ok); }
+  const reveal=()=>{
+    slot.classList.remove('no-next');
+    if(first && !ok){ const h=document.createElement('div'); h.className='nexthint';
+      h.textContent = it.remedial ? 'Δες ξανά τη θεωρία →' : 'Ας δούμε τη θεωρία →';
+      card.appendChild(h); }
+    fitCard();
+  };
+  if(first) startCheck(card, reveal); else reveal();
+}
+function bindOptions(e,st,card){
+  const opts=[...card.querySelectorAll('.opt')];
+  let lockPid=null, lockBtn=null;
+  const lockOthers=(active)=>{ opts.forEach(x=>{ if(x!==active) x.style.pointerEvents='none'; }); };
+  const unlockOthers=()=>{ opts.forEach(x=>{ x.style.pointerEvents=''; }); };
+  opts.forEach(btn=>{
+    let dx0=0,dy0=0,downOk=false,pid=null;
+    btn.style.touchAction='manipulation';
+    const doPick=()=>{
+      if(st.answered)return;
+      const idx=+btn.dataset.idx,ok=idx===e.answer;st.answered=true;st.correct=ok;
+      card.dataset.answered='1';
+      opts.forEach((x,k)=>{ x.disabled=true; x.style.pointerEvents='none'; });
+      if(ok){ btn.classList.add('correct'); btn.insertAdjacentHTML('beforeend','<span class="mark">✓</span>'); }
+      else{ btn.classList.add('wrong'); btn.insertAdjacentHTML('beforeend','<span class="mark">✗</span>');
+        const right=opts[e.answer]; if(right){ right.classList.add('correct'); right.insertAdjacentHTML('beforeend','<span class="mark">✓</span>'); }
+      }
+      fb(card,ok,e);
+    };
+    btn.addEventListener('pointerdown',ev=>{
+      if(st.answered){ ev.preventDefault(); return; }
+      if(lockPid!==null){ ev.preventDefault(); ev.stopPropagation(); return; }
+      lockPid=ev.pointerId; lockBtn=btn;
+      downOk=true; pid=ev.pointerId; dx0=ev.clientX; dy0=ev.clientY;
+      lockOthers(btn);
+      try{ btn.setPointerCapture(ev.pointerId); }catch(_){}
+      ev.preventDefault();
+    });
+    btn.addEventListener('touchstart',ev=>{ if(lockPid!==null && !btn.contains(ev.target)) ev.preventDefault(); },{passive:false});
+    const release=(ev,commit)=>{
+      if(!downOk||ev.pointerId!==pid)return;
+      downOk=false;
+      try{ btn.releasePointerCapture(ev.pointerId); }catch(_){}
+      lockPid=null; lockBtn=null;
+      if(!commit){ if(!st.answered) unlockOthers(); return; }
+      if(st.answered)return;
+      if(Math.abs(ev.clientX-dx0)>12||Math.abs(ev.clientY-dy0)>12){ unlockOthers(); return; }
+      const el=document.elementFromPoint(ev.clientX,ev.clientY);
+      if(!el||el.closest('.opt')!==btn){ unlockOthers(); return; }
+      ev.preventDefault(); ev.stopPropagation();
+      doPick();
+    };
+    btn.addEventListener('pointerup',ev=>release(ev,true));
+    btn.addEventListener('pointercancel',ev=>release(ev,false));
+    btn.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); });
+  });
+}
+function bindClk(e,st,card){
+  card.querySelectorAll('.tok').forEach(tok=>{
+    tok.style.touchAction='manipulation';
+    let dx=0,dy=0,pid=null,down=false;
+    const doPick=()=>{
+      if(st.answered)return;
+      const ok=norm(tok.textContent)===norm(e.answerWord);st.answered=true;st.correct=ok;
+      card.dataset.answered='1';
+      if(ok)tok.classList.add('correct');
+      else{tok.classList.add('wrong');card.querySelectorAll('.tok').forEach(t=>{if(norm(t.textContent)===norm(e.answerWord))t.classList.add('correct');});}
+      fb(card,ok,e);
+    };
+    tok.addEventListener('pointerdown',ev=>{ if(st.answered)return; down=true; pid=ev.pointerId; dx=ev.clientX; dy=ev.clientY; ev.preventDefault(); doPick(); });
+    tok.addEventListener('pointerup',ev=>{
+      if(!down||ev.pointerId!==pid)return; down=false;
+      if(st.answered)return;
+      if(Math.abs(ev.clientX-dx)>12||Math.abs(ev.clientY-dy)>12)return;
+      ev.preventDefault(); ev.stopPropagation();
+      doPick();
+    });
+    tok.addEventListener('pointercancel',()=>{ down=false; });
+    tok.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); if(!st.answered) doPick(); });
+  });
+}
+function placeMatch(card,e){
+  const zones=[...card.querySelectorAll('.mzone')];
+  zones.forEach(z=>{
+    const chip=[...card.querySelectorAll('.mitem')].find(m=>m.dataset.cat===z.dataset.cat && !m.dataset.done);
+    if(chip){chip.dataset.done="1";chip.classList.add('placed','correct','locked');z.appendChild(chip);}
+  });
+}
+function bindMatch(e,st,card){
+  const pool=card.querySelector('.mpool');
+  const zones=[...card.querySelectorAll('.mzone')];
+  function evaluate(){
+    if(!zones.every(z=>z.querySelector('.mitem'))) return;
+    let allok=true;
+    zones.forEach(z=>{const it=z.querySelector('.mitem');const ok=it.dataset.cat===z.dataset.cat;it.classList.add(ok?'correct':'wrong');if(!ok)allok=false;});
+    st.answered=true;st.correct=allok;
+    card.dataset.answered='1';
+    card.querySelectorAll('.mpool').forEach(p=>p.style.display='none');
+    const hint=card.querySelector('.clk-hint'); if(hint) hint.style.display='none';
+    card.querySelectorAll('.mitem').forEach(m=>m.classList.add('locked'));
+    fb(card,allok,e);
+  }
+  card.querySelectorAll('.mitem').forEach(chip=>{
+    chip.addEventListener('pointerdown',ev=>{
+      if(st.answered||chip.classList.contains('locked'))return;
+      ev.preventDefault();ev.stopPropagation();
+      const r=chip.getBoundingClientRect();
+      const ox=ev.clientX-r.left, oy=ev.clientY-r.top;
+      const ghost=chip.cloneNode(true);
+      ghost.classList.add('mghost');ghost.classList.remove('mdragging');
+      ghost.style.width=r.width+'px';
+      ghost.style.left=(ev.clientX-ox)+'px';ghost.style.top=(ev.clientY-oy)+'px';
+      document.body.appendChild(ghost);
+      chip.classList.add('mdragging');
+      const move=m=>{
+        ghost.style.left=(m.clientX-ox)+'px';ghost.style.top=(m.clientY-oy)+'px';
+        const el=document.elementFromPoint(m.clientX,m.clientY);
+        const z=el&&el.closest?el.closest('.mzone'):null;
+        zones.forEach(x=>x.classList.toggle('over',x===z));
+        if(m.cancelable)m.preventDefault();
+      };
+      const up=m=>{
+        window.removeEventListener('pointermove',move);
+        window.removeEventListener('pointerup',up);
+        ghost.remove();chip.classList.remove('mdragging');
+        zones.forEach(x=>x.classList.remove('over'));
+        const el=document.elementFromPoint(m.clientX,m.clientY);
+        const z=el&&el.closest?el.closest('.mzone'):null;
+        if(z){const ex=z.querySelector('.mitem');if(ex&&ex!==chip)pool.appendChild(ex);z.appendChild(chip);}
+        else{pool.appendChild(chip);}
+        evaluate();
+      };
+      window.addEventListener('pointermove',move,{passive:false});
+      window.addEventListener('pointerup',up);
+    });
+  });
+}
+function bindGap(e,st,card){
+  const inp=card.querySelector('.gapinput');
+  const btn=card.querySelector('.gapcheck');
+  const acc=e.answers||[e.answer];
+  function check(){
+    if(st.answered||!inp)return;
+    const ok=acc.some(a=>norm(String(a))===norm(inp.value));
+    st.answered=true;st.correct=ok;
+    inp.disabled=true;if(btn)btn.disabled=true;
+    inp.classList.add(ok?'correct':'wrong');
+    fb(card,ok,e);
+  }
+  if(btn)btn.addEventListener('click',check);
+  if(inp)inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();check();}});
+  setTimeout(()=>{if(inp&&!st.answered)try{inp.focus();}catch(_){}},60);
+}
+function replay(e,st,card){
+  if(e.type==="clk"){card.querySelectorAll('.tok').forEach(t=>{if(norm(t.textContent)===norm(e.answerWord))t.classList.add('correct');});}
+  else if(e.type==="match"){placeMatch(card,e);}
+  else if(e.type==="gap"){const inp=card.querySelector('.gapinput');if(inp){inp.value=(e.answers||[e.answer])[0];inp.disabled=true;inp.classList.add('correct');}card.querySelectorAll('.gapcheck').forEach(b=>b.disabled=true);}
+  else{card.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true;if(k===e.answer){x.classList.add('correct');x.insertAdjacentHTML('beforeend','<span class="mark">✓</span>');}});}
+  fb(card,st.correct,e);
+}
+
+/* Κάρτα θεωρίας (flip). Μπρος: ορισμός + αναγνωριστικά. Πίσω: πίνακας + σημείωση. */
+function renderTheory(item){
+  const c=TH[item.th];
+  if(!c){ host.innerHTML=`<div class="card gate intro"><div class="title">Λείπει η θεωρία</div>
+    <div class="lead">Δεν βρέθηκε κάρτα θεωρίας με κωδικό ${item.th}.</div></div>`; fitCard(); return; }
+  const bookStep = String(c.sub).split('.')[0];
+  const bookref = 'Δες ξανά τη θεωρία στο βιβλίο σου: Βήμα '+bookStep;
+  const warn = item.warn
+    ? `<div class="thwarn">Χρειάζεται να ξαναδείς τη θεωρία. ${bookref}.</div>` : '';
+  const rows=(c.rows||[]).map(r=>`<div class="throw"><div class="k">${r.k}</div><div class="v">${r.v}</div></div>`).join("");
+  const rowsAside=(c.rowsAside||[]).map(r=>`<div class="throw"><div class="k">${r.k}</div><div class="v">${r.v}</div></div>`).join("");
+  host.innerHTML=`<div class="thwrap"><div class="thcard" id="thcard" tabindex="0" role="button" aria-label="Κάρτα θεωρίας. Πάτησε για παραδείγματα.">
+    <div class="face front">
+      <div class="col main"><div class="kicker">${c.cat}</div>${warn}<div class="term">${firstLetter(c.term)}</div><div class="def">${c.def}</div><div class="bookref">${bookref}</div></div>
+      <div class="col aside">${c.means?`<div class="scholion"><div class="h">${c.meansTitle||'Πώς αναγνωρίζεται'}</div><p>${c.means}</p></div>`:''}</div>
+      <div class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>Πάτησε για τον πίνακα</div>
+    </div>
+    <div class="face back">
+      <div class="col main"><div class="kicker">${c.rowsTitle||'Πίνακας'}</div><div class="term-small">${c.term}</div>
+        <div class="thtable">${rows}</div></div>
+      <div class="col aside">${c.rowsAside?`<div class="kicker">${c.rowsAsideTitle||''}</div><div class="thtable">${rowsAside}</div>`:''}${c.note?`<div class="ex-note"><div class="h">Σημείωση</div><span>${c.note}</span></div>`:''}</div>
+      <div class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>Επιστροφή στον ορισμό</div>
+    </div>
+  </div></div>`;
+  flipped=false;
+  fitTheory();
+}
+
+/* Πλοήγηση & ζώνες αφής */
+function flipCurrent(){
+  const t=host.querySelector('#thcard'); if(!t) return;
+  flipped=!flipped;
+  t.classList.remove('animBack','animFront');
+  void t.offsetWidth;
+  if(flipped){ t.classList.add('flipped','animBack'); }
+  else { t.classList.remove('flipped'); t.classList.add('animFront'); }
+}
+function canGo(dir){
+  if(!__ready || __checking) return false;
+  const it=HIST[p]; if(!it) return false;
+  if(dir<0) return p>0;
+  if(it.kind==='finish') return false;
+  /* Υποχρεωτική απάντηση: αναπάντητη άσκηση δεν προσπερνιέται. */
+  if(it.kind==='ex' && !it.state.answered) return false;
+  /* Οι κάρτες επιλογής προχωρούν μόνο με τα κουμπιά τους. */
+  if(it.kind==='stepdone'||it.kind==='freesetup'||it.kind==='freedone') return false;
+  return true;
+}
+function go(dir){
+  if(!canGo(dir)) return;
+  if(dir>0 && p===HIST.length-1){
+    const nx=nextCard(); if(!nx) return;
+    HIST.push(nx);
+  }
+  p+=dir; flipped=false; render(dir);
+}
+
+document.getElementById('btnHome').addEventListener('click',()=>{if(!__ready)return;p=0;flipped=false;render(0);});
+document.getElementById('btnClose').addEventListener('click',()=>{try{window.close();}catch(e){}if(!window.closed){history.length>1?history.back():location.replace('about:blank');}});
+document.getElementById('zLeft').addEventListener('click',()=>go(-1));
+document.getElementById('zRight').addEventListener('click',()=>go(1));
+document.getElementById('zCenter').addEventListener('click',()=>{ if(__ready&&HIST[p]&&HIST[p].kind==='theory') flipCurrent(); });
+document.getElementById('cuePrev').addEventListener('click',()=>go(-1));
+document.getElementById('cueNext').addEventListener('click',()=>go(1));
+document.getElementById('hintMid').addEventListener('click',()=>{ if(__ready&&HIST[p]&&HIST[p].kind==='theory') flipCurrent(); });
+
+/* ── Σύρσιμο καρτών (drag/swipe οριζόντια) ── */
+(function(){
+  const THRESHOLD=8, COMMIT=60;
+  let sx=0, sy=0, dx=0, active=false, dragging=false, didDrag=false, pid=null, downTarget=null;
+  const skipDrag = t => {
+    if(!t || !t.closest) return false;
+    const card=t.closest('.card'); const answered=card && card.dataset.answered==='1';
+    if(answered) return !!t.closest('input, textarea, select, [contenteditable="true"]');
+    return !!t.closest('.mitem, .tok, input, textarea, select, [contenteditable="true"]');
+  };
+  slot.addEventListener('pointerdown',ev=>{
+    if(ev.pointerType==='mouse') return;
+    if(ev.button!==0 && ev.pointerType==='mouse') return;
+    if(skipDrag(ev.target)) return;
+    active=true; dragging=false; didDrag=false; pid=ev.pointerId;
+    sx=ev.clientX; sy=ev.clientY; dx=0; downTarget=ev.target;
+    host.classList.remove('snapback');
+  });
+  window.addEventListener('pointermove',ev=>{
+    if(!active||ev.pointerId!==pid) return;
+    dx=ev.clientX-sx; const dy=ev.clientY-sy;
+    if(!dragging){
+      if(Math.abs(dy)>THRESHOLD && Math.abs(dy)>Math.abs(dx)){ active=false; return; }
+      if(Math.abs(dx)>THRESHOLD){
+        dragging=true; didDrag=true;
+        host.classList.remove('slideR','slideL','fadeIn');
+        host.classList.add('dragging');
+      } else return;
+    }
+    const w=slot.clientWidth||600;
+    host.style.transform=`translateX(${dx}px) rotate(${dx/w*3}deg)`;
+    host.style.opacity=String(Math.max(.45, 1-Math.abs(dx)/(w*.9)));
+    ev.preventDefault();
+  },{passive:false});
+  function end(ev){
+    if(!active||(ev && ev.pointerId!==pid)) return;
+    active=false;
+    if(!dragging){ return; }
+    host.classList.remove('dragging');
+    if(Math.abs(dx)>COMMIT && canGo(dx<0?1:-1)){
+      const dir = dx<0 ? 1 : -1;
+      const w=slot.clientWidth||600;
+      const startDx=dx;
+      /* φτιάχνουμε ghost — η παλιά κάρτα φεύγει */
+      const ghost=document.createElement('div');
+      ghost.className='cardghost';
+      ghost.style.cssText=`position:absolute;inset:0;display:flex;pointer-events:none;z-index:3;will-change:transform,opacity;transition:transform .34s cubic-bezier(.2,.7,.3,1),opacity .34s ease;transform:translateX(${startDx}px) rotate(${startDx/w*3}deg);opacity:${host.style.opacity||1};`;
+      ghost.innerHTML=host.innerHTML;
+      slot.appendChild(ghost);
+      /* τοποθετούμε το host εκτός οθόνης από την αντίθετη μεριά και ρενταρουμε τη νέα */
+      host.classList.remove('snapback','slideR','slideL','fadeIn');
+      host.style.transition='none';
+      host.style.transform=`translateX(${dir>0? w : -w}px)`;
+      host.style.opacity='1';
+      __swipeInProgress=true;
+      go(dir);
+      requestAnimationFrame(()=>{
+        host.style.transition='transform .34s cubic-bezier(.2,.7,.3,1),opacity .34s ease';
+        host.style.transform='translateX(0)';
+        host.style.opacity='1';
+        ghost.style.transform=`translateX(${dir>0? -w*1.05 : w*1.05}px) rotate(${(dir>0?-1:1)*4}deg)`;
+        ghost.style.opacity='0';
+      });
+      setTimeout(()=>{
+        ghost.remove();
+        host.style.transition='';
+        host.style.transform='';
+        host.style.opacity='';
+        __swipeInProgress=false;
+      },360);
+    } else {
+      host.classList.add('snapback');
+      host.style.transform=''; host.style.opacity='';
+      setTimeout(()=>host.classList.remove('snapback'),280);
+    }
+  }
+  window.addEventListener('pointerup',end);
+  window.addEventListener('pointercancel',end);
+  window.addEventListener('click',ev=>{
+    if(didDrag){ didDrag=false; ev.preventDefault(); ev.stopPropagation(); }
+  },true);
+})();
+
+document.addEventListener('keydown',ev=>{
+  if(ev.key==='ArrowRight')go(1);
+  else if(ev.key==='ArrowLeft')go(-1);
+  else if((ev.key===' '||ev.key==='Enter') && __ready && HIST[p] && HIST[p].kind==='theory'){ ev.preventDefault(); flipCurrent(); }
+});
+const __isTh=()=>__ready&&HIST[p]&&HIST[p].kind==='theory';
+window.addEventListener('resize',()=>{ if(__isTh())fitTheory(); else fitCard(); });
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ if(__isTh())fitTheory(); else fitCard(); },120));
+
+/* ══ Εκκίνηση: φόρτωση ασκήσεων από το Google Sheet ══ */
+function statusCard(kicker,title,lead,extra){
+  host.innerHTML=`<div class="card gate intro">
+    <div class="head"><span class="eyebrow">${kicker}</span><span class="badge">Ενσωματωμένες</span></div>
+    <div class="title">${title}</div>
+    <div class="lead">${lead}</div>${extra||''}
+  </div>`;
+  fitCard();
+}
+
+async function boot(){
+  statusCard('Φόρτωση','Προετοιμασία ασκήσεων','Οι ασκήσεις είναι ενσωματωμένες στην εφαρμογή.');
+  try{
+    EX = await loadEX();
+    if(!EX.length) throw new Error('Δεν βρέθηκαν ενεργές ασκήσεις με τα κριτήρια που ζητήθηκαν.');
+    const q=urlParams();
+    const mn=parseInt(q['min'],10); if(mn>0) MIN_PER_SUB=mn;
+    const ck=parseInt(q['check'],10); if(ck>=0) CHECK_MS=ck;
+    ENG.steps=buildEngine(EX); ENG.si=0; ENG.ui=0; loadSub();
+    __ready=true;
+    HIST=[{kind:'intro'}]; p=0; flipped=false; render(0);
+  }catch(err){
+    console.error('[quiz] αποτυχία φόρτωσης:',err);
+    statusCard('Σφάλμα','Οι ασκήσεις δεν φορτώθηκαν',
+      'Δεν κατέστη δυνατή η ανάγνωση του φύλλου: '+(err&&err.message?err.message:err)+
+      '<br><br>Τα δεδομένα είναι ενσωματωμένα στην εφαρμογή· αν το πρόβλημα παραμένει, δοκίμασε επαναφόρτωση της σελίδας.',
+      '<div class="actions"><button class="reveal-btn" id="retryBtn">↻ Νέα προσπάθεια</button>'+
+      '<button class="reveal-btn btn-secondary" id="theoryOnlyBtn">Μόνο θεωρία →</button></div>');
+    const rb=host.querySelector('#retryBtn'); if(rb) rb.addEventListener('click',boot);
+    const tb=host.querySelector('#theoryOnlyBtn');
+    if(tb) tb.addEventListener('click',()=>{
+      __ready=true; ENG.steps=[]; ENG.mode='learn';
+      HIST=Object.keys(TH).map(k=>({kind:'theory', th:+k}));
+      p=0; flipped=false; render(1); });
+  }
+}
+boot();
+</script>
+
+
+
+
+</body></html>
