@@ -886,11 +886,24 @@ function getQuestionsForCat(catKey, excludeIds=[]) {
   return picked; // σειρά: αύξουσα δυσκολία
 }
 
-// Επιστρέφει 1 τυχαία ερώτηση συγκεκριμένου βαθμού δυσκολίας (για «τιμωρία»)
-function getOneQuestionByDiff(catKey, diff, excludeIds=[]) {
-  const pool = (catsByKey[catKey]||[]).filter(q => !excludeIds.includes(q.id) && q.diff === diff);
-  if (!pool.length) return null;
-  return shuffle(pool)[0];
+// Επιστρέφει 1 τυχαία ερώτηση για «τιμωρία»/επανάληψη.
+// Προτεραιότητα: ΙΔΙΟ υποβήμα (ίδια θεωρία/κάρτα) με το λάθος → μετά ίδια κατηγορία.
+function getOneQuestionByDiff(catKey, diff, excludeIds=[], preferTheory=null) {
+  const base = (catsByKey[catKey]||[]).filter(q => !excludeIds.includes(q.id));
+  const pick = arr => arr.length ? shuffle(arr)[0] : null;
+  if (preferTheory) {
+    // 1) ίδιο υποβήμα + ίδια δυσκολία
+    let p = pick(base.filter(q => q.theory === preferTheory && q.diff === diff));
+    if (p) return p;
+    // 2) ίδιο υποβήμα, οποιαδήποτε δυσκολία
+    p = pick(base.filter(q => q.theory === preferTheory));
+    if (p) return p;
+  }
+  // 3) fallback: ίδια κατηγορία + ίδια δυσκολία
+  let p = pick(base.filter(q => q.diff === diff));
+  if (p) return p;
+  // 4) fallback: οτιδήποτε στην κατηγορία
+  return pick(base);
 }
 
 function checkAnswer(q, answer) {
@@ -1284,19 +1297,26 @@ function renderCatTransition() {
 // ══════════════════════════════════════════════
 function renderTheoryWall() {
   const catKey = catOrder[adp.catIdx];
-  const theoryKeys = getTheoryKeysForCat(catKey);
+  // Στόχευση στο ΣΥΓΚΕΚΡΙΜΕΝΟ υποβήμα (κάρτα θεωρίας) που έγινε λάθος,
+  // αντί για όλες τις κάρτες του βήματος. Fallback: κάρτες όλης της κατηγορίας.
+  const failedKey = getTheoryForQuestion(adp.penaltyOrigQ);
+  const theoryKeys = failedKey ? [failedKey] : getTheoryKeysForCat(catKey);
   let theoryItems = '';
+  let topicTitle = '';
   theoryKeys.forEach(k => {
     if (THEORY_CARDS[k]) {
+      if (!topicTitle) topicTitle = THEORY_CARDS[k].title || '';
       theoryItems += `<p style="font-weight:700;margin-bottom:6px;color:var(--ko)">${THEORY_CARDS[k].title||''}</p>`;
       theoryItems += '<ul>' + THEORY_CARDS[k].points.map(t=>`<li>${t}</li>`).join('') + '</ul>';
     }
   });
+  const stepNum = catKey.split('.')[0];
   return `
   <div class="card">
     <div class="theory-needed">
       <h4>📖 Χρειάζεται να ξαναδείς τη θεωρία</h4>
-      <p>Φαίνεται ότι χρειάζεσαι επανάληψη στο θέμα: <strong>${getCatDisplayName(catKey)}</strong></p>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Βήμα ${stepNum} · ${getCatDisplayName(catKey)}</p>
+      <p>Χρειάζεσαι επανάληψη στο θέμα: <strong>${topicTitle || getCatDisplayName(catKey)}</strong></p>
       ${theoryItems ? `<div style="margin:10px 0 14px">${theoryItems}</div>` : ''}
       <p style="font-weight:700;margin-bottom:14px;color:var(--ko)">Θέλεις να επαναλάβεις την προσπάθεια ή να συνεχίσεις στο επόμενο βήμα;</p>
       <div class="tn-choices">
@@ -1994,7 +2014,7 @@ function doNext() {
   if (!wasOk) {
     // Λάθος σε κανονική ερώτηση → ενεργοποίηση «τιμωρίας»
     const diff = currentQ.diff;
-    const extraQ = getOneQuestionByDiff(catKey, diff, [...adp.usedIds[catKey]]);
+    const extraQ = getOneQuestionByDiff(catKey, diff, [...adp.usedIds[catKey]], currentQ.theory);
     adp.penaltyMode = true;
     adp.penaltyOrigQ = currentQ;
     adp.penaltyStep = 0;
