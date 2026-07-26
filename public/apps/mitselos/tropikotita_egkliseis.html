@@ -748,13 +748,38 @@ function parseCatKey(raw) {
   return String(raw).trim();
 }
 
+// Τμηματοποίηση ολόκληρου του CSV σε εγγραφές (πίνακες πεδίων), με σωστό
+// χειρισμό εισαγωγικών και αλλαγών γραμμής ΜΕΣΑ σε κελιά (embedded newlines).
+// Απαραίτητο: κελιά όπως «Κείμενο Ερώτησης» περιέχουν \n, οπότε μια εγγραφή
+// μπορεί να εκτείνεται σε πολλές φυσικές γραμμές του αρχείου.
+function parseCSVRecords(csv) {
+  const records = []; let row = []; let cur = ''; let inQ = false;
+  const s = csv.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQ) {
+      if (c === '"') { if (s[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cur.trim()); cur = ''; }
+      else if (c === '\n') { row.push(cur.trim()); records.push(row); row = []; cur = ''; }
+      else cur += c;
+    }
+  }
+  // τελευταία εγγραφή (αν το αρχείο δεν τελειώνει με newline)
+  if (cur !== '' || row.length) { row.push(cur.trim()); records.push(row); }
+  // αγνόησε εντελώς κενές εγγραφές
+  return records.filter(r => r.some(v => v !== ''));
+}
+
 function parseCSV(csv) {
-  const lines = csv.replace(/\r/g,'').split('\n').filter(l=>l.trim());
-  if (lines.length < 2) return [];
-  const hdrs = parseCSVLine(lines[0]).map(h=>h.trim());
+  const records = parseCSVRecords(csv);
+  if (records.length < 2) return [];
+  const hdrs = records[0].map(h=>h.trim());
   const data = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseCSVLine(lines[i]);
+  for (let i = 1; i < records.length; i++) {
+    const vals = records[i];
     const obj = {};
     hdrs.forEach((h,idx) => {
       let v = (vals[idx]||'').trim();
