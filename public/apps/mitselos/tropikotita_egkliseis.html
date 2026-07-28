@@ -2262,7 +2262,7 @@ function renderPresTheory() {
 function renderPresSetup() {
   // Θεωρία chips
   const theoryChips = [{v:'all', lbl:'Όλα'}];
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= 10; i++) {
     if (THEORY_CARDS[i]) {
       const cnt = allQ.filter(q => String(q.theory) === String(i)).length;
       theoryChips.push({v: i, lbl: `${i}) ${THEORY_CARDS[i].title.substring(0,30)}…`, cnt});
