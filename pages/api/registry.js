@@ -38,6 +38,11 @@ export default async function handler(req, res) {
           published: typeof f.published === 'boolean' ? f.published : (prev.published || false),
           visibility: typeof f.visibility === 'string' ? f.visibility : (prev.visibility || 'none'),
           pdfId: f.pdfId || prev.pdfId || null, // PDF αντίγραφο Office — να μη χάνεται σε re-POST
+          // ── Ταυτότητα «Δικτύου Κειμένων»: πρέπει να ΕΠΙΒΙΩΝΕΙ σε κάθε re-POST ──
+          // Χωρίς αυτά, το συγχωνευμένο PDF «ξεχνά» σε ποιο δίκτυο ανήκει και το 🔄
+          // «δεν βρίσκει το δίκτυο κειμένων».
+          networkId: f.networkId || prev.networkId || null,
+          _isNetwork: typeof f._isNetwork === 'boolean' ? f._isNetwork : (prev._isNetwork || false),
           favorite: typeof f.favorite === 'boolean' ? f.favorite : (prev.favorite || false),
           openCount: prev.openCount || 0,
           openedAt: prev.openedAt || null,
@@ -53,11 +58,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ folders: reg.folders, files: reg.files });
     }
     if (req.method === 'PATCH') {
-      const { id, tags, comment, info, questions, links, visibility, favorite, recordOpen } = req.body || {};
+      const { id, tags, comment, info, questions, links, visibility, favorite, recordOpen, networkId, _isNetwork } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const reg = await loadRegistry(drive);
       const idx = reg.files.findIndex((f) => f.id === id);
       if (idx === -1) return res.status(404).json({ error: 'File not found' });
+      // Ταυτότητα «Δικτύου Κειμένων» — να ΓΡΑΦΕΤΑΙ (αλλιώς το 🔄 δεν βρίσκει το δίκτυο)
+      if (typeof networkId === 'string') reg.files[idx].networkId = networkId;
+      if (typeof _isNetwork === 'boolean') reg.files[idx]._isNetwork = _isNetwork;
       if (Array.isArray(tags)) reg.files[idx].tags = tags;
       if (typeof comment === 'string') reg.files[idx].comment = comment;
       if (typeof info === 'string') reg.files[idx].info = info;
