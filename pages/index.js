@@ -933,6 +933,12 @@ export default function Home() {
         const updated = { ...net, pdfFileId: d.pdfFileId, pdfFilename: d.pdfFilename };
         setNetworks(prev => prev.map(n => n.id === net.id ? updated : n));
         saveNetworkData(updated); // μονιμοποίηση του νέου pdfFileId — αλλιώς μετά από reload το δίκτυο «χάνει» το PDF του
+        // Σφράγισε το ΝΕΟ συγχωνευμένο αρχείο με τη μόνιμη ταυτότητα του δικτύου
+        // (νέο fileId μετά την αναγέννηση → αλλιώς χάνει networkId/ετικέτα «Δίκτυο» και το 🔄 δεν το ξαναβρίσκει)
+        try {
+          await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ id: d.pdfFileId, networkId: net.id, _isNetwork: true, tags: [...new Set(['Δίκτυο', ...(net.tags||[])])] }) });
+        } catch {}
         setNetMsg('✓ PDF ενημερώθηκε');
         setTimeout(() => setNetMsg(''), 2500);
         return d.pdfFileId; // νέο id του συγχωνευμένου PDF
@@ -971,10 +977,14 @@ export default function Home() {
   // Ανανέωση με αφετηρία την ΚΑΡΤΑ ή το modal του συγχωνευμένου αρχείου
   // Εύρεση δικτύου: μόνιμη ταυτότητα networkId → pdfFileId → αποθηκευμένο pdfFilename
   // → σύμβαση ονόματος {όνομα δικτύου}.pdf (καλύπτει παλιά αντίγραφα χωρίς μεταδεδομένα).
+  // Ανθεκτική σύγκριση ονομάτων: αγνοεί πεζά/κεφαλαία, την κατάληξη .pdf,
+  // κενά και τυχόν αριθμητικό επίθεμα του Drive (π.χ. « (1)») που σπάει την ακριβή ισότητα.
+  const normName = (s) => (s || '').toLowerCase().replace(/\.pdf$/i, '').replace(/\s*\(\d+\)\s*$/, '').trim();
   const matchNet = (list, id, name, nid) =>
     (nid ? list.find((n) => n.id === nid) : null)
     || list.find((n) => n.pdfFileId === id)
     || (name ? list.find((n) => (n.pdfFilename && n.pdfFilename === name) || name === n.name + '.pdf') : null)
+    || (name ? list.find((n) => (n.pdfFilename && normName(n.pdfFilename) === normName(name)) || normName(name) === normName(n.name)) : null)
     || null;
   const netOfFile = (id, name, nid) => matchNet(networks, id, name, nid);
   const netRefreshByFile = async (f) => {
@@ -1014,7 +1024,13 @@ export default function Home() {
     }
     if (fixes.length) {
       setNetworks((prev) => prev.map((p) => fixes.find((x) => x.id === p.id) || p));
-      fixes.forEach((x) => saveNetworkData(x));
+      fixes.forEach((x) => {
+        saveNetworkData(x);
+        // Σφράγισε και το ίδιο το αρχείο με τη μόνιμη ταυτότητα → μελλοντικά matchNet
+        // το βρίσκει από το networkId, ανεξάρτητα από όνομα ή αλλαγή pdfFileId.
+        fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ id: x.pdfFileId, networkId: x.id, _isNetwork: true }) }).catch(() => {});
+      });
     }
   }, [networks, files]);
 
@@ -1082,7 +1098,7 @@ export default function Home() {
         saveNetworkData(updated);
         // Ο server αποθήκευσε ήδη τις ερωτήσεις (ομαδοποιημένες) στο registry.
         // PATCH μόνο tags/comment/info — ΟΧΙ questions (τα χειρίζεται ο server).
-        const metaPatch = { _isNetwork: true };
+        const metaPatch = { _isNetwork: true, networkId: currentNetwork.id };
         // ΠΡΟΣΟΧΗ: διατήρηση της ετικέτας «Δίκτυο» — χωρίς αυτήν η κάρτα «ξεχνά»
         // ότι είναι δίκτυο μετά από reload (χάνει το 🔄, εμφανίζει διπλή εκτύπωση+ερωτήσεις)
         if (allTags.length) metaPatch.tags = [...new Set(['Δίκτυο', ...allTags])];
