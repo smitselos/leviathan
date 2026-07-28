@@ -1034,6 +1034,15 @@ export default function Home() {
     }
   }, [networks, files]);
 
+  // ── Φρέσκια λίστα δικτύων κάθε φορά που ανοίγει η «Δημιουργία Δικτύων» ──
+  // Χωρίς αυτό, αν το αρχικό loadNetworks απέτυχε (π.χ. 401 σε κρύο ξεκίνημα του PWA)
+  // ή αν δημιουργήθηκε δίκτυο από άλλη συσκευή, η οθόνη έδειχνε «Δεν υπάρχουν δίκτυα
+  // ακόμα» παρόλο που υπάρχουν στο Drive. Τώρα η λίστα ανανεώνεται με το που την ανοίγεις.
+  useEffect(() => {
+    if (activeView === 'netBuilder' && status === 'authenticated') loadNetworks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, status]);
+
   // ── Μεταδεδομένα δικτύου (ετικέτες, σχόλια, πληροφορίες) ──
   const addNetTag = (tag) => {
     if (!currentNetwork) return;
