@@ -496,9 +496,19 @@ export default function Home() {
   const isTeacher = userRole === 'teacher';
   const isStudent = userRole === 'student';
 
+  const authErrRef = useRef(0);
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
-    if (session?.error === 'RefreshAccessTokenError') signOut({ callbackUrl: '/login' });
+    // Μην αποσυνδέεις στο πρώτο σφάλμα: ένα παροδικό glitch ανανέωσης δεν πρέπει
+    // να σε πετάει στο login. Δώσε μία ευκαιρία επανα-ανανέωσης· αποσύνδεση μόνο
+    // αν το σφάλμα επιμείνει στον επόμενο κύκλο.
+    if (session?.error === 'RefreshAccessTokenError') {
+      authErrRef.current += 1;
+      if (authErrRef.current >= 2) { signOut({ callbackUrl: '/login' }); return; }
+      const t = setTimeout(() => { fetch('/api/auth/session?update=' + Date.now(), { cache: 'no-store' }).catch(() => {}); }, 4000);
+      return () => clearTimeout(t);
+    }
+    authErrRef.current = 0;
   }, [status, session, router]);
 
   useEffect(() => { const t = setTimeout(() => setMinLoadDone(true), 1500); return () => clearTimeout(t); }, []);
