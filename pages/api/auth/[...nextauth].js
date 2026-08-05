@@ -78,7 +78,16 @@ async function refreshAccessToken(token) {
     };
   } catch (error) {
     console.error('Token refresh error:', error);
-    return { ...token, error: 'RefreshAccessTokenError' };
+    // Διάκριση: πραγματικά νεκρό RT vs παροδικό σφάλμα.
+    //  • invalid_grant / έλλειψη RT  → το token ΔΕΝ ξαναζωντανεύει: θέσε error
+    //    ώστε ο client να ζητήσει νέα σύνδεση (νέο consent → νέο RT).
+    //  • network / KV / Google 5xx   → ΠΑΡΟΔΙΚΟ: κράτα το υπάρχον token ΧΩΡΙΣ
+    //    error, ώστε να ξαναδοκιμάσει στο επόμενο request αντί να αποσυνδέσει.
+    const code = error?.error || error?.code || error?.message || '';
+    const fatal = code === 'invalid_grant' || code === 'No refresh token available';
+    if (fatal) return { ...token, error: 'RefreshAccessTokenError' };
+    // Παροδικό: μικρό «τσίμπημα» στο accessTokenExpires για γρήγορη επανάληψη.
+    return { ...token, accessTokenExpires: Date.now() + 30 * 1000 };
   }
 }
 
@@ -91,7 +100,11 @@ export const authOptions = {
         params: {
           scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
           access_type: 'offline',
-          // Χωρίς prompt:'consent' → η οθόνη συναίνεσης εμφανίζεται μόνο την πρώτη φορά.
+          // prompt:'consent' → η Google επιστρέφει refresh_token σε ΚΑΘΕ σύνδεση.
+          // Χωρίς αυτό, το refresh_token δίνεται μόνο στην πρώτη-ποτέ συναίνεση· αν
+          // εκείνη έγινε πριν μπει το KV-storage, το KV μένει άδειο για πάντα και
+          // κάθε ανανέωση σκάει με «No refresh token available».
+          prompt: 'consent',
         },
       },
     }),
