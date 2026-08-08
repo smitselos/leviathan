@@ -1845,7 +1845,7 @@ export default function Home() {
           <NavItem icon={Icon.send} label="Εισερχ./Απεστ." active={activeView==='messages'} onClick={openMessages}
             badge={unseenTotal} />
           <NavItem icon={Icon.live} label="Live" active={activeView==='liveCenter'} onClick={() => { setActiveView('liveCenter'); setOpenFolder(null); }} />
-          <NavItem icon={Icon.globe} label="Ανοιχτή πρόσβαση" onClick={() => window.open('/s/' + (session.user?.email?.split('@')[0] || ''), '_blank')} />
+          <NavItem icon={Icon.globe} label="Ανοιχτή πρόσβαση" onClick={() => window.open('/class?teacher=' + encodeURIComponent(session.user?.email || ''), '_blank')} />
           {liveFile && (
             <>
               <div style={S.navDiv} />
