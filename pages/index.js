@@ -197,6 +197,7 @@ const gEditorType = (m) => m === 'application/vnd.google-apps.spreadsheet' ? 'sp
 const ghUrl = (app) => (((typeof window !== 'undefined') ? window.location.origin : 'https://leviathan-olive.vercel.app') + '/apps/' + String(app.path || '').split('/').map(encodeURIComponent).join('/'));
 const getShareUrl = (f) => {
   if (!f) return '';
+  if (f._quizUrl) return f._quizUrl; // QR κουίζ Live (κουίζ + #session)
   if (f._ghUrl) return f._ghUrl; // εφαρμογή GitHub — άμεσο στατικό λινκ
   if (isHtmlApp(f)) {
     const origin = (typeof window !== 'undefined') ? window.location.origin : 'https://leviathan-olive.vercel.app';
@@ -478,6 +479,31 @@ export default function Home() {
   const [qrFile, setQrFile] = useState(null);
   const [qrCopied, setQrCopied] = useState(false);
   useEffect(() => { setQrCopied(false); }, [qrFile]);
+  // ── Κουίζ Live: δημιουργεί συνεδρία αποτελεσμάτων, βάζει κουίζ+αποτελέσματα στο Live, δείχνει QR ──
+  const [quizStarting, setQuizStarting] = useState(false);
+  const startQuizLive = async (app) => {
+    if (quizStarting) return;
+    setQuizStarting(true);
+    try {
+      const r = await fetch('/api/quiz-results?start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quizName: app.name }),
+      });
+      const d = await r.json();
+      if (!d.code) { alert('Δεν ήταν δυνατή η έναρξη του κουίζ.'); return; }
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const quizUrl = ghUrl(app) + '#session=' + d.code;        // QR παιδιών → κουίζ + κωδικός
+      const resultsUrl = origin + '/results?code=' + d.code;    // δεξιά στήλη Live
+      addLiveItem({ kind:'url', url: quizUrl, name: app.name });
+      addLiveItem({ kind:'url', url: resultsUrl, name: 'Αποτελέσματα · ' + d.code });
+      // QR που σκανάρουν τα παιδιά (δείχνει στο κουίζ με τον κωδικό συνεδρίας)
+      setQrFile({ id:'quiz:' + d.code, name: app.name + ' — Κουίζ ' + d.code, _quizUrl: quizUrl });
+    } catch (e) {
+      alert('Σφάλμα έναρξης κουίζ.');
+    } finally {
+      setQuizStarting(false);
+    }
+  };
   const [appsSubfolder, setAppsSubfolder] = useState(null); // {id,name} — ανοιχτός υποφάκελος στις Εφαρμογές
   // ── Ομάδες χρηστών + όψη «Εισερχ./Απεστ.» ──
   const [groups, setGroups] = useState([]);
@@ -2146,6 +2172,7 @@ export default function Home() {
                               <button onClick={() => window.open(ghUrl(a), '_blank')} style={{ ...btn('mini'), color:PALETTE.mustard.deep }}>Άνοιγμα ↗</button>
                               <button onClick={() => copyGh(a)} style={{ ...btn('mini'), color: ghCopied === a.path ? '#16a34a' : '#555' }}>{ghCopied === a.path ? '✓ Αντιγράφηκε' : '🔗 Λινκ'}</button>
                               <button onClick={() => addLiveItem({ kind:'url', url:ghUrl(a), name:a.name })} style={{ ...btn('mini'), color:'#5c7a3a' }}>➕ Live</button>
+                              <button onClick={() => startQuizLive(a)} disabled={quizStarting} style={{ ...btn('mini'), color:'#a68a2e', fontWeight:600 }} title="Έναρξη κουίζ με ζωντανά αποτελέσματα">🎯 Κουίζ Live</button>
                             </div>
                           </div>
                         ))}
