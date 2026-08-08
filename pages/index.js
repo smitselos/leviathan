@@ -197,7 +197,6 @@ const gEditorType = (m) => m === 'application/vnd.google-apps.spreadsheet' ? 'sp
 const ghUrl = (app) => (((typeof window !== 'undefined') ? window.location.origin : 'https://leviathan-olive.vercel.app') + '/apps/' + String(app.path || '').split('/').map(encodeURIComponent).join('/'));
 const getShareUrl = (f) => {
   if (!f) return '';
-  if (f._quizUrl) return f._quizUrl; // QR κουίζ Live (κουίζ + #session)
   if (f._ghUrl) return f._ghUrl; // εφαρμογή GitHub — άμεσο στατικό λινκ
   if (isHtmlApp(f)) {
     const origin = (typeof window !== 'undefined') ? window.location.origin : 'https://leviathan-olive.vercel.app';
@@ -444,6 +443,40 @@ export default function Home() {
   const [liveUrlName, setLiveUrlName] = useState('');
   const [liveCenterCode, setLiveCenterCode] = useState(null);
   const [liveCenterBusy, setLiveCenterBusy] = useState(false);
+  // ── Κουίζ + Live αποτελέσματα ──
+  const [quizLinkInput, setQuizLinkInput] = useState('');
+  const [quizLiveBusy, setQuizLiveBusy] = useState(false);
+  // Ενεργοποιεί συνεδρία αποτελεσμάτων: προσθέτει στο Live το κουίζ (με #set+session)
+  // και τη σελίδα αποτελεσμάτων. Απαιτεί σύνδεσμο κουίζ (κατά προτίμηση με #set=IDs).
+  const activateQuizLive = async () => {
+    const raw = quizLinkInput.trim();
+    if (!raw || quizLiveBusy) return;
+    setQuizLiveBusy(true);
+    try {
+      // Όνομα κουίζ από το τελευταίο τμήμα του path
+      let quizName = 'Κουίζ';
+      try { const u = new URL(raw, window.location.origin); quizName = decodeURIComponent((u.pathname.split('/').pop() || '').replace(/\.html?$/i, '')) || 'Κουίζ'; } catch (e) {}
+      const r = await fetch('/api/quiz-results?start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quizName }),
+      });
+      const d = await r.json();
+      if (!d.code) { alert('Δεν ήταν δυνατή η έναρξη του κουίζ.'); return; }
+      // Πρόσθεσε το session στο link του κουίζ, διατηρώντας το τυχόν #set=...
+      const hasHash = raw.includes('#');
+      const sep = hasHash ? (/[#&]$/.test(raw) ? '' : '&') : '#';
+      const quizUrl = raw + sep + 'session=' + d.code;
+      const resultsUrl = (typeof window !== 'undefined' ? window.location.origin : '') + '/results?code=' + d.code;
+      addLiveItem({ kind: 'url', url: quizUrl, name: quizName });
+      addLiveItem({ kind: 'url', url: resultsUrl, name: '📊 Αποτελέσματα · ' + d.code });
+      setQuizLinkInput('');
+      alert('Το Κουίζ Live ενεργοποιήθηκε! Κωδικός συνεδρίας: ' + d.code + '\nΠροστέθηκαν στην παρουσίαση το κουίζ και η σελίδα αποτελεσμάτων.');
+    } catch (e) {
+      alert('Σφάλμα ενεργοποίησης Κουίζ Live.');
+    } finally {
+      setQuizLiveBusy(false);
+    }
+  };
   const [liveSentItems, setLiveSentItems] = useState([]); // στοιχεία που βρίσκονται ΗΔΗ στο ενεργό live
   const [liveAddBusy, setLiveAddBusy] = useState(false);   // αποστολή προσθήκης σε εξέλιξη
   const [liveCenterSection, setLiveCenterSection] = useState(null); // ποιος φάκελος/εφαρμογές ανοιχτός
@@ -479,31 +512,6 @@ export default function Home() {
   const [qrFile, setQrFile] = useState(null);
   const [qrCopied, setQrCopied] = useState(false);
   useEffect(() => { setQrCopied(false); }, [qrFile]);
-  // ── Κουίζ Live: δημιουργεί συνεδρία αποτελεσμάτων, βάζει κουίζ+αποτελέσματα στο Live, δείχνει QR ──
-  const [quizStarting, setQuizStarting] = useState(false);
-  const startQuizLive = async (app) => {
-    if (quizStarting) return;
-    setQuizStarting(true);
-    try {
-      const r = await fetch('/api/quiz-results?start', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quizName: app.name }),
-      });
-      const d = await r.json();
-      if (!d.code) { alert('Δεν ήταν δυνατή η έναρξη του κουίζ.'); return; }
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const quizUrl = ghUrl(app) + '#session=' + d.code;        // QR παιδιών → κουίζ + κωδικός
-      const resultsUrl = origin + '/results?code=' + d.code;    // δεξιά στήλη Live
-      addLiveItem({ kind:'url', url: quizUrl, name: app.name });
-      addLiveItem({ kind:'url', url: resultsUrl, name: 'Αποτελέσματα · ' + d.code });
-      // QR που σκανάρουν τα παιδιά (δείχνει στο κουίζ με τον κωδικό συνεδρίας)
-      setQrFile({ id:'quiz:' + d.code, name: app.name + ' — Κουίζ ' + d.code, _quizUrl: quizUrl });
-    } catch (e) {
-      alert('Σφάλμα έναρξης κουίζ.');
-    } finally {
-      setQuizStarting(false);
-    }
-  };
   const [appsSubfolder, setAppsSubfolder] = useState(null); // {id,name} — ανοιχτός υποφάκελος στις Εφαρμογές
   // ── Ομάδες χρηστών + όψη «Εισερχ./Απεστ.» ──
   const [groups, setGroups] = useState([]);
@@ -2172,7 +2180,6 @@ export default function Home() {
                               <button onClick={() => window.open(ghUrl(a), '_blank')} style={{ ...btn('mini'), color:PALETTE.mustard.deep }}>Άνοιγμα ↗</button>
                               <button onClick={() => copyGh(a)} style={{ ...btn('mini'), color: ghCopied === a.path ? '#16a34a' : '#555' }}>{ghCopied === a.path ? '✓ Αντιγράφηκε' : '🔗 Λινκ'}</button>
                               <button onClick={() => addLiveItem({ kind:'url', url:ghUrl(a), name:a.name })} style={{ ...btn('mini'), color:'#5c7a3a' }}>➕ Live</button>
-                              <button onClick={() => startQuizLive(a)} disabled={quizStarting} style={{ ...btn('mini'), color:'#a68a2e', fontWeight:600 }} title="Έναρξη κουίζ με ζωντανά αποτελέσματα">🎯 Κουίζ Live</button>
                             </div>
                           </div>
                         ))}
@@ -2950,6 +2957,18 @@ export default function Home() {
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* 🎯 Κουίζ + Live αποτελέσματα (ξεχωριστό — κόκκινο) */}
+              <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff5f5', border:'2px solid #dc2626', borderRadius:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>🎯 Κουίζ + Ζωντανά αποτελέσματα</div>
+                <div style={{ fontSize:12, color:'#7a1d1d', marginBottom:10, lineHeight:1.5 }}>Επικόλλησε τον σύνδεσμο του κουίζ (κατά προτίμηση με σταθερό σετ <b>#set=…</b> ώστε όλοι να απαντούν τις ίδιες ερωτήσεις). Με το πάτημα ενεργοποιείται η συνεδρία και προστίθενται στην παρουσίαση <b>το κουίζ</b> (με QR για τα παιδιά) και <b>η σελίδα αποτελεσμάτων</b>.</div>
+                <input value={quizLinkInput} onChange={e=>setQuizLinkInput(e.target.value)} placeholder="…σύνδεσμος κουίζ (π.χ. …/tropikotita_egkliseis.html#set=T027,T052,…)"
+                  style={{ width:'100%', padding:'10px 12px', border:'1px solid #f0b4b4', borderRadius:10, fontSize:isMobile?16:13, marginBottom:8, boxSizing:'border-box' }} />
+                <button onClick={activateQuizLive} disabled={!quizLinkInput.trim() || quizLiveBusy}
+                  style={{ width:'100%', padding:'12px', borderRadius:10, border:'none', background: (quizLinkInput.trim() && !quizLiveBusy) ? '#dc2626' : '#e0a0a0', color:'#fff', fontSize:14, fontWeight:700, cursor: (quizLinkInput.trim() && !quizLiveBusy) ? 'pointer' : 'default' }}>
+                  {quizLiveBusy ? '⏳ Ενεργοποίηση…' : '🎯 Έναρξη Κουίζ Live'}
+                </button>
               </div>
 
               {/* 📷 Φωτογραφίες → ενιαίο PDF για την παρουσίαση */}
