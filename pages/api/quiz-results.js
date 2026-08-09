@@ -98,6 +98,11 @@ export default async function handler(req, res) {
       // Εγγραφή μαθητή
       if (!data.students[name]) data.students[name] = { correct: 0, answered: 0, finished: false, score: null };
 
+      // ΚΑΝΟΝΑΣ ΕΠΑΝΑΛΗΨΗΣ: αν το παιδί ολοκλήρωσε ήδη, μη μετράς νέες απαντήσεις.
+      if (data.students[name].finished) {
+        return res.status(200).json({ ok: true, ignored: true, reason: 'already-finished' });
+      }
+
       // Καταγραφή ΜΙΑΣ απάντησης (αν υπάρχει qid)
       if (qid) {
         const q = data.questions[qid] || (data.questions[qid] = {
@@ -106,7 +111,7 @@ export default async function handler(req, res) {
           cat: (cat || '').toString().slice(0, 80),
           correct: 0, wrong: 0, choices: {},
         });
-        // Ενημέρωση κειμένου/αποσπάσματος/κατηγορίας αν λείπει
+        // Ενημέρωση κειμένου/κατηγορίας αν λείπει
         if (!q.qtext && qtext) q.qtext = qtext.toString().slice(0, 300);
         if (!q.excerpt && excerpt) q.excerpt = excerpt.toString().slice(0, 600);
         if (!q.cat && cat) q.cat = cat.toString().slice(0, 80);
