@@ -44,7 +44,27 @@ export default async function handler(req, res) {
 
   /* ── GET: δημόσιο (?code) ή auth (?active=1) ── */
   if (req.method === 'GET') {
-    const { code, active } = req.query;
+    const { code, active, teacher } = req.query;
+
+    // ΔΗΜΟΣΙΟ: ενεργό ΚΟΥΙΖ ενός καθηγητή (με email) — για τη σελίδα class.
+    // Επιστρέφει μόνο το κουίζ item (URL με session=) ώστε τα παιδιά να παίρνουν το QR.
+    if (teacher) {
+      try {
+        const email = teacher.includes('@') ? teacher : teacher + '@gmail.com';
+        const activeCode = await kv.get(`live_active:${email}`);
+        if (!activeCode) return res.status(200).json({ quiz: null });
+        const data = await kv.get(`live:${activeCode}`);
+        if (!data) return res.status(200).json({ quiz: null });
+        // Βρες το κουίζ: URL που περιέχει session= (το βάζει το activateQuizLive)
+        const cands = [];
+        if (data.isUrl && data.src) cands.push({ url: data.src, name: data.title });
+        (data.links || []).forEach(l => { if (l.type === 'url' && l.url) cands.push({ url: l.url, name: l.name }); });
+        const quiz = cands.find(c => /[#&?]session=/.test(c.url)) || null;
+        return res.status(200).json({ quiz, liveCode: activeCode });
+      } catch (e) {
+        return res.status(200).json({ quiz: null });
+      }
+    }
 
     // Ενεργό live του συνδεδεμένου χρήστη — για επαναφορά του πίνακα ελέγχου
     if (active) {
