@@ -3080,7 +3080,14 @@ updateZoomUI();
   }
 
   // ── 3. Αποστολή (μη-μπλοκάρουσα, δεν ρίχνει το κουίζ σε σφάλμα) ──
+  // Κλείδωμα μετά την ολοκλήρωση: αν το παιδί ξαναπαίξει, ΔΕΝ ξαναμετρά.
+  var done = false;
+  function doneKey() { return 'lev_quiz_done_' + CODE + '_' + (student || ''); }
+  try { if (localStorage.getItem(doneKey()) === '1') done = true; } catch (e) {}
+  function markDone() { done = true; try { localStorage.setItem(doneKey(), '1'); } catch (e) {} }
+
   function send(payload) {
+    if (done && !payload.final) return; // ολοκληρώθηκε ήδη → αγνόησε νέες απαντήσεις
     payload.code = CODE;
     payload.student = student || 'Ανώνυμος';
     try {
@@ -3149,16 +3156,18 @@ updateZoomUI();
   var finalSent = false;
   function maybeFinal() {
     try {
-      if (finalSent) return;
+      if (finalSent || done) return;
       if (typeof screen === 'undefined') return;
       if (screen === 'adp_results') {
         finalSent = true;
         send({ final: true, score: (typeof adp !== 'undefined' ? adp.totalCorrect : null),
                totalQ: (typeof adp !== 'undefined' ? adp.totalAnswered : null) });
+        markDone();
       } else if (screen === 'sel_results') {
         finalSent = true;
         var tot = (typeof sel !== 'undefined' && sel.queue) ? sel.queue.length : null;
         send({ final: true, score: (typeof sel !== 'undefined' ? sel.correct : null), totalQ: tot });
+        markDone();
       }
     } catch (e) {}
   }
