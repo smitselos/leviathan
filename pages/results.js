@@ -144,6 +144,7 @@ export default function ResultsPage() {
                       <div style={S.qNum}>{i + 1}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {q.cat && <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{q.cat}</div>}
+                        {q.excerpt && <div style={{ fontSize: 13, color: C.muted, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 6, paddingLeft: 10, borderLeft: `3px solid ${C.bar}` }} dangerouslySetInnerHTML={{ __html: q.excerpt }} />}
                         <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.4 }} dangerouslySetInnerHTML={{ __html: q.qtext || '(ερώτηση)' }} />
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
