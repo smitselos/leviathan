@@ -87,7 +87,7 @@ export default async function handler(req, res) {
 
     // (β) Καταγραφή απάντησης παιδιού — ΔΗΜΟΣΙΟ (χωρίς login)
     try {
-      const { code, student, qid, qtext, cat, choice, ok, final, score, totalQ } = req.body || {};
+      const { code, student, qid, qtext, excerpt, cat, choice, ok, final, score, totalQ } = req.body || {};
       if (!code) return res.status(400).json({ error: 'Missing code' });
 
       const data = await kv.get(key(code));
@@ -102,11 +102,13 @@ export default async function handler(req, res) {
       if (qid) {
         const q = data.questions[qid] || (data.questions[qid] = {
           qtext: (qtext || '').toString().slice(0, 300),
+          excerpt: (excerpt || '').toString().slice(0, 600),
           cat: (cat || '').toString().slice(0, 80),
           correct: 0, wrong: 0, choices: {},
         });
-        // Ενημέρωση κειμένου/κατηγορίας αν λείπει
+        // Ενημέρωση κειμένου/αποσπάσματος/κατηγορίας αν λείπει
         if (!q.qtext && qtext) q.qtext = qtext.toString().slice(0, 300);
+        if (!q.excerpt && excerpt) q.excerpt = excerpt.toString().slice(0, 600);
         if (!q.cat && cat) q.cat = cat.toString().slice(0, 80);
 
         if (ok) { q.correct++; data.students[name].correct++; }
