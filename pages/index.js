@@ -470,7 +470,8 @@ export default function Home() {
       addLiveItem({ kind: 'url', url: quizUrl, name: quizName });
       addLiveItem({ kind: 'url', url: resultsUrl, name: '📊 Αποτελέσματα · ' + d.code });
       setQuizLinkInput('');
-      alert('Το Κουίζ Live ενεργοποιήθηκε! Κωδικός συνεδρίας: ' + d.code + '\nΠροστέθηκαν στην παρουσίαση το κουίζ και η σελίδα αποτελεσμάτων.');
+      // Εμφάνισε ΑΜΕΣΩΣ το QR που θα σκανάρουν τα παιδιά (μέσω του υπάρχοντος QR popup / _ghUrl)
+      setQrFile({ id: 'quizlive:' + d.code, name: 'Κουίζ ' + quizName + ' — κωδικός ' + d.code, _ghUrl: quizUrl });
     } catch (e) {
       alert('Σφάλμα ενεργοποίησης Κουίζ Live.');
     } finally {
