@@ -120,6 +120,7 @@ function PublicView({teacher,isMobile,hasSession}){
   useEffect(()=>{try{setMsgRead(JSON.parse(localStorage.getItem('leviathanMsgRead')||'{}'));}catch{}},[]);
   const markMsgRead=(key)=>setMsgRead(p=>{const n={...p,[key]:1};try{localStorage.setItem('leviathanMsgRead',JSON.stringify(n));}catch{}return n;});
   const [qrFile,setQrFile]=useState(null);
+  const [liveQuiz,setLiveQuiz]=useState(null); // ενεργό κουίζ Live του καθηγητή (για QR στην κορυφή)
 
   const [sidebarOpen,setSidebarOpen]=useState(!isMobile);
   const [visitor,setVisitor]=useState('');
@@ -146,6 +147,22 @@ function PublicView({teacher,isMobile,hasSession}){
       setLoading(false);
     })();
   },[teacherEmail,visitor]);
+
+  // Ενεργό ΚΟΥΙΖ Live του καθηγητή → εμφάνιση στην κορυφή με QR (polling κάθε 5s)
+  useEffect(()=>{
+    if(!teacherEmail)return;
+    let stop=false;
+    const load=async()=>{
+      try{
+        const r=await fetch(`/api/live?teacher=${encodeURIComponent(teacherEmail)}`);
+        const d=await r.json();
+        if(!stop) setLiveQuiz(d && d.quiz ? d.quiz : null);
+      }catch{ if(!stop) setLiveQuiz(null); }
+    };
+    load();
+    const iv=setInterval(load,5000);
+    return ()=>{stop=true;clearInterval(iv);};
+  },[teacherEmail]);
 
   const filtered=useMemo(()=>{
     if(!search.trim())return files;
@@ -238,6 +255,26 @@ function PublicView({teacher,isMobile,hasSession}){
             style={{width:'100%',padding:'11px 16px',border:'1px solid #ebebeb',borderRadius:14,fontSize:isMobile?16:14,background:'#fff',marginBottom:12,boxSizing:'border-box'}}/>
         )}
         <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {liveQuiz&&(
+            <div style={{background:'linear-gradient(135deg,#fff5f5,#ffffff)',border:'2px solid #dc2626',borderRadius:14,overflow:'hidden',boxShadow:'0 2px 10px rgba(220,38,38,0.12)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px'}}>
+                <div style={{width:34,height:34,borderRadius:10,background:'#fee2e2',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>🎯</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:1,color:'#fff',background:'#dc2626',borderRadius:6,padding:'2px 6px'}}>LIVE</span>
+                    <span style={{fontSize:13,fontWeight:700,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(liveQuiz.name||'Κουίζ',22)}</span>
+                  </div>
+                  <div style={{fontSize:11,color:'#b91c1c',marginTop:2}}>Ζωντανό κουίζ τώρα — σκάναρε ή πάτα «Ξεκίνα»</div>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:6,padding:'0 14px 12px',flexWrap:'wrap',alignItems:'center'}}>
+                <button onClick={()=>openExternal(liveQuiz.url)} style={{background:'#dc2626',border:'none',borderRadius:10,padding:'8px 18px',fontSize:13,fontWeight:700,cursor:'pointer',color:'#fff'}}>▶ Ξεκίνα</button>
+                <button onClick={()=>setQrFile({name:liveQuiz.name||'Κουίζ',_directUrl:liveQuiz.url})} style={S.miniBtn} title="QR Code">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                </button>
+              </div>
+            </div>
+          )}
           {filtered.map(f=>{
             const isExp=expandedPub===f.id;
             const msgKey=f.id+':'+(f.shareMessage||'').slice(0,40);
@@ -290,7 +327,7 @@ function PublicView({teacher,isMobile,hasSession}){
           <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:20,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 12px 40px rgba(0,0,0,0.15)'}}>
             <div style={{fontSize:15,fontWeight:700,color:'#1a1a1a',marginBottom:4}}>QR Code</div>
             <div style={{fontSize:12,color:'#6b6b80',marginBottom:16,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{qrFile.name}</div>
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getFileUrl(qrFile))}`}
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrFile._directUrl||getFileUrl(qrFile))}`}
               alt="QR" width={200} height={200} style={{borderRadius:8,border:'1px solid #eee',margin:'0 auto',display:'block'}}/>
             <p style={{fontSize:11,color:'#aeaeb8',marginTop:12}}>Σκανάρετε με κινητό</p>
             <button onClick={()=>setQrFile(null)} style={{marginTop:12,padding:'10px 28px',borderRadius:10,border:'none',background:'#1a1a1a',color:'#fff',fontSize:13,fontWeight:600,cursor:'pointer'}}>Κλείσιμο</button>
