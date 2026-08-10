@@ -121,6 +121,7 @@ function PublicView({teacher,isMobile,hasSession}){
   const markMsgRead=(key)=>setMsgRead(p=>{const n={...p,[key]:1};try{localStorage.setItem('leviathanMsgRead',JSON.stringify(n));}catch{}return n;});
   const [qrFile,setQrFile]=useState(null);
   const [liveQuiz,setLiveQuiz]=useState(null); // ενεργό κουίζ Live του καθηγητή (για QR στην κορυφή)
+  const [liveActivities,setLiveActivities]=useState([]); // ενεργές ζωντανές δραστηριότητες (poll/cloud/text)
 
   const [sidebarOpen,setSidebarOpen]=useState(!isMobile);
   const [visitor,setVisitor]=useState('');
@@ -158,6 +159,35 @@ function PublicView({teacher,isMobile,hasSession}){
         const d=await r.json();
         if(!stop) setLiveQuiz(d && d.quiz ? d.quiz : null);
       }catch{ if(!stop) setLiveQuiz(null); }
+    };
+    load();
+    const iv=setInterval(load,5000);
+    return ()=>{stop=true;clearInterval(iv);};
+  },[teacherEmail]);
+
+  // Ενεργές ζωντανές δραστηριότητες (ψηφοφορία/νέφος/σύντομος λόγος) → κάρτες με QR (polling 5s)
+  useEffect(()=>{
+    if(!teacherEmail)return;
+    let stop=false;
+    const origin=typeof window!=='undefined'?window.location.origin:'';
+    const defs=[
+      {type:'poll', emoji:'🗳️', label:'Ψηφοφορία'},
+      {type:'cloud',emoji:'☁️', label:'Νέφος λέξεων'},
+      {type:'text', emoji:'✍️', label:'Σύντομες απαντήσεις'},
+    ];
+    const load=async()=>{
+      try{
+        const results=await Promise.all(defs.map(async def=>{
+          try{
+            const r=await fetch(`/api/live-${def.type}?teacher=${encodeURIComponent(teacherEmail)}`);
+            const d=await r.json();
+            if(!d||!d.code||!d.data)return null;
+            const prompt=d.data.question||d.data.prompt||'';
+            return {type:def.type,code:d.code,emoji:def.emoji,label:def.label,prompt,joinUrl:`${origin}/join?type=${def.type}&code=${d.code}`};
+          }catch{return null;}
+        }));
+        if(!stop)setLiveActivities(results.filter(Boolean));
+      }catch{ if(!stop)setLiveActivities([]); }
     };
     load();
     const iv=setInterval(load,5000);
@@ -275,6 +305,26 @@ function PublicView({teacher,isMobile,hasSession}){
               </div>
             </div>
           )}
+          {liveActivities.map(a=>(
+            <div key={a.type+a.code} style={{background:'linear-gradient(135deg,#f2f7f6,#ffffff)',border:'2px solid #4f7a6f',borderRadius:14,overflow:'hidden',boxShadow:'0 2px 10px rgba(79,122,111,0.12)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px'}}>
+                <div style={{width:34,height:34,borderRadius:10,background:'#dcece8',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>{a.emoji}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:1,color:'#fff',background:'#4f7a6f',borderRadius:6,padding:'2px 6px'}}>LIVE</span>
+                    <span style={{fontSize:13,fontWeight:700,color:'#1a1a1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trunc(a.label,22)}</span>
+                  </div>
+                  <div style={{fontSize:11,color:'#35564e',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.prompt?trunc(a.prompt,40):'Σκάναρε ή πάτα «Συμμετοχή»'}</div>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:6,padding:'0 14px 12px',flexWrap:'wrap',alignItems:'center'}}>
+                <button onClick={()=>openExternal(a.joinUrl)} style={{background:'#4f7a6f',border:'none',borderRadius:10,padding:'8px 18px',fontSize:13,fontWeight:700,cursor:'pointer',color:'#fff'}}>▶ Συμμετοχή</button>
+                <button onClick={()=>setQrFile({name:a.label,_directUrl:a.joinUrl})} style={S.miniBtn} title="QR Code">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                </button>
+              </div>
+            </div>
+          ))}
           {filtered.map(f=>{
             const isExp=expandedPub===f.id;
             const msgKey=f.id+':'+(f.shareMessage||'').slice(0,40);
