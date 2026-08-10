@@ -478,6 +478,51 @@ export default function Home() {
       setQuizLiveBusy(false);
     }
   };
+
+  // ── Ζωντανά στοιχεία: Ψηφοφορία · Νέφος λέξεων · Σύντομος λόγος ──
+  // Ίδιο πρότυπο με activateQuizLive: start → κωδικός → προβολή στο Live + QR εισόδου.
+  const [liveExtraBusy, setLiveExtraBusy] = useState(false);
+  const activateLiveExtra = async (type, body, viewPath, label) => {
+    if (liveExtraBusy) return;
+    setLiveExtraBusy(true);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const r = await fetch(`/api/live-${type}?start`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!d.code) { alert('Δεν ήταν δυνατή η έναρξη.'); return; }
+      const joinUrl = `${origin}/join?type=${type}&code=${d.code}`;
+      const viewUrl = `${origin}/${viewPath}?code=${d.code}` + (type === 'text' ? '&host=1' : '');
+      addLiveItem({ kind: 'url', url: viewUrl, name: `${label} · ${d.code}` });
+      setQrFile({ id: `${type}live:${d.code}`, name: `${label} — κωδικός ${d.code}`, _ghUrl: joinUrl });
+    } catch (e) {
+      alert('Σφάλμα ενεργοποίησης.');
+    } finally {
+      setLiveExtraBusy(false);
+    }
+  };
+  const activatePoll = async () => {
+    const question = window.prompt('Ερώτηση ψηφοφορίας:');
+    if (!question) return;
+    const raw = window.prompt('Επιλογές, χωρισμένες με κόμμα (π.χ. Ναι, Όχι, Ίσως):');
+    if (!raw) return;
+    const options = raw.split(',').map(s => s.trim()).filter(Boolean);
+    if (options.length < 2) { alert('Χρειάζονται τουλάχιστον 2 επιλογές.'); return; }
+    await activateLiveExtra('poll', { question, options }, 'poll-view', '🗳️ Ψηφοφορία');
+  };
+  const activateCloud = async () => {
+    const prompt = window.prompt('Εκφώνηση νέφους (π.χ. «Ποιες έννοιες συνδέετε με τη μοναξιά;»):');
+    if (!prompt) return;
+    await activateLiveExtra('cloud', { prompt }, 'cloud-view', '☁️ Νέφος λέξεων');
+  };
+  const activateText = async () => {
+    const prompt = window.prompt('Εκφώνηση (π.χ. «Γράψε τη θεματική πρόταση της παραγράφου»):');
+    if (!prompt) return;
+    await activateLiveExtra('text', { prompt }, 'text-view', '✍️ Σύντομες απαντήσεις');
+  };
+
   const [liveSentItems, setLiveSentItems] = useState([]); // στοιχεία που βρίσκονται ΗΔΗ στο ενεργό live
   const [liveAddBusy, setLiveAddBusy] = useState(false);   // αποστολή προσθήκης σε εξέλιξη
   const [liveCenterSection, setLiveCenterSection] = useState(null); // ποιος φάκελος/εφαρμογές ανοιχτός
@@ -2970,6 +3015,26 @@ export default function Home() {
                   style={{ width:'100%', padding:'12px', borderRadius:10, border:'none', background: (quizLinkInput.trim() && !quizLiveBusy) ? '#dc2626' : '#e0a0a0', color:'#fff', fontSize:14, fontWeight:700, cursor: (quizLinkInput.trim() && !quizLiveBusy) ? 'pointer' : 'default' }}>
                   {quizLiveBusy ? '⏳ Ενεργοποίηση…' : '🎯 Έναρξη Κουίζ Live'}
                 </button>
+              </div>
+
+              {/* 💬 Ζωντανά στοιχεία: Ψηφοφορία · Νέφος λέξεων · Σύντομος λόγος */}
+              <div style={{ marginBottom:16, padding:'14px 16px', background:'#f2f7f6', border:'2px solid #4f7a6f', borderRadius:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#35564e', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>💬 Ζωντανά στοιχεία</div>
+                <div style={{ fontSize:12, color:'#3f5a53', marginBottom:10, lineHeight:1.5 }}>Ξεκίνα μια δραστηριότητα· στην παρουσίαση προστίθεται <b>η οθόνη προβολής</b> και εμφανίζεται <b>QR</b> που σκανάρουν οι μαθητές για να συμμετάσχουν.</div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+                  <button onClick={activatePoll} disabled={liveExtraBusy}
+                    style={{ padding:'10px 6px', borderRadius:10, border:'none', background: liveExtraBusy ? '#a8c2bb' : '#4f7a6f', color:'#fff', fontSize:13, fontWeight:700, cursor: liveExtraBusy ? 'default' : 'pointer' }}>
+                    🗳️ Ψηφοφορία
+                  </button>
+                  <button onClick={activateCloud} disabled={liveExtraBusy}
+                    style={{ padding:'10px 6px', borderRadius:10, border:'none', background: liveExtraBusy ? '#a8c2bb' : '#4f7a6f', color:'#fff', fontSize:13, fontWeight:700, cursor: liveExtraBusy ? 'default' : 'pointer' }}>
+                    ☁️ Νέφος λέξεων
+                  </button>
+                  <button onClick={activateText} disabled={liveExtraBusy}
+                    style={{ padding:'10px 6px', borderRadius:10, border:'none', background: liveExtraBusy ? '#a8c2bb' : '#4f7a6f', color:'#fff', fontSize:13, fontWeight:700, cursor: liveExtraBusy ? 'default' : 'pointer' }}>
+                    ✍️ Σύντομος λόγος
+                  </button>
+                </div>
               </div>
 
               {/* 📷 Φωτογραφίες → ενιαίο PDF για την παρουσίαση */}
