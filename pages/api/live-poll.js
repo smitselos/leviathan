@@ -104,12 +104,13 @@ export default async function handler(req, res) {
       if (!(optionId in data.tally)) return res.status(400).json({ error: 'Άγνωστη επιλογή' });
 
       const voter = (studentKey || 'anon-' + Math.random().toString(36).slice(2)).toString().slice(0, 60);
-      const prev = data.voters[voter];
 
-      if (prev === optionId) return res.status(200).json({ ok: true, unchanged: true }); // ίδια ψήφος
-      if (prev && prev in data.tally) data.tally[prev] = Math.max(0, data.tally[prev] - 1); // αλλαγή ψήφου
-      else data.totalVotes++; // πρώτη ψήφος
+      // ΜΙΑ ψήφος ανά μαθητή: αν έχει ήδη ψηφίσει, αγνοείται κάθε νέα ψήφος.
+      if (voter in data.voters) {
+        return res.status(200).json({ ok: true, locked: true, already: data.voters[voter] });
+      }
 
+      data.totalVotes++;
       data.tally[optionId]++;
       data.voters[voter] = optionId;
       data.updatedAt = Date.now();
