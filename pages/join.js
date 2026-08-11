@@ -50,7 +50,7 @@ export default function JoinPage() {
   function toast(msg) { setFlash(msg); setTimeout(() => setFlash(''), 1800); }
 
   function submitPoll(optionId) {
-    if (!ready) return;
+    if (!ready || chosen) return; // μία ψήφος: αφού ψηφίσει, κλειδώνει
     window.LeviathanReporter?.poll({ code, optionId });
     setChosen(optionId);
     toast('Η ψήφος καταχωρήθηκε');
@@ -113,14 +113,17 @@ export default function JoinPage() {
               <div>
                 {(meta.options || []).map((o) => {
                   const isSel = chosen === o.id;
+                  const locked = !!chosen;
                   return (
-                    <button key={o.id} onClick={() => submitPoll(o.id)} disabled={!ready}
-                      style={{ ...S.optionBtn, ...(isSel ? S.optionSel : {}), opacity: ready ? 1 : 0.5 }}>
+                    <button key={o.id} onClick={() => submitPoll(o.id)} disabled={!ready || locked}
+                      style={{ ...S.optionBtn, ...(isSel ? S.optionSel : {}),
+                        opacity: !ready ? 0.5 : (locked && !isSel ? 0.4 : 1),
+                        cursor: locked ? 'default' : 'pointer' }}>
                       {o.label}{isSel ? '  ✓' : ''}
                     </button>
                   );
                 })}
-                {chosen && <div style={{ fontSize: 12, color: C.muted, textAlign: 'center', marginTop: 8 }}>Μπορείς να αλλάξεις την ψήφο σου πατώντας άλλη επιλογή.</div>}
+                {chosen && <div style={{ fontSize: 12, color: C.ok, textAlign: 'center', marginTop: 8, fontWeight: 600 }}>Η ψήφος σου καταχωρήθηκε. Ευχαριστούμε!</div>}
               </div>
             )}
 
