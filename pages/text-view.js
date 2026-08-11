@@ -32,17 +32,21 @@ export default function TextView() {
   useEffect(() => { if (!code) return; fetchData(); const iv = setInterval(fetchData, 3000); return () => clearInterval(iv); }, [code, fetchData]);
 
   async function togglePin(id, pinned) {
+    // Άμεση (optimistic) ενημέρωση επιτόπου — χωρίς αναδιάταξη, χωρίς αναμονή polling.
+    setData((prev) => prev ? { ...prev, items: prev.items.map((it) => it.id === id ? { ...it, pinned } : it) } : prev);
     try {
       await fetch('/api/live-text', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, id, pinned }) });
       fetchData();
-    } catch (e) {}
+    } catch (e) { fetchData(); }
   }
 
   if (!code) return <CodeGate router={router} to="text-view" title="Σύντομες απαντήσεις" />;
 
   let items = data ? data.items.slice() : [];
-  // Καρφιτσωμένα πρώτα, μετά νεότερα.
-  items.sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || (b.ts - a.ts));
+  // Σταθερή σειρά καταχώρισης (παλαιότερες → νεότερες): οι γραμμές ΔΕΝ αναδιατάσσονται
+  // όταν καρφιτσώνεις ή όταν φτάνει νέα απάντηση. Το αστέρι μπαίνει επιτόπου, πάνω σε
+  // αυτό ακριβώς που πάτησες. Για συγκεντρωμένη προβολή, χρησιμοποίησε «Μόνο καρφιτσωμένες».
+  items.sort((a, b) => a.ts - b.ts);
   if (onlyPinned) items = items.filter((it) => it.pinned);
   const nPinned = data ? data.items.filter((i) => i.pinned).length : 0;
 
