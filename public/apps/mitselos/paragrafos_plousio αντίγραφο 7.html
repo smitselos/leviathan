@@ -1,0 +1,2942 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — Παράγραφος</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1a2e; --ink2:#3d3d5c; --muted:#6b6b8a; --border:#e2e2f0;
+  --bg:#eeeff4; --white:#fff;
+  --indigo:#4f46e5; --indigo-l:#eef2ff; --indigo-d:#3730a3;
+  --green:#059669; --green-l:#d1fae5;
+  --red:#dc2626; --red-l:#fee2e2;
+  --amber:#d97706; --amber-l:#fef3c7;
+  --teal:#0891b2; --teal-l:#e0f2fe;
+  --r:12px; --sh:0 2px 16px rgba(79,70,229,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:20px 16px 48px;line-height:1.6}
+.wrap{max-width:860px;margin:0 auto}
+/* Setup screens full-height */
+.setup-screen{display:flex;flex-direction:column;min-height:calc(100vh - 68px)}
+.setup-card{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.setup-sections{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;gap:0}
+
+/* header */
+.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:var(--white);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px;border-left:4px solid var(--indigo)}
+.app-hdr h1{font-family:'IBM Plex Serif',serif;font-size:1.2rem;font-weight:600}
+.app-hdr p{font-size:.78rem;color:var(--muted);margin-top:2px}
+.badge{background:var(--indigo-l);color:var(--indigo);padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap}
+.btn-home{background:none;border:2px solid var(--border);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:1rem;line-height:1;color:var(--ink2);transition:all .15s;display:none}
+.btn-mute{background:none;border:2px solid var(--border);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--ink2);transition:all .15s;flex-shrink:0}
+.btn-mute:hover{border-color:var(--indigo);color:var(--indigo)}
+.btn-home.visible{display:inline-flex;align-items:center;gap:5px}
+.btn-home:hover{border-color:var(--indigo);color:var(--indigo)}
+.app-hdr-right{display:flex;align-items:center;gap:8px}
+
+/* card */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:22px;margin-bottom:14px}
+
+/* answers card — λευκό */
+
+/* loading */
+.loading{text-align:center;padding:60px 20px}
+.spin{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--indigo);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HOME */
+.home-title{font-family:'IBM Plex Serif',serif;font-size:1.6rem;font-weight:600;margin-bottom:6px}
+.home-sub{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+.home-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px}
+@media(max-width:540px){.home-cards{grid-template-columns:1fr}}
+.home-card{border-radius:var(--r);padding:24px 20px;cursor:pointer;border:2px solid transparent;transition:all .2s;text-align:left;font-family:inherit;background:var(--white);box-shadow:var(--sh)}
+.home-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(79,70,229,.13)}
+.home-card .hc-icon-wrap{border-radius:10px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:1.3rem}
+.home-card .hc-title{font-family:'IBM Plex Serif',serif;font-size:1.05rem;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.home-card .hc-desc{font-size:.82rem;color:var(--muted);line-height:1.5}
+.home-card .hc-arrow{display:inline-block;margin-top:14px;font-size:.8rem;font-weight:600}
+/* c1 — αρνητικό: σκούρο background, ανοιχτά γράμματα */
+.home-card.c1{border-color:#86efac;background:linear-gradient(135deg,#15803d,#166534);box-shadow:0 4px 28px rgba(22,163,74,.55)}
+.home-card.c1:hover{box-shadow:0 8px 36px rgba(22,163,74,.75);transform:translateY(-3px)}
+.home-card.c1 .hc-icon-wrap{background:#4ade80;color:#14532d}
+.home-card.c1 .hc-title{color:#ffffff;font-size:1.15rem;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+.home-card.c1 .hc-desc{color:#dcfce7;opacity:.95}
+.home-card.c1 .hc-arrow{color:#86efac;font-weight:800;font-size:.9rem}
+.home-card.c2{border-color:var(--teal);background:linear-gradient(135deg,#f0f9ff,#fff)}
+.home-card.c2 .hc-icon-wrap{background:var(--teal-l)}
+.home-card.c2 .hc-arrow{color:var(--teal)}
+.home-card.c3{border-color:var(--indigo);background:linear-gradient(135deg,var(--indigo-l),#fff)}
+.home-card.c3 .hc-icon-wrap{background:var(--indigo-l)}
+.home-card.c3 .hc-arrow{color:var(--indigo)}
+.home-card.c4{border-color:var(--amber);background:linear-gradient(135deg,var(--amber-l),#fff)}
+.home-card.c4 .hc-icon-wrap{background:var(--amber-l)}
+.home-card.c4 .hc-arrow{color:var(--amber)}
+.home-card.c5{border-color:#e11d48;background:linear-gradient(135deg,#fff1f2,#fff)}
+.home-card.c5 .hc-icon-wrap{background:#ffe4e6}
+.home-card.c5 .hc-arrow{color:#e11d48}
+
+/* ══ ADAPTIVE LEARNING SCREEN ══ */
+.adp-header{background:linear-gradient(135deg,var(--indigo),var(--indigo-d));color:#fff;border-radius:var(--r);padding:16px 20px;margin-bottom:14px;box-shadow:var(--sh)}
+.adp-header h2{font-family:'IBM Plex Serif',serif;font-size:1.2rem;font-weight:600;margin-bottom:4px}
+.adp-header p{font-size:.82rem;opacity:.85}
+
+/* Category map */
+.cat-map{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.cat-node{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cat-dot{width:38px;height:38px;border-radius:50%;border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;background:var(--white);color:var(--muted);transition:all .3s;position:relative}
+.cat-dot.active{border-color:var(--indigo);background:var(--indigo);color:#fff;box-shadow:0 0 0 4px rgba(79,70,229,.2)}
+.cat-dot.done{border-color:var(--green);background:var(--green-l);color:#065f46}
+.cat-dot.failed{border-color:var(--amber);background:var(--amber-l);color:#78350f}
+.cat-dot.locked{background:#f1f1f8;color:#aaa}
+.cat-dot-lbl{font-size:.68rem;color:var(--muted);font-weight:600}
+.cat-arrow{color:var(--border);font-size:1.1rem;line-height:38px;margin-top:0}
+
+/* phase badge */
+.ph{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.ph.main{background:var(--indigo-l);color:var(--indigo)}
+.ph.retry{background:var(--amber-l);color:var(--amber)}
+.ph.fb{background:var(--red-l);color:var(--red)}
+.ph.diag{background:var(--teal-l);color:var(--teal)}
+.ph.done{background:var(--green-l);color:var(--green)}
+
+/* progress dots */
+.prog-dots{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.prog-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:var(--white);transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:.6rem}
+.prog-dot.ok{background:var(--green);border-color:var(--green);color:#fff}
+.prog-dot.ko{background:var(--red);border-color:var(--red);color:#fff}
+.prog-dot.cur{border-color:var(--indigo);background:var(--indigo-l)}
+
+/* progress bar */
+.prog-wrap{margin-bottom:16px}
+.prog-bar{background:var(--border);border-radius:999px;height:5px;overflow:hidden}
+.prog-fill{background:var(--indigo);height:100%;transition:width .4s ease}
+.prog-fill.green{background:var(--green)}
+.prog-fill.amber{background:var(--amber)}
+
+/* excerpt — desktop default */
+.exc-lbl{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--indigo);margin-bottom:8px}
+.exc{font-family:'IBM Plex Serif',serif;background:linear-gradient(135deg,#f8f8ff,#f0f0fa);border-left:3px solid var(--indigo);border-radius:0 8px 8px 0;padding:16px 20px;line-height:1.85;letter-spacing:.005em;font-size:1rem;color:var(--ink);text-align:justify;margin-bottom:0}
+.exc.clk{cursor:default}
+.tok{cursor:pointer;padding:1px 3px;border-radius:3px;transition:background .12s}
+.tok:hover{background:var(--indigo-l)}
+.tok.sel{background:var(--indigo);color:#fff}
+.tok.hit{background:var(--green);color:#fff}
+.tok.miss{background:var(--red);color:#fff}
+
+/* question */
+.q-lbl{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+.q-txt{font-size:.98rem;font-weight:600;color:var(--ink);margin-bottom:14px;line-height:1.5}
+
+/* answers card */
+.answers-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:22px;margin-bottom:14px;border-top:3px solid var(--border);transition:border-color .3s}
+.answers-card.answered-ok{border-top-color:var(--green);background:linear-gradient(to bottom,#f0fdf4,var(--white))}
+.answers-card.answered-ko{border-top-color:var(--red);background:linear-gradient(to bottom,#fef2f2,var(--white))}
+
+/* MC/YN */
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{padding:11px 15px;border:2px solid var(--border);border-radius:10px;background:var(--white);text-align:left;cursor:pointer;font-size:.9rem;font-family:inherit;color:var(--ink);transition:all .2s;display:flex;align-items:center;gap:10px;position:relative}
+.opt:hover:not(:disabled){border-color:#94a3b8;transform:translateX(2px)}
+.opt.sel{border-color:var(--indigo);background:var(--indigo-l)}
+.opt.ok{border-color:var(--green);background:var(--green);color:#fff;font-weight:600;transform:none}
+.opt.ko{border-color:var(--red);background:var(--red);color:#fff;font-weight:600;transform:none}
+.opt.neutral-ok{border-color:var(--green);background:var(--green-l);color:#065f46;font-weight:600}
+.opt:disabled{cursor:default}
+.opt-k{min-width:22px;height:22px;border-radius:50%;background:var(--border);color:var(--ink2);font-size:.72rem;font-weight:700;text-align:center;line-height:22px;flex-shrink:0}
+.opt.ok .opt-k,.opt.ko .opt-k{background:rgba(255,255,255,.3);color:#fff}
+.opt.neutral-ok .opt-k{background:rgba(5,150,105,.2);color:#065f46}
+.opt-badge{position:absolute;top:6px;right:8px;font-size:.8rem;font-weight:700;line-height:1}
+
+/* GAP */
+.exc-gap{font-family:'IBM Plex Serif',serif;background:linear-gradient(135deg,#f8f8ff,#f0f0fa);border-left:3px solid var(--indigo);border-radius:0 8px 8px 0;padding:16px 20px;line-height:2.1;letter-spacing:.005em;font-size:1rem;color:var(--ink);text-align:justify;margin-bottom:14px}
+.gap-inp{display:inline-block;border:none;border-bottom:2px solid var(--indigo);background:transparent;font-family:'IBM Plex Serif',serif;font-size:1rem;color:var(--indigo);outline:none;min-width:120px;padding:0 4px;text-align:center}
+.gap-inp:disabled{color:var(--green);border-color:var(--green)}
+.gap-inp.ko{color:var(--red);border-color:var(--red)}
+
+/* DD */
+.dd-wrap{width:100%}
+.dd-hint{font-size:.78rem;color:var(--muted);font-style:italic;margin-bottom:12px}
+.dd-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;min-height:44px;padding:10px;background:#f8f8ff;border-radius:10px;border:2px dashed var(--border);overflow:hidden;width:100%;box-sizing:border-box}
+.dd-chip{padding:8px 14px;border:2px solid var(--indigo);border-radius:12px;font-size:.84rem;background:var(--white);cursor:grab;font-family:inherit;color:var(--ink);user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:normal;word-break:break-word;max-width:100%;box-sizing:border-box;line-height:1.4}
+.dd-chip:hover{background:var(--indigo-l)}
+.dd-chip.dragging{opacity:.4;cursor:grabbing}
+.dd-chip.used{opacity:.35;cursor:default;border-style:dashed}
+.dd-slots{display:flex;flex-direction:column;gap:8px}
+.dd-slot-row{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.dd-slot-lbl{font-size:.875rem;font-weight:600;color:var(--ink2);white-space:nowrap;min-width:100px}
+.dd-slot{padding:10px 14px;border:2px dashed var(--border);border-radius:9px;font-size:.875rem;background:#fafafa;min-height:44px;display:flex;align-items:center;color:var(--muted);font-style:italic;transition:all .15s;user-select:none;-webkit-user-select:none;width:100%;box-sizing:border-box}
+.dd-slot.over{border-color:var(--indigo);background:var(--indigo-l);border-style:solid}
+.dd-slot.filled{border-color:var(--indigo);border-style:solid;background:var(--indigo-l);color:var(--ink);font-style:normal;font-weight:600;cursor:pointer}
+.dd-slot.filled:hover{background:#dde4ff}
+.dd-slot.ok{border-color:var(--green);border-style:solid;background:var(--green-l);color:#065f46;font-style:normal;font-weight:600}
+.dd-slot.ko{border-color:var(--red);border-style:solid;background:var(--red-l);color:#7f1d1d;font-style:normal}
+.dd-correct-show{margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0}
+.dd-correct-show p{font-size:.78rem;color:#065f46;font-weight:600;margin-bottom:8px}
+.dd-correct-row{display:grid;grid-template-columns:1fr 20px 1fr;gap:4px;align-items:center;margin-bottom:4px;font-size:.83rem}
+.dd-correct-row .dl{padding:6px 10px;background:var(--green-l);border-radius:6px;color:#065f46}
+.dd-correct-row .dr{padding:6px 10px;background:var(--green-l);border-radius:6px;color:#065f46}
+.dd-correct-row .da{text-align:center;color:var(--muted)}
+@media(max-width:480px){.dd-slot-row{grid-template-columns:1fr}.dd-slot-lbl{font-size:.8rem}}
+
+/* feedback */
+.fb-box{border-radius:var(--r);padding:14px 16px;margin-top:14px;font-size:.875rem;line-height:1.65}
+.fb-box.ok{background:var(--green-l);border-left:3px solid var(--green)}
+.fb-box.ko{background:var(--red-l);border-left:3px solid var(--red)}
+.fb-title{font-weight:700;margin-bottom:5px;font-size:.9rem}
+.fb-box.ok .fb-title{color:#065f46}
+.fb-box.ko .fb-title{color:#7f1d1d}
+.fb-box p{color:var(--ink2)}
+
+/* theory box */
+.theory-box{background:var(--amber-l);border:1px solid #fcd34d;border-radius:var(--r);padding:14px 16px;margin-bottom:14px;font-size:.855rem}
+.theory-box h4{color:#92400e;margin-bottom:8px;font-size:.875rem}
+.theory-box ul{margin-left:16px;color:#78350f}
+.theory-box li{margin-bottom:3px}
+.theory-toggle{background:none;border:none;color:var(--indigo);cursor:pointer;font-size:.83rem;font-weight:500;padding:4px 0;margin-bottom:6px;font-family:inherit}
+
+/* theory needed */
+.theory-needed{background:var(--red-l);border:1px solid #fca5a5;border-radius:var(--r);padding:18px 20px;margin-top:14px}
+.theory-needed h4{color:#7f1d1d;margin-bottom:10px;font-size:1rem;font-weight:700}
+.theory-needed p{color:#991b1b;font-size:.875rem;margin-bottom:14px}
+.theory-needed ul{margin:0 0 14px 16px;color:#991b1b}
+.theory-needed li{font-size:.835rem;margin-bottom:3px}
+.tn-choices{display:flex;gap:10px;flex-wrap:wrap}
+.tn-btn{flex:1;min-width:140px;padding:12px;border:none;border-radius:var(--r);font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.tn-btn.retry{background:var(--amber);color:#fff}
+.tn-btn.retry:hover{background:#b45309}
+.tn-btn.skip{background:var(--indigo);color:#fff}
+.tn-btn.skip:hover{background:var(--indigo-d)}
+
+/* cat complete */
+.cat-complete{background:var(--green-l);border:2px solid var(--green);border-radius:var(--r);padding:18px 22px;margin-bottom:14px;text-align:center}
+.cat-complete h3{color:#065f46;font-family:'IBM Plex Serif',serif;font-size:1.1rem;margin-bottom:6px}
+.cat-complete p{color:#047857;font-size:.875rem}
+
+/* buttons */
+.btn-check{width:100%;padding:13px;border:none;border-radius:var(--r);background:var(--indigo);color:#fff;font-size:.98rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:background .15s}
+.btn-check:hover{background:var(--indigo-d)}
+.btn-check:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.btn-next{width:100%;padding:13px;border:none;border-radius:var(--r);background:var(--green);color:#fff;font-size:.98rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:background .15s}
+.btn-next:hover{background:#047857}
+.btn-sec{width:100%;padding:11px;border:2px solid var(--border);border-radius:var(--r);background:var(--white);color:var(--ink2);font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:all .15s}
+.btn-sec:hover{border-color:#94a3b8}
+.btn-go{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--indigo);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.btn-go:hover{background:var(--indigo-d)}
+.btn-go:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+
+/* final results */
+.score-box{background:var(--indigo-l);border-radius:var(--r);padding:18px;text-align:center;margin:14px 0}
+.score-big{font-size:2.8rem;font-weight:700;color:var(--indigo);line-height:1}
+.score-pct{color:var(--muted);font-size:.95rem;margin-top:3px}
+.score-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.sc{padding:12px;border-radius:10px;text-align:center}
+.sc p:first-child{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.sc p:last-child{font-size:1.3rem;font-weight:700}
+.sc.g{background:var(--green-l)} .sc.g p{color:#065f46}
+.sc.r{background:var(--red-l)} .sc.r p{color:#7f1d1d}
+.sc.a{background:var(--amber-l)} .sc.a p{color:#78350f}
+
+/* cat summary row */
+.cat-summary-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;margin-bottom:7px;font-size:.875rem}
+.cat-summary-row.pass{background:var(--green-l);border:1px solid #bbf7d0}
+.cat-summary-row.skip{background:var(--amber-l);border:1px solid #fcd34d}
+.cat-summary-row .cs-name{font-weight:600}
+.cat-summary-row.pass .cs-name{color:#065f46}
+.cat-summary-row.skip .cs-name{color:#78350f}
+.cat-summary-row .cs-badge{font-size:.75rem;padding:2px 8px;border-radius:999px;font-weight:700}
+.cat-summary-row.pass .cs-badge{background:#bbf7d0;color:#065f46}
+.cat-summary-row.skip .cs-badge{background:#fcd34d;color:#78350f}
+
+/* info */
+.info{background:var(--indigo-l);border-radius:8px;padding:11px 15px;font-size:.875rem;color:var(--indigo-d);margin:14px 0;font-weight:500}
+.info.warn{background:var(--amber-l);color:#78350f}
+.info.success{background:var(--green-l);color:#065f46}
+
+/* ══ ΕΞΑΣΚΗΣΗ ══ */
+.drll-header{background:linear-gradient(135deg,#0891b2,#0e7490);color:#fff;border-radius:var(--r);padding:20px 22px;margin-bottom:14px;box-shadow:var(--sh)}
+.drll-header h2{font-family:'IBM Plex Serif',serif;font-size:1.2rem;font-weight:600;margin-bottom:4px}
+.drll-header p{font-size:.82rem;opacity:.85}
+
+/* setup filters */
+.drll-setup-section{margin-bottom:20px}
+.drll-setup-section h3{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px}
+.filter-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fchip{padding:7px 16px;border:2px solid var(--border);border-radius:999px;background:var(--white);font-size:.84rem;font-family:inherit;color:var(--ink2);cursor:pointer;transition:all .15s;font-weight:500}
+.fchip:hover{border-color:#94a3b8}
+.fchip.active{border-color:var(--teal);background:var(--teal);color:#fff;font-weight:600}
+.fchip-count{font-size:.72rem;opacity:.75;margin-left:3px}
+
+/* drill question layout */
+.drll-para-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:22px;margin-bottom:14px}
+.drll-para-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:10px}
+.drll-para-text{font-family:'IBM Plex Serif',serif;background:linear-gradient(135deg,#f0f9ff,#e0f2fe44);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:16px 20px;line-height:1.95;font-size:1rem;color:var(--ink);text-align:justify}
+
+.drll-questions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:600px){.drll-questions{grid-template-columns:1fr}}
+.drll-q-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:18px;border-top:3px solid var(--border);transition:border-color .3s}
+.drll-q-card.ok{border-top-color:var(--green);background:linear-gradient(to bottom,#f0fdf4,var(--white))}
+.drll-q-card.ko{border-top-color:var(--red);background:linear-gradient(to bottom,#fef2f2,var(--white))}
+.drll-q-num{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
+.drll-q-title{font-size:.9rem;font-weight:700;color:var(--ink);margin-bottom:12px}
+.drll-opts{display:flex;flex-direction:column;gap:6px}
+.drll-opt{padding:9px 13px;border:2px solid var(--border);border-radius:9px;background:var(--white);text-align:left;cursor:pointer;font-size:.875rem;font-family:inherit;color:var(--ink);transition:all .15s;display:flex;align-items:center;gap:8px}
+.drll-opt:hover:not(:disabled){border-color:#94a3b8;transform:translateX(2px)}
+.drll-opt.sel{border-color:var(--teal);background:var(--teal-l)}
+.drll-opt.ok{border-color:var(--green);background:var(--green);color:#fff;font-weight:600;transform:none}
+.drll-opt.ko{border-color:var(--red);background:var(--red);color:#fff;font-weight:600;transform:none}
+.drll-opt.neutral-ok{border-color:var(--green);background:var(--green-l);color:#065f46;font-weight:600}
+.drll-opt:disabled{cursor:default}
+
+/* drill score bar */
+.drll-score-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--white);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:14px}
+.drll-score-pts{font-size:1.1rem;font-weight:700;color:var(--teal)}
+.drll-score-lbl{font-size:.78rem;color:var(--muted)}
+.drll-prog{display:flex;gap:4px;align-items:center}
+.drll-pd{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:var(--white)}
+.drll-pd.ok{background:var(--green);border-color:var(--green)}
+.drll-pd.ko{background:var(--red);border-color:var(--red)}
+.drll-pd.cur{background:var(--teal-l);border-color:var(--teal)}
+
+/* drill results */
+.drll-results-score{background:linear-gradient(135deg,var(--teal-l),#fff);border-radius:var(--r);padding:24px;text-align:center;margin:14px 0;border:2px solid var(--teal)}
+.drll-results-big{font-size:3rem;font-weight:700;color:var(--teal);line-height:1}
+.drll-results-sub{color:var(--muted);font-size:.9rem;margin-top:4px}
+
+@media(max-width:600px){
+  .score-grid{grid-template-columns:1fr}
+  .home-cards{grid-template-columns:1fr}
+  .exc{font-size:.93rem;line-height:1.6;letter-spacing:-.005em;padding:11px 14px}
+  .exc-gap{font-size:.93rem;line-height:1.85;letter-spacing:-.005em;padding:11px 14px}
+  .gap-inp{font-size:.93rem}
+  .tn-choices{flex-direction:column}
+}
+
+/* ══ PRINT MODAL ══ */
+.print-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.print-modal-overlay.active{display:flex}
+.print-modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:24px}
+.pm-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)}
+.pm-hdr h2{font-size:1.1rem;color:var(--ink)}
+.pm-close{background:#f1f5f9;border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:1rem;color:var(--muted)}
+.pm-close:hover{background:var(--border)}
+.pm-section{background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:12px}
+.pm-section h3{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px}
+.pm-lbl{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;font-weight:500}
+.pm-input{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;transition:border-color .2s}
+.pm-input:focus{outline:none;border-color:var(--indigo)}
+.pm-textarea{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;min-height:64px;resize:vertical;line-height:1.5}
+.pm-textarea:focus{outline:none;border-color:var(--indigo)}
+.pm-select{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:.875rem;background:#fff;cursor:pointer;font-family:inherit}
+.pm-select:focus{outline:none;border-color:var(--indigo)}
+.pm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pm-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pm-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+.pm-toggle-row label{font-size:.875rem;color:var(--ink2)}
+.pm-switch{position:relative;width:42px;height:22px}
+.pm-switch input{opacity:0;width:0;height:0}
+.pm-slider{position:absolute;inset:0;background:var(--border);border-radius:22px;cursor:pointer;transition:.3s}
+.pm-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.pm-switch input:checked + .pm-slider{background:var(--indigo)}
+.pm-switch input:checked + .pm-slider::before{transform:translateX(20px)}
+.pm-actions{display:flex;gap:10px;margin-top:20px;padding-top:14px;border-top:2px solid var(--border)}
+.pm-btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+.pm-btn.cancel{background:#f1f5f9;color:var(--muted)}
+.pm-btn.cancel:hover{background:var(--border)}
+.pm-btn.go{background:var(--green);color:#fff}
+.pm-btn.go:hover{background:#047857}
+.btn-print{width:100%;padding:12px;border:2px solid var(--green);border-radius:var(--r);background:#fff;color:var(--green);font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:all .15s}
+.btn-print:hover{background:var(--green);color:#fff}
+.btn-print:disabled{border-color:var(--border);color:var(--muted);cursor:not-allowed}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="app"><div class="card loading"><div class="spin"></div><p style="color:var(--muted)">Φόρτωση ερωτήσεων…</p></div></div>
+</div>
+<footer style="text-align:center;margin-top:32px;padding:16px;font-size:.78rem;color:var(--muted)">
+  © Α &amp; Σ Μητσέλος, 2026
+</footer>
+
+<script>
+// ══════════════════════════════════════════════
+// AUDIO — απενεργοποιημένο
+// ══════════════════════════════════════════════
+function playSound(type) { /* ήχος απενεργοποιημένος */ }
+
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvQNTsoPcU08XK8mT56x6m-5T0zigqVnyB27VOeXpJnv8smyhKDQChQ9r55jBQN9pDCHB9Fs2W0SAi/pub?gid=1446071944&single=true&output=csv';
+
+// ══════════════════════════════════════════════
+// THEORY DATA
+// ══════════════════════════════════════════════
+const CAT_NAMES = {
+  1:'Δομή Παραγράφου', 2:'Αιτιολόγηση', 3:'Αίτιο-Αποτέλεσμα',
+  4:'Διαίρεση', 5:'Σύγκριση-Αντίθεση', 6:'Ορισμός',
+  7:'Παραδείγματα', 8:'Αναλογία', 9:'Συνδυασμός Μεθόδων'
+};
+const CAT_THEORY = {
+  1:['📌 Τριμερής: Θεματική περίοδος → Σχόλια-λεπτομέρειες → Κατακλείδα','📌 Διμερής: Θεματική περίοδος → Σχόλια (χωρίς κατακλείδα)','⚠️ Κατακλείδα = τελευταία περίοδος ΜΟΝΟ αν είναι συνολικό συμπέρασμα — αν προσθέτει νέο επιχείρημα ανήκει στα σχόλια'],
+  2:['📌 Θεματική περίοδος: διατυπώνει θέση/άποψη προς απόδειξη','📌 Σχόλια: επιχειρήματα που αποδεικνύουν τη θέση','🎯 Στόχος: πειθώ | Δείκτες: γιατί, διότι, επειδή, αφού, εφόσον','⚠️ Κριτήριο: στόχος η πειθώ → αιτιολόγηση (≠ αίτιο-αποτέλεσμα)'],
+  3:['📌 Θεματική περίοδος: παρουσιάζει φαινόμενο ως δεδομένο','📌 Σχόλια: αίτια ή αποτελέσματα του φαινομένου','🎯 Στόχος: εξήγηση/ερμηνεία | Δείκτες: λόγω, εξαιτίας, με αποτέλεσμα','⚠️ Το φαινόμενο είναι δεδομένο → αίτιο-αποτέλεσμα (≠ αιτιολόγηση)'],
+  4:['📌 Μία έννοια (διαιρετέα) χωρίζεται με κριτήριο σε είδη/μέρη','🎯 Στόχος: φωτισμός έννοιας σε όλες τις πτυχές της','⚠️ Μία έννοια → διαίρεση | Δύο έννοιες → σύγκριση-αντίθεση'],
+  5:['📌 Σύγκριση/αντίθεση δύο όρων του ίδιου είδους','🔍 Δείκτες: παρόμοια, ενώ, αντίθετα, ωστόσο','⚠️ Δύο έννοιες → σύγκριση | Μία → διαίρεση'],
+  6:['📌 Οριστέα = Γένος + Ειδοποιός διαφορά','🔍 Δείκτες: είναι, ορίζεται, καλείται, σημαίνει','⚠️ Επεξήγηση ορισμού ≠ δεύτερος τρόπος'],
+  7:['📌 Παράθεση συγκεκριμένων, αντιπροσωπευτικών περιπτώσεων','🔍 Δείκτες: για παράδειγμα, λόγου χάρη, π.χ.','⚠️ Ίδιο πεδίο → παραδείγματα | Διαφορετικό → αναλογία'],
+  8:['📌 Παραλληλισμός με γνωστό όρο από διαφορετικό πεδίο','🔍 Δείκτες: όπως… έτσι και, μοιάζει, σαν','⚠️ Διαφορετικό πεδίο → αναλογία | Ίδιο → παραδείγματα'],
+  9:['📌 Χρήση 2 τρόπων: Βασικός + Δευτερεύων','📌 Κάθε χωρίο ανήκει σε ΈΝΑΝ μόνο τρόπο','⚠️ Πάνω από 3 τρόπους δεν αναζητάμε']
+};
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let allQ = [];
+let allParagraphs = []; // rows with Απόσπασμα + Δομή + Τρόπος
+let catsByKey = {}; // key "1.1" → [q,q,q,...]
+let catOrder = [];  // sorted keys ["1.1","1.2",...]
+
+// Adaptive Learning State
+let adp = {
+  catIdx: 0,           // index into catOrder
+  // per-round state
+  queue: [],           // current question queue
+  qIdx: 0,
+  answer: null,
+  answered: false,
+  ddPairs: {}, ddSelected: null, clkSelected: [],
+  showTheory: false,
+  _autoTimer: null,
+  // round tracking
+  roundResults: [],    // true/false per question in current round
+  // phase: 'main' | 'retry1' | 'retry2' | 'theory_wall'
+  phase: 'main',
+  retry1WrongIdx: [],  // indices of wrong answers from main round
+  retry2WrongIdx: [],  // indices of wrong in retry1
+  // global tracking
+  catLog: {},          // "1.1" → 'pass' | 'skip'
+  totalCorrect: 0,
+  totalAnswered: 0,
+  usedIds: {},         // catKey → Set of used question IDs
+};
+
+// ΕΞΑΣΚΗΣΗ state
+let drll = {
+  filterDiff: 'all',       // 'all' | 1 | 2 | 3
+  filterCount: 10,         // 10 | 20 | 0 (=all)
+  queue: [],
+  qIdx: 0,
+  answerDomi: null,
+  answerTropos: [],         // multi-select
+  answered: false,
+  _autoTimer: null,
+  correct: 0,
+  total: 0,
+  results: [],
+};
+
+
+// ΕΠΙΛΟΓΗ state
+let sel = {
+  filterType: 'all',       // 'all' | 'YN' | 'MC' | 'DD' | 'GAP' | 'CLK'
+  filterDiff: 'all',       // 'all' | 1 | 2 | 3
+  filterCount: 10,         // 10 | 20 | 0 (=all)
+  queue: [],
+  qIdx: 0,
+  answer: null,
+  answered: false,
+  ddPairs: {},
+  clkSelected: [],
+  _autoTimer: null,
+  correct: 0,
+  total: 0,
+  results: [],
+};
+
+// ΠΑΡΟΥΣΙΑΣΗ state (ίδια λογική με Εξάσκηση)
+let prs = {
+  filterDomi: 'all',
+  filterTropos: [],         // [] = όλοι, αλλιώς array τιμών
+  filterCount: 1,          // 1 | 10 | 0 (=all)
+  filterDiff: [],           // [] = όλοι, αλλιώς array τιμών
+  queue: [],
+  qIdx: 0,
+  answerDomi: null,
+  answerTropos: [],         // multi-select
+  answered: false,
+  _autoTimer: null,
+  correct: 0,
+  total: 0,
+  results: [],
+};
+
+let screen = 'loading';
+
+// ══════════════════════════════════════════════
+// CSV PARSING
+// ══════════════════════════════════════════════
+function parseCSVLine(line) {
+  const res = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1]==='"'){cur+='"';i++;} else inQ=!inQ; }
+    else if (c === ',' && !inQ) { res.push(cur.trim()); cur=''; }
+    else cur += c;
+  }
+  res.push(cur.trim()); return res;
+}
+
+function parseCatKey(raw) {
+  if (!raw) return null;
+  // Handle date-like strings "2026-01-01" or datetime objects serialized as strings
+  const m = String(raw).match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  if (m) return `${parseInt(m[2])}.${parseInt(m[3])}`;
+  return String(raw).trim();
+}
+
+function parseCSV(csv) {
+  const lines = csv.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  if (lines.length < 2) return [];
+  const hdrs = parseCSVLine(lines[0]).map(h=>h.trim());
+  const data = [];
+  const paragraphs = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    const obj = {};
+    hdrs.forEach((h,idx) => {
+      let v = (vals[idx]||'').trim();
+      obj[h] = (v===''||v.toLowerCase()==='null'||v.toLowerCase()==='false') ? null : v;
+    });
+
+    // Collect paragraph rows (have Απόσπασμα + Δομή + Τρόπος, regardless of Ενεργό)
+    if (obj['Απόσπασμα'] && obj['Δομή'] && obj['Τρόπος']) {
+      paragraphs.push({
+        id: obj['ID'] || `p${i}`,
+        text: obj['Απόσπασμα'],
+        domi: obj['Δομή'].trim(),
+        tropos: obj['Τρόπος'].trim(),
+        diff: parseInt(obj['Δυσκολία']) || 1,
+      });
+    }
+
+    if (!obj['Ενεργό'] || obj['Ενεργό'].toUpperCase()==='FALSE') continue;
+    if (!obj['Τύπος'] || !obj['Κατηγορία'] || !obj['Κείμενο Ερώτησης']) continue;
+    obj.catKey = parseCatKey(obj['Κατηγορία']);
+    obj.diff = parseInt(obj['Δυσκολία']) || 1;
+    obj.theoryKeys = obj['Θεωρία'] ? obj['Θεωρία'].split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)) : null;
+    obj.id = obj['ID'];
+    obj.type = obj['Τύπος'].trim().toUpperCase();
+    obj.q = obj['Κείμενο Ερώτησης'];
+    obj.excerpt = obj['Απόσπασμα'] || null;
+    obj.optA = obj['Επιλογή Α'] || null;
+    obj.optB = obj['Επιλογή Β'] || null;
+    obj.optC = obj['Επιλογή Γ'] || null;
+    obj.optD = obj['Επιλογή Δ'] || null;
+    obj.leftItems  = [obj['Αριστερά 1'],obj['Αριστερά 2'],obj['Αριστερά 3'],obj['Αριστερά 4']].filter(Boolean);
+    obj.rightItems = [obj['Δεξιά 1'],obj['Δεξιά 2'],obj['Δεξιά 3'],obj['Δεξιά 4']].filter(Boolean);
+    obj.targets = obj['Λέξη-Στόχος'] ? obj['Λέξη-Στόχος'].split('|').map(t=>t.trim()).filter(Boolean) : [];
+    obj.correct = (obj['Σωστή Απάντηση']||'').trim();
+    obj.fb = [obj['Διόρθωση 1'],obj['Διόρθωση 2'],obj['Διόρθωση 3'],obj['Διόρθωση 4']];
+    data.push(obj);
+  }
+  allParagraphs = paragraphs;
+  return data;
+}
+
+// ══════════════════════════════════════════════
+// DATA LOADING
+// ══════════════════════════════════════════════
+async function loadData() {
+  try {
+    const r = await fetch(CSV_URL);
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const csv = await r.text();
+    allQ = parseCSV(csv);
+    if (!allQ.length) throw new Error('Δεν βρέθηκαν ερωτήσεις');
+
+    // Build catsByKey
+    catsByKey = {};
+    allQ.forEach(q => {
+      if (!q.catKey) return;
+      if (!catsByKey[q.catKey]) catsByKey[q.catKey] = [];
+      catsByKey[q.catKey].push(q);
+    });
+    // Sort categories numerically
+    catOrder = Object.keys(catsByKey).sort((a,b) => {
+      const [a1,a2] = a.split('.').map(Number);
+      const [b1,b2] = b.split('.').map(Number);
+      return a1!==b1 ? a1-b1 : a2-b2;
+    });
+
+    screen = 'home';
+  } catch(e) {
+    document.getElementById('app').innerHTML = `
+      <div class="card" style="text-align:center;padding:40px">
+        <p style="color:var(--red);font-size:1rem;margin-bottom:12px">⚠️ Αδυναμία φόρτωσης</p>
+        <p style="color:var(--muted);font-size:.875rem;margin-bottom:20px">${e.message}</p>
+        <button onclick="loadData()" style="padding:10px 24px;background:var(--indigo);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9rem">Επανάληψη</button>
+      </div>`;
+    return;
+  }
+  render();
+  attachPrintModalListeners();
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function getTheoryKeysForCat(catKey) {
+  // catKey like "1.1", "2.2" — first number maps to CAT_NAMES
+  const n = parseInt(catKey.split('.')[0]);
+  return CAT_THEORY[n] ? [n] : [];
+}
+
+function getCatDisplayName(catKey) {
+  const [maj, min] = catKey.split('.');
+  const base = CAT_NAMES[parseInt(maj)] || `Θέμα ${maj}`;
+  return `${base} (${catKey})`;
+}
+
+function getQuestionsForCat(catKey, n, excludeIds=[]) {
+  const pool = (catsByKey[catKey]||[]).filter(q => !excludeIds.includes(q.id));
+  return shuffle(pool).slice(0, n);
+}
+
+function checkAnswer(q, answer) {
+  if (q.type==='MC' || q.type==='YN') {
+    return q.correct.trim().toUpperCase() === (answer||'').trim().toUpperCase();
+  }
+  if (q.type==='GAP') {
+    const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const accepted = q.correct.split('|').map(s=>norm(s));
+    const ans = norm(answer||'');
+    if (!ans) return false;
+    return accepted.some(a => a===ans || a.includes(ans) || ans.includes(a));
+  }
+  if (q.type==='CLK') {
+    const targets = q.targets.map(t=>t.trim().toLowerCase());
+    const sel = (answer||[]).map(s=>s.trim().toLowerCase());
+    return targets.every(t=>sel.includes(t)) && sel.length===targets.length;
+  }
+  if (q.type==='DD') {
+    const correctPairs = parseCorrectDD(q.correct, q.leftItems, q.rightItems);
+    if (!correctPairs) return false;
+    for(const [li, ri] of Object.entries(answer||{})) {
+      if(correctPairs[parseInt(li)] !== parseInt(ri)) return false;
+    }
+    return Object.keys(answer||{}).length === q.rightItems.length;
+  }
+  return false;
+}
+
+function parseCorrectDD(correctStr, lefts, rights) {
+  if (!correctStr) return null;
+  const result = {};
+  const pairs = correctStr.split('|').map(s=>s.trim()).filter(Boolean);
+  for(const p of pairs) {
+    const [l,r] = p.split('→').map(s=>s.trim());
+    const li = lefts.findIndex(x=>x && x.trim()===l);
+    const ri = rights.findIndex(x=>x && x.trim()===r);
+    if(li!==-1 && ri!==-1) result[li]=ri;
+  }
+  if(!Object.keys(result).length) {
+    for(const p of pairs) {
+      const m = p.match(/Αριστερά\s*(\d+)\s*→\s*Δεξιά\s*(\d+)/);
+      if(m) result[parseInt(m[1])-1]=parseInt(m[2])-1;
+    }
+  }
+  return result;
+}
+
+function getFeedback(q, answer) {
+  if (q.type==='MC') {
+    const map = {Α:0,Β:1,Γ:2,Δ:3};
+    const idx = map[(answer||'').toUpperCase()] ?? 0;
+    return q.fb[idx] || q.fb.find(f=>f) || null;
+  }
+  return q.fb[0] || null;
+}
+
+function canCheck(q) {
+  if (adp.answered) return false;
+  if (q.type==='MC'||q.type==='YN') return adp.answer!==null;
+  if (q.type==='CLK') return adp.clkSelected.length>0;
+  if (q.type==='DD') return Object.keys(adp.ddPairs).length===q.rightItems.length;
+  if (q.type==='GAP') return !!(adp.answer && adp.answer.trim());
+  return false;
+}
+
+// ══════════════════════════════════════════════
+// ADAPTIVE LOGIC
+// ══════════════════════════════════════════════
+function startAdaptive() {
+  adp.catIdx = 0;
+  adp.catLog = {};
+  adp.totalCorrect = 0;
+  adp.totalAnswered = 0;
+  adp.usedIds = {};
+  startCatMain();
+}
+
+function startCatMain() {
+  const catKey = catOrder[adp.catIdx];
+  if (!adp.usedIds[catKey]) adp.usedIds[catKey] = new Set();
+  const qs = getQuestionsForCat(catKey, 3, [...adp.usedIds[catKey]]);
+  // If no questions at all → skip this category silently
+  if (!qs.length) { adp.catLog[catKey]='pass'; advanceToNextCat(); return; }
+  qs.forEach(q => adp.usedIds[catKey].add(q.id));
+  adp.queue = qs;
+  adp.qIdx = 0;
+  adp.answer = null; adp.answered = false;
+  adp.ddPairs = {}; adp.ddSelected = null; adp.clkSelected = [];
+  adp.roundResults = [];
+  adp.phase = 'main';
+  adp.showTheory = false;
+  screen = 'adaptive';
+  render();
+}
+
+function startCatRetry1(wrongIdxs) {
+  const catKey = catOrder[adp.catIdx];
+  const extra = getQuestionsForCat(catKey, 2, [...adp.usedIds[catKey]]);
+  // No more questions → παράλειψη retry1, κατευθείαν τείχος θεωρίας
+  if (!extra.length) { adp.catLog[catKey]='skip'; screen='theory_wall'; render(); return; }
+  extra.forEach(q => adp.usedIds[catKey].add(q.id));
+  adp.queue = extra;
+  adp.qIdx = 0;
+  adp.answer = null; adp.answered = false;
+  adp.ddPairs = {}; adp.ddSelected = null; adp.clkSelected = [];
+  adp.roundResults = [];
+  adp.retry1WrongIdx = wrongIdxs;
+  adp.phase = 'retry1';
+  adp.showTheory = false;
+  screen = 'adaptive';
+  render();
+}
+
+function startCatRetry2(wrongQs) {
+  const catKey = catOrder[adp.catIdx];
+  const extra = getQuestionsForCat(catKey, 1, [...adp.usedIds[catKey]]);
+  extra.forEach(q => adp.usedIds[catKey].add(q.id));
+  const queue = shuffle([...wrongQs, ...extra]);
+  // No questions to give → παράλειψη retry2, κατευθείαν τείχος θεωρίας
+  if (!queue.length) { adp.catLog[catKey]='skip'; screen='theory_wall'; render(); return; }
+  adp.queue = queue;
+  adp.qIdx = 0;
+  adp.answer = null; adp.answered = false;
+  adp.ddPairs = {}; adp.ddSelected = null; adp.clkSelected = [];
+  adp.roundResults = [];
+  adp.phase = 'retry2';
+  adp.showTheory = false;
+  screen = 'adaptive';
+  render();
+}
+
+function finishRound() {
+  const catKey = catOrder[adp.catIdx];
+  const correct = adp.roundResults.filter(Boolean).length;
+  const wrong = adp.roundResults.filter(b=>!b).length;
+
+  if (adp.phase === 'main') {
+    if (wrong === 0) {
+      adp.catLog[catKey] = 'pass';
+      advanceToNextCat();
+    } else {
+      const wrongIdxs = adp.roundResults.map((r,i)=>r?null:i).filter(i=>i!==null);
+      startCatRetry1(wrongIdxs);
+    }
+  } else if (adp.phase === 'retry1') {
+    if (wrong === 0) {
+      const origMain = getQuestionsFromLog(catKey, adp.retry1WrongIdx);
+      startCatRetry2(origMain);
+    } else {
+      // At least 1 wrong in retry1 → give 1 new + those wrong in retry1
+      const wrongQs = adp.roundResults.map((r,i)=>r?null:adp.queue[i]).filter(Boolean);
+      startCatRetry2(wrongQs);
+    }
+  } else if (adp.phase === 'retry2') {
+    if (wrong === 0) {
+      // All retry2 correct → pass and move on
+      adp.catLog[catKey] = 'pass';
+      advanceToNextCat();
+    } else {
+      // Still wrong → theory wall
+      adp.catLog[catKey] = 'skip';
+      screen = 'theory_wall';
+      render();
+    }
+  }
+}
+
+// Helper: get questions from the main round by index (we store main queue in a log)
+let mainQueueLog = {}; // catKey → queue from main round
+function getQuestionsFromLog(catKey, wrongIdxs) {
+  const mq = mainQueueLog[catKey] || [];
+  return wrongIdxs.map(i => mq[i]).filter(Boolean);
+}
+
+function advanceToNextCat() {
+  if (adp.catIdx < catOrder.length - 1) {
+    adp.catIdx++;
+    screen = 'cat_transition';
+    render();
+  } else {
+    screen = 'adp_results';
+    render();
+  }
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function render() {
+  const app = document.getElementById('app');
+
+  switch(screen) {
+    case 'home':           app.innerHTML=renderHome(); break;
+    case 'adaptive':       app.innerHTML=renderAdaptive(); break;
+    case 'cat_transition': app.innerHTML=renderCatTransition(); break;
+    case 'theory_wall':    app.innerHTML=renderTheoryWall(); break;
+    case 'adp_results':    app.innerHTML=renderAdpResults(); break;
+    case 'drill_setup':    app.innerHTML=renderDrillSetup(); break;
+    case 'drill':          app.innerHTML=renderDrill(); break;
+    case 'drill_results':  app.innerHTML=renderDrillResults(); break;
+    case 'sel_setup':      app.innerHTML=renderSelSetup(); break;
+    case 'sel':            app.innerHTML=renderSel(); break;
+    case 'sel_results':    app.innerHTML=renderSelResults(); break;
+    case 'prs_setup':      app.innerHTML=renderPrsSetup(); break;
+    case 'prs':            app.innerHTML=renderPrs(); break;
+    case 'prs_results':    app.innerHTML=renderPrsResults(); break;
+  }
+  attachEvents();
+}
+
+function renderBadgeAdp() {
+  const stepNum = adp.catIdx + 1;
+  return `Βήμα ${stepNum}`;
+}
+
+// ══════════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════════
+function renderHome() {
+  const totalCats = catOrder.length;
+  const totalPara = allParagraphs.length;
+  const totalQ = allQ.length;
+  return `
+  <div class="card">
+    <p class="home-title">Νέα Ελληνικά για το Λύκειο</p>
+    <p class="home-sub">Επίλεξε τρόπο εξάσκησης</p>
+    <div class="home-cards">
+      <button class="home-card c1" id="btnStartAdp">
+        <div class="hc-icon-wrap">🎯</div>
+        <p class="hc-title">Βήμα-Βήμα</p>
+        <p class="hc-desc">Προσαρμοστική μάθηση. Η εφαρμογή σε καθοδηγεί ανάλογα με τις απαντήσεις σου.</p>
+        <span class="hc-arrow">${totalCats} κατηγορίες →</span>
+      </button>
+      <button class="home-card c2" id="btnStartDrill">
+        <div class="hc-icon-wrap">⚡</div>
+        <p class="hc-title">Εξάσκηση</p>
+        <p class="hc-desc">Γρήγορη εξάσκηση σε ανάλυση παραγράφων. Επίλεξε δομή, τρόπο και αριθμό παραγράφων.</p>
+        <span class="hc-arrow">${totalPara} παράγραφοι →</span>
+      </button>
+      <button class="home-card c4" id="btnStartSel">
+        <div class="hc-icon-wrap">🎲</div>
+        <p class="hc-title">Επιλογή</p>
+        <p class="hc-desc">Ελεύθερη εξάσκηση με φίλτρα τύπου ερώτησης και βαθμού δυσκολίας.</p>
+        <span class="hc-arrow">${totalQ} ερωτήσεις →</span>
+      </button>
+      <button class="home-card c3" id="btnStartPrs">
+        <div class="hc-icon-wrap">📽️</div>
+        <p class="hc-title">Παρουσίαση</p>
+        <p class="hc-desc">Παρουσίαση παραγράφων στην τάξη. Επίλεξε δομή, τρόπο και αριθμό παραγράφων.</p>
+        <span class="hc-arrow">${totalPara} παράγραφοι →</span>
+      </button>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// CAT MAP (progress visualization)
+// ══════════════════════════════════════════════
+function renderCatMap() {
+  let html = '<div class="cat-map" style="align-items:center">';
+  catOrder.forEach((key, i) => {
+    const status = adp.catLog[key];
+    const isActive = i === adp.catIdx;
+    let cls = 'cat-dot locked';
+    let icon = key;
+    if (status === 'pass') { cls='cat-dot done'; icon='✓'; }
+    else if (status === 'skip') { cls='cat-dot failed'; icon='!'; }
+    else if (isActive) { cls='cat-dot active'; icon=key; }
+    else if (i < adp.catIdx) { cls='cat-dot done'; icon='✓'; }
+    html += `<div class="cat-node">
+      <div class="${cls}">${icon}</div>
+      <span class="cat-dot-lbl">${key}</span>
+    </div>`;
+    if (i < catOrder.length-1) html += `<div class="cat-arrow" style="margin-bottom:14px">›</div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════
+// ADAPTIVE QUIZ SCREEN
+// ══════════════════════════════════════════════
+function renderAdaptive() {
+  const catKey = catOrder[adp.catIdx];
+  const q = adp.queue[adp.qIdx];
+  if (!q) return '<div class="card"><p>Σφάλμα: δεν βρέθηκε ερώτηση.</p></div>';
+
+  const totalInRound = adp.queue.length;
+  const isOk = adp.answered ? checkAnswer(q, adp.answer) : false;
+
+  // Phase label → «Βήμα X» (όχι όνομα κατηγορίας)
+  const stepNum = adp.catIdx + 1;
+  let phaseLabel, phaseClass;
+  if (adp.phase === 'main')   { phaseLabel=`Βήμα ${stepNum}`; phaseClass='main'; }
+  else if (adp.phase === 'retry1') { phaseLabel=`Βήμα ${stepNum} · Ανατροφοδότηση`; phaseClass='retry'; }
+  else                        { phaseLabel=`Βήμα ${stepNum} · Επανέλεγχος`; phaseClass='fb'; }
+
+  // Κουκίδες βημάτων — περίγραμμα + αρίθμηση
+  let stepDots = '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">';
+  catOrder.forEach((key, i) => {
+    const status = adp.catLog[key];
+    const isActive = i === adp.catIdx;
+    let bg, border, color;
+    if (status === 'pass' || i < adp.catIdx) {
+      bg='rgba(255,255,255,.2)'; border='rgba(255,255,255,.7)'; color='#fff';
+    } else if (status === 'skip') {
+      bg='rgba(251,191,36,.3)'; border='rgba(251,191,36,.8)'; color='#fff';
+    } else if (isActive) {
+      bg='rgba(255,255,255,.95)'; border='#fff'; color='var(--indigo-d)';
+    } else {
+      bg='rgba(255,255,255,.07)'; border='rgba(255,255,255,.2)'; color='rgba(255,255,255,.3)';
+    }
+    // checkmark για ολοκληρωμένα
+    const label = (status === 'pass' || i < adp.catIdx) ? '✓' : (i+1);
+    stepDots += `<div style="width:24px;height:24px;border-radius:50%;background:${bg};border:2px solid ${border};color:${color};display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;transition:all .3s">${label}</div>`;
+  });
+  stepDots += '</div>';
+
+  // Κουκίδες ερωτήσεων
+  let dots = '<div style="display:flex;gap:5px;align-items:center">';
+  for (let i=0; i<totalInRound; i++) {
+    let bg, border;
+    if (i < adp.roundResults.length) {
+      if (adp.roundResults[i]) { bg='rgba(255,255,255,.9)'; border='rgba(255,255,255,.9)'; }
+      else                     { bg='rgba(254,202,202,.8)'; border='rgba(254,202,202,.8)'; }
+    } else if (i === adp.qIdx) {
+      bg='rgba(255,255,255,.95)'; border='#fff';
+    } else {
+      bg='rgba(255,255,255,.15)'; border='rgba(255,255,255,.2)';
+    }
+    dots += `<div style="width:9px;height:9px;border-radius:50%;background:${bg};border:2px solid ${border};transition:all .2s"></div>`;
+  }
+  dots += `<span style="color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;margin-left:5px">${adp.qIdx+1}/${totalInRound}</span></div>`;
+
+  // Theory toggle
+  let theoryHtml = '';
+  if (adp.phase !== 'main') {
+    theoryHtml = `<button class="theory-toggle" id="btnTheory">${adp.showTheory?'▼':'▶'} Βοήθεια: Θεωρητικό Πλαίσιο</button>`;
+    if (adp.showTheory) {
+      const keys = getTheoryKeysForCat(catKey);
+      if (keys.length) {
+        theoryHtml += '<div class="theory-box"><h4>📚 Θεωρητικό Πλαίσιο</h4><ul>';
+        keys.forEach(k => {
+          if (CAT_THEORY[k]) CAT_THEORY[k].forEach(t => { theoryHtml += `<li>${t}</li>`; });
+        });
+        theoryHtml += '</ul></div>';
+      }
+    }
+  }
+
+  let html = `
+  <div class="adp-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:.95rem;font-weight:300;color:rgba(255,255,255,.9);letter-spacing:.02em">Παράγραφος</span>
+      <button onclick="screen='home';render();" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">🏠 Αρχική</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      ${stepDots}
+      ${dots}
+    </div>
+  </div>
+
+  ${theoryHtml}
+
+  ${q.excerpt ? `<div class="card" style="margin-bottom:14px">${renderExcerpt(q)}</div>` : ''}
+
+  <div class="${'answers-card' + (adp.answered ? (isOk ? ' answered-ok' : ' answered-ko') : '')}" id="answersCard">
+    <p class="q-lbl">${qTypeLabel(q.type)}</p>
+    <p class="q-txt">${q.q}</p>
+    ${q.type==='CLK' ? '<p style="font-size:.8rem;color:var(--muted);font-style:italic;margin-bottom:10px">Κάντε κλικ στις λέξεις/φράσεις στο απόσπασμα παραπάνω.</p>' : ''}`;
+
+  if (q.type==='MC'||q.type==='YN') html += renderMC(q);
+  else if (q.type==='DD') html += renderDD(q);
+  else if (q.type==='GAP') html += renderGAPInput(q);
+
+  if (adp.answered) {
+    html += `<div class="fb-box ${isOk?'ok':'ko'}">
+      <p class="fb-title">${isOk?'✅ Σωστά!':'❌ Λάθος'}</p>
+      ${!isOk ? `<p>${getFeedback(q, adp.answer)||''}</p>` : ''}
+    </div>`;
+    const isLast = adp.qIdx === adp.queue.length-1;
+    if (!isLast) {
+      html += `<button class="btn-next" id="btnNext">Επόμενο →</button>`;
+    }
+  } else {
+    html += `<button class="btn-check" id="btnCheck" ${canCheck(q)?'':'disabled'}>Έλεγξε</button>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════
+// CAT TRANSITION
+// ══════════════════════════════════════════════
+function renderCatTransition() {
+  const prevKey = catOrder[adp.catIdx-1];
+  const nextKey = catOrder[adp.catIdx];
+  const prevName = getCatDisplayName(prevKey);
+  const nextNum = adp.catIdx + 1;
+  return `
+  <div class="card" style="text-align:center;padding:32px 22px">
+    <div style="font-size:2.5rem;margin-bottom:12px">✅</div>
+    <h2 style="font-family:'IBM Plex Serif',serif;font-size:1.3rem;margin-bottom:8px">Βήμα ${adp.catIdx} ολοκληρώθηκε!</h2>
+    <p style="color:var(--muted);font-size:.875rem;margin-bottom:6px">${prevName}</p>
+    <p style="color:var(--muted);font-size:.9rem;margin-bottom:20px">Συνέχεια στο <strong>Βήμα ${nextNum}</strong>.</p>
+    <button class="btn-go" id="btnNextCat" style="margin-top:16px">Συνέχεια →</button>
+    <button class="btn-sec" id="btnHomeFromAdp">↩ Αρχική</button>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// THEORY WALL
+// ══════════════════════════════════════════════
+function renderTheoryWall() {
+  const catKey = catOrder[adp.catIdx];
+  const theoryKeys = getTheoryKeysForCat(catKey);
+  let theoryItems = '';
+  theoryKeys.forEach(k => {
+    if (CAT_THEORY[k]) {
+      theoryItems += `<p style="font-weight:700;margin-bottom:6px;color:#7f1d1d">${CAT_NAMES[k]||''}</p>`;
+      theoryItems += '<ul>' + CAT_THEORY[k].map(t=>`<li>${t}</li>`).join('') + '</ul>';
+    }
+  });
+
+  return `
+  <div class="card">
+    <div class="theory-needed">
+      <h4>📖 Χρειάζεται να ξαναδείς τη θεωρία</h4>
+      <p>Φαίνεται ότι χρειάζεσαι επανάληψη στο θέμα: <strong>${getCatDisplayName(catKey)}</strong></p>
+      ${theoryItems ? `<div style="margin:10px 0 14px">${theoryItems}</div>` : ''}
+      <p style="font-weight:600;margin-bottom:12px;color:#7f1d1d">Θέλεις να επαναλάβεις την προσπάθεια ή να συνεχίσεις στο επόμενο βήμα;</p>
+      <div class="tn-choices">
+        <button class="tn-btn retry" id="btnRetryAgain">🔄 Επανάληψη της κατηγορίας</button>
+        <button class="tn-btn skip" id="btnSkipToNext">${adp.catIdx < catOrder.length-1 ? '⏭ Συνέχεια στο επόμενο βήμα' : '🏁 Ολοκλήρωση'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// FINAL RESULTS
+// ══════════════════════════════════════════════
+function renderAdpResults() {
+  const passed = Object.values(adp.catLog).filter(v=>v==='pass').length;
+  const skipped = Object.values(adp.catLog).filter(v=>v==='skip').length;
+  const total = catOrder.length;
+  const pct = Math.round((passed/total)*100);
+  const emoji = pct>=80?'🎉':pct>=60?'👍':'📚';
+
+  let catRows = catOrder.map((key, i) => {
+    const status = adp.catLog[key] || 'incomplete';
+    const cls = status==='pass' ? 'pass' : 'skip';
+    const badge = status==='pass' ? '✅ Επιτυχία' : status==='skip' ? '⚠️ Χρειάζεται μελέτη' : '—';
+    return `<div class="cat-summary-row ${cls}">
+      <span class="cs-name">Βήμα ${i+1} — ${getCatDisplayName(key)}</span>
+      <span class="cs-badge">${badge}</span>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card" style="text-align:center;padding:28px 22px">
+    <div style="font-size:2.8rem;margin-bottom:10px">${emoji}</div>
+    <h2 style="font-family:'IBM Plex Serif',serif;font-size:1.4rem;margin-bottom:16px">Ολοκλήρωσες το Βήμα-Βήμα!</h2>
+    <div class="score-box">
+      <p class="score-big">${passed} / ${total}</p>
+      <p class="score-pct">κατηγορίες με επιτυχία (${pct}%)</p>
+    </div>
+    <div class="score-grid" style="margin:14px 0">
+      <div class="sc g"><p>Επιτυχία</p><p>${passed}</p></div>
+      <div class="sc r"><p>Χρειάζεται μελέτη</p><p>${skipped}</p></div>
+      <div class="sc a"><p>Σύνολο</p><p>${total}</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p style="font-weight:700;margin-bottom:12px">Ανά κατηγορία:</p>
+    ${catRows}
+  </div>
+  <button class="btn-sec" id="btnNewAdp" style="margin-top:4px">🔄 Νέα προσπάθεια από την αρχή</button>
+  <button class="btn-sec" id="btnHomeFromRes">↩ Αρχική</button>`;
+}
+
+// ══════════════════════════════════════════════
+// ΕΞΑΣΚΗΣΗ — SETUP & LOGIC
+// ══════════════════════════════════════════════
+function getDrillPool() {
+  return allParagraphs.filter(p => {
+    if (drll.filterDiff !== 'all' && p.diff !== drll.filterDiff) return false;
+    return true;
+  });
+}
+
+function startDrillSession() {
+  const pool = getDrillPool();
+  const count = drll.filterCount === 0 ? pool.length : drll.filterCount;
+  drll.queue = shuffle(pool).slice(0, count);
+  drll.qIdx = 0;
+  drll.answerDomi = null;
+  drll.answerTropos = [];
+  drll.answered = false;
+  drll.correct = 0;
+  drll.total = 0;
+  drll.results = [];
+  if (drll._autoTimer) { clearTimeout(drll._autoTimer); drll._autoTimer = null; }
+  screen = 'drill';
+  render();
+}
+
+function getDrillCorrectTropoi(p) {
+  // Εξάγει τους σωστούς τρόπους από το p.tropos
+  // π.χ. "Αιτιολόγηση + Παραδείγματα" → ['Αιτιολόγηση','Παραδείγματα']
+  const raw = (p.tropos || '').trim();
+  const parts = raw.split(/[+,]/).map(s => s.trim()).filter(Boolean);
+  // Αντιστοίχιση με getTroposOptions() (case-insensitive)
+  const opts = getTroposOptions().filter(o => o !== 'Συνδυασμός μεθόδων');
+  return parts.map(part => {
+    const match = opts.find(o => o.toLowerCase() === part.toLowerCase() || part.toLowerCase().includes(o.toLowerCase()));
+    return match || part;
+  }).filter(Boolean);
+}
+
+function doDrillCheck() {
+  if (drll.answered) return;
+  const p = drll.queue[drll.qIdx];
+  const domiOk = drll.answerDomi === p.domi;
+  // Βρίσκουμε τους σωστούς τρόπους
+  const correctTropoi = getDrillCorrectTropoi(p);
+  const selected = drll.answerTropos;
+  // Μετράμε πόσους σωστούς τρόπους βρήκε (max 2)
+  const troposHits = correctTropoi.filter(t =>
+    selected.some(s => s.toLowerCase() === t.toLowerCase())
+  ).length;
+  // Βαθμολογία τρόπων: 2 αν βρήκε όλους, 1 αν βρήκε έναν από δύο, 0 αν καμία
+  let troposPoints = 0;
+  if (correctTropoi.length === 1) {
+    troposPoints = troposHits === 1 ? 2 : 0;
+  } else if (correctTropoi.length === 2) {
+    troposPoints = troposHits === 2 ? 2 : troposHits === 1 ? 1 : 0;
+  }
+  const troposOk = troposPoints === 2;
+  const troposPartial = troposPoints === 1;
+  drll.answered = true;
+  drll.results.push({domiOk, troposOk, troposPartial, troposPoints, correctTropoi});
+  drll.total++;
+  if (domiOk) drll.correct++;       // +1 για δομή
+  drll.correct += troposPoints;     // +1 ή +2 για τρόπο
+  render();
+  playSound(domiOk && troposOk ? 'correct' : 'wrong');
+  if (drll._autoTimer) clearTimeout(drll._autoTimer);
+  drll._autoTimer = setTimeout(() => doDrillNext(), 3000);
+}
+
+function doDrillNext() {
+  if (drll._autoTimer) { clearTimeout(drll._autoTimer); drll._autoTimer = null; }
+  if (drll.qIdx < drll.queue.length - 1) {
+    drll.qIdx++;
+    drll.answerDomi = null;
+    drll.answerTropos = [];
+    drll.answered = false;
+    render();
+  } else {
+    screen = 'drill_results';
+    render();
+  }
+}
+
+function getDomiOptions() { return ['Τριμερής','Διμερής']; }
+
+function getTroposOptions() {
+  return ['Παραδείγματα','Αιτιολόγηση','Αίτιο-αποτέλεσμα','Διαίρεση','Σύγκριση-αντίθεση','Ορισμός','Αναλογία','Συνδυασμός μεθόδων'];
+}
+
+function troposMatches(p, filter) {
+  if (filter === 'all') return true;
+  const t = (p.tropos || '').toLowerCase();
+  if (filter === 'Συνδυασμός μεθόδων') {
+    return t.includes('+') || t.includes(',') || t.includes('συνδυασμός');
+  }
+  const fLow = filter.toLowerCase();
+  return t === fLow || t.includes(fLow);
+}
+
+// ══════════════════════════════════════════════
+// ΕΞΑΣΚΗΣΗ — RENDER SETUP
+// ══════════════════════════════════════════════
+function renderDrillSetup() {
+  const pool = getDrillPool();
+
+  const diffMap = [
+    {v:'all', lbl:'Όλες'},
+    {v:1, lbl:'1 — Εύκολη'},
+    {v:2, lbl:'2 — Μέτρια'},
+    {v:3, lbl:'3 — Δύσκολη'},
+  ];
+  const diffChips = diffMap.map(({v, lbl}) => {
+    const cnt = v==='all' ? allParagraphs.length : allParagraphs.filter(p=>p.diff===v).length;
+    return `<button class="fchip ${drll.filterDiff===v?'active':''}" data-drll-diff="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+  }).join('');
+
+  const countMap = [{n:10,lbl:'10'},{n:20,lbl:'20'},{n:0,lbl:'Όλες'}];
+  const countChips = countMap.map(({n,lbl}) =>
+    `<button class="fchip ${drll.filterCount===n?'active':''}" data-drll-count="${n}">${lbl}</button>`
+  ).join('');
+
+  const canStart = pool.length > 0;
+  const actualCount = drll.filterCount === 0 ? pool.length : Math.min(drll.filterCount, pool.length);
+
+  return `
+  <div class="setup-screen">
+  <div class="drll-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>⚡ Εξάσκηση</h2>
+      <p>Επίλεξε φίλτρα και ξεκίνα</p>
+    </div>
+    <button id="btnDrillHome" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🏠 Αρχική</button>
+  </div>
+  <div class="card setup-card">
+    <div class="setup-sections">
+      <div class="drll-setup-section">
+        <h3>⭐ Βαθμός Δυσκολίας</h3>
+        <div class="filter-chips">${diffChips}</div>
+      </div>
+      <div class="drll-setup-section">
+        <h3>🔢 Αριθμός Παραγράφων</h3>
+        <div class="filter-chips">${countChips}</div>
+      </div>
+    </div>
+    <div>
+      <div class="info ${canStart?'success':'warn'}" style="margin-top:4px">
+        ${canStart
+          ? `✅ Διαθέσιμες <strong>${pool.length}</strong> παράγραφοι (θα εμφανιστούν <strong>${actualCount}</strong>)`
+          : '⚠️ Δεν βρέθηκαν παράγραφοι με αυτά τα φίλτρα'}
+      </div>
+      <button class="btn-go" id="btnDrillStart" ${canStart?'':'disabled'} style="margin-top:6px">
+        Ξεκινήστε το Quiz →
+      </button>
+    </div>
+  </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// ΕΞΑΣΚΗΣΗ — RENDER QUIZ
+// ══════════════════════════════════════════════
+function renderDrill() {
+  const p = drll.queue[drll.qIdx];
+  const total = drll.queue.length;
+  const domiOpts = getDomiOptions();
+  const troposOpts = getTroposOptions();
+
+  // Progress dots
+  let dots = '';
+  for (let i = 0; i < total; i++) {
+    let cls = 'drll-pd';
+    if (i < drll.results.length) {
+      const r = drll.results[i];
+      if (r.domiOk && r.troposOk) cls += ' ok';
+      else if (r.domiOk || r.troposPartial || (r.troposPoints > 0)) cls += ' cur';
+      else cls += ' ko';
+    } else if (i === drll.qIdx) cls += ' cur';
+    dots += `<div class="${cls}"></div>`;
+  }
+
+  const maxPossible = drll.total * 3;
+  const scoreDisplay = maxPossible > 0 ? `${drll.correct} / ${maxPossible}` : '—';
+
+  // Domi options
+  let domiHtml = '<div class="drll-opts">';
+  domiOpts.forEach(v => {
+    let cls = 'drll-opt';
+    if (drll.answered) {
+      const isCorrect = v === p.domi;
+      const isSelected = v === drll.answerDomi;
+      if (isSelected && isCorrect) cls += ' ok';
+      else if (isSelected && !isCorrect) cls += ' ko';
+      else if (isCorrect && !isSelected) cls += ' neutral-ok';
+    } else {
+      if (drll.answerDomi === v) cls += ' sel';
+    }
+    domiHtml += `<button class="${cls}" data-drll-domi-ans="${v}" ${drll.answered?'disabled':''}>${v}</button>`;
+  });
+  domiHtml += '</div>';
+
+  // Tropos options — multi-select, χωρίς Συνδυασμός μεθόδων
+  const troposOptsFiltered = troposOpts.filter(v => v !== 'Συνδυασμός μεθόδων');
+  const correctTropoi = drll.answered ? getDrillCorrectTropoi(p) : [];
+  let troposHtml = '<div class="drll-opts" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+  troposOptsFiltered.forEach(v => {
+    let cls = 'drll-opt';
+    const isSelected = drll.answerTropos.includes(v);
+    if (drll.answered) {
+      const isCorrect = correctTropoi.some(t => t.toLowerCase() === v.toLowerCase());
+      if (isSelected && isCorrect) cls += ' ok';
+      else if (isSelected && !isCorrect) cls += ' ko';
+      else if (isCorrect && !isSelected) cls += ' neutral-ok';
+    } else {
+      if (isSelected) cls += ' sel';
+    }
+    troposHtml += `<button class="${cls}" data-drll-tropos-ans="${v}" ${drll.answered?'disabled':''}>${v}</button>`;
+  });
+  troposHtml += '</div>';
+
+  const canCheckDrill = drll.answerDomi !== null && drll.answerTropos.length > 0 && !drll.answered;
+
+  return `
+  <div class="drll-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>⚡ Εξάσκηση</h2>
+      <p>Ανάλυσε την παράγραφο</p>
+    </div>
+    <button onclick="screen='home';render();" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🏠 Αρχική</button>
+  </div>
+
+  <div class="drll-score-bar">
+    <div>
+      <div class="drll-score-lbl">Πόντοι</div>
+      <div class="drll-score-pts">${scoreDisplay}</div>
+    </div>
+    <div class="drll-prog">${dots}</div>
+    <div style="text-align:right">
+      <div class="drll-score-lbl">Παράγραφος</div>
+      <div style="font-weight:700;color:var(--ink)">${drll.qIdx+1} / ${total}</div>
+    </div>
+  </div>
+
+  <div class="drll-para-card">
+    <div class="drll-para-text">${p.text}</div>
+  </div>
+
+  <div class="drll-questions">
+    <div class="drll-q-card ${drll.answered ? (drll.results[drll.qIdx]?.domiOk ? 'ok' : 'ko') : ''}">
+      <p class="drll-q-title">Ποια είναι η δομή της παραγράφου;</p>
+      ${domiHtml}
+    </div>
+    <div class="drll-q-card ${drll.answered ? (drll.results[drll.qIdx]?.troposOk ? 'ok' : drll.results[drll.qIdx]?.troposPartial ? '' : 'ko') : ''}">
+      <p class="drll-q-title">Ποιος είναι ο τρόπος ανάπτυξης;</p>
+      ${troposHtml}
+    </div>
+  </div>
+
+  ${!drll.answered ? `<button class="btn-check" id="btnDrillCheck" ${canCheckDrill?'':'disabled'}>Έλεγξε</button>` : ''}
+  `;
+}
+
+// ══════════════════════════════════════════════
+// ΕΞΑΣΚΗΣΗ — RENDER RESULTS
+// ══════════════════════════════════════════════
+function renderDrillResults() {
+  const total = drll.queue.length;
+  const maxPoints = total * 3;
+  const pct = maxPoints > 0 ? Math.round((drll.correct / maxPoints) * 100) : 0;
+  const emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '📚';
+  const domiPoints = drll.results.filter(r=>r.domiOk).length;
+  const troposPoints = drll.results.reduce((s,r)=>s+(r.troposPoints||0),0);
+
+  return `
+  <div class="card" style="text-align:center;padding:28px 22px">
+    <div style="font-size:2.8rem;margin-bottom:10px">${emoji}</div>
+    <h2 style="font-family:'IBM Plex Serif',serif;font-size:1.4rem;margin-bottom:16px">Τέλος Εξάσκησης!</h2>
+    <div class="drll-results-score">
+      <p class="drll-results-big">${drll.correct} / ${maxPoints}</p>
+      <p class="drll-results-sub">πόντοι (${pct}%)</p>
+    </div>
+    <div class="score-grid" style="margin:14px 0;grid-template-columns:repeat(4,1fr)">
+      <div class="sc g"><p>Σύνολο</p><p>${drll.correct}/${maxPoints}</p></div>
+      <div class="sc a"><p>Δομή</p><p>${domiPoints}/${total}</p></div>
+      <div class="sc g"><p>Τρόπος</p><p>${troposPoints}/${total*2}</p></div>
+      <div class="sc r"><p>Παράγραφοι</p><p>${total}</p></div>
+    </div>
+  </div>
+  <button class="btn-go" id="btnDrillAgain" style="margin-top:4px">🔄 Νέα εξάσκηση</button>
+  <button class="btn-sec" id="btnDrillHome2" style="margin-top:8px">↩ Αρχική</button>`;
+}
+
+// ══════════════════════════════════════════════
+// QUESTION RENDERERS
+// ══════════════════════════════════════════════
+function qTypeLabel(type) {
+  return type==='CLK'?'Εντοπισμός':type==='DD'?'Αντιστοίχιση':type==='GAP'?'Συμπλήρωση κενού':type==='YN'?'Ναι / Όχι':'Πολλαπλή επιλογή';
+}
+
+function renderExcerpt(q) {
+  if (q.type==='CLK') return renderExcerptCLK(q);
+  if (q.type==='GAP') return renderExcerptGAP(q);
+  return `<div class="exc">${q.excerpt}</div>`;
+}
+
+function renderMC(q) {
+  const keys = ['Α','Β','Γ','Δ'];
+  const vals = [q.optA,q.optB,q.optC,q.optD].filter(Boolean);
+  let html = '<div class="opts">';
+  vals.forEach((v,i) => {
+    const k = keys[i];
+    let cls = 'opt'; let badge = '';
+    if (adp.answered) {
+      const isCorrect = k===q.correct.trim().toUpperCase();
+      const isSelected = k===adp.answer;
+      const answeredCorrectly = adp.answer===q.correct.trim().toUpperCase();
+      if (isSelected && isCorrect) { cls+=' ok'; badge='<span class="opt-badge">✓</span>'; }
+      else if (isSelected && !isCorrect) { cls+=' ko'; badge='<span class="opt-badge">✕</span>'; }
+      else if (isCorrect && !answeredCorrectly) cls+=' neutral-ok';
+    } else {
+      if (adp.answer===k) cls+=' sel';
+    }
+    html += `<button class="${cls}" data-opt="${k}" ${adp.answered?'disabled':''}>
+      <span class="opt-k">${k}</span>${v}${badge}
+    </button>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderGAPInput(q) {
+  if (q.excerpt) return '';
+  return `<input class="gap-inp" id="gapInp" type="text" placeholder="Συμπλήρωσε…" style="width:100%;margin-top:4px" autocomplete="off" ${adp.answered?'disabled':''}>`;
+}
+
+function renderExcerptCLK(q) {
+  const targets = q.targets.map(t => t.trim().toLowerCase());
+  const text = q.excerpt;
+  const tokens = text.split(/(\s+)/);
+
+  // Καθαρή λέξη για κάθε token
+  const words = tokens.map(t => /^\s+$/.test(t) ? null : t.replace(/[.,;:!?«»"'()\[\]]/g, '').toLowerCase());
+
+  // Χτίζουμε wordPhraseMap: ποιο token ανήκει σε ποια target-φράση
+  const wordPhraseMap = {};
+  const wordOnlyIdxs = tokens.reduce((acc, t, i) => { if (!/^\s+$/.test(t)) acc.push(i); return acc; }, []);
+  targets.forEach(target => {
+    const parts = target.split(' ').filter(Boolean);
+    if (parts.length <= 1) return;
+    for (let wi = 0; wi <= wordOnlyIdxs.length - parts.length; wi++) {
+      const match = parts.every((p, pi) => words[wordOnlyIdxs[wi + pi]] === p);
+      if (match) { for (let pi = 0; pi < parts.length; pi++) wordPhraseMap[wordOnlyIdxs[wi + pi]] = target; }
+    }
+  });
+
+  let html = '<div class="exc clk" id="excClk">';
+  tokens.forEach((tok, ti) => {
+    if (/^\s+$/.test(tok)) { html += tok; return; }
+    const clean = words[ti];
+    const phraseTarget = wordPhraseMap[ti];   // φράση-στόχος αν ανήκει σε φράση
+    const isSingleTarget = targets.includes(clean) && !phraseTarget;
+    const isAnyTarget = !!(phraseTarget || isSingleTarget);
+
+    // Έχει επιλεχθεί από τον χρήστη;
+    const isSelPhrase = phraseTarget && adp.clkSelected.includes(phraseTarget);
+    const isSelWord = !phraseTarget && adp.clkSelected.some(s => s.toLowerCase() === clean);
+    const isSelected = isSelPhrase || isSelWord;
+
+    let cls = 'tok';
+    if (adp.answered) {
+      if (isAnyTarget)                   cls += ' hit';   // σωστό → πράσινο
+      else if (isSelected && !isAnyTarget) cls += ' miss'; // επιλέχθηκε λάθος → κόκκινο
+      // υπόλοιπες: αμετάβλητες
+    } else {
+      if (isSelected) cls += ' sel'; // επιλεγμένο → μπλε
+    }
+
+    // ΟΛΕΣ οι λέξεις παίρνουν data-word ώστε να είναι clickable
+    const dataAttr = phraseTarget
+      ? `data-phrase="${phraseTarget.replace(/"/g, '&quot;')}" data-word="${tok.replace(/"/g, '&quot;')}"`
+      : `data-word="${tok.replace(/"/g, '&quot;')}"`;
+    html += `<span class="${cls}" ${dataAttr}>${tok}</span>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderExcerptGAP(q) {
+  if (!q.excerpt) return '';
+  const GAP_MARKER = '__________';
+  const parts = q.excerpt.split(GAP_MARKER);
+  if (parts.length < 2) {
+    const p2 = q.excerpt.split('_____');
+    if (p2.length>=2) return `<div class="exc-gap">${p2[0]}<input class="gap-inp" id="gapInp" type="text" placeholder="…" autocomplete="off" ${adp.answered?'disabled':''}>${p2.slice(1).join('_____')}</div>`;
+    return `<div class="exc">${q.excerpt}</div>`;
+  }
+  return `<div class="exc-gap">${parts[0]}<input class="gap-inp" id="gapInp" type="text" placeholder="…" autocomplete="off" ${adp.answered?'disabled':''}>${parts.slice(1).join(GAP_MARKER)}</div>`;
+}
+
+function renderDD(q) {
+  if (!q._shuffledRight) q._shuffledRight = shuffle(q.rightItems.map((r,i)=>({r,i})));
+  const shuffledRight = q._shuffledRight;
+  let html = '<div class="dd-wrap">';
+  if (adp.answered) {
+    const correctPairs = parseCorrectDD(q.correct, q.leftItems, q.rightItems);
+    html += '<div class="dd-slots">';
+    shuffledRight.forEach(({r,i}) => {
+      const usedByLeft = Object.entries(adp.ddPairs).find(([,ri])=>ri===i);
+      const li = usedByLeft ? parseInt(usedByLeft[0]) : null;
+      const filledText = li !== null ? q.leftItems[li] : '—';
+      const correctRi = li !== null ? correctPairs?.[li] : null;
+      const isOk = correctRi === i;
+      html += `<div class="dd-slot-row"><span class="dd-slot-lbl">${r}</span><div class="dd-slot ${isOk?'ok':'ko'}">${filledText}</div></div>`;
+    });
+    html += '</div>';
+    const allOk = q.leftItems.every((_,li)=>adp.ddPairs[li]===correctPairs?.[li]);
+    if (!allOk && correctPairs) {
+      html += '<div class="dd-correct-show"><p>✅ Σωστές αντιστοιχίσεις:</p>';
+      q.leftItems.forEach((l,li)=>{
+        const ri = correctPairs[li];
+        html += `<div class="dd-correct-row"><div class="dl">${l}</div><div class="da">→</div><div class="dr">${q.rightItems[ri]||'—'}</div></div>`;
+      });
+      html += '</div>';
+    }
+  } else {
+    html += '<p class="dd-hint">🖱️ Σύρε chip στη σωστή θέση · Κινητό: πάτα chip → πάτα θέση</p>';
+    html += '<div class="dd-chips">';
+    q.leftItems.forEach((l,li)=>{
+      const used = adp.ddPairs[li] !== undefined;
+      html += `<div class="dd-chip ${used?'used':''}" draggable="${!used}" data-dd-li="${li}">${l}</div>`;
+    });
+    html += '</div><div class="dd-slots">';
+    shuffledRight.forEach(({r,i})=>{
+      const usedByLeft = Object.entries(adp.ddPairs).find(([,ri])=>ri===i);
+      const isFilled = usedByLeft !== undefined;
+      const filledLi = isFilled ? parseInt(usedByLeft[0]) : null;
+      const filledText = isFilled ? q.leftItems[filledLi] : '↓ τοποθέτησε εδώ';
+      html += `<div class="dd-slot-row"><span class="dd-slot-lbl">${r}</span><div class="dd-slot ${isFilled?'filled':''}" data-dd-ri="${i}">${filledText}</div></div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════
+function attachEvents() {
+  // Home
+  const btnStartAdp = document.getElementById('btnStartAdp');
+  if (btnStartAdp) btnStartAdp.addEventListener('click', startAdaptive);
+  const btnStartDrill = document.getElementById('btnStartDrill');
+  if (btnStartDrill) btnStartDrill.addEventListener('click', ()=>{ screen='drill_setup'; render(); });
+  const btnStartSel = document.getElementById('btnStartSel');
+  if (btnStartSel) btnStartSel.addEventListener('click', ()=>{ screen='sel_setup'; render(); });
+  const btnStartPrs = document.getElementById('btnStartPrs');
+  if (btnStartPrs) btnStartPrs.addEventListener('click', ()=>{ screen='prs_setup'; render(); });
+
+  // ── ΕΞΑΣΚΗΣΗ setup filters ──
+  document.querySelectorAll('[data-drll-diff]').forEach(b =>
+    b.addEventListener('click', ()=>{ const v=b.dataset.drllDiff; drll.filterDiff=v==='all'?'all':parseInt(v); render(); }));
+  document.querySelectorAll('[data-drll-count]').forEach(b =>
+    b.addEventListener('click', ()=>{ drll.filterCount=parseInt(b.dataset.drllCount); render(); }));
+  const btnDrillStart = document.getElementById('btnDrillStart');
+  if (btnDrillStart) btnDrillStart.addEventListener('click', startDrillSession);
+  const btnDrillHome = document.getElementById('btnDrillHome');
+  if (btnDrillHome) btnDrillHome.addEventListener('click', ()=>{ screen='home'; render(); });
+  // Παρουσίαση filters
+  // ΕΠΙΛΟΓΗ events
+  document.querySelectorAll('[data-sel-type]').forEach(b =>
+    b.addEventListener('click', ()=>{ sel.filterType=b.dataset.selType; sel.queue=[]; render(); }));
+  document.querySelectorAll('[data-sel-diff]').forEach(b =>
+    b.addEventListener('click', ()=>{ const v=b.dataset.selDiff; sel.filterDiff=v==='all'?'all':parseInt(v); sel.queue=[]; render(); }));
+  document.querySelectorAll('[data-sel-count]').forEach(b =>
+    b.addEventListener('click', ()=>{ sel.filterCount=parseInt(b.dataset.selCount); sel.queue=[]; render(); }));
+  const btnSelHome = document.getElementById('btnSelHome');
+  if (btnSelHome) btnSelHome.addEventListener('click', ()=>{ screen='home'; render(); });
+  const btnSelStart = document.getElementById('btnSelStart');
+  if (btnSelStart) btnSelStart.addEventListener('click', startSelSession);
+  const btnSelPrint = document.getElementById('btnSelPrint');
+  if (btnSelPrint) btnSelPrint.addEventListener('click', () => {
+    // Κλήρωση και αποθήκευση — το quiz θα χρησιμοποιήσει τις ίδιες ερωτήσεις
+    prepareSelQueue();
+    openPrintModal(sel.queue);
+  });
+  // Sel answer events
+  document.querySelectorAll('[data-sel-mc]').forEach(b =>
+    b.addEventListener('click', ()=>{ if(!sel.answered){ sel.answer=b.dataset.selMc; render(); } }));
+  const selGapInp = document.getElementById('selGapInp');
+  if (selGapInp) {
+    selGapInp.addEventListener('input', ()=>{ sel.answer=selGapInp.value; const btn=document.getElementById('btnSelCheck'); if(btn) btn.disabled=!sel.answer.trim(); });
+    selGapInp.addEventListener('keydown', e=>{ if(e.key==='Enter'&&canSelCheck()) doSelCheck(); });
+  }
+  // CLK tokens — sel (φράσεις + λέξεις)
+  document.querySelectorAll('[data-sel-phrase]').forEach(b => {
+    b.addEventListener('click', ()=>{
+      if (sel.answered) return;
+      const phrase = b.dataset.selPhrase;
+      const idx = sel.clkSelected.indexOf(phrase);
+      if (idx!==-1) sel.clkSelected.splice(idx,1); else sel.clkSelected.push(phrase);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-sel-word]').forEach(b => {
+    b.addEventListener('click', ()=>{
+      if (sel.answered) return;
+      const w = b.dataset.selWord.replace(/[.,;:!?«»"'()\[\]]/g,'').trim();
+      const idx = sel.clkSelected.indexOf(w);
+      if (idx!==-1) sel.clkSelected.splice(idx,1); else sel.clkSelected.push(w);
+      render();
+    });
+  });
+  // DD sel
+  let _selDdDrag = null;
+  document.querySelectorAll('[data-sel-dd-li]').forEach(el => {
+    const li = parseInt(el.dataset.selDdLi);
+    if (el.classList.contains('used')) return;
+    el.addEventListener('dragstart', e=>{ _selDdDrag=li; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('dragend', ()=>el.classList.remove('dragging'));
+    el.addEventListener('click', ()=>{ if(sel.answered) return; _selDdDrag=li; document.querySelectorAll('[data-sel-dd-li]').forEach(c=>c.classList.remove('dragging')); el.classList.add('dragging'); });
+  });
+  document.querySelectorAll('[data-sel-dd-ri]').forEach(slot => {
+    const ri = parseInt(slot.dataset.selDdRi);
+    slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
+    slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
+    slot.addEventListener('drop', e=>{ e.preventDefault(); slot.classList.remove('over'); if(_selDdDrag===null) return; Object.keys(sel.ddPairs).forEach(k=>{ if(sel.ddPairs[k]===ri) delete sel.ddPairs[k]; }); sel.ddPairs[_selDdDrag]=ri; _selDdDrag=null; render(); });
+    slot.addEventListener('click', ()=>{ if(sel.answered) return; if(_selDdDrag!==null){ Object.keys(sel.ddPairs).forEach(k=>{ if(sel.ddPairs[k]===ri) delete sel.ddPairs[k]; }); sel.ddPairs[_selDdDrag]=ri; _selDdDrag=null; document.querySelectorAll('[data-sel-dd-li]').forEach(c=>c.classList.remove('dragging')); render(); } else { const ub=Object.entries(sel.ddPairs).find(([,v])=>v===ri); if(ub){ delete sel.ddPairs[parseInt(ub[0])]; render(); } } });
+  });
+  const btnSelCheck = document.getElementById('btnSelCheck');
+  if (btnSelCheck) btnSelCheck.addEventListener('click', doSelCheck);
+  const btnSelNext = document.getElementById('btnSelNext');
+  if (btnSelNext) btnSelNext.addEventListener('click', doSelNext);
+  const btnSelAgain = document.getElementById('btnSelAgain');
+  if (btnSelAgain) btnSelAgain.addEventListener('click', ()=>{ screen='sel_setup'; render(); });
+  const btnSelHome2 = document.getElementById('btnSelHome2');
+  if (btnSelHome2) btnSelHome2.addEventListener('click', ()=>{ screen='home'; render(); });
+
+  document.querySelectorAll('[data-prs-domi]').forEach(b =>
+    b.addEventListener('click', ()=>{ prs.filterDomi=b.dataset.prsDomi; render(); }));
+  document.querySelectorAll('[data-prs-tropos]').forEach(b =>
+    b.addEventListener('click', ()=>{
+      const v = b.dataset.prsTropos;
+      if (v === 'all') { prs.filterTropos = []; }
+      else {
+        const idx = prs.filterTropos.indexOf(v);
+        if (idx !== -1) prs.filterTropos.splice(idx, 1);
+        else prs.filterTropos.push(v);
+      }
+      render();
+    }));
+  document.querySelectorAll('[data-prs-count]').forEach(b =>
+    b.addEventListener('click', ()=>{ prs.filterCount=parseInt(b.dataset.prsCount); render(); }));
+  document.querySelectorAll('[data-prs-diff]').forEach(b =>
+    b.addEventListener('click', ()=>{
+      const v = b.dataset.prsDiff;
+      if (v === 'all') { prs.filterDiff = []; }
+      else {
+        const n = parseInt(v);
+        const idx = prs.filterDiff.indexOf(n);
+        if (idx !== -1) prs.filterDiff.splice(idx, 1);
+        else prs.filterDiff.push(n);
+      }
+      render();
+    }));
+  const btnPrsStart = document.getElementById('btnPrsStart');
+  if (btnPrsStart) btnPrsStart.addEventListener('click', startPrsSession);
+  const btnPrsHome = document.getElementById('btnPrsHome');
+  if (btnPrsHome) btnPrsHome.addEventListener('click', ()=>{ screen='home'; render(); });
+
+  // ── ΕΞΑΣΚΗΣΗ quiz ──
+  document.querySelectorAll('[data-drll-domi-ans]').forEach(b =>
+    b.addEventListener('click', ()=>{ if(!drll.answered){ drll.answerDomi=b.dataset.drllDomiAns; render(); } }));
+  document.querySelectorAll('[data-drll-tropos-ans]').forEach(b =>
+    b.addEventListener('click', ()=>{
+      if (drll.answered) return;
+      const v = b.dataset.drllTroposAns;
+      const idx = drll.answerTropos.indexOf(v);
+      if (idx !== -1) drll.answerTropos.splice(idx, 1);
+      else drll.answerTropos.push(v);
+      render();
+    }));
+  const btnDrillCheck = document.getElementById('btnDrillCheck');
+  if (btnDrillCheck) btnDrillCheck.addEventListener('click', doDrillCheck);
+  // Παρουσίαση answers
+  document.querySelectorAll('[data-prs-domi-ans]').forEach(b =>
+    b.addEventListener('click', ()=>{ if(!prs.answered){ prs.answerDomi=b.dataset.prsDomiAns; render(); } }));
+  document.querySelectorAll('[data-prs-tropos-ans]').forEach(b =>
+    b.addEventListener('click', ()=>{ if(!prs.answered){ prs.answerTropos=b.dataset.prsTroposAns; render(); } }));
+  const btnPrsCheck = document.getElementById('btnPrsCheck');
+  if (btnPrsCheck) btnPrsCheck.addEventListener('click', doPrsCheck);
+  const btnPrsSkip = document.getElementById('btnPrsSkip');
+  if (btnPrsSkip) btnPrsSkip.addEventListener('click', doPrsSkip);
+  const btnPrsNext = document.getElementById('btnPrsNext');
+  if (btnPrsNext) btnPrsNext.addEventListener('click', doPrsNext);
+
+  // ── ΕΞΑΣΚΗΣΗ results ──
+  const btnDrillAgain = document.getElementById('btnDrillAgain');
+  if (btnDrillAgain) btnDrillAgain.addEventListener('click', ()=>{ screen='drill_setup'; render(); });
+  const btnDrillHome2 = document.getElementById('btnDrillHome2');
+  if (btnDrillHome2) btnDrillHome2.addEventListener('click', ()=>{ screen='home'; render(); });
+  const btnPrsAgain = document.getElementById('btnPrsAgain');
+  if (btnPrsAgain) btnPrsAgain.addEventListener('click', ()=>{ screen='prs_setup'; render(); });
+  const btnPrsHome2 = document.getElementById('btnPrsHome2');
+  if (btnPrsHome2) btnPrsHome2.addEventListener('click', ()=>{ screen='home'; render(); });
+
+  // Theory toggle
+  const btnTh = document.getElementById('btnTheory');
+  if (btnTh) btnTh.addEventListener('click', ()=>{ adp.showTheory=!adp.showTheory; render(); });
+
+  // MC/YN options
+  document.querySelectorAll('[data-opt]').forEach(b =>
+    b.addEventListener('click', ()=>{ if(!adp.answered){ adp.answer=b.dataset.opt; render(); } }));
+
+  // CLK tokens
+  document.querySelectorAll('[data-word]').forEach(b =>
+    b.addEventListener('click', ()=>{
+      if (adp.answered) return;
+      if (b.dataset.phrase) {
+        const phrase = b.dataset.phrase;
+        const idx = adp.clkSelected.indexOf(phrase);
+        if (idx!==-1) adp.clkSelected.splice(idx,1); else adp.clkSelected.push(phrase);
+      } else {
+        const w = b.dataset.word.replace(/[.,;:!?«»"'()\[\]]/g,'').trim();
+        const idx = adp.clkSelected.indexOf(w);
+        if (idx!==-1) adp.clkSelected.splice(idx,1); else adp.clkSelected.push(w);
+      }
+      render();
+    }));
+
+  // DD drag & drop
+  let _ddDrag = null, _ddChip = null;
+  document.querySelectorAll('[data-dd-li]').forEach(el => {
+    const li = parseInt(el.dataset.ddLi);
+    if (el.classList.contains('used')) return;
+    el.addEventListener('dragstart', e=>{ _ddDrag=li; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(li)); });
+    el.addEventListener('dragend', ()=>el.classList.remove('dragging'));
+    el.addEventListener('click', ()=>{
+      if (adp.answered) return;
+      if (_ddChip===li) { _ddChip=null; document.querySelectorAll('[data-dd-li]').forEach(c=>c.classList.remove('dragging')); }
+      else { _ddChip=li; document.querySelectorAll('[data-dd-li]').forEach(c=>c.classList.remove('dragging')); el.classList.add('dragging'); }
+    });
+  });
+  document.querySelectorAll('[data-dd-ri]').forEach(slot => {
+    const ri = parseInt(slot.dataset.ddRi);
+    slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
+    slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
+    slot.addEventListener('drop', e=>{
+      e.preventDefault(); slot.classList.remove('over');
+      if (_ddDrag===null) return;
+      Object.keys(adp.ddPairs).forEach(k=>{ if(adp.ddPairs[k]===ri) delete adp.ddPairs[k]; });
+      adp.ddPairs[_ddDrag]=ri; _ddDrag=null; render();
+    });
+    slot.addEventListener('click', ()=>{
+      if (adp.answered) return;
+      if (_ddChip!==null) {
+        Object.keys(adp.ddPairs).forEach(k=>{ if(adp.ddPairs[k]===ri) delete adp.ddPairs[k]; });
+        adp.ddPairs[_ddChip]=ri; _ddChip=null;
+        document.querySelectorAll('[data-dd-li]').forEach(c=>c.classList.remove('dragging'));
+        render();
+      } else {
+        const ub = Object.entries(adp.ddPairs).find(([,v])=>v===ri);
+        if (ub) { delete adp.ddPairs[parseInt(ub[0])]; render(); }
+      }
+    });
+  });
+
+  // GAP input
+  const gapInp = document.getElementById('gapInp');
+  if (gapInp) {
+    if (adp.answer) gapInp.value = adp.answer;
+    gapInp.addEventListener('input', ()=>{ adp.answer=gapInp.value; const btn=document.getElementById('btnCheck'); if(btn) btn.disabled=!adp.answer.trim(); });
+    gapInp.addEventListener('keydown', e=>{ if(e.key==='Enter'&&adp.answer) doCheck(); });
+  }
+
+  // Check / Next
+  const btnCheck = document.getElementById('btnCheck');
+  if (btnCheck) btnCheck.addEventListener('click', doCheck);
+  const btnNext = document.getElementById('btnNext');
+  if (btnNext) btnNext.addEventListener('click', doNext);
+
+  // Transitions
+  const btnNextCat = document.getElementById('btnNextCat');
+  if (btnNextCat) btnNextCat.addEventListener('click', startCatMain);
+  const btnHomeFromAdp = document.getElementById('btnHomeFromAdp');
+  if (btnHomeFromAdp) btnHomeFromAdp.addEventListener('click', ()=>{ screen='home'; render(); });
+
+  // Theory wall choices
+  const btnRetryAgain = document.getElementById('btnRetryAgain');
+  if (btnRetryAgain) btnRetryAgain.addEventListener('click', ()=>{
+    // Reset usedIds for this cat and start fresh
+    const catKey = catOrder[adp.catIdx];
+    adp.usedIds[catKey] = new Set();
+    adp.catLog[catKey] = undefined;
+    delete adp.catLog[catKey];
+    mainQueueLog[catKey] = null;
+    startCatMain();
+  });
+  const btnSkipToNext = document.getElementById('btnSkipToNext');
+  if (btnSkipToNext) btnSkipToNext.addEventListener('click', ()=>{
+    if (adp.catIdx < catOrder.length-1) { adp.catIdx++; screen='cat_transition'; }
+    else { screen='adp_results'; }
+    render();
+  });
+
+  // Results
+  const btnNewAdp = document.getElementById('btnNewAdp');
+  if (btnNewAdp) btnNewAdp.addEventListener('click', startAdaptive);
+  const btnHomeFromRes = document.getElementById('btnHomeFromRes');
+  if (btnHomeFromRes) btnHomeFromRes.addEventListener('click', ()=>{ screen='home'; render(); });
+}
+
+// ══════════════════════════════════════════════
+// CHECK / NEXT ACTIONS
+// ══════════════════════════════════════════════
+function doCheck() {
+  const q = adp.queue[adp.qIdx];
+  if (q.type==='GAP') { const inp=document.getElementById('gapInp'); adp.answer=inp?inp.value.trim():adp.answer; }
+  if (q.type==='CLK') adp.answer=[...adp.clkSelected];
+  if (q.type==='DD') adp.answer={...adp.ddPairs};
+  adp.answered = true;
+  const ok = checkAnswer(q, adp.answer);
+  adp.roundResults.push(ok);
+  adp.totalAnswered++;
+  if (ok) adp.totalCorrect++;
+  render();
+  playSound(ok ? 'correct' : 'wrong');
+  const isLast = adp.qIdx === adp.queue.length - 1;
+  const delay = ok ? 2500 : (isLast ? 3500 : 0);
+  // Αυτόματη μετάβαση: αμέσως για ενδιάμεσες σωστές, με καθυστέρηση για λάθος τελευταίας
+  if (ok || isLast) {
+    if (adp._autoTimer) clearTimeout(adp._autoTimer);
+    adp._autoTimer = setTimeout(()=>{ if(adp.answered) doNext(); }, delay);
+  }
+}
+
+function doNext() {
+  if (adp._autoTimer) { clearTimeout(adp._autoTimer); adp._autoTimer=null; }
+
+  // Store main queue for retry reference
+  if (adp.phase === 'main') {
+    const catKey = catOrder[adp.catIdx];
+    if (!mainQueueLog[catKey]) mainQueueLog[catKey] = [...adp.queue];
+  }
+
+  if (adp.qIdx < adp.queue.length-1) {
+    // More questions in this round
+    adp.qIdx++;
+    adp.answer=null; adp.answered=false;
+    adp.ddPairs={}; adp.ddSelected=null; adp.clkSelected=[];
+    render();
+  } else {
+    // Round finished — evaluate
+    finishRound();
+  }
+}
+
+
+
+
+// ══════════════════════════════════════════════
+// ΕΠΙΛΟΓΗ — SETUP & LOGIC
+// ══════════════════════════════════════════════
+function getSelPool() {
+  return allQ.filter(q => {
+    if (sel.filterType !== 'all' && q.type !== sel.filterType) return false;
+    if (sel.filterDiff !== 'all' && q.diff !== sel.filterDiff) return false;
+    return true;
+  });
+}
+
+function prepareSelQueue() {
+  const pool = getSelPool();
+  const count = sel.filterCount === 0 ? pool.length : Math.min(sel.filterCount, pool.length);
+  sel.queue = shuffle(pool).slice(0, count);
+}
+
+function startSelSession() {
+  // Αν δεν έχει γίνει εκτύπωση πρώτα, κάνε κλήρωση τώρα
+  if (!sel.queue || sel.queue.length === 0) prepareSelQueue();
+  sel.qIdx = 0;
+  sel.answer = null;
+  sel.answered = false;
+  sel.ddPairs = {};
+  sel.clkSelected = [];
+  sel.correct = 0;
+  sel.total = 0;
+  sel.results = [];
+  if (sel._autoTimer) { clearTimeout(sel._autoTimer); sel._autoTimer = null; }
+  screen = 'sel';
+  render();
+}
+
+function doSelCheck() {
+  if (sel.answered) return;
+  const q = sel.queue[sel.qIdx];
+  if (q.type === 'CLK') sel.answer = [...sel.clkSelected];
+  if (q.type === 'DD') sel.answer = {...sel.ddPairs};
+  const ok = checkAnswer(q, sel.answer);
+  sel.answered = true;
+  sel.results.push({ok});
+  sel.total++;
+  if (ok) sel.correct++;
+  render();
+  playSound(ok ? 'correct' : 'wrong');
+  if (ok) {
+    if (sel._autoTimer) clearTimeout(sel._autoTimer);
+    sel._autoTimer = setTimeout(() => doSelNext(), 2500);
+  }
+}
+
+function doSelNext() {
+  if (sel._autoTimer) { clearTimeout(sel._autoTimer); sel._autoTimer = null; }
+  if (sel.qIdx < sel.queue.length - 1) {
+    sel.qIdx++;
+    sel.answer = null;
+    sel.answered = false;
+    sel.ddPairs = {};
+    sel.clkSelected = [];
+    render();
+  } else {
+    screen = 'sel_results';
+    render();
+  }
+}
+
+function canSelCheck() {
+  const q = sel.queue[sel.qIdx];
+  if (!q || sel.answered) return false;
+  if (q.type === 'MC' || q.type === 'YN') return sel.answer !== null;
+  if (q.type === 'CLK') return sel.clkSelected.length > 0;
+  if (q.type === 'DD') return Object.keys(sel.ddPairs).length === q.rightItems.length;
+  if (q.type === 'GAP') return !!(sel.answer && sel.answer.trim());
+  return false;
+}
+
+// ══════════════════════════════════════════════
+// ΕΠΙΛΟΓΗ — RENDER SETUP
+// ══════════════════════════════════════════════
+function renderSelSetup() {
+  const pool = getSelPool();
+
+  const typeMap = [
+    {v:'all', lbl:'Όλοι'},
+    {v:'YN',  lbl:'Ναι / Όχι'},
+    {v:'MC',  lbl:'Πολλαπλής Επιλογής'},
+    {v:'CLK', lbl:'Εντοπισμός'},
+    {v:'DD',  lbl:'Αντιστοίχιση'},
+    {v:'GAP', lbl:'Συμπλήρωση'},
+  ];
+  const typeChips = typeMap.map(({v, lbl}) => {
+    const cnt = v==='all' ? allQ.length : allQ.filter(q=>q.type===v).length;
+    return `<button class="fchip ${sel.filterType===v?'active':''}" data-sel-type="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+  }).join('');
+
+  const diffMap = [
+    {v:'all', lbl:'Όλοι'},
+    {v:1, lbl:'1 — Εύκολος'},
+    {v:2, lbl:'2 — Μέτριος'},
+    {v:3, lbl:'3 — Δύσκολος'},
+  ];
+  const diffChips = diffMap.map(({v, lbl}) => {
+    const cnt = v==='all' ? allQ.length : allQ.filter(q=>q.diff===v).length;
+    return `<button class="fchip ${sel.filterDiff===v?'active':''}" data-sel-diff="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+  }).join('');
+
+  const countMap = [{n:10,lbl:'10'},{n:20,lbl:'20'},{n:0,lbl:'Όλες'}];
+  const countChips = countMap.map(({n,lbl}) =>
+    `<button class="fchip ${sel.filterCount===n?'active':''}" data-sel-count="${n}">${lbl}</button>`
+  ).join('');
+
+  const canStart = pool.length > 0;
+  const actualCount = sel.filterCount === 0 ? pool.length : Math.min(sel.filterCount, pool.length);
+
+  return `
+  <div class="setup-screen">
+  <div class="adp-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>🎲 Επιλογή</h2>
+      <p style="font-size:.82rem;opacity:.85">Επίλεξε φίλτρα και ξεκίνα</p>
+    </div>
+    <button id="btnSelHome" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🏠 Αρχική</button>
+  </div>
+  <div class="card setup-card">
+    <div class="setup-sections">
+      <div class="drll-setup-section">
+        <h3>❓ Τύπος Ερώτησης</h3>
+        <div class="filter-chips">${typeChips}</div>
+      </div>
+      <div class="drll-setup-section">
+        <h3>⭐ Βαθμός Δυσκολίας</h3>
+        <div class="filter-chips">${diffChips}</div>
+      </div>
+      <div class="drll-setup-section">
+        <h3>🔢 Αριθμός Ερωτήσεων</h3>
+        <div class="filter-chips">${countChips}</div>
+      </div>
+    </div>
+    <div>
+      <div class="info ${canStart?'success':'warn'}" style="margin-top:4px">
+        ${canStart
+          ? `✅ Βρέθηκαν <strong>${pool.length}</strong> ερωτήσεις (θα εμφανιστούν <strong>${actualCount}</strong>)`
+          : '⚠️ Δεν βρέθηκαν ερωτήσεις με αυτά τα φίλτρα'}
+      </div>
+      <button class="btn-go" id="btnSelStart" ${canStart?'':'disabled'} style="margin-top:6px">
+        Ξεκινήστε →
+      </button>
+      <button class="btn-print" id="btnSelPrint" ${canStart?'':'disabled'}>
+        🖨️ Εκτύπωση Φύλλου Εργασίας
+      </button>
+    </div>
+  </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// ΕΠΙΛΟΓΗ — RENDER QUIZ
+// ══════════════════════════════════════════════
+function renderSel() {
+  const q = sel.queue[sel.qIdx];
+  const total = sel.queue.length;
+  const isOk = sel.answered ? checkAnswer(q, sel.answer) : false;
+
+  // Progress dots
+  let dots = '';
+  for (let i = 0; i < total; i++) {
+    let cls = 'drll-pd';
+    if (i < sel.results.length) cls += sel.results[i].ok ? ' ok' : ' ko';
+    else if (i === sel.qIdx) cls += ' cur';
+    dots += `<div class="${cls}"></div>`;
+  }
+
+  const scoreDisplay = sel.total > 0 ? `${sel.correct} / ${sel.total}` : '—';
+
+  // Excerpt
+  let excerptHtml = '';
+  if (q.excerpt) {
+    excerptHtml = `<div class="card" style="margin-bottom:14px">
+      <div class="exc${q.type==='CLK'?' clk':''}">${renderSelExcerpt(q)}</div>
+    </div>`;
+  }
+
+  // Question body
+  const qBody = renderSelQuestionBody(q);
+  const ok2Check = canSelCheck();
+
+  return `
+  <div class="adp-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>🎲 Επιλογή</h2>
+      <p style="font-size:.82rem;opacity:.85">Ερώτηση ${sel.qIdx+1} / ${total}</p>
+    </div>
+    <button onclick="screen='home';render();" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🏠 Αρχική</button>
+  </div>
+
+  <div class="drll-score-bar">
+    <div>
+      <div class="drll-score-lbl">Σωστές</div>
+      <div class="drll-score-pts" style="color:var(--indigo)">${scoreDisplay}</div>
+    </div>
+    <div class="drll-prog">${dots}</div>
+    <div style="text-align:right">
+      <div class="drll-score-lbl">Τύπος</div>
+      <div style="font-weight:700;color:var(--ink);font-size:.82rem">${qTypeLabel(q.type)}</div>
+    </div>
+  </div>
+
+  ${excerptHtml}
+
+  <div class="answers-card ${sel.answered ? (isOk ? 'answered-ok' : 'answered-ko') : ''}">
+    <p class="q-lbl">Ερώτηση</p>
+    <p class="q-txt">${q.q}</p>
+    ${qBody}
+  </div>
+
+  ${!sel.answered
+    ? `<button class="btn-check" id="btnSelCheck" ${ok2Check?'':'disabled'} style="margin-top:10px">Έλεγξε</button>`
+    : (!isOk ? `<button class="btn-next" id="btnSelNext" style="margin-top:10px">Επόμενη →</button>` : '')
+  }
+  `;
+}
+
+function renderSelExcerpt(q) {
+  if (q.type !== 'CLK') return q.excerpt;
+  const targets = q.targets.map(t => t.trim().toLowerCase());
+  const text = q.excerpt;
+  const tokens = text.split(/(\s+)/);
+  const words = tokens.map(t => /^\s+$/.test(t) ? null : t.replace(/[.,;:!?«»"'()\[\]]/g, '').toLowerCase());
+
+  // Χτίζουμε wordPhraseMap για φράσεις
+  const wordPhraseMap = {};
+  const wordOnlyIdxs = tokens.reduce((acc, t, i) => { if (!/^\s+$/.test(t)) acc.push(i); return acc; }, []);
+  targets.forEach(target => {
+    const parts = target.split(' ').filter(Boolean);
+    if (parts.length <= 1) return;
+    for (let wi = 0; wi <= wordOnlyIdxs.length - parts.length; wi++) {
+      const match = parts.every((p, pi) => words[wordOnlyIdxs[wi + pi]] === p);
+      if (match) { for (let pi = 0; pi < parts.length; pi++) wordPhraseMap[wordOnlyIdxs[wi + pi]] = target; }
+    }
+  });
+
+  let html = '';
+  tokens.forEach((tok, ti) => {
+    if (/^\s+$/.test(tok)) { html += tok; return; }
+    const clean = words[ti];
+    const phraseTarget = wordPhraseMap[ti];
+    const isSingleTarget = targets.includes(clean) && !phraseTarget;
+    const isAnyTarget = !!(phraseTarget || isSingleTarget);
+
+    const isSelPhrase = phraseTarget && sel.clkSelected.includes(phraseTarget);
+    const isSelWord = !phraseTarget && sel.clkSelected.some(s => s.toLowerCase() === clean);
+    const isSelected = isSelPhrase || isSelWord;
+
+    let cls = 'tok';
+    if (sel.answered) {
+      if (isAnyTarget) cls += ' hit';
+      else if (isSelected && !isAnyTarget) cls += ' miss';
+    } else {
+      if (isSelected) cls += ' sel';
+    }
+
+    const dataAttr = phraseTarget
+      ? `data-sel-phrase="${phraseTarget.replace(/"/g, '&quot;')}"`
+      : `data-sel-word="${tok.replace(/"/g, '&quot;')}"`;
+    html += `<span class="${cls}" ${dataAttr}>${tok}</span>`;
+  });
+  return html;
+}
+
+function renderSelQuestionBody(q) {
+  if (q.type === 'MC' || q.type === 'YN') {
+    const opts = q.type==='YN'
+      ? [{k:'Α',v:'Ναι'},{k:'Β',v:'Όχι'}]
+      : [{k:'Α',v:q.optA},{k:'Β',v:q.optB},{k:'Γ',v:q.optC},{k:'Δ',v:q.optD}].filter(o=>o.v);
+    return '<div class="opts">' + opts.map(o => {
+      let cls = 'opt';
+      if (sel.answered) {
+        const isCorrect = q.correct.trim().toUpperCase() === o.k;
+        const isSelected = sel.answer === o.k;
+        if (isSelected && isCorrect) cls += ' ok';
+        else if (isSelected && !isCorrect) cls += ' ko';
+        else if (isCorrect) cls += ' neutral-ok';
+      } else {
+        if (sel.answer === o.k) cls += ' sel';
+      }
+      return `<button class="${cls}" data-sel-mc="${o.k}" ${sel.answered?'disabled':''}><span class="opt-k">${o.k}</span>${o.v}</button>`;
+    }).join('') + '</div>';
+  }
+  if (q.type === 'GAP') {
+    const val = sel.answer || '';
+    const inputCls = sel.answered ? (checkAnswer(q, val)?'':'ko') : '';
+    const correct = sel.answered && !checkAnswer(q,val) ? `<span style="color:var(--green);font-weight:600;margin-left:8px">→ ${q.correct}</span>` : '';
+    return `<div style="margin-top:8px"><input id="selGapInp" class="gap-inp ${inputCls}" type="text" placeholder="Απάντησε εδώ…" value="${val}" ${sel.answered?'disabled':''} style="min-width:180px">${correct}</div>`;
+  }
+  if (q.type === 'CLK') {
+    return `<p style="color:var(--muted);font-size:.82rem;margin-top:6px">Επίλεξε τις λέξεις-στόχους στο απόσπασμα</p>`;
+  }
+  if (q.type === 'DD') {
+    const correctPairs = sel.answered ? parseCorrectDD(q.correct, q.leftItems, q.rightItems) : null;
+    const chips = q.leftItems.map((item, li) => {
+      const isUsed = sel.ddPairs[li] !== undefined;
+      return `<div class="dd-chip ${isUsed?'used':''}" data-sel-dd-li="${li}" draggable="true">${item}</div>`;
+    }).join('');
+    const slots = q.rightItems.map((item, ri) => {
+      const assignedLi = Object.entries(sel.ddPairs).find(([,v])=>v===ri);
+      const assignedText = assignedLi ? q.leftItems[parseInt(assignedLi[0])] : null;
+      let slotCls = 'dd-slot';
+      if (sel.answered && correctPairs) {
+        const liForRi = Object.entries(correctPairs).find(([,v])=>v===ri);
+        const correctLi = liForRi ? parseInt(liForRi[0]) : null;
+        const actualLi = assignedLi ? parseInt(assignedLi[0]) : null;
+        if (actualLi !== null) slotCls += (actualLi === correctLi ? ' ok' : ' ko');
+      } else if (assignedText) slotCls += ' filled';
+      return `<div class="dd-slot-row">
+        <span class="dd-slot-lbl">${item}</span>
+        <div class="${slotCls}" data-sel-dd-ri="${ri}">${assignedText || '<span style="color:var(--muted);font-style:italic;font-size:.82rem">Σύρε εδώ</span>'}</div>
+      </div>`;
+    }).join('');
+    return `<div class="dd-wrap"><div class="dd-chips">${chips}</div><div class="dd-slots">${slots}</div></div>`;
+  }
+  return '';
+}
+
+// ══════════════════════════════════════════════
+// ΕΠΙΛΟΓΗ — RENDER RESULTS
+// ══════════════════════════════════════════════
+function renderSelResults() {
+  const total = sel.queue.length;
+  const pct = total > 0 ? Math.round((sel.correct / total) * 100) : 0;
+  const emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '📚';
+  return `
+  <div class="card" style="text-align:center;padding:28px 22px">
+    <div style="font-size:2.8rem;margin-bottom:10px">${emoji}</div>
+    <h2 style="font-family:'IBM Plex Serif',serif;font-size:1.4rem;margin-bottom:16px">Τέλος Επιλογής!</h2>
+    <div class="drll-results-score">
+      <p class="drll-results-big">${sel.correct} / ${total}</p>
+      <p class="drll-results-sub">σωστές (${pct}%)</p>
+    </div>
+    <div class="score-grid" style="margin:14px 0">
+      <div class="sc g"><p>Σωστές</p><p>${sel.correct}</p></div>
+      <div class="sc r"><p>Λάθος</p><p>${total - sel.correct}</p></div>
+      <div class="sc a"><p>Ερωτήσεις</p><p>${total}</p></div>
+    </div>
+  </div>
+  <button class="btn-go" id="btnSelAgain" style="margin-top:4px">🔄 Νέα επιλογή</button>
+  <button class="btn-sec" id="btnSelHome2" style="margin-top:8px">↩ Αρχική</button>`;
+}
+
+// ══════════════════════════════════════════════
+// ΠΑΡΟΥΣΙΑΣΗ (αντίγραφο Εξάσκησης)
+// ══════════════════════════════════════════════
+function getPrsPool() {
+  return allParagraphs.filter(p => {
+    if (prs.filterDomi !== 'all' && p.domi !== prs.filterDomi) return false;
+    if (prs.filterTropos.length > 0 && !prs.filterTropos.some(t => troposMatches(p, t))) return false;
+    if (prs.filterDiff.length > 0 && !prs.filterDiff.includes(p.diff)) return false;
+    return true;
+  });
+}
+
+function startPrsSession() {
+  const pool = getPrsPool();
+  const count = prs.filterCount === 0 ? pool.length : prs.filterCount;
+  prs.queue = shuffle(pool).slice(0, count);
+  prs.qIdx = 0;
+  prs.answerDomi = null;
+  prs.answerTropos = null;
+  prs.answered = false;
+  prs.correct = 0;
+  prs.total = 0;
+  prs.results = [];
+  screen = 'prs';
+  render();
+}
+
+function doPrsCheck() {
+  if (prs.answered) return;
+  const p = prs.queue[prs.qIdx];
+  const domiOk = prs.answerDomi === p.domi;
+  const troposOk = prs.answerTropos !== null && troposMatches(p, prs.answerTropos);
+  prs.answered = true;
+  prs.results.push({domiOk, troposOk});
+  prs.total++;
+  if (domiOk) prs.correct++;
+  if (troposOk) prs.correct++;
+  render();
+  playSound(domiOk && troposOk ? 'correct' : 'wrong');
+}
+
+function doPrsSkip() {
+  if (prs.qIdx < prs.queue.length - 1) {
+    prs.qIdx++;
+    prs.answerDomi = null;
+    prs.answerTropos = null;
+    prs.answered = false;
+    render();
+  } else {
+    screen = 'prs_setup';
+    render();
+  }
+}
+
+function doPrsNext() {
+  if (prs.qIdx < prs.queue.length - 1) {
+    prs.qIdx++;
+    prs.answerDomi = null;
+    prs.answerTropos = null;
+    prs.answered = false;
+    render();
+  } else {
+    screen = 'prs_setup';
+    render();
+  }
+}
+
+function renderPrsSetup() {
+  const pool = getPrsPool();
+  const allTropos = getTroposOptions();
+
+  const domiChips = ['all','Τριμερής','Διμερής'].map(v => {
+    const lbl = v==='all' ? 'Όλες' : v;
+    const cnt = v==='all' ? allParagraphs.length : allParagraphs.filter(p=>p.domi===v).length;
+    return `<button class="fchip ${prs.filterDomi===v?'active':''}" data-prs-domi="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+  }).join('');
+
+  const troposChips = ['all', ...allTropos].map(v => {
+    const lbl = v==='all' ? 'Όλοι' : v;
+    const cnt = v==='all' ? allParagraphs.length : allParagraphs.filter(p=>troposMatches(p,v)).length;
+    const isActive = v==='all' ? prs.filterTropos.length===0 : prs.filterTropos.includes(v);
+    return `<button class="fchip ${isActive?'active':''}" data-prs-tropos="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+  }).join('');
+
+  const countMap = [{n:1,lbl:'1'},{n:10,lbl:'10'},{n:0,lbl:'Όλες'}];
+  const countChips = countMap.map(({n,lbl}) =>
+    `<button class="fchip ${prs.filterCount===n?'active':''}" data-prs-count="${n}">${lbl}</button>`
+  ).join('');
+
+  const diffMap = [
+    {v:'all', lbl:'Όλοι'},
+    {v:1, lbl:'1'},
+    {v:2, lbl:'2'},
+    {v:3, lbl:'3'},
+  ];
+  const diffChips = diffMap.map(({v, lbl}) => {
+    const cnt = v==='all' ? allParagraphs.length : allParagraphs.filter(p=>p.diff===v).length;
+    const isActive = v==='all' ? prs.filterDiff.length===0 : prs.filterDiff.includes(v);
+    return `<button class="fchip ${isActive?'active':''}" data-prs-diff="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+  }).join('');
+
+  const canStart = pool.length > 0;
+  const actualCount = prs.filterCount === 0 ? pool.length : Math.min(prs.filterCount, pool.length);
+
+  return `
+  <div class="setup-screen">
+  <div class="drll-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>📽️ Παρουσίαση</h2>
+      <p>Επίλεξε φίλτρα και ξεκίνα</p>
+    </div>
+    <button id="btnPrsHome" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🏠 Αρχική</button>
+  </div>
+  <div class="card setup-card">
+    <div class="setup-sections">
+      <div class="drll-setup-section">
+        <h3>📐 Δομή</h3>
+        <div class="filter-chips">${domiChips}</div>
+      </div>
+      <div class="drll-setup-section">
+        <h3>📚 Τρόπος Ανάπτυξης</h3>
+        <div class="filter-chips">${troposChips}</div>
+      </div>
+      <div class="drll-setup-section">
+        <h3>🔢 Αριθμός Παραγράφων</h3>
+        <div class="filter-chips">${countChips}</div>
+      </div>
+      <div class="drll-setup-section">
+        <h3>⭐ Βαθμός Δυσκολίας</h3>
+        <div class="filter-chips">${diffChips}</div>
+      </div>
+    </div>
+    <div>
+      <div class="info ${canStart?'success':'warn'}" style="margin-top:4px">
+        ${canStart
+          ? `✅ Διαθέσιμες <strong>${pool.length}</strong> παράγραφοι (θα εμφανιστούν <strong>${actualCount}</strong>)`
+          : '⚠️ Δεν βρέθηκαν παράγραφοι με αυτά τα φίλτρα'}
+      </div>
+      <button class="btn-go" id="btnPrsStart" ${canStart?'':'disabled'} style="margin-top:6px">
+        Ξεκινήστε →
+      </button>
+    </div>
+  </div>
+  </div>`;
+}
+
+function renderPrs() {
+  const p = prs.queue[prs.qIdx];
+  const total = prs.queue.length;
+  const domiOpts = getDomiOptions();
+
+  // Domi options
+  let domiHtml = '<div class="drll-opts">';
+  domiOpts.forEach(v => {
+    let cls = 'drll-opt';
+    if (prs.answered) {
+      const isCorrect = v === p.domi;
+      const isSelected = v === prs.answerDomi;
+      if (isSelected && isCorrect) cls += ' ok';
+      else if (isSelected && !isCorrect) cls += ' ko';
+      else if (isCorrect && !isSelected) cls += ' neutral-ok';
+    } else {
+      if (prs.answerDomi === v) cls += ' sel';
+    }
+    domiHtml += `<button class="${cls}" data-prs-domi-ans="${v}" ${prs.answered?'disabled':''}>${v}</button>`;
+  });
+  domiHtml += '</div>';
+
+  // Tropos options
+  const TROPOS_OPTS = getTroposOptions();
+  let troposHtml = '<div class="drll-opts">';
+  TROPOS_OPTS.forEach(v => {
+    let cls = 'drll-opt';
+    if (prs.answered) {
+      const isCorrect = troposMatches(p, v) && (
+        v === 'Συνδυασμός μεθόδων'
+          ? troposMatches(p, 'Συνδυασμός μεθόδων')
+          : troposMatches(p, v)
+      );
+      const isSelected = v === prs.answerTropos;
+      if (isSelected && isCorrect) cls += ' ok';
+      else if (isSelected && !isCorrect) cls += ' ko';
+      else if (isCorrect && !isSelected) cls += ' neutral-ok';
+    } else {
+      if (prs.answerTropos === v) cls += ' sel';
+    }
+    troposHtml += `<button class="${cls}" data-prs-tropos-ans="${v}" ${prs.answered?'disabled':''}>${v}</button>`;
+  });
+  troposHtml += '</div>';
+
+  const canCheck = prs.answerDomi !== null && prs.answerTropos !== null && !prs.answered;
+
+  return `
+  <div class="drll-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>📽️ Παρουσίαση</h2>
+      <p>${prs.qIdx+1} / ${total}</p>
+    </div>
+    <button onclick="screen='home';render();" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 14px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🏠 Αρχική</button>
+  </div>
+
+  <div class="drll-para-card">
+    <div class="drll-para-text">${p.text}</div>
+  </div>
+
+  ${!prs.answered ? `<button class="btn-sec" id="btnPrsSkip" style="margin-bottom:6px">⏭ Παράλειψε</button>` : ''}
+
+  <div class="drll-questions">
+    <div class="drll-q-card ${prs.answered ? (prs.results[prs.qIdx]?.domiOk ? 'ok' : 'ko') : ''}">
+      <p class="drll-q-title">Ποια είναι η δομή της παραγράφου;</p>
+      ${domiHtml}
+    </div>
+    <div class="drll-q-card ${prs.answered ? (prs.results[prs.qIdx]?.troposOk ? 'ok' : 'ko') : ''}">
+      <p class="drll-q-title">Ποιος είναι ο τρόπος ανάπτυξης;</p>
+      ${troposHtml}
+    </div>
+  </div>
+
+  ${!prs.answered
+    ? `<button class="btn-check" id="btnPrsCheck" ${canCheck?'':'disabled'} style="margin-top:10px">Έλεγξε</button>`
+    : `<button class="btn-next" id="btnPrsNext">Επόμενη →</button>`
+  }
+  `;
+}
+
+function renderPrsResults() {
+  const total = prs.queue.length;
+  const maxPoints = total * 2;
+  const pct = maxPoints > 0 ? Math.round((prs.correct / maxPoints) * 100) : 0;
+  const emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '📚';
+
+  return `
+  <div class="card" style="text-align:center;padding:28px 22px">
+    <div style="font-size:2.8rem;margin-bottom:10px">${emoji}</div>
+    <h2 style="font-family:'IBM Plex Serif',serif;font-size:1.4rem;margin-bottom:16px">Τέλος Παρουσίαση!</h2>
+    <div class="drll-results-score">
+      <p class="drll-results-big">${prs.correct} / ${maxPoints}</p>
+      <p class="drll-results-sub">πόντοι (${pct}%)</p>
+    </div>
+    <div class="score-grid" style="margin:14px 0">
+      <div class="sc g"><p>Σωστές</p><p>${prs.correct}</p></div>
+      <div class="sc r"><p>Λάθος</p><p>${maxPoints - prs.correct}</p></div>
+      <div class="sc a"><p>Παράγραφοι</p><p>${total}</p></div>
+    </div>
+  </div>
+  <button class="btn-go" id="btnPrsAgain" style="margin-top:4px">🔄 Νέα παρουσίαση</button>
+  <button class="btn-sec" id="btnPrsHome2" style="margin-top:8px">↩ Αρχική</button>`;
+}
+
+
+// ══════════════════════════════════════════════
+// ΕΚΤΥΠΩΣΗ — ΕΠΙΛΟΓΗ
+// ══════════════════════════════════════════════
+let _pendingPrintQ = [];
+let _pmListenersAttached = false;
+
+function openPrintModal(questions) {
+  _pendingPrintQ = questions;
+  document.getElementById('printModalOverlay').classList.add('active');
+}
+
+function closePrintModal() {
+  document.getElementById('printModalOverlay').classList.remove('active');
+}
+
+function attachPrintModalListeners() {
+  if (_pmListenersAttached) return;
+  _pmListenersAttached = true;
+
+  document.getElementById('pmClose').addEventListener('click', closePrintModal);
+  document.getElementById('pmCancel').addEventListener('click', closePrintModal);
+  document.getElementById('printModalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('printModalOverlay')) closePrintModal();
+  });
+
+  document.getElementById('pmShowLines').addEventListener('change', function() {
+    document.getElementById('pmLinesCountRow').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('pmWatermarkOn').addEventListener('change', function() {
+    document.getElementById('pmWatermarkRow').style.display = this.checked ? 'block' : 'none';
+  });
+  // Αρχική κατάσταση
+  document.getElementById('pmWatermarkRow').style.display = 'none';
+
+  document.getElementById('pmPrint').addEventListener('click', () => {
+    const s = collectPrintSettings();
+    closePrintModal();
+    printSelWorksheet(_pendingPrintQ, s);
+  });
+}
+
+function collectPrintSettings() {
+  return {
+    title:    document.getElementById('pmTitle').value.trim() || 'ΑΣΚΗΣΗ',
+    instructions: document.getElementById('pmInstructions').value.trim(),
+    score:    document.getElementById('pmScore').value.trim(),
+    lblYN:    document.getElementById('pmLblYN').value.trim(),
+    lblMC:    document.getElementById('pmLblMC').value.trim(),
+    lblCLK:   document.getElementById('pmLblCLK').value.trim(),
+    lblDD:    document.getElementById('pmLblDD').value.trim(),
+    lblGAP:   document.getElementById('pmLblGAP').value.trim(),
+    school:   document.getElementById('pmSchool').value.trim(),
+    subject:  document.getElementById('pmSubject').value.trim(),
+    className:document.getElementById('pmClass').value.trim(),
+    date:     document.getElementById('pmDate').value.trim(),
+    showName: document.getElementById('pmShowName').checked,
+    logoUrl:  document.getElementById('pmLogo').value.trim(),
+    logoW:    document.getElementById('pmLogoW').value,
+    logoH:    document.getElementById('pmLogoH').value,
+    font:     document.getElementById('pmFont').value,
+    fontSize: document.getElementById('pmFontSize').value,
+    marginV:  document.getElementById('pmMarginV').value,
+    marginH:  document.getElementById('pmMarginH').value,
+    showLines:document.getElementById('pmShowLines').checked,
+    linesCount:parseInt(document.getElementById('pmLinesCount').value),
+    lineHeight:document.getElementById('pmLineHeight').value,
+    qSpacing:document.getElementById('pmQSpacing').value,
+    optSpacing:document.getElementById('pmOptSpacing').value,
+    watermark: document.getElementById('pmWatermarkOn').checked,
+    watermarkText: document.getElementById('pmWatermarkText').value.trim() || 'ΔΕΙΓΜΑ',
+    watermarkOpacity: document.getElementById('pmWatermarkOpacity').value,
+    watermarkColor: document.getElementById('pmWatermarkColor').value,
+  };
+}
+
+function renderQuestionForPrint(q, idx, s) {
+  const num = idx + 1;
+  let html = `<div class="pq">`;
+
+  // Διατύπωση ανά τύπο
+  const lblMap = {YN: s.lblYN, MC: s.lblMC, CLK: s.lblCLK, DD: s.lblDD, GAP: s.lblGAP};
+  const lbl = lblMap[q.type] || '';
+
+  // Απόσπασμα (αν υπάρχει)
+  if (q.excerpt) {
+    html += `<div class="pq-excerpt">${q.excerpt}</div>`;
+  }
+
+  html += `<p class="pq-num">Ερώτηση ${num}</p>`;
+  if (lbl) html += `<p class="pq-lbl">${lbl}</p>`;
+  html += `<p class="pq-q">${q.q}</p>`;
+
+  if (q.type === 'YN') {
+    html += `<div class="pq-yn"><span>☐ Σωστό</span><span>☐ Λάθος</span></div>`;
+  }
+
+  if (q.type === 'MC') {
+    const opts = [
+      {k:'Α', v:q.optA}, {k:'Β', v:q.optB},
+      {k:'Γ', v:q.optC}, {k:'Δ', v:q.optD}
+    ].filter(o => o.v);
+    html += `<div class="pq-opts">`;
+    opts.forEach(o => { html += `<div class="pq-opt"><span class="pq-k">${o.k}.</span> ${o.v}</div>`; });
+    html += `</div>`;
+  }
+
+  if (q.type === 'DD') {
+    html += `<table class="pq-dd"><thead><tr><th>Στήλη Α</th><th>Στήλη Β</th></tr></thead><tbody>`;
+    const maxRows = Math.max(q.leftItems.length, q.rightItems.length);
+    // Shuffle right items for print
+    const rightShuffled = [...q.rightItems].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < maxRows; i++) {
+      html += `<tr><td>${q.leftItems[i] || ''}</td><td>${rightShuffled[i] || ''}</td></tr>`;
+    }
+    html += `</tbody></table><p class="pq-dd-ans">Αντιστοιχίσεις: ___ → ___ &nbsp;&nbsp; ___ → ___ &nbsp;&nbsp; ___ → ___ &nbsp;&nbsp; ___ → ___</p>`;
+  }
+
+  if (q.type === 'GAP') {
+    // Αντικατάσταση λέξεων-στόχων με κενά στο απόσπασμα
+    if (q.excerpt && q.targets && q.targets.length) {
+      let gapText = q.excerpt;
+      q.targets.forEach(t => {
+        gapText = gapText.replace(new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+          `<span class="pq-gap">___________</span>`);
+      });
+      html = html.replace(`<div class="pq-excerpt">${q.excerpt}</div>`,
+        `<div class="pq-excerpt">${gapText}</div>`);
+    }
+  }
+
+  if (q.type === 'CLK') {
+    // Κείμενο εμφανίζεται κανονικά — ο μαθητής κυκλώνει
+    // (το απόσπασμα ήδη εμφανίζεται παραπάνω)
+  }
+
+  // Γραμμές απάντησης (όχι για MC και YN)
+  if (s.showLines && q.type !== 'MC' && q.type !== 'YN' && q.type !== 'DD') {
+    html += `<div class="pq-lines">`;
+    for (let i = 0; i < s.linesCount; i++) {
+      html += `<div class="pq-line"></div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function printSelWorksheet(questions, s) {
+  // Κεφαλίδα
+  const logoCell = s.logoUrl ? `
+    <td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:${s.logoW}px">
+      <img src="${s.logoUrl}" style="width:${s.logoW}px;height:${s.logoH==='auto'?'auto':s.logoH+'px'};object-fit:contain" onerror="this.style.display='none'">
+    </td>` : '';
+
+  let headerHTML = '';
+  if (s.school || s.subject || s.className || s.date || s.showName || s.logoUrl) {
+    headerHTML = `<table class="hdr-table">`;
+    headerHTML += `<tr>`;
+    headerHTML += s.school ? `<td><strong>Σχολείο:</strong> ${s.school}</td>` : `<td></td>`;
+    headerHTML += s.subject ? `<td><strong>Μάθημα:</strong> ${s.subject}</td>` : `<td></td>`;
+    headerHTML += logoCell;
+    headerHTML += `</tr><tr>`;
+    if (s.showName) headerHTML += `<td><strong>Ονοματεπώνυμο:</strong> ___________________________</td>`;
+    else if (s.className) headerHTML += `<td><strong>Τμήμα:</strong> ${s.className}</td>`;
+    else headerHTML += `<td></td>`;
+    if (s.date) headerHTML += `<td><strong>Ημερομηνία:</strong> ${s.date}</td>`;
+    else if (s.className && s.showName) headerHTML += `<td><strong>Τμήμα:</strong> ${s.className}</td>`;
+    else headerHTML += `<td></td>`;
+    headerHTML += `</tr></table><hr class="hdr-line">`;
+  }
+
+  const questionsHTML = questions.map((q, i) => renderQuestionForPrint(q, i, s)).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="el"><head><meta charset="UTF-8">
+<title>${s.title}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  @page{margin:${s.marginV} ${s.marginH}}
+  body{font-family:${s.font};font-size:${s.fontSize};color:#000;padding:${s.marginV} ${s.marginH}}
+  @media print{body{padding:0}}
+  .hdr-table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:${s.fontSize}}
+  .hdr-table td{padding:3px 0;width:50%;vertical-align:top}
+  .hdr-line{border:none;border-top:1.5px solid #333;margin-bottom:14px}
+  .print-title{text-align:center;font-size:calc(${s.fontSize} + 3pt);font-weight:bold;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+  .print-instr{font-size:${s.fontSize};text-align:justify;margin-bottom:5px;line-height:1.7}
+  .print-score{font-size:${s.fontSize};font-style:italic;color:#444;margin-bottom:14px}
+  .pq{margin-bottom:${s.qSpacing};page-break-inside:avoid}
+  .pq-excerpt{font-size:${s.fontSize};line-height:${s.lineHeight};text-align:justify;font-style:italic;margin-bottom:8px;padding:4px 0}
+  .pq-num{font-weight:bold;font-size:${s.fontSize};margin-bottom:3px}
+  .pq-lbl{font-size:calc(${s.fontSize} - 1pt);font-style:italic;color:#444;margin-bottom:4px}
+  .pq-q{font-size:${s.fontSize};margin-bottom:8px;line-height:${s.lineHeight}}
+  .pq-yn{display:flex;gap:32px;font-size:${s.fontSize};margin-top:6px}
+  .pq-opts{display:flex;flex-direction:column;gap:${s.optSpacing};margin-top:6px}
+  .pq-opt{font-size:${s.fontSize};display:flex;align-items:baseline;gap:6px;line-height:${s.lineHeight}}
+  .pq-k{font-weight:bold}
+  .pq-dd{width:100%;border-collapse:collapse;margin-top:6px;font-size:${s.fontSize}}
+  .pq-dd th,.pq-dd td{border:1px solid #ccc;padding:6px 10px}
+  .pq-dd th{background:#f0f0f0;font-weight:bold}
+  .pq-dd-ans{font-size:calc(${s.fontSize} - 1pt);color:#555;margin-top:8px}
+  .pq-gap{border-bottom:1px solid #333;display:inline-block;min-width:80px}
+  .pq-lines{margin-top:10px}
+  .pq-line{border-bottom:1px solid #aaa;height:24px;margin-bottom:2px}
+  @media print{
+    .no-print{display:none!important}
+    @page{margin:${s.marginV} ${s.marginH}}
+  }
+  ${s.watermark ? `
+  .watermark{
+    position:fixed; top:50%; left:50%;
+    transform:translate(-50%,-50%) rotate(-45deg);
+    font-size:80pt; font-weight:900;
+    color:${s.watermarkColor};
+    opacity:${s.watermarkOpacity};
+    white-space:nowrap; pointer-events:none;
+    z-index:9999; font-family:${s.font};
+    letter-spacing:8px;
+  }` : ''}
+  @page {
+    margin: ${s.marginV} ${s.marginH};
+    /* Αφαίρεση URL και τίτλου από header/footer */
+    @top-center { content: none }
+    @bottom-center { content: none }
+    @bottom-left { content: none }
+    @bottom-right { content: none }
+    @top-left { content: none }
+    @top-right { content: none }
+  }
+</style></head><body>
+  ${s.watermark ? `<div class="watermark">${s.watermarkText}</div>` : ''}
+  ${headerHTML}
+  <div class="print-title">${s.title}</div>
+  ${s.instructions ? `<p class="print-instr">${s.instructions}</p>` : ''}
+  ${s.score ? `<p class="print-score">${s.score}</p>` : ''}
+  ${questionsHTML}
+  <button class="no-print" onclick="setTimeout(()=>window.print(),300)" style="position:fixed;top:20px;right:20px;padding:12px 24px;font-size:15px;background:#4f46e5;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Εκτύπωση</button>
+</body></html>`;
+
+  // Blob URL — αξιόπιστο σε όλους τους browsers, δεν γίνεται λευκό
+  const blob = new Blob([html], {type: 'text/html; charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  // Απελευθέρωση μνήμης μετά από λίγο
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+loadData();
+</script>
+
+<!-- PRINT MODAL -->
+<div class="print-modal-overlay" id="printModalOverlay">
+  <div class="print-modal">
+    <div class="pm-hdr">
+      <h2>🖨️ Ρυθμίσεις Εκτύπωσης</h2>
+      <button class="pm-close" id="pmClose">✕</button>
+    </div>
+
+    <div class="pm-section">
+      <h3>📝 Κείμενο Άσκησης</h3>
+      <div style="margin-bottom:10px">
+        <label class="pm-lbl">Τίτλος</label>
+        <input type="text" class="pm-input" id="pmTitle" value="ΑΣΚΗΣΗ">
+      </div>
+      <div style="margin-bottom:10px">
+        <label class="pm-lbl">Εκφώνηση / Οδηγία</label>
+        <textarea class="pm-textarea" id="pmInstructions">Να απαντήσετε στις παρακάτω ερωτήσεις.</textarea>
+      </div>
+      <div>
+        <label class="pm-lbl">Βαθμολογία (προαιρετικά)</label>
+        <input type="text" class="pm-input" id="pmScore" placeholder="π.χ. Μονάδες: 25">
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>📝 Διατύπωση ανά Τύπο Ερώτησης</h3>
+      <div style="margin-bottom:8px">
+        <label class="pm-lbl">Ναι / Όχι (YN)</label>
+        <input type="text" class="pm-input" id="pmLblYN" value="Να χαρακτηρίσετε την πρόταση ως σωστή (Σ) ή λανθασμένη (Λ).">
+      </div>
+      <div style="margin-bottom:8px">
+        <label class="pm-lbl">Πολλαπλής Επιλογής (MC)</label>
+        <input type="text" class="pm-input" id="pmLblMC" value="Να επιλέξετε την απάντηση που θεωρείτε σωστή.">
+      </div>
+      <div style="margin-bottom:8px">
+        <label class="pm-lbl">Εντοπισμός (CLK)</label>
+        <input type="text" class="pm-input" id="pmLblCLK" value="Να εντοπίσετε και να κυκλώσετε στο κείμενο τη ζητούμενη λέξη ή φράση.">
+      </div>
+      <div style="margin-bottom:8px">
+        <label class="pm-lbl">Αντιστοίχιση (DD)</label>
+        <input type="text" class="pm-input" id="pmLblDD" value="Να αντιστοιχίσετε τα στοιχεία της στήλης Α με τα στοιχεία της στήλης Β.">
+      </div>
+      <div>
+        <label class="pm-lbl">Συμπλήρωση (GAP)</label>
+        <input type="text" class="pm-input" id="pmLblGAP" value="Να συμπληρώσετε τα κενά με την κατάλληλη λέξη ή φράση.">
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>🏫 Κεφαλίδα</h3>
+      <div class="pm-grid2" style="margin-bottom:10px">
+        <div>
+          <label class="pm-lbl">Σχολείο</label>
+          <input type="text" class="pm-input" id="pmSchool" placeholder="π.χ. 1ο ΓΕΛ Ηγουμενίτσας">
+        </div>
+        <div>
+          <label class="pm-lbl">Μάθημα</label>
+          <input type="text" class="pm-input" id="pmSubject" placeholder="π.χ. Νεοελληνική Γλώσσα">
+        </div>
+        <div>
+          <label class="pm-lbl">Τμήμα</label>
+          <input type="text" class="pm-input" id="pmClass" placeholder="π.χ. Α1">
+        </div>
+        <div>
+          <label class="pm-lbl">Ημερομηνία</label>
+          <input type="text" class="pm-input" id="pmDate" placeholder="___ / ___ / ____">
+        </div>
+      </div>
+      <div class="pm-toggle-row">
+        <label for="pmShowName">Πεδίο «Ονοματεπώνυμο»</label>
+        <label class="pm-switch"><input type="checkbox" id="pmShowName" checked><span class="pm-slider"></span></label>
+      </div>
+      <div style="margin-top:10px">
+        <label class="pm-lbl">Λογότυπο (URL εικόνας)</label>
+        <input type="text" class="pm-input" id="pmLogo" placeholder="https://...">
+      </div>
+      <div class="pm-grid2" style="margin-top:8px">
+        <div>
+          <label class="pm-lbl">Πλάτος λογοτύπου</label>
+          <select class="pm-select" id="pmLogoW">
+            <option value="40">40px</option>
+            <option value="60">60px</option>
+            <option value="80" selected>80px</option>
+            <option value="100">100px</option>
+            <option value="120">120px</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Ύψος λογοτύπου</label>
+          <select class="pm-select" id="pmLogoH">
+            <option value="40">40px</option>
+            <option value="60" selected>60px</option>
+            <option value="80">80px</option>
+            <option value="100">100px</option>
+            <option value="auto">auto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>🎨 Μορφοποίηση</h3>
+      <div class="pm-grid2" style="margin-bottom:10px">
+        <div>
+          <label class="pm-lbl">Γραμματοσειρά</label>
+          <select class="pm-select" id="pmFont">
+            <option value="'Helvetica Neue', Helvetica, Arial, sans-serif" selected>Helvetica Neue</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="'Georgia', serif">Georgia</option>
+            <option value="'Garamond', serif">Garamond</option>
+            <option value="'Arial', sans-serif">Arial</option>
+            <option value="'Calibri', sans-serif">Calibri</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Μέγεθος</label>
+          <select class="pm-select" id="pmFontSize">
+            <option value="10pt">10pt</option>
+            <option value="11pt" selected>11pt</option>
+            <option value="12pt">12pt</option>
+            <option value="13pt">13pt</option>
+            <option value="14pt">14pt</option>
+          </select>
+        </div>
+      </div>
+      <div class="pm-grid2" style="margin-bottom:10px">
+        <div>
+          <label class="pm-lbl">Περιθώριο πάνω/κάτω</label>
+          <select class="pm-select" id="pmMarginV">
+            <option value="15mm">15mm</option>
+            <option value="20mm" selected>20mm</option>
+            <option value="25mm">25mm</option>
+            <option value="30mm">30mm</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Περιθώριο αριστερά/δεξιά</label>
+          <select class="pm-select" id="pmMarginH">
+            <option value="15mm">15mm</option>
+            <option value="20mm" selected>20mm</option>
+            <option value="30mm">30mm</option>
+            <option value="40mm">40mm</option>
+            <option value="50mm">50mm</option>
+            <option value="60mm">60mm</option>
+            <option value="70mm">70mm</option>
+            <option value="80mm">80mm</option>
+            <option value="100mm">100mm</option>
+          </select>
+        </div>
+      </div>
+      <div class="pm-grid3" style="margin-bottom:10px">
+        <div>
+          <label class="pm-lbl">Διάστιχο κειμένου</label>
+          <select class="pm-select" id="pmLineHeight">
+            <option value="1.4">1.4</option>
+            <option value="1.6" selected>1.6</option>
+            <option value="1.8">1.8</option>
+            <option value="2.0">2.0</option>
+            <option value="2.2">2.2</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Απόσταση ερωτήσεων</label>
+          <select class="pm-select" id="pmQSpacing">
+            <option value="14px">Μικρή</option>
+            <option value="22px" selected>Κανονική</option>
+            <option value="32px">Μεγάλη</option>
+            <option value="44px">Πολύ μεγάλη</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Απόσταση επιλογών</label>
+          <select class="pm-select" id="pmOptSpacing">
+            <option value="4px">Μικρή</option>
+            <option value="8px" selected>Κανονική</option>
+            <option value="12px">Μεγάλη</option>
+            <option value="18px">Πολύ μεγάλη</option>
+          </select>
+        </div>
+      </div>
+      <div class="pm-toggle-row">
+        <label for="pmShowLines">Γραμμές απάντησης κάτω από κάθε ερώτηση</label>
+        <label class="pm-switch"><input type="checkbox" id="pmShowLines" checked><span class="pm-slider"></span></label>
+      </div>
+      <div id="pmLinesCountRow" style="margin-top:8px">
+        <label class="pm-lbl">Αριθμός γραμμών</label>
+        <select class="pm-select" id="pmLinesCount" style="max-width:160px">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>💧 Υδατογράφημα</h3>
+      <div class="pm-toggle-row" style="margin-bottom:8px">
+        <label for="pmWatermarkOn">Εμφάνιση υδατογραφήματος</label>
+        <label class="pm-switch"><input type="checkbox" id="pmWatermarkOn"><span class="pm-slider"></span></label>
+      </div>
+      <div id="pmWatermarkRow">
+        <div class="pm-grid2" style="margin-bottom:8px">
+          <div>
+            <label class="pm-lbl">Κείμενο</label>
+            <input type="text" class="pm-input" id="pmWatermarkText" value="ΔΕΙΓΜΑ" placeholder="π.χ. ΔΕΙΓΜΑ, ΑΠΑΝΤΗΣΕΙΣ">
+          </div>
+          <div>
+            <label class="pm-lbl">Διαφάνεια</label>
+            <select class="pm-select" id="pmWatermarkOpacity">
+              <option value="0.05">Πολύ αχνό (5%)</option>
+              <option value="0.10" selected>Αχνό (10%)</option>
+              <option value="0.15">Μέτριο (15%)</option>
+              <option value="0.25">Έντονο (25%)</option>
+              <option value="0.40">Πολύ έντονο (40%)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="pm-lbl">Χρώμα</label>
+          <select class="pm-select" id="pmWatermarkColor">
+            <option value="#000000">Μαύρο</option>
+            <option value="#cc0000" selected>Κόκκινο</option>
+            <option value="#0000cc">Μπλε</option>
+            <option value="#006600">Πράσινο</option>
+            <option value="#888888">Γκρι</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-actions">
+      <button class="pm-btn cancel" id="pmCancel">Ακύρωση</button>
+      <button class="pm-btn go" id="pmPrint">🖨️ Εκτύπωση</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
