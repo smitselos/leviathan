@@ -1,1 +1,1285 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Κουίζ — 1η Διδακτική πρόταση</title>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#6B3FA0;
+  --purple-dark:#4A2D6F;
+  --purple-light:#8B6BB5;
+  --navy:#1B2A4A;
+  --cyan:#4AAFC7;
+  --coral:#E8735A;
+  --gold:#E8B84B;
+  --cream:#FAFAF7;
+  --ink:#1a1610;
+  --muted:#7a7060;
+  --correct:#2d8e4e;
+  --wrong:#c44a3d;
+  --shadow:4px 8px 28px rgba(26,22,16,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;color-scheme:light only;}
+@media(prefers-color-scheme:dark){
+  html,body{background:var(--cream)!important;color:var(--ink)!important;}
+  .big-card{background:#fff!important;}
+  .opt-btn{background:#fff!important;color:var(--ink)!important;}
+  .quiz-topbar,.quiz-bottom{background:var(--cream)!important;}
+  #startScreen{background:var(--cream)!important;}
+  .deck-card{background:#fff!important;color:var(--ink)!important;}
+}
+body{
+  background:var(--cream);
+  font-family:'Source Sans 3',sans-serif;
+  color:var(--ink);
+  min-height:100%;
+}
 
+/* ═══ DECORATIVE CIRCLES (book motif) — 2 sets ═══ */
+/* Κύκλος 1: πάνω δεξιά — navy/cyan/κίτρινο (όπως στο εξώφυλλο) */
+.circle-top{
+  position:absolute;bottom:-20vw;right:-25vw;
+  width:max(55vw,55vh);height:max(55vw,55vh);min-width:350px;min-height:350px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--navy),var(--cyan));
+  z-index:0;pointer-events:none;
+  animation:ballIn1 1.2s cubic-bezier(.34,1.56,.64,1) .2s both;
+}
+@media(min-width:769px){
+  .circle-top{right:-32vw;}
+}
+@keyframes ballIn1{
+  0%{transform:translate(0,60vh) scale(.3);opacity:0;}
+  60%{opacity:1;}
+  100%{transform:translate(0,0) scale(1);opacity:1;}
+}
+.circle-top::before{
+  content:'';position:absolute;
+  top:18%;left:18%;
+  width:64%;height:64%;border-radius:50%;
+  background:var(--cyan);
+}
+.circle-top::after{
+  content:'';position:absolute;
+  top:33%;left:33%;
+  width:34%;height:34%;border-radius:50%;
+  background:var(--gold);
+}
+
+/* Κύκλος 2: κάτω αριστερά — κίτρινο/σομόν/κόκκινο (εξώφυλλο) */
+.circle-bottom{
+  position:absolute;top:-15vw;left:-35vw;
+  width:max(55vw,55vh);height:max(55vw,55vh);min-width:350px;min-height:350px;
+  border-radius:50%;
+  background:#E8B84B;
+  z-index:0;pointer-events:none;
+  animation:ballIn2 1.4s cubic-bezier(.34,1.56,.64,1) .5s both;
+}
+@media(min-width:769px){
+  .circle-bottom{left:-32vw;}
+}
+@keyframes ballIn2{
+  0%{transform:translate(-40vw,-40vh) scale(.3);opacity:0;}
+  60%{opacity:1;}
+  100%{transform:translate(0,0) scale(1);opacity:1;}
+}
+.circle-bottom::before{
+  content:'';position:absolute;
+  top:16%;left:16%;
+  width:68%;height:68%;border-radius:50%;
+  background:#F0C9A8;
+}
+.circle-bottom::after{
+  content:'';position:absolute;
+  top:32%;left:32%;
+  width:36%;height:36%;border-radius:50%;
+  background:#D94F4F;
+}
+
+/* ═══ START SCREEN ═══ */
+#startScreen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:40px 20px;text-align:center;
+  position:relative;z-index:1;
+}
+.start-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-light);font-weight:600;margin-bottom:10px;position:relative;z-index:2;}
+.start-title{font-family:'Literata',serif;font-size:clamp(24px,5vw,42px);font-weight:700;line-height:1.2;margin-bottom:6px;color:var(--navy);position:relative;z-index:2;text-shadow:0 2px 10px rgba(255,255,255,0.8),0 0 20px rgba(255,255,255,0.5);}
+.start-title em{font-style:italic;color:var(--purple);}
+.start-accent{width:70px;height:3px;background:linear-gradient(90deg,var(--purple),var(--cyan));margin:14px auto 22px;border-radius:2px;position:relative;z-index:2;}
+.start-sub{color:var(--muted);font-size:14px;max-width:460px;line-height:1.6;margin-bottom:36px;position:relative;z-index:2;text-shadow:0 2px 8px rgba(255,255,255,0.7),0 0 16px rgba(255,255,255,0.4);}
+.start-credits{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:1.5px;color:rgba(26,22,16,.5);font-weight:400;z-index:2;text-shadow:0 1px 4px rgba(255,255,255,.6);border-top:1px solid rgba(26,22,16,.2);padding-top:8px;white-space:nowrap;display:flex;align-items:center;gap:6px;justify-content:center;}
+.credits-logo{width:16px;height:16px;opacity:0.7;flex-shrink:0;}
+@media(min-width:769px){
+  .start-credits{color:var(--ink);opacity:0.6;border-top-color:rgba(26,22,16,.3);}
+  .credits-logo{opacity:0.5;}
+}
+
+.deck-pick{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;position:relative;z-index:2;}
+.deck-card{
+  background:#fff;border-radius:10px;box-shadow:var(--shadow);
+  padding:22px 28px;width:240px;cursor:pointer;
+  border:2.5px solid transparent;transition:all .22s;
+  text-align:left;position:relative;overflow:hidden;
+}
+.deck-card::before{
+  content:'';position:absolute;top:0;left:0;width:5px;height:100%;
+  background:linear-gradient(180deg,var(--purple),var(--cyan));
+  border-radius:10px 0 0 10px;
+}
+.deck-card:hover{transform:translateY(-3px);cursor:pointer;}
+.deck-card.active{border-color:var(--purple);border-width:3px;background:#fff;box-shadow:0 0 20px rgba(107,63,160,0.2),4px 8px 28px rgba(26,22,16,.16);}
+.deck-card.active .dc-num{color:var(--purple);opacity:.35;font-size:48px;}
+.deck-card.active .dc-title{color:var(--purple);}
+.deck-card.active .dc-ktitle{color:var(--purple-dark);}
+.deck-card.active .dc-author{color:var(--coral);}
+.deck-card.active .dc-sub{color:var(--muted);}
+.dc-num{font-family:'Literata',serif;font-size:40px;font-weight:700;opacity:.07;line-height:1;margin-bottom:6px;color:var(--purple);}
+.dc-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--purple-light);margin-bottom:5px;}
+.dc-ktitle{font-family:'Literata',serif;font-size:14px;font-style:italic;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:4px;}
+.dc-author{font-size:11.5px;font-weight:600;color:var(--coral);margin-bottom:7px;}
+.dc-sub{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid rgba(26,22,16,.08);padding-top:7px;margin-top:2px;}
+
+.btn-start{
+  position:relative;z-index:2;align-self:center;
+  padding:16px 52px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+  color:#fff;
+  border:none;border-radius:8px;
+  font-size:16px;font-weight:700;
+  font-family:'Source Sans 3',sans-serif;
+  cursor:pointer;transition:all .2s;
+  letter-spacing:.5px;
+  box-shadow:0 4px 16px rgba(107,63,160,.3);
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(107,63,160,.4);}
+
+/* ═══ QUIZ SCREEN ═══ */
+#quizScreen{display:none;min-height:100vh;flex-direction:column;}
+#quizScreen.active{display:flex;}
+
+.quiz-topbar{
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;
+  border-bottom:1px solid rgba(107,63,160,.08);
+  background:var(--cream);
+}
+.qt-left{display:flex;align-items:center;gap:12px;}
+.btn-quit{
+  background:none;border:1px solid rgba(107,63,160,.25);border-radius:4px;
+  padding:5px 12px;font-size:12px;font-family:'Source Sans 3',sans-serif;
+  cursor:pointer;color:var(--purple-light);transition:all .18s;
+}
+.btn-quit:hover{border-color:var(--purple);color:var(--purple);}
+.qt-deck-lbl{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.dk1-lbl{color:var(--purple);}.dk2-lbl{color:var(--navy);}.dk3-lbl{color:var(--coral);}
+
+.qt-right{display:flex;align-items:center;gap:12px;}
+.qt-score{font-size:13px;color:var(--muted);}
+.qt-score strong{font-family:'Literata',serif;font-size:17px;}
+.s-c{color:var(--correct);}.s-w{color:var(--wrong);}
+
+.progress-wrap{flex-shrink:0;height:3px;background:rgba(107,63,160,.08);}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .4s ease;}
+
+.card-stage{
+  flex:1;display:flex;align-items:stretch;
+  padding:12px;gap:0;
+  min-height:0;
+}
+
+.big-card{
+  width:100%;
+  background:#fff;border-radius:10px;
+  box-shadow:var(--shadow);
+  border:1px solid rgba(107,63,160,.12);
+  display:grid;grid-template-columns:minmax(220px, 25%) 1fr;
+  overflow:hidden;
+  animation:cardIn .3s ease both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+
+.bc-left{
+  padding:30px 26px;
+  display:flex;flex-direction:column;
+  gap:14px;
+  position:relative;overflow:hidden;
+}
+/* Clean left panel — no pattern */
+.bc-left::after{
+  content:'';position:absolute;bottom:-60px;right:-60px;
+  width:140px;height:140px;border-radius:50%;
+  background:rgba(255,255,255,.05);
+}
+.dk1 .bc-left{background:linear-gradient(160deg,var(--purple),var(--purple-dark));}
+.dk2 .bc-left{background:linear-gradient(160deg,var(--navy),var(--cyan));}
+.dk3 .bc-left{background:linear-gradient(160deg,#D94F4F,#B83A3A);}
+.bc-left.answered-ok{background:linear-gradient(160deg,var(--correct),#1E6B3A)!important;}
+.bc-left.answered-ko{background:linear-gradient(160deg,var(--wrong),#8B2D23)!important;}
+
+.bc-qnum{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:600;position:relative;z-index:1;}
+.bc-qtext{
+  font-family:'Literata',serif;
+  font-size:clamp(15px,2vw,19px);
+  font-style:italic;color:#fff;line-height:1.5;flex:1;
+  position:relative;z-index:1;
+}
+.bc-qtype{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600;position:relative;z-index:1;}
+.bc-result{font-size:26px;color:#fff;position:relative;z-index:1;}
+
+.bc-right{
+  padding:24px 28px;
+  display:flex;flex-direction:column;
+  gap:9px;
+  overflow-y:auto;
+  position:relative;
+}
+.dk1 .bc-right{background:rgba(107,63,160,.08);}
+.dk2 .bc-right{background:rgba(27,42,74,.08);}
+.dk3 .bc-right{background:rgba(232,115,90,.08);}
+
+/* ═══ MCQ ═══ */
+.opt-btn{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 15px;
+  border:2px solid rgba(107,63,160,.18);
+  border-radius:10px;background:#fff;
+  cursor:pointer;transition:all .18s;
+  font-family:'Source Sans 3',sans-serif;
+  font-size:clamp(13px,1.7vw,15px);
+  line-height:1.45;text-align:left;width:100%;
+}
+.opt-btn:hover:not(.disabled){border-color:var(--purple);background:rgba(107,63,160,.05);}
+.opt-btn.disabled{pointer-events:none;}
+.opt-lbl{font-weight:700;flex-shrink:0;font-size:12px;}
+.dk1 .opt-lbl{color:var(--purple);}.dk2 .opt-lbl{color:var(--navy);}.dk3 .opt-lbl{color:var(--coral);}
+.opt-btn.chosen.correct{border-color:var(--correct);background:var(--correct);color:#fff;}
+.opt-btn.chosen.correct .opt-lbl{color:#fff;}
+.opt-btn.chosen.wrong{border-color:var(--wrong);background:var(--wrong);color:#fff;opacity:1;text-decoration:line-through;}
+.opt-btn.reveal{border-color:var(--correct);background:rgba(45,142,78,.15);}
+.opt-btn.reveal .opt-lbl{color:var(--correct);font-weight:900;}
+
+/* ═══ DRAG DROP ═══ */
+.drag-instr{font-size:12px;color:var(--muted);line-height:1.4;padding:6px 0;}
+.drag-bank{
+  display:flex;flex-wrap:wrap;gap:7px;
+  padding:10px 12px;
+  background:rgba(255,255,255,.65);border-radius:8px;
+  min-height:46px;
+}
+.drag-chip{
+  padding:7px 14px;background:#fff;
+  border:1.5px solid var(--purple-light);border-radius:20px;
+  font-size:12.5px;font-weight:600;cursor:grab;
+  transition:background .15s,transform .15s;
+  color:var(--ink);user-select:none;
+  touch-action:none;
+}
+.drag-chip:hover{background:rgba(107,63,160,.08);}
+.drag-chip.dragging{opacity:.45;cursor:grabbing;}
+.drag-chip.sel-tap{background:var(--purple);color:#fff;transform:scale(1.04);cursor:pointer;}
+
+.drag-slots{display:flex;flex-direction:column;gap:7px;margin-top:4px;}
+.slot-row{display:flex;align-items:center;gap:10px;}
+.slot-lbl{font-size:12.5px;font-weight:700;flex-shrink:0;line-height:1.3;color:var(--ink);}
+.slot-zone{
+  flex:1;min-height:40px;
+  border:1.5px dashed rgba(107,63,160,.25);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  padding:7px 11px;transition:all .18s;
+  background:rgba(255,255,255,.7);
+  font-size:12.5px;color:var(--muted);
+  text-align:center;line-height:1.3;
+  cursor:pointer;
+}
+.slot-zone.drag-over{border-color:var(--purple);background:rgba(107,63,160,.08);border-style:solid;}
+.slot-zone.filled{border-style:solid;border-color:var(--purple);background:rgba(107,63,160,.06);color:var(--ink);font-weight:700;}
+.slot-zone.ok-slot{border-color:var(--correct)!important;background:rgba(45,142,78,.1)!important;color:var(--correct)!important;font-weight:700;}
+.slot-zone.ko-slot{border-color:var(--wrong)!important;background:rgba(196,74,61,.07)!important;color:var(--wrong)!important;}
+
+/* ═══ FEEDBACK ═══ */
+.fb-box{
+  padding:12px 15px;border-radius:8px;
+  font-size:13.5px;line-height:1.6;display:none;
+  border-left:3px solid transparent;margin-top:4px;
+}
+.fb-box.show{display:block;}
+.fb-box.ok{background:rgba(45,142,78,.09);border-left-color:var(--correct);}
+.fb-box.ko{background:rgba(196,74,61,.07);border-left-color:var(--wrong);}
+.fb-ref{display:block;margin-top:5px;font-size:11.5px;color:var(--muted);font-style:italic;}
+
+/* ═══ SUBMIT ═══ */
+.btn-submit{
+  align-self:flex-start;margin-top:4px;
+  padding:10px 24px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+  color:#fff;
+  border:none;border-radius:6px;font-size:13.5px;font-weight:700;
+  font-family:'Source Sans 3',sans-serif;cursor:pointer;transition:all .2s;
+}
+.btn-submit:disabled{opacity:.38;cursor:not-allowed;}
+.btn-submit:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(107,63,160,.3);}
+
+/* ═══ BOTTOM BAR ═══ */
+.quiz-bottom{
+  flex-shrink:0;
+  padding:14px 20px;
+  border-top:1px solid rgba(107,63,160,.1);
+  background:var(--cream);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.qb-info{font-size:15px;color:var(--muted);font-weight:300;opacity:0.65;letter-spacing:0.3px;}
+.btn-next{
+  padding:13px 36px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+  color:#fff;
+  border:none;border-radius:8px;
+  font-size:15px;font-weight:700;
+  font-family:'Source Sans 3',sans-serif;
+  cursor:pointer;transition:all .2s;
+  display:none;
+  box-shadow:0 4px 16px rgba(107,63,160,.25);
+}
+.btn-next.show{display:block;}
+.btn-next:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(107,63,160,.35);}
+
+/* ═══ RESULTS ═══ */
+#resultsScreen{
+  display:none;min-height:100vh;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;text-align:center;
+}
+#resultsScreen.active{display:flex;}
+.res-score{font-family:'Literata',serif;font-size:72px;font-weight:700;line-height:1;color:var(--purple);}
+.res-denom{font-size:28px;opacity:.5;margin-left:4px;}
+.res-label{font-size:14px;color:var(--muted);margin-top:6px;}
+.res-msg{font-size:16px;line-height:1.65;margin-top:18px;max-width:420px;}
+.res-gold{width:70px;height:3px;background:linear-gradient(90deg,var(--purple),var(--cyan));margin:20px auto;border-radius:2px;}
+.res-btns{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:14px;}
+.btn-res{
+  padding:13px 32px;border:none;border-radius:8px;
+  font-size:14px;font-weight:700;font-family:'Source Sans 3',sans-serif;
+  cursor:pointer;transition:all .2s;min-width:280px;
+}
+.btn-res.primary{background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:#fff;box-shadow:0 4px 16px rgba(107,63,160,.25);}
+.btn-res.primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(107,63,160,.35);}
+.btn-res.secondary{background:transparent;border:2px solid rgba(107,63,160,.25);color:var(--purple);}
+.btn-res.secondary:hover{border-color:var(--purple);}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:640px){
+  .big-card{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  .bc-left{min-height:auto;padding:16px 14px;flex-direction:row;align-items:center;gap:8px;}
+  .bc-qnum{display:none;}
+  .bc-qtype{display:none;}
+  .bc-qtext{font-size:clamp(15px, 4.5vw, 20px);flex:1;}
+  .bc-result{font-size:28px;}
+  .bc-right{padding:12px 12px;gap:clamp(6px, 2vw, 10px);}
+  .opt-btn{padding:clamp(10px, 3vw, 14px) clamp(12px, 3.5vw, 16px);font-size:clamp(14px, 4vw, 17px);border-radius:8px;gap:9px;min-height:auto;}
+  .opt-lbl{font-size:clamp(13px, 3.5vw, 16px);}
+  .fb-box{font-size:clamp(13px, 3.8vw, 16px);padding:clamp(10px, 3vw, 14px);}
+  .fb-ref{font-size:clamp(11px, 3vw, 13px);}
+  .slot-lbl{font-size:11.5px;width:90px;}
+  .drag-chip{font-size:12px;padding:6px 11px;}
+  .drag-bank{min-height:40px;padding:8px 10px;}
+  .slot-zone{min-height:36px;font-size:12px;}
+  .deck-pick{flex-direction:column;align-items:center;}
+  .deck-card{width:90%;max-width:320px;}
+  .card-stage{padding:8px;}
+  .quiz-bottom{padding:8px 12px;}
+  .quiz-topbar{padding:8px 12px;}
+  .quiz-bottom{padding:10px 12px;}
+  .btn-next{padding:11px 24px;font-size:14px;}
+  .btn-submit{padding:10px 20px;font-size:13px;}
+  .circle-top{min-width:400px;min-height:400px;width:140vw;height:140vw;bottom:-35vw;right:-20vw;top:auto;}
+  .circle-bottom{min-width:400px;min-height:400px;width:140vw;height:140vw;top:5vh;left:-50vw;bottom:auto;}
+  .start-title{text-shadow:0 2px 8px rgba(255,255,255,0.8),0 0 16px rgba(255,255,255,0.5);}
+  .start-sub{text-shadow:0 1px 6px rgba(255,255,255,0.6);font-size:13px;}
+  .bc-copy{font-size:7px;bottom:8px;left:16px;}
+}
+@media(min-width:641px){
+  .slot-lbl{width:clamp(120px, 15vw, 20vh);}
+  .bc-left{min-width:0;padding:clamp(28px, 4vw, 5vh) clamp(24px, 3vw, 4vh);gap:clamp(14px, 2vw, 3vh);}
+  .bc-qnum{font-size:clamp(9px, 1.2vw, 1.6vh);letter-spacing:3px;}
+  .bc-qtext{font-size:clamp(16px, 2.5vw, 3.2vh);line-height:1.55;}
+  .bc-qtype{font-size:clamp(9px, 1.1vw, 1.5vh);letter-spacing:2px;}
+  .bc-result{font-size:clamp(28px, 4vw, 5vh);}
+  .bc-right{padding:clamp(24px, 3.5vw, 4.5vh);gap:clamp(10px, 1.5vw, 2vh);}
+  .opt-btn{padding:clamp(14px, 2vw, 2.5vh) clamp(18px, 2.5vw, 3vh);font-size:clamp(14px, 2vw, 2.8vh);line-height:1.55;border-radius:8px;gap:clamp(10px, 1.5vw, 2vh);}
+  .opt-lbl{font-size:clamp(12px, 1.8vw, 2.5vh);}
+  .drag-instr{font-size:clamp(12px, 1.5vw, 2vh);padding:clamp(6px, 1vw, 1.2vh) 0;}
+  .drag-bank{gap:clamp(8px, 1.2vw, 1.5vh);padding:clamp(10px, 1.5vw, 2vh);min-height:clamp(46px, 6vw, 7vh);}
+  .drag-chip{font-size:clamp(12px, 1.6vw, 2.2vh);padding:clamp(8px, 1vw, 1.3vh) clamp(14px, 2vw, 2.5vh);}
+  .drag-slots{gap:clamp(8px, 1.2vw, 1.5vh);margin-top:clamp(6px, 1vw, 1.2vh);}
+  .slot-row{gap:clamp(10px, 1.5vw, 2vh);}
+  .slot-lbl{font-size:clamp(12px, 1.6vw, 2.2vh);}
+  .slot-zone{min-height:clamp(40px, 5vw, 6vh);font-size:clamp(12px, 1.6vw, 2.2vh);padding:clamp(8px, 1.2vw, 1.5vh);border-radius:8px;}
+  .fb-box{font-size:clamp(14px, 1.8vw, 2.5vh);line-height:1.7;padding:clamp(14px, 2vw, 2.5vh);margin-top:clamp(8px, 1.2vw, 1.5vh);border-left-width:4px;border-radius:8px;}
+  .fb-ref{font-size:clamp(11px, 1.4vw, 1.8vh);margin-top:clamp(5px, 0.8vw, 1vh);}
+  .btn-submit{padding:clamp(10px, 1.5vw, 2vh) clamp(24px, 3vw, 4vh);font-size:clamp(13px, 1.6vw, 2.2vh);border-radius:8px;margin-top:clamp(6px, 1vw, 1.2vh);}
+}
+
+#dragGhost{
+  position:fixed;z-index:999;pointer-events:none;
+  padding:7px 14px;background:var(--purple);color:#fff;
+  border-radius:20px;font-size:12.5px;font-weight:700;
+  font-family:'Source Sans 3',sans-serif;
+  box-shadow:0 4px 16px rgba(107,63,160,.35);
+  white-space:nowrap;opacity:.9;display:none;
+  transform:translate(-50%,-50%);
+}
+/* ═══ CLK (Click on word) ═══ */
+.clk-passage{
+  padding:24px 26px;
+  background:#fff;
+  border:2px solid rgba(107,63,160,.18);
+  border-radius:10px;
+  line-height:2.4;
+  font-family:'Literata',serif;
+  font-size:clamp(24px,3.2vw,26px);
+  font-style:italic;
+  color:var(--ink);
+}
+.clk-word{
+  cursor:pointer;
+  padding:2px 4px;
+  border-radius:4px;
+  transition:all .15s;
+}
+.clk-word:hover{background:rgba(107,63,160,.10);}
+.clk-word.disabled{cursor:default;pointer-events:none;}
+.clk-word.correct{background:var(--correct);color:#fff;font-weight:700;padding:3px 6px;border-radius:5px;}
+.clk-word.wrong{background:var(--wrong);color:#fff;font-weight:700;padding:3px 6px;border-radius:5px;text-decoration:line-through;}
+.clk-word.reveal{background:rgba(45,142,78,.18);color:var(--correct);font-weight:700;padding:3px 6px;border-radius:5px;}
+.clk-instr{font-size:12px;color:var(--muted);line-height:1.4;padding:2px 0 6px;}
+
+/* ═══ GAP (Fill in blank) ═══ */
+.gap-sentence{
+  padding:24px 26px;
+  background:#fff;
+  border:2px solid rgba(107,63,160,.18);
+  border-radius:10px;
+  line-height:2.4;
+  font-family:'Literata',serif;
+  font-size:clamp(24px,3.2vw,26px);
+  font-style:italic;
+  color:var(--ink);
+}
+.gap-input{
+  display:inline-block;
+  border:none;
+  border-bottom:2px solid var(--purple);
+  background:rgba(107,63,160,.06);
+  font-family:'Source Sans 3',sans-serif;
+  font-size:clamp(17px,2.4vw,20px);
+  font-style:normal;
+  font-weight:600;
+  width:210px;
+  padding:5px 10px;
+  color:var(--purple-dark);
+  outline:none;
+  transition:all .15s;
+  border-radius:4px 4px 0 0;
+  vertical-align:baseline;
+}
+.gap-input:focus{background:rgba(107,63,160,.12);border-bottom-color:var(--coral);}
+.gap-input.correct{background:rgba(45,142,78,.12);border-bottom-color:var(--correct);color:var(--correct);}
+.gap-input.wrong{background:rgba(196,74,61,.10);border-bottom-color:var(--wrong);color:var(--wrong);}
+.gap-input:disabled{cursor:default;}
+.gap-instr{font-size:12px;color:var(--muted);line-height:1.4;padding:2px 0 6px;}
+
+@media(max-width:640px){
+  .clk-passage{font-size:18px !important;padding:14px 16px;line-height:2;}
+  .gap-sentence{font-size:18px !important;padding:14px 16px;line-height:2;}
+}
+
+</style>
+</head>
+<body>
+
+<div id="startScreen" style="position:relative;overflow:hidden;">
+  <div class="circle-top"></div>
+  <div class="circle-bottom"></div>
+  <div class="start-eyebrow">Κουίζ αυτοαξιολόγησης</div>
+  <div class="start-title">1η Διδακτική <em>πρόταση</em></div>
+  <div class="start-accent"></div>
+  <div class="start-sub"> Περίληψη · Τεχνικές πύκνωσης · Συνυποδήλωση<br>Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.</div>
+  <div class="deck-pick">
+    <div class="deck-card active" id="pick1" onclick="pickDeck(1)">
+      <div class="dc-num">01</div>
+      <div class="dc-title">Κείμενο 1</div>
+      <div class="dc-ktitle">«Η Σχεδία ήταν η σανίδα της σωτηρίας»</div>
+      <div class="dc-author">Καθημερινή</div>
+      <div class="dc-sub">Τμηματική περίληψη · Τεχνικές πύκνωσης</div>
+    </div>
+    <div class="deck-card" id="pick2" onclick="pickDeck(2)">
+      <div class="dc-num">02</div>
+      <div class="dc-title">Κείμενο 2</div>
+      <div class="dc-ktitle">«Παγκόσμιο Κύπελλο Αστέγων: Γκολ στη φτώχεια»</div>
+      <div class="dc-author">Περιοδικό Σχεδία</div>
+      <div class="dc-sub">Επιλεκτική περίληψη · Τεχνικές πύκνωσης</div>
+    </div>
+    <div class="deck-card" id="pick3" onclick="pickDeck(3)">
+      <div class="dc-num">03</div>
+      <div class="dc-title">Κείμενο 3</div>
+      <div class="dc-ktitle">«Η λύση»</div>
+      <div class="dc-author">Ανδρέας Μιχαλόπουλος</div>
+      <div class="dc-sub">Συμβολισμός · Αντίθεση</div>
+    </div>
+  </div>
+  <button class="btn-start" onclick="if(curDk) startQuiz()">Έναρξη →</button>
+  <div class="start-credits">
+    <svg class="credits-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="12" y="15" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">C</text>
+    </svg>
+    Α. & Σ. ΜΗΤΣΕΛΟΣ — ΕΛΛΗΝΟΕΚΔΟΤΙΚΗ, 2026
+  </div>
+</div>
+
+<!-- ══ QUIZ ══ -->
+<div id="quizScreen">
+  <div class="quiz-topbar">
+    <div class="qt-left">
+      <button class="btn-quit" onclick="goStart()">← Έξοδος</button>
+      <div class="qt-deck-lbl" id="qdLabel"></div>
+    </div>
+    <div class="qt-right">
+      <div class="qt-score">✓ <strong class="s-c" id="qsc">0</strong> &nbsp; ✗ <strong class="s-w" id="qsw">0</strong></div>
+      <div class="qt-score" id="qsn" style="opacity:.6"></div>
+    </div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
+  <div class="card-stage" id="cardStage"></div>
+  <div class="quiz-bottom">
+    <div class="qb-info" id="qbInfo"></div>
+    <button class="btn-next" id="btnNext" onclick="nextCard()">Επόμενη →</button>
+  </div>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div id="resultsScreen">
+  <div class="res-score" id="resScore"></div>
+  <div class="res-label" id="resLabel">σωστές απαντήσεις</div>
+  <div class="res-gold"></div>
+  <div class="res-msg" id="resMsg"></div>
+  <div class="res-btns">
+    <button class="btn-res primary" onclick="startQuiz()">↺ Ξανά (ίδια ενότητα)</button>
+    <button class="btn-res primary" id="btnRetryWrong" onclick="retryWrong()" style="background:var(--wrong);display:none;">✗ Επανάληψη λανθασμένων</button>
+    <button class="btn-res secondary" onclick="goStart()">← Έξοδος στην αρχή</button>
+  </div>
+</div>
+
+<div id="dragGhost"></div>
+
+<script>
+
+const LABS=['Α','Β','Γ','Δ'];
+
+const DATA={
+  1:{
+    label:'Κείμενο 1',
+    cls:'dk1',
+    qs:[
+      /* ── Είδος κειμένου ── */
+      {t:'mcq',
+       q:'Το Κείμενο 1 ως προς το είδος του είναι:',
+       opts:['Άρθρο',
+             'Κοινωνικό ρεπορτάζ',
+             'Χρονογράφημα',
+             'Βιογραφία'],
+       ans:1,ref:'Κείμενο 1 · Είδος κειμένου',
+       fbC:'Σωστά! Το Κείμενο 1 είναι κοινωνικό ρεπορτάζ: παρουσιάζει ένα κοινωνικό ζήτημα (αστεγία) με στοιχεία, μαρτυρίες και αφήγηση από την επικαιρότητα.',
+       fbW:'Το Κείμενο 1 είναι κοινωνικό ρεπορτάζ: αναδεικνύει ένα κοινωνικό θέμα (αστεγία) συνδυάζοντας πληροφόρηση, μαρτυρίες και αφήγηση.'},
+
+      /* ── Αριθμός ιστοριών ── */
+      {t:'mcq',
+       q:'Στο κείμενο παρουσιάζονται οι ιστορίες:',
+       opts:['2 αστέγων',
+             '3 αστέγων',
+             '4 αστέγων',
+             'ενός αστέγου'],
+       ans:1,ref:'Κείμενο 1 · Πρόσωπα-ιστορίες',
+       fbC:'Σωστά! Παρουσιάζονται τρεις άστεγοι: η 70χρονη Δ.Π., ο 71χρονος Σ.Π. και ο 63χρονος Μ.Σ. — καθένας με τη δική του διαδρομή προς και μέσα από τη «Σχεδία».',
+       fbW:'Τρεις (3): η 70χρονη Δ.Π., ο 71χρονος Σ.Π. και ο 63χρονος Μ.Σ. Το κείμενο αφηγείται χωριστά την ιστορία του καθενός.'},
+
+      /* ── Μαρτυρίες όλων των προσώπων ── */
+      {t:'mcq',
+       q:'Στο κείμενο περιέχονται μαρτυρίες/λόγια όλων των προσώπων που αναφέρονται σε αυτό;',
+       opts:['Ναι',
+             'Όχι'],
+       ans:0,ref:'Κείμενο 1 · Μαρτυρίες προσώπων',
+       fbC:'Σωστά! Και οι τρεις μιλούν αυτούσια: η Δ.Π. («Σε αυτή τη ζωή περίσσευα»), ο Σ.Π. («Το είδα ως λύτρωση από την κοινωνική απομόνωση») και ο Μ.Σ. («Άρχισα να αισθάνομαι ορατός…»).',
+       fbW:'Ναι. Ο ευθύς λόγος παρατίθεται και για τα τρία πρόσωπα (Δ.Π., Σ.Π., Μ.Σ.), δίνοντας αμεσότητα και πρόσβαση στα συναισθήματά τους.'},
+
+      /* ── Κοινά βιώματα στις μαρτυρίες ── */
+      {t:'mcq',
+       q:'Οι μαρτυρίες των αστέγων εμπεριέχουν κοινά βιώματα;',
+       opts:['Ναι. Περιέχουν κυρίως κοινά βιώματα',
+             'Όχι. Περιέχουν κυρίως διαφορετικά βιώματα'],
+       ans:0,ref:'Κείμενο 1 · Κοινά βιώματα',
+       fbC:'Σωστά! Κοινά βιώματα και για τους τρεις: απώλεια στέγης, μοναξιά και εγκατάλειψη από φίλους/οικογένεια («στην περίπτωση και των τριών τους»), αίσθηση ότι ήταν «αόρατοι», αρχική ντροπή και, τελικά, διάσωση μέσω της «Σχεδίας».',
+       fbW:'Ναι. Παρά τις επιμέρους διαφορές, κυριαρχούν τα κοινά βιώματα: αστεγία, μοναξιά, «αόρατοι» άνθρωποι, και η επανένταξη μέσω της «Σχεδίας».'},
+
+      /* ── Συνυποδήλωση τίτλου «Σχεδία» ── */
+      {t:'mcq',
+       q:'Το όνομα/τίτλος του περιοδικού δρόμου «Σχεδία» εμπεριέχει συνυποδήλωση / μεταφορά;',
+       opts:['Ναι',
+             'Όχι'],
+       ans:0,ref:'Κείμενο 1 · Συνυποδήλωση τίτλου',
+       fbC:'Σωστά! Ο τίτλος «Σχεδία» εμπεριέχει συνυποδήλωση/μεταφορά (σανίδα σωτηρίας για τους αστέγους-ναυαγούς).',
+       fbW:'Ναι: ο τίτλος «Σχεδία» εμπεριέχει συνυποδήλωση/μεταφορά — σανίδα σωτηρίας.'},
+
+      /* ── Β1 — Αντιμετώπιση ΠΡΙΝ τη Σχεδία ── */
+      {t:'mcq',
+       q:'Πώς αντιμετωπίζονταν οι άστεγοι από τον κοινωνικό περίγυρο ΠΡΙΝ την ένταξή τους στη «Σχεδία»;',
+       opts:['Με κατανόηση, ανθρωπιά και ενσυναίσθηση',
+             'Με περιέργεια και ενθουσιασμό',
+             'Με αλληλεγγύη και συμπαράσταση',
+             'Με αδιαφορία, αποστροφή και περιφρόνηση'],
+       ans:3,ref:'Κείμενο 1 · Β1 · Αντιμετώπιση αστέγων',
+       fbC:'Σωστά! Ο κόσμος περνούσε αδιάφορα ή τους κοιτούσε με αποστροφή. Οι άστεγοι ένιωθαν «αόρατοι, υπάρξεις περιθωριακές».',
+       fbW:'ΠΡΙΝ τη Σχεδία: αδιαφορία, αποστροφή, περιφρόνηση. Αισθάνονταν απόγνωση, μοναξιά, παραίτηση: «αόρατοι, υπάρξεις περιθωριακές».'},
+
+      /* ── Β1 — Αντιμετώπιση ΜΕΤΑ τη Σχεδία ── */
+      {t:'mcq',
+       q:'Πώς αντιμετωπίζονταν οι άστεγοι από τον κοινωνικό περίγυρο ΜΕΤΑ την ένταξή τους στη «Σχεδία»;',
+       opts:['Ενδιαφέρον, ενθάρρυνση, ζεστασιά — αίσθηση ότι είναι ορατοί και χρήσιμοι',
+             'Η αντιμετώπισή τους έγινε περισσότερο αρνητική σε σχέση με ΠΡΙΝ',
+             'Αδιαφορία, αποστροφή και περιφρόνηση',
+             'Ενδιαφέρον, περιέργεια αλλά και καχυποψία — αίσθηση απειλής'],
+       ans:0,ref:'Κείμενο 1 · Β1 · Αντιμετώπιση μετά τη Σχεδία',
+       fbC:'Σωστά! Μετά τη Σχεδία: ενδιαφέρον, ευγένεια, ενθάρρυνση — «Άρχισα να αισθάνομαι ορατός», «αυτό άρχισε να μου δίνει ζεστασιά».',
+       fbW:'ΜΕΤΑ: Ενδιαφέρον και ευγένεια περαστικών → ζεστασιά, ικανοποίηση, αίσθηση ότι είναι ξανά «ορατοί».'},
+
+      /* ── Β2α — Αφηγηματικός λόγος ── */
+      {t:'mcq',
+       q:'Τι προσφέρει η αφήγηση στο Κείμενο 1;',
+       opts:['Προσδίδει ζωντάνια, αμεσότητα και παραστατικότητα στο κείμενο',
+             'Παρέχει πληροφορίες για τα γεγονότα, συστήνει τα πρόσωπα και κεντρίζει το ενδιαφέρον του αναγνώστη',
+             'Προσδίδει δραματικότητα και θεατρικότητα στο κείμενο',
+             'Προσφέρει πρόσβαση στις σκέψεις και τα συναισθήματα των αστέγων '],
+       ans:1,ref:'Κείμενο 1 · Β2α · Χωρία με αφήγηση',
+       fbC:'Σωστά! Ο αφηγηματικός λόγος συστήνει τα πρόσωπα, παρέχει πληροφορίες για τα γεγονότα και κεντρίζει το ενδιαφέρον.',
+       fbW:'Ο αφηγηματικός λόγος: συστήνει τα πρόσωπα, δίνει πληροφορίες, αφηγείται παραστατικά την ιστορία τους.'},
+
+      /* ── Β2α — Μαρτυρίες ── */
+      {t:'mcq',
+       q:'Τι προσφέρει στον αναγνώστη η αυτούσια παράθεση μαρτυριών (ευθύς λόγος);',
+       opts:['Δραματικότητα και θεατρικότητα στην παρουσίαση της ιστορίας',
+             'Αντικειμενικότητα και επιστημονική εγκυρότητα',
+             'Άμεση πρόσβαση στις σκέψεις/συναισθήματα των ίδιων των αστέγων',
+             'Συνοπτική απόδοση της ιστορίας και αποφυγή αφηγηματικών λεπτομερειών'],
+       ans:2,ref:'Κείμενο 1 · Β2α · Μαρτυρίες',
+       fbC:'Σωστά! Οι μαρτυρίες δίνουν άμεση πρόσβαση στα συναισθήματα, ενισχύουν την πειστικότητα και προσφέρουν αμεσότητα και ζωντάνια.',
+       fbW:'Οι μαρτυρίες: αμεσότητα, ζωντάνια, πρόσβαση στα συναισθήματα, ενίσχυση πειστικότητας.'},
+
+      /* ── Β3α — Συνυποδήλωση «Σχεδία» ── */
+      {t:'mcq',
+       q:'Τι υποδηλώνει μεταφορικά το όνομα «Σχεδία» του περιοδικού δρόμου;',
+       opts:['Οι άστεγοι είναι ναυαγοί και το περιοδικό αποτελεί σανίδα σωτηρίας',
+             'Το περιοδικό είναι δημιουργημένο με απλά και λιτά μέσα, όπως και μια σχεδία',
+             'Το περιοδικό απευθύνεται κυρίως σε ανθρώπους που αγαπούν τη θάλασσα',
+             'Τη συλλογική προσπάθεια πολλών ανθρώπων που εργάζονται για την έκδοσή του'],
+       ans:0,ref:'Κείμενο 1 · Β3α · Συνυποδήλωση',
+       fbC:'Σωστά! «Σχεδία» = σανίδα σωτηρίας. Οι άστεγοι παρομοιάζονται με ναυαγούς, και το περιοδικό αποτελεί τη σχεδία-διάσωσή τους.',
+       fbW:'«Σχεδία» = μεταφορικά η σανίδα σωτηρίας για τους αστέγους-ναυαγούς.'}
+    ]
+  },
+
+  2:{
+    label:'Κείμενο 2',
+    cls:'dk2',
+    qs:[
+      /* ── Σκοπός Παγκόσμιου Κυπέλλου ── */
+      {t:'mcq',
+       q:'Ποιος είναι ο σκοπός της συμμετοχής στο Παγκόσμιο Κύπελλο Αστέγων;',
+       opts:['Η ψυχαγωγία των αθλητών-αστέγων,  του κοινού και των τηλεθεατών',
+             'Η ανάδειξη και προώθηση νέων ποδοσφαιρικών ταλέντων από τον χώρο των αστέγων',
+             'Η συμβολή στην κοινωνική ένταξη ή επανένταξη των αστέγων μέσω της άθλησης',
+             'Η άθληση των αστέγων και η προώθηση του ποδοσφαίρου'],
+       ans:2,ref:'Κείμενο 2, 2η παράγραφος · Σκοπός',
+       fbC:'Σωστά! Η συμμετοχή αποσκοπεί στο να προσθέσει «ένα ακόμη λιθαράκι στο δύσκολο δρόμο προς την κοινωνική ένταξη ή επανένταξη».',
+       fbW:'Σκοπός: η κοινωνική ένταξη/επανένταξη των αστέγων μέσω της συμμετοχής στη διοργάνωση — το ποδόσφαιρο δεν είναι αυτοσκοπός.'},
+
+      /* ── Β2β — Αλλαγή στη στάση του κοινού ── */
+      {t:'mcq',
+       q:'Τι αποκαλύπτουν τα στατιστικά στοιχεία για τη στάση του κοινού απέναντι στους αστέγους  μετά την παρακολούθηση ενός αγώνα;',
+       opts:['Η θετική άποψη για τους αστέγους αυξήθηκε δραματικά και η αρνητική μειώθηκε',
+             'Δεν υπήρξε καμία ουσιαστική αλλαγή στις αντιλήψεις· η στάση του κοινού παρέμεινε αρνητική',
+             'Η αρνητική άποψη για τους αστέγους αυξήθηκε δραματικά και η θετική μειώθηκε',
+             'Δεν υπήρξε καμία ουσιαστική αλλαγή στις αντιλήψεις· η στάση του κοινού παρέμεινε θετική'],
+       ans:0,ref:'Κείμενο 2, τελευταία παράγραφος · Β2β · Στατιστικά',
+       fbC:'Σωστά! Σημαντική μεταστροφή: θετική άποψη 58% → 85%, αρνητική 20% → μόλις 1%.',
+       fbW:'Μεταστροφή: πριν 58% θετική / 20% αρνητική → μετά 85% θετική / μόλις 1% αρνητική.'},
+
+      /* ── Β2β — Ποια άποψη τεκμηριώνεται ── */
+      {t:'mcq',
+       q:'Ποια άποψη του συντάκτη τεκμηριώνουν τα στατιστικά στοιχεία πριν/μετά τον αγώνα;',
+       opts:['Ο θεσμός αντιπροσωπεύει υψηλό ποδοσφαιρικό θέαμα',
+             'Ο θεσμός είναι δημοφιλής στο κοινό και αποφέρει οικονομικά οφέλη στους διοργανωτές',
+             'Ο θεσμός συμβάλλει στη διαιώνιση των προκαταλήψεων απέναντι στους αστέγους',
+             'Ο θεσμός συμβάλλει στην άρση των προκαταλήψεων απέναντι στους αστέγους'],
+       ans:3,ref:'Κείμενο 2 · Β2β · Τεκμηρίωση',
+       fbC:'Σωστά! Τα στατιστικά επιβεβαιώνουν ότι «το Παγκόσμιο Κύπελλο Αστέγων παρεμβαίνει στις προκαταλήψεις μας» — η μεταστροφή αντιλήψεων είναι εμφανής.',
+       fbW:'Τεκμηριώνεται η άποψη ότι η διοργάνωση «παρεμβαίνει στις προκαταλήψεις μας, που λόγω άγνοιας αδικούν συνανθρώπους μας».'},
+
+      /* ── Β3β — Συνυποδήλωση «Γκολ στη φτώχεια» ── */
+      {t:'mcq',
+       q:'Τι υποδηλώνει μεταφορικά ο τίτλος της καμπάνιας «Γκολ στη φτώχεια»;',
+       opts:['Η ενασχόληση με το ποδόσφαιρο αποτελεί επαγγελματική διέξοδο για τους αστέγους',
+             'Μια επιτυχία (γκολ) στον αγώνα κατά της φτώχειας — βήμα προς τη νίκη/επανένταξη',
+             'Η φτώχεια βιώνεται ως κατάσταση ήττας (γκολ)',
+             'Το ποδόσφαιρο γεννιέται μέσα σε συνθήκες φτώχειας'],
+       ans:1,ref:'Κείμενο 2 · Β3β · Συνυποδήλωση',
+       fbC:'Σωστά! «Γκολ στη φτώχεια» = μεταφορικά μια επιτυχία (γκολ) για τη νίκη στον αγώνα κοινωνικής (επαν)ένταξης.',
+       fbW:'«Γκολ στη φτώχεια»: «γκολ» = επιτυχία · αγώνας κατά της φτώχειας = βήμα προς κοινωνική επανένταξη.'},
+
+      /* ── Επιλεκτική περίληψη ── */
+      {t:'mcq',
+       q:'Τι απαιτεί η επιλεκτική περίληψη;',
+       opts:['Να αποδώσουμε συνοπτικά μόνο τις ιδέες που αναφέρονται σε ένα συγκεκριμένο ζήτημα',
+             'Να αποδώσουμε συνοπτικά όλες τις ιδέες του κειμένου χωρίς εξαίρεση',
+             'Να αποδώσουμε συνοπτικά τις ιδέες μόνο ενός τμήματος/αποσπάσματος του κειμένου',
+             'Να μεταφέρουμε στην περίληψη αυτούσιες τις ιδέες του κειμένου που αναφέρονται σε ένα συγκεκριμένο ζήτημα'],
+       ans:0,ref:'Σημεία εστίασης · Επιλεκτική περίληψη',
+       fbC:'Σωστά! Επιλεκτική = αποδίδουμε μόνο τις ιδέες που αφορούν ένα συγκεκριμένο ζήτημα (π.χ. οφέλη, αιτίες), που μπορεί να είναι διάσπαρτες στο κείμενο.',
+       fbW:'Επιλεκτική περίληψη: εντοπίζουμε και αποδίδουμε συνοπτικά μόνο τις ιδέες σχετικές με ένα ζήτημα — μπορεί να είναι διάσπαρτες.'},
+
+      /* ── DRAG: Οφέλη διοργάνωσης ── */
+      {t:'drag',
+       q:'Αντιστοίχισε κάθε όφελος με την ομάδα που αφορά.',
+       tgts:['Κίνητρο για νέο ξεκίνημα, βελτίωση σχέσεων, εργασία, εκπαίδευση','Αύξηση θετικής άποψης (58%→85%), μείωση αρνητικής (20%→1%)','Υποστήριξη UEFA, ΟΗΕ — κοινωνικός θεσμός σε διεθνές επίπεδο'],
+       items:['Οφέλη για τους αστέγους-συμμετέχοντες','Οφέλη για τη στάση της κοινής γνώμης','Θεσμική αναγνώριση της διοργάνωσης'],
+       ans:[0,1,2],ref:'Κείμενο 2 · Οφέλη διοργάνωσης',
+       fbC:'Σωστά! Τα οφέλη αφορούν: (α) τους ίδιους τους αστέγους, (β) τη μεταστροφή της κοινής γνώμης, (γ) τη θεσμική αναγνώριση.',
+       fbW:'Ξαναδές: (α) οφέλη για αστέγους · (β) μεταστροφή στάσης κοινής γνώμης · (γ) θεσμική αναγνώριση (UEFA, ΟΗΕ).'},
+
+      /* ── Κοινό θεματικό κέντρο ── */
+      {t:'mcq',
+       q:'Ποιο είναι το κοινό θεματικό κέντρο των Κειμένων 1 και 2;',
+       opts:['Η κριτική στην απουσία κοινωνικής πολιτικής για τους ευθάλωτους/κοινωνικά αδυνάτους',
+             'Η αξία του ποδοσφαίρου ως μέσου άσκησης κοινωνικής πολιτικής',
+             'Η στήριξη ανθρώπων που είναι στο περιθώριο, ώστε να επανενταχθούν κοινωνικά',
+             'Η ιστορία ορισμένων αστέγων που επανεντάχθηκαν κοινωνικά'],
+       ans:2,ref:'Θεωρία - σύγκριση κειμένων · Κοινό θεματικό κέντρο',
+       fbC:'Σωστά! Κοινό θεματικό κέντρο: η στήριξη ανθρώπων του κοινωνικού περιθωρίου, ώστε να πάρουν πίσω τη χαμένη τους ζωή.',
+       fbW:'Κοινό θέμα: στήριξη ανθρώπων που ζουν στο περιθώριο (Σχεδία/περιοδικά δρόμου + Παγκόσμιο Κύπελλο Αστέγων) = κοινωνική επανένταξη μέσω πρωτοβουλιών.'}
+    ]
+  },
+
+  3:{
+    label:'Κείμενο 3',
+    cls:'dk3',
+    qs:[
+      /* ── Γιατί «η σχεδία είναι η λύση» ── */
+      {t:'mcq',
+       q:'Γιατί, σύμφωνα με τον αφηγητή, «η σχεδία είναι πάντοτε η λύση»;',
+       opts:['Επειδή η σχεδία είναι ένα απλό στην κατασκευή και ασφαλές μέσο ναυσιπλοίας',
+             'Γιατί αποτελεί μέσο απόδρασης και ελεύθερης πλοήγησης στη ζωή',
+             'Επειδή η σχεδία συμβολίζει την παράδοση, την αντίθεση στην τεχνολογία και τον σύγχρονο βιομηχανικό πολιτισμό',
+             'Γιατί η σχεδία υποδηλώνει το σχέδιο / τον προγραμματισμό που πρέπει να έχει κάθε άνθρωπος στη ζωή του'],
+       ans:1,ref:'Κείμενο 3 · Γ1 · Μεταφορική σημασία σχεδίας',
+       fbC:'Σωστά! Η σχεδία = μεταφορικά μέσο απόδρασης από καταστάσεις εγκλωβισμού, ελευθερία να ακολουθήσεις «το αληθινό ρεύμα» της ζωής.',
+       fbW:'Η σχεδία = μεταφορικά η φυγή από εγκλωβισμό, η ελευθερία, η αναζήτηση αληθινής ζωής.'},
+
+      /* ── Εικόνες ── */
+      {t:'mcq',
+       q:'Τι αποδίδουν οι εικόνες «βλέπεις τη στεριά να αλαργεύει», «γλάρους που ολόγυρα πετούν», «τον ήλιο μακριά να βασιλεύει»;',
+       opts:['Τη ρεαλιστική περιγραφή ενός θαλάσσιου ταξιδιού',
+             'Την ασφάλεια που παρέχει ο προγραμματισμός και η προετοιμασία για το ταξίδι της ζωής',
+             'Τις στιγμές ευτυχίας που προσφέρει το «ταξίδι» του έρωτα',
+             'Την απόδραση, την ελευθερία και την ομορφιά της ζωής'],
+       ans:3,ref:'Κείμενο 3 · Γ1 · θεωρία - Εικόνες/εκφραστικά μέσα',
+       fbC:'Σωστά! Τρεις εικόνες: η στεριά αλαργεύει (απόδραση), γλάροι πετούν (ελευθερία), ήλιος βασιλεύει (ομορφιά ζωής).',
+       fbW:'Αλαργεύει η στεριά = απόδραση · γλάροι = ελευθερία · ηλιοβασίλεμα = ομορφιά ζωής.'},
+
+      /* ── Επανάληψη ── */
+      {t:'mcq',
+       q:'Ποια λειτουργία επιτελεί η επανάληψη «Η σχεδία είναι πάντοτε η λύση»;',
+       opts:['Αποκαλύπτει μια εμμονική στάση του αφηγητή σχετικά με τη σχεδία/απόδραση',
+             'Προσδίδει ποιητικότητα στον λόγο του αφηγητή',
+             'Δηλώνει την αναποφασιστικότητα του αφηγητή',
+             'Αναδεικνύει/τονίζει τη βαθιά πεποίθηση του αφηγητή (σχεδία = λύση)'],
+       ans:3,ref:'Κείμενο 3 · Γ1 · Επανάληψη',
+       fbC:'Σωστά! Η επανάληψη τονίζει εμφατικά τη σημασία της σχεδίας ως λύσης.',
+       fbW:'Η επανάληψη δίνει έμφαση: η σχεδία-απόδραση είναι ΠΑΝΤΑ η λύση.'},
+
+      /* ── Αντίθεση «σχεδιάζω - σκαρώνω» ── */
+      {t:'mcq',
+       q:'Τι αποκαλύπτει η αντίθεση «σχεδιάζω σχεδία» και «σκαρώνω σχεδία»;',
+       opts:['Ο αφηγητής δεν είχε τις τεχνικές γνώσεις για την κατασκευή μιας σχεδίας',
+             'Ο αφηγητής είχε τις τεχνικές γνώσεις για την κατασκευή μιας σχεδίας',
+             'Ο αφηγητής δεν πέρασε από τη σκέψη/επιθυμία του για απόδραση στην πράξη',
+             'Ο αφηγητής δεν έμεινε στα σχέδια/επιθυμίες αλλά προέβη και στην υλοποίησή τους'],
+       ans:2,ref:'Κείμενο 3 · Γ1 · Αντίθεση',
+       fbC:'Σωστά! «Σχεδιάζω» (θεωρία) vs «σκαρώνω» (πράξη): ο αφηγητής παρέμεινε στα σχέδια, δεν πέρασε στη δράση.',
+       fbW:'Αντίθεση: «μόνο να σχεδιάζω έμαθα» = παρέμεινε θεωρητικός, δεν πραγματοποίησε τα σχέδια φυγής/ελευθερίας.'},
+
+      /* ── Μεταφορική σημασία Κ3 vs Κ1 ── */
+      {t:'mcq',
+       q:'Πώς διαφέρει η μεταφορική σημασία της «σχεδίας» στο Κείμενο 3 σε σχέση με το Κείμενο 1;',
+       opts:['Στο Κ3 = απόδραση/ελεύθερη πλοήγηση στη ζωή · Στο Κ1 = σανίδα σωτηρίας/διάσωση',
+             'Έχουν ακριβώς την ίδια σημασία και στα δύο κείμενα (απόδραση-ελευθερία)',
+             'Στο Κ3 = διάσωση/σανίδα σωτηρίας · Στο Κ1 = απόδραση/ελεύθερη πλοήγηση στη ζωή',
+             'Σε κανένα κείμενο η «σχεδία» δεν χρησιμοποιείται μεταφορικά'],
+       ans:0,ref:'Σημεία εστίασης · Σύγκριση μεταφοράς',
+       fbC:'Σωστά! Κ3: σχεδία = απόδραση από εγκλωβισμό, ελεύθερη πλοήγηση. Κ1: «Σχεδία» = σανίδα σωτηρίας, διάσωση ναυαγών-αστέγων.',
+       fbW:'Κ3: σχεδία = μέσο απόδρασης και ελευθερης ζωής · Κ1: «Σχεδία» = σανίδα σωτηρίας / διάσωση από τον κοινωνικό αποκλεισμό.'},
+
+      /* ── Μικροδιήγημα ── */
+      {t:'mcq',
+       q:'Το Κείμενο 3 χαρακτηρίζεται ως μικροδιήγημα. Ποιος από τους παρακάτω ορισμούς αποδίδει αυτόν τον χαρακτηρισμό;',
+       opts:['Αυτοτελές πεζογράφημα/αφήγημα που χαρακτηρίζεται από εξαιρετική συντομία',
+             'Μη αυτοτελές πεζογράφημα/αφήγημα που χαρακτηρίζεται από εξαιρετική συντομία',
+             'Μικρό/σύντομο απόσπασμα ενός ευρύτερου διηγήματος',
+             'Ποίημα μικρής έκτασης με αφηγηματικό λόγο'],
+       ans:1,ref:'Κείμενο 3',
+       fbC:'Σωστά! Το μικροδιήγημα είναι ένα είδος πεζογραφίας στο οποίο παρουσιάζεται μια πλήρη ιστορία (με αρχή, μέση και τέλος) σε λίγες παραγράφους, μερικές σειρές ή ακόμα και λέξεις.',
+       fbW:'Το μικροδιήγημα είναι ένα είδος πεζογραφίας στο οποίο παρουσιάζεται μια πλήρη ιστορία (με αρχή, μέση και τέλος) σε λίγες παραγράφους, μερικές σειρές ή ακόμα και λέξεις.'}
+    ]
+  }
+};
+
+/* ═════════════════════════════════════
+   STATE
+   ═════════════════════════════════════ */
+let curDk=1, curQi=0, score={c:0,w:0}, wrongQs=[], retryMode=false, retryList=[];
+
+/* ═════════════════════════════════════
+   NAVIGATION
+   ═════════════════════════════════════ */
+function pickDeck(n){
+  curDk=n;
+  document.getElementById('pick1').classList.toggle('active',n===1);
+  document.getElementById('pick2').classList.toggle('active',n===2);
+  document.getElementById('pick3').classList.toggle('active',n===3);
+}
+function goStart(){
+  document.getElementById('startScreen').style.display='flex';
+  document.getElementById('quizScreen').classList.remove('active');
+  document.getElementById('resultsScreen').classList.remove('active');
+}
+function startQuiz(){
+  curQi=0; score={c:0,w:0}; wrongQs=[]; retryMode=false; retryList=[];
+  const dk=DATA[curDk];
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('resultsScreen').classList.remove('active');
+  const qs=document.getElementById('quizScreen');
+  qs.classList.add('active');
+  const lbl=document.getElementById('qdLabel');
+  lbl.textContent=dk.label;
+  lbl.className='qt-deck-lbl '+(curDk===1?'dk1-lbl':curDk===2?'dk2-lbl':'dk3-lbl');
+  updateScoreBar();
+  renderCard();
+}
+function showResults(){
+  document.getElementById('quizScreen').classList.remove('active');
+  const rs=document.getElementById('resultsScreen');
+  rs.classList.add('active');
+  const s=score.c, total=retryMode?retryList.length:DATA[curDk].qs.length;
+  document.getElementById('resScore').innerHTML=`${s}<span class="res-denom">/${total}</span>`;
+  document.getElementById('resMsg').textContent=
+    s>=total?'Εξαιρετικά! Όλες σωστές!':
+    s>=Math.ceil(total*.8)?'Πολύ καλά! Ξαναδές τα σημεία που δυσκολεύτηκες.':
+    s>=Math.ceil(total*.5)?'Καλή προσπάθεια. Μελέτησε ξανά τη θεωρία και δοκίμασε πάλι.':
+         'Χρειάζεται λίγη παραπάνω μελέτη. Ξαναδιάβασε και δοκίμασε ξανά!';
+  const btnRetry=document.getElementById('btnRetryWrong');
+  btnRetry.style.display=(wrongQs.length>0)?'block':'none';
+}
+function retryWrong(){
+  retryMode=true;
+  retryList=[...wrongQs];
+  curQi=0; score={c:0,w:0}; wrongQs=[];
+  const dk=DATA[curDk];
+  document.getElementById('resultsScreen').classList.remove('active');
+  const qs=document.getElementById('quizScreen');
+  qs.classList.add('active');
+  const lbl=document.getElementById('qdLabel');
+  lbl.textContent=dk.label+' — Επανάληψη λαθών';
+  lbl.className='qt-deck-lbl '+(curDk===1?'dk1-lbl':curDk===2?'dk2-lbl':'dk3-lbl');
+  updateScoreBar();
+  renderCard();
+}
+function nextCard(){
+  curQi++;
+  const total=retryMode?retryList.length:DATA[curDk].qs.length;
+  if(curQi>=total){showResults();}
+  else{renderCard();}
+}
+
+/* ═════════════════════════════════════
+   SCORE BAR & RENDER CARD
+   ═════════════════════════════════════ */
+function updateScoreBar(){
+  const total=(retryMode?retryList:DATA[curDk].qs).length;
+  document.getElementById('qsc').textContent=score.c;
+  document.getElementById('qsw').textContent=score.w;
+  document.getElementById('qsn').textContent=`${curQi+1} / ${total}`;
+  document.getElementById('progBar').style.width=((curQi/total)*100)+'%';
+  document.getElementById('qbInfo').textContent=`© Α. & Σ. Μητσέλος, 2026`;
+}
+
+function renderCard(){
+  updateScoreBar();
+  document.getElementById('btnNext').classList.remove('show');
+  const qList=retryMode?retryList:DATA[curDk].qs;
+  const q=qList[curQi];
+  const stage=document.getElementById('cardStage');
+  stage.innerHTML='';
+
+  const card=document.createElement('div');
+  card.className='big-card '+DATA[curDk].cls;
+
+  const left=document.createElement('div');
+  left.className='bc-left';
+  left.id='bcLeft';
+  const total=qList.length;
+  left.innerHTML=`
+    <div class="bc-qnum">Ερώτηση ${curQi+1} / ${total}</div>
+    <div class="bc-qtext">${q.q}</div>
+    <div class="bc-qtype">${q.t==='drag'?'⇄ Αντιστοίχιση':q.t==='clk'?'◎ Εντοπισμός':q.t==='gap'?'▭ Συμπλήρωση κενού':'● Πολλαπλής επιλογής'}</div>
+    <div class="bc-result" id="bcResult"></div>`;
+
+  const right=document.createElement('div');
+  right.className='bc-right';
+  right.id='bcRight';
+
+  if(q.t==='mcq') buildMCQ(q,right);
+  else if(q.t==='clk') buildCLK(q,right);
+  else if(q.t==='gap') buildGAP(q,right);
+  else buildDrag(q,right);
+
+  card.appendChild(left);
+  card.appendChild(right);
+  stage.appendChild(card);
+}
+
+/* ═════════════════════════════════════
+   MCQ
+   ═════════════════════════════════════ */
+function buildMCQ(q,container){
+  q.opts.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn';
+    btn.innerHTML=`<span class="opt-lbl">${LABS[i]}.</span><span>${opt}</span>`;
+    btn.addEventListener('click',()=>{
+      const ok=i===q.ans;
+      container.querySelectorAll('.opt-btn').forEach(b=>b.classList.add('disabled'));
+      btn.classList.add('chosen',ok?'correct':'wrong');
+      if(!ok) container.querySelectorAll('.opt-btn')[q.ans].classList.add('reveal');
+      finishQuestion(ok,q,container);
+    });
+    container.appendChild(btn);
+  });
+  addFB(container);
+}
+
+/* ═════════════════════════════════════
+   DRAG DROP
+   ═════════════════════════════════════ */
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+
+function buildDrag(q,container){
+  const order=shuffle(q.items.map((_,i)=>i));
+  const slotVal=new Array(q.tgts.length).fill(null);
+  const chips={}, zones=[];
+  let placed=0;
+  let tapSel=null;
+
+  const instr=document.createElement('div');
+  instr.className='drag-instr';
+  instr.innerHTML='<strong>Υπολογιστής:</strong> σύρε · <strong>Κινητό:</strong> πάτα chip → πάτα θέση';
+  container.appendChild(instr);
+
+  const bank=document.createElement('div');
+  bank.className='drag-bank';
+  container.appendChild(bank);
+
+  order.forEach(orig=>{
+    const chip=document.createElement('div');
+    chip.className='drag-chip';
+    chip.textContent=q.items[orig];
+    chip.dataset.orig=orig;
+    chip.draggable=true;
+    chip.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('orig',orig);
+      setTimeout(()=>chip.classList.add('dragging'),0);
+      clearTapSel();
+    });
+    chip.addEventListener('dragend',()=>chip.classList.remove('dragging'));
+    chip.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(tapSel===orig){clearTapSel();}
+      else{clearTapSel();tapSel=orig;chip.classList.add('sel-tap');}
+    });
+    bank.appendChild(chip);
+    chips[orig]=chip;
+  });
+
+  const slotsWrap=document.createElement('div');
+  slotsWrap.className='drag-slots';
+  container.appendChild(slotsWrap);
+
+  q.tgts.forEach((tgt,ti)=>{
+    const row=document.createElement('div');row.className='slot-row';
+    const lbl=document.createElement('div');lbl.className='slot-lbl';lbl.textContent=tgt;
+    const zone=document.createElement('div');zone.className='slot-zone';
+    zone.textContent='Τοποθέτησε εδώ';
+
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();zone.classList.remove('drag-over');
+      const orig=parseInt(e.dataTransfer.getData('orig'));
+      placeInSlot(orig,ti,zone,slotVal,chips,bank);
+      placed=countPlaced(slotVal);
+      sub.disabled=(placed<q.tgts.length);
+    });
+    zone.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(tapSel!==null){
+        placeInSlot(tapSel,ti,zone,slotVal,chips,bank);
+        clearTapSel();
+        placed=countPlaced(slotVal);
+        sub.disabled=(placed<q.tgts.length);
+      } else if(slotVal[ti]!==null){
+        const old=slotVal[ti];
+        chips[old].style.display='';
+        slotVal[ti]=null;
+        zone.textContent='Τοποθέτησε εδώ';
+        zone.classList.remove('filled');
+        placed=countPlaced(slotVal);
+        sub.disabled=true;
+      }
+    });
+    row.appendChild(lbl);row.appendChild(zone);
+    slotsWrap.appendChild(row);
+    zones.push(zone);
+  });
+
+  addFB(container);
+
+  const sub=document.createElement('button');
+  sub.className='btn-submit';sub.textContent='Υποβολή';sub.disabled=true;
+  container.appendChild(sub);
+
+  sub.addEventListener('click',()=>{
+    let allOk=true;
+    zones.forEach((z,ti)=>{
+      if(slotVal[ti]===q.ans[ti]) z.classList.add('ok-slot');
+      else{z.classList.add('ko-slot');allOk=false;}
+    });
+    sub.style.display='none';
+    bank.style.display='none';
+    instr.style.display='none';
+    finishQuestion(allOk,q,container);
+  });
+
+  function clearTapSel(){
+    if(tapSel!==null && chips[tapSel]) chips[tapSel].classList.remove('sel-tap');
+    tapSel=null;
+  }
+  function countPlaced(sv){return sv.filter(v=>v!==null).length;}
+}
+
+function placeInSlot(orig,ti,zone,slotVal,chips,bank){
+  const old=slotVal[ti];
+  if(old!==null) chips[old].style.display='';
+  slotVal[ti]=orig;
+  zone.textContent=chips[orig].textContent;
+  zone.classList.add('filled');
+  chips[orig].style.display='none';
+  chips[orig].classList.remove('sel-tap');
+}
+
+
+/* ═════════════════════════════════════
+   CLK (Click on word in passage)
+   ═════════════════════════════════════ */
+function buildCLK(q,container){
+  /* --- Determine if single or multi-target --- */
+  const ansArr = Array.isArray(q.ans) ? q.ans : q.ans.split('|').map(s=>s.trim());
+  const totalTargets = ansArr.length;
+  const isMulti = totalTargets > 1;
+
+  const instr=document.createElement('div');
+  instr.className='clk-instr';
+  instr.innerHTML= isMulti
+    ? `<strong>Οδηγία:</strong> Κάνε κλικ σε <strong>${totalTargets}</strong> λέξεις/φράσεις μέσα στο χωρίο.`
+    : '<strong>Οδηγία:</strong> Κάνε κλικ στη ζητούμενη λέξη/φράση μέσα στο χωρίο.';
+  container.appendChild(instr);
+
+  const passage=document.createElement('div');
+  passage.className='clk-passage';
+
+  /* --- Parse passage: ||| marks target phrases --- */
+  const parts=q.passage.split('|||');
+  // parts alternate: text, target, text, target, ... text
+
+  function tokenize(text){
+    const re=/([\u0370-\u03FF\u1F00-\u1FFF\u00C0-\u024FA-Za-z\u0027\u2019\u0384\u0385]+)|([^\u0370-\u03FF\u1F00-\u1FFF\u00C0-\u024FA-Za-z\u0027\u2019\u0384\u0385]+)/g;
+    let m, out='';
+    while((m=re.exec(text))!==null){
+      if(m[1]){
+        out+=`<span class="clk-word" data-val="${m[1]}">${m[1]}</span>`;
+      } else {
+        out+=m[2].replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+    }
+    return out;
+  }
+
+  let html='';
+  parts.forEach((part,i)=>{
+    if(i%2===0){
+      // plain text segment
+      html+=tokenize(part);
+    } else {
+      // target segment
+      const trimmed=part.trim();
+      html+=`<span class="clk-word clk-target" data-val="${trimmed}">${trimmed}</span>`;
+    }
+  });
+  passage.innerHTML=html;
+  container.appendChild(passage);
+
+  addFB(container);
+
+  /* --- Click logic --- */
+  let found=0;
+  const ansNorm=ansArr.map(a=>a.trim().toLowerCase());
+
+  passage.querySelectorAll('.clk-word').forEach(w=>{
+    w.addEventListener('click',()=>{
+      if(w.classList.contains('disabled')) return;
+      const chosen=w.dataset.val.trim().toLowerCase();
+      const isTarget=w.classList.contains('clk-target') || ansNorm.includes(chosen);
+
+      if(isMulti){
+        /* Multi-target mode: user clicks one by one */
+        if(isTarget && !w.classList.contains('correct')){
+          w.classList.add('correct','disabled');
+          found++;
+          if(found>=totalTargets){
+            // all found — finish as correct
+            passage.querySelectorAll('.clk-word').forEach(x=>x.classList.add('disabled'));
+            finishQuestion(true,q,container);
+          }
+        } else if(!isTarget){
+          // wrong click — reveal all remaining, finish as wrong
+          w.classList.add('wrong','disabled');
+          passage.querySelectorAll('.clk-word').forEach(x=>x.classList.add('disabled'));
+          passage.querySelectorAll('.clk-target').forEach(t=>{
+            if(!t.classList.contains('correct')) t.classList.add('reveal');
+          });
+          finishQuestion(false,q,container);
+        }
+      } else {
+        /* Single-target mode (original logic) */
+        passage.querySelectorAll('.clk-word').forEach(x=>x.classList.add('disabled'));
+        if(isTarget){
+          w.classList.add('correct');
+        } else {
+          w.classList.add('wrong');
+          passage.querySelectorAll('.clk-target').forEach(t=>t.classList.add('reveal'));
+        }
+        finishQuestion(isTarget,q,container);
+      }
+    });
+  });
+}
+
+/* ═════════════════════════════════════
+   GAP (Fill in blank)
+   ═════════════════════════════════════ */
+function buildGAP(q,container){
+  const instr=document.createElement('div');
+  instr.className='gap-instr';
+  instr.innerHTML='<strong>Οδηγία:</strong> Πληκτρολόγησε ΜΙΑ λέξη/φράση στο κενό.';
+  container.appendChild(instr);
+
+  const sentenceWrap=document.createElement('div');
+  sentenceWrap.className='gap-sentence';
+
+  // Split sentence on ______ marker
+  const parts=q.sentence.split('______');
+  const inputId='gapInput_'+Math.random().toString(36).slice(2,8);
+
+  sentenceWrap.innerHTML=
+    (parts[0]||'').replace(/</g,'&lt;')
+    +`<input type="text" class="gap-input" id="${inputId}" autocomplete="off" />`
+    +(parts[1]||'').replace(/</g,'&lt;');
+
+  container.appendChild(sentenceWrap);
+
+  addFB(container);
+
+  const sub=document.createElement('button');
+  sub.className='btn-submit';
+  sub.textContent='Υποβολή';
+  sub.disabled=false;
+  container.appendChild(sub);
+
+  const input=sentenceWrap.querySelector('input');
+  input.focus();
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();sub.click();}
+  });
+
+  sub.addEventListener('click',()=>{
+    const val=input.value.trim().toLowerCase().replace(/[.,;!?·]/g,'');
+    if(!val) return;
+    const accepted=q.ans.map(a=>a.toLowerCase());
+    const ok=accepted.includes(val);
+    input.disabled=true;
+    input.classList.add(ok?'correct':'wrong');
+    if(!ok){
+      // append correct answer next to input
+      const hint=document.createElement('span');
+      hint.style.cssText='display:inline-block;margin-left:8px;color:var(--correct);font-weight:700;font-style:normal;';
+      hint.textContent='→ '+q.ans[0];
+      input.parentNode.insertBefore(hint,input.nextSibling);
+    }
+    sub.style.display='none';
+    finishQuestion(ok,q,container);
+  });
+}
+
+
+/* ═════════════════════════════════════
+   FINISH QUESTION
+   ═════════════════════════════════════ */
+function addFB(container){
+  const fb=document.createElement('div');
+  fb.className='fb-box';
+  fb.id='currentFB';
+  container.appendChild(fb);
+}
+
+function finishQuestion(ok,q,container){
+  if(ok) score.c++; else{score.w++; wrongQs.push(q);}
+  document.getElementById('qsc').textContent=score.c;
+  document.getElementById('qsw').textContent=score.w;
+  const left=document.getElementById('bcLeft');
+  left.classList.add(ok?'answered-ok':'answered-ko');
+  document.getElementById('bcResult').textContent=ok?'✓':'✗';
+  const fb=document.getElementById('currentFB');
+  fb.className='fb-box show '+(ok?'ok':'ko');
+  fb.innerHTML=`<strong>${ok?'✓':'✗'}</strong> ${ok?q.fbC:q.fbW}<span class="fb-ref">→ ${q.ref}</span>`;
+  const done=curQi+1, total=DATA[curDk].qs.length;
+  document.getElementById('progBar').style.width=((done/total)*100)+'%';
+  const btnNext=document.getElementById('btnNext');
+  btnNext.textContent=done<total?'Επόμενη →':'Αποτελέσματα →';
+  btnNext.classList.add('show');
+  setTimeout(()=>fb.scrollIntoView({behavior:'smooth',block:'nearest'}),150);
+}
+
+</script>
+</body>
+</html>
