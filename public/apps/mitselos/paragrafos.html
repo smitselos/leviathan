@@ -1567,7 +1567,7 @@ function attachEvents() {
   if (btnDrillPrint) btnDrillPrint.addEventListener('click', () => {
     const pool = getDrillPool();
     const count = drll.filterCount === 0 ? pool.length : Math.min(drll.filterCount, pool.length);
-    openPrintModalPara(pool.slice(0, count));
+    openPrintModalPara(pool.slice(0, count), true);  // Εξάσκηση → με ερωτήσεις Δομής/Τρόπου
   });
   const btnDrillHome = document.getElementById('btnDrillHome');
   if (btnDrillHome) btnDrillHome.addEventListener('click', ()=>{ screen='home'; render(); });
@@ -2476,6 +2476,7 @@ function renderPrsResults() {
 let _pendingPrintQ = [];
 let _pendingPrintPara = [];    // παράγραφοι προς εκτύπωση (Εξάσκηση/Παρουσίαση)
 let _printMode = 'questions';  // 'questions' | 'paragraphs'
+let _paraWithQuestions = false; // true → συμπεριέλαβε ερωτήσεις Δομής/Τρόπου (Εξάσκηση)
 let _pmListenersAttached = false;
 
 function _togglePmLinkButtons(show) {
@@ -2493,10 +2494,11 @@ function openPrintModal(questions) {
   document.getElementById('printModalOverlay').classList.add('active');
 }
 
-function openPrintModalPara(paragraphs) {
+function openPrintModalPara(paragraphs, withQuestions) {
   _printMode = 'paragraphs';
   _pendingPrintPara = paragraphs;
   _pendingPrintQ = [];
+  _paraWithQuestions = !!withQuestions;  // Εξάσκηση → με ερωτήσεις· Παρουσίαση → μόνο παράγραφοι
   _togglePmLinkButtons(false);  // παράγραφοι → χωρίς deep-link σετ
   document.getElementById('printModalOverlay').classList.add('active');
 }
@@ -2528,7 +2530,7 @@ function attachPrintModalListeners() {
     const s = collectPrintSettings();
     closePrintModal();
     if (_printMode === 'paragraphs') {
-      printParagraphWorksheet(_pendingPrintPara, s);
+      printParagraphWorksheet(_pendingPrintPara, s, _paraWithQuestions);
     } else {
       printSelWorksheet(_pendingPrintQ, s);
     }
@@ -2585,11 +2587,11 @@ function collectPrintSettings() {
     title:    document.getElementById('pmTitle').value.trim() || 'ΑΣΚΗΣΗ',
     instructions: document.getElementById('pmInstructions').value.trim(),
     score:    document.getElementById('pmScore').value.trim(),
-    lblYN:    document.getElementById('pmLblYN').value.trim(),
-    lblMC:    document.getElementById('pmLblMC').value.trim(),
-    lblCLK:   document.getElementById('pmLblCLK').value.trim(),
-    lblDD:    document.getElementById('pmLblDD').value.trim(),
-    lblGAP:   document.getElementById('pmLblGAP').value.trim(),
+    lblYN:    '',
+    lblMC:    '',
+    lblCLK:   '',
+    lblDD:    '',
+    lblGAP:   '',
     school:   document.getElementById('pmSchool').value.trim(),
     subject:  document.getElementById('pmSubject').value.trim(),
     className:document.getElementById('pmClass').value.trim(),
@@ -2805,7 +2807,7 @@ function printSelWorksheet(questions, s) {
 // Οι παράγραφοι τυπώνονται στη σειρά, αριθμημένες, χωρίς κενά ή γραμμές
 // απάντησης· ο μαθητής γράφει δίπλα/από κάτω.
 // ══════════════════════════════════════════════
-function printParagraphWorksheet(paragraphs, s) {
+function printParagraphWorksheet(paragraphs, s, withQuestions) {
   // Κεφαλίδα (ίδια λογική με το φύλλο ερωτήσεων, χωρίς QR σετ ερωτήσεων)
   const logoCell = s.logoUrl ? `
     <td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:${s.logoW}px">
@@ -2832,11 +2834,20 @@ function printParagraphWorksheet(paragraphs, s) {
   const esc = (t) => String(t == null ? '' : t)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // Παράγραφοι στη σειρά, αριθμημένες, χωρίς κενά/γραμμές
+  // Συνοδευτικές ερωτήσεις (Εξάσκηση): Δομή; / Τρόπος ανάπτυξης; με γραμμές απάντησης
+  const questionsBlock = withQuestions ? `
+      <div class="pp-qs">
+        <div class="pp-q"><span class="pp-q-txt">α) Ποια είναι η δομή της παραγράφου;</span>
+          <div class="pp-ans-line"></div></div>
+        <div class="pp-q"><span class="pp-q-txt">β) Ποιος είναι ο τρόπος ανάπτυξης;</span>
+          <div class="pp-ans-line"></div></div>
+      </div>` : '';
+
+  // Παράγραφοι στη σειρά, αριθμημένες
   const paraHTML = (paragraphs || []).map((p, i) => `
     <div class="pp">
       <span class="pp-num">${i + 1}.</span>
-      <span class="pp-text">${esc(p.text)}</span>
+      <span class="pp-text">${esc(p.text)}</span>${questionsBlock}
     </div>`).join('');
 
   const html = `<!DOCTYPE html>
@@ -2856,6 +2867,10 @@ function printParagraphWorksheet(paragraphs, s) {
   .pp{font-size:${s.fontSize};line-height:${s.lineHeight};text-align:justify;margin-bottom:${s.qSpacing};page-break-inside:avoid}
   .pp-num{font-weight:bold;margin-right:6px}
   .pp-text{}
+  .pp-qs{margin-top:8px;text-align:left}
+  .pp-q{font-size:${s.fontSize};margin-top:6px}
+  .pp-q-txt{font-weight:600}
+  .pp-ans-line{border-bottom:1px solid #333;height:22px;margin-top:4px}
   @media print{
     .no-print{display:none!important}
     @page{margin:${s.marginV} ${s.marginH}}
@@ -2949,30 +2964,6 @@ loadData();
       <div>
         <label class="pm-lbl">Βαθμολογία (προαιρετικά)</label>
         <input type="text" class="pm-input" id="pmScore" placeholder="π.χ. Μονάδες: 25">
-      </div>
-    </div>
-
-    <div class="pm-section">
-      <h3>📝 Διατύπωση ανά Τύπο Ερώτησης</h3>
-      <div style="margin-bottom:8px">
-        <label class="pm-lbl">Ναι / Όχι (YN)</label>
-        <input type="text" class="pm-input" id="pmLblYN" value="Να χαρακτηρίσετε την πρόταση ως σωστή (Σ) ή λανθασμένη (Λ).">
-      </div>
-      <div style="margin-bottom:8px">
-        <label class="pm-lbl">Πολλαπλής Επιλογής (MC)</label>
-        <input type="text" class="pm-input" id="pmLblMC" value="Να επιλέξετε την απάντηση που θεωρείτε σωστή.">
-      </div>
-      <div style="margin-bottom:8px">
-        <label class="pm-lbl">Εντοπισμός (CLK)</label>
-        <input type="text" class="pm-input" id="pmLblCLK" value="Να εντοπίσετε και να κυκλώσετε στο κείμενο τη ζητούμενη λέξη ή φράση.">
-      </div>
-      <div style="margin-bottom:8px">
-        <label class="pm-lbl">Αντιστοίχιση (DD)</label>
-        <input type="text" class="pm-input" id="pmLblDD" value="Να αντιστοιχίσετε τα στοιχεία της στήλης Α με τα στοιχεία της στήλης Β.">
-      </div>
-      <div>
-        <label class="pm-lbl">Συμπλήρωση (GAP)</label>
-        <input type="text" class="pm-input" id="pmLblGAP" value="Να συμπληρώσετε τα κενά με την κατάλληλη λέξη ή φράση.">
       </div>
     </div>
 
