@@ -1009,6 +1009,15 @@ export default function Home() {
         ? nonEmptyQs.map(q => ({ id: 'final_' + q.code, code: q.code, text: q.text, selected: true }))
         : [],
     }));
+    // Επανασυγκέντρωση σχολίων/ετικετών/info από τα πηγαία κείμενα του δικτύου
+    // (ίδια λογική με το mergeAndSave) — αλλιώς το αναγεννημένο PDF τα χάνει.
+    const allTags = [...new Set(net.items.flatMap(item => fileTags(item.fileId)))];
+    const allComment = net.items
+      .map(item => { const c = fileComment(item.fileId); return c.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + c.trim() : ''; })
+      .filter(Boolean).join('\n\n');
+    const allInfo = net.items
+      .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
+      .filter(Boolean).join('\n\n');
     // Στόχος του merge: ΤΟ ΑΡΧΕΙΟ ΠΟΥ ΑΓΓΙΞΕ ο χρήστης (fileId) — όχι το τυχόν
     // ξεπερασμένο net.pdfFileId. Έτσι ο δεσμός συγκλίνει στο σωστό αντίγραφο.
     const filteredNetwork = { ...net, pdfFileId: fileId, items: filteredItems };
@@ -1026,8 +1035,12 @@ export default function Home() {
         // Σφράγισε το ΝΕΟ συγχωνευμένο αρχείο με τη μόνιμη ταυτότητα του δικτύου
         // (νέο fileId μετά την αναγέννηση → αλλιώς χάνει networkId/ετικέτα «Δίκτυο» και το 🔄 δεν το ξαναβρίσκει)
         try {
+          const metaPatch = { id: d.pdfFileId, networkId: net.id, _isNetwork: true,
+            tags: [...new Set(['Δίκτυο', ...(net.tags||[]), ...allTags])] };
+          if (allComment) metaPatch.comment = allComment;
+          if (allInfo) metaPatch.info = allInfo;
           await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ id: d.pdfFileId, networkId: net.id, _isNetwork: true, tags: [...new Set(['Δίκτυο', ...(net.tags||[])])] }) });
+            body: JSON.stringify(metaPatch) });
         } catch {}
         setNetMsg('✓ PDF ενημερώθηκε');
         setTimeout(() => setNetMsg(''), 2500);
