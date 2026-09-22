@@ -192,22 +192,32 @@ export default async function handler(req, res) {
         }
         page.drawText(prefix, { x: margin, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
         const remainingWidth = maxWidth - prefixWidth;
-        const textWords = (q.text || '').split(/\s+/).filter(w => w);
+        // Χωρίζουμε στην ΠΡΩΤΗ αλλαγή παραγράφου: μόνο η 1η παράγραφος μπαίνει
+        // δίπλα στο πρόθεμα («Α. »)· το υπόλοιπο κείμενο περνά ΑΥΤΟΥΣΙΟ (με τα \n)
+        // στο drawWrappedJustified, ώστε οι αλλαγές παραγράφου να διατηρούνται.
+        const fullText = q.text || '';
+        const nlIdx = fullText.indexOf('\n');
+        const firstPara = (nlIdx === -1 ? fullText : fullText.slice(0, nlIdx)).trim();
+        const restText = nlIdx === -1 ? '' : fullText.slice(nlIdx + 1);
+        const firstParaWords = firstPara.split(/\s+/).filter(w => w);
         let firstLineWords = [];
-        for (const word of textWords) {
+        for (const word of firstParaWords) {
           const testLine = [...firstLineWords, word].join(' ');
           if (font.widthOfTextAtSize(testLine, 12) > remainingWidth && firstLineWords.length > 0) break;
           firstLineWords.push(word);
         }
-        const restWords = textWords.slice(firstLineWords.length);
-        const isLastLine = restWords.length === 0;
+        const restParaWords = firstParaWords.slice(firstLineWords.length);
+        const isLastLine = restParaWords.length === 0 && !restText.trim();
         if (firstLineWords.length > 0) {
           drawJustifiedLine(firstLineWords, 12, font, isLastLine, margin + prefixWidth, remainingWidth);
         } else {
           y -= lineHeight;
         }
-        if (restWords.length > 0) {
-          drawWrappedJustified(restWords.join(' '), 12, font);
+        if (restParaWords.length > 0) {
+          drawWrappedJustified(restParaWords.join(' '), 12, font);
+        }
+        if (restText.trim()) {
+          drawWrappedJustified(restText, 12, font);
         }
       } else {
         drawWrappedJustified(q.text || '', 12, font);
