@@ -53,6 +53,8 @@ function buildItems(reg) {
       mimeType: f.mimeType || '',
       shareMessage: f.shareMessage || '',
       pdfId: f.pdfId || null, // PDF αντίγραφο για Office αρχεία (προβολή χωρίς auth)
+      ghUrl: f.ghUrl || null, // εφαρμογή GitHub → άμεσο στατικό λινκ (public/apps στο Vercel)
+      isApp: !!f.isApp,
     }));
 }
 
@@ -114,10 +116,28 @@ export default async function handler(req, res) {
 
     /* ── POST: ορισμός visibility + inbox push ── */
     if (req.method === 'POST') {
-      const { id, visibility, message } = req.body || {};
+      const { id, visibility, message, app, ghUrl, name } = req.body || {};
       if (!id || !visibility) return res.status(400).json({ error: 'Missing data' });
-      const idx = reg.files.findIndex(f => f.id === id);
-      if (idx === -1) return res.status(404).json({ error: 'Not found' });
+      let idx = reg.files.findIndex(f => f.id === id);
+      // ── Εφαρμογή GitHub: entry που ίσως δεν υπάρχει ακόμα στο registry.
+      //    Είναι ήδη δημόσια στο Vercel (public/apps) → ΚΑΜΙΑ ενέργεια Drive.
+      const isAppShare = !!app && !!ghUrl;
+      if (idx === -1) {
+        if (!isAppShare) return res.status(404).json({ error: 'Not found' });
+        // Δημιουργία νέου app entry
+        reg.files.push({
+          id, name: name || id.replace(/^gh:/, ''), mimeType: 'text/html',
+          isApp: true, ghUrl, folderId: null, tags: ['Εφαρμογή'],
+          comment: '', info: '', questions: '', links: [],
+          visibility: 'none', published: false, favorite: false,
+          openCount: 0, openedAt: null, addedAt: Date.now(),
+        });
+        idx = reg.files.length - 1;
+      } else if (isAppShare) {
+        // Υπάρχον app entry → σιγουρεύουμε τα πεδία της εφαρμογής
+        reg.files[idx].isApp = true;
+        reg.files[idx].ghUrl = ghUrl;
+      }
 
       const file = reg.files[idx];
       const prevVisibility = file.visibility || 'none';
@@ -129,7 +149,10 @@ export default async function handler(req, res) {
 
       let pdfFailed = false; // Office χωρίς PDF αντίγραφο → ο μαθητής θα κάνει λήψη αντί για προβολή
 
-      if (visibility !== 'none') {
+      // Εφαρμογή GitHub → παράκαμψη ΟΛΩΝ των ενεργειών Drive (permissions/PDF).
+      if (isAppShare) {
+        // τίποτα να μοιραστεί στο Drive — το λινκ είναι ήδη δημόσιο
+      } else if (visibility !== 'none') {
         const shareResult = await sharePublic(drive, id);
         // Αποθήκευσε mimeType αν δεν υπάρχει ήδη
         if (!reg.files[idx].mimeType) {
@@ -169,6 +192,8 @@ export default async function handler(req, res) {
           visibility, sentAt: Date.now(), seen: false,
           message: message || '',
           pdfId: reg.files[idx].pdfId || null, // ώστε το inbox να προτιμά το PDF αντίγραφο
+          ghUrl: reg.files[idx].ghUrl || null, // εφαρμογή GitHub → άνοιγμα απευθείας του στατικού λινκ
+          isApp: !!reg.files[idx].isApp,
         };
         const conns = await kv.get(`conn:${myEmail}`) || [];
         let recipients = [];
@@ -199,8 +224,11 @@ export default async function handler(req, res) {
       if (idx !== -1) {
         reg.files[idx].visibility = 'none';
         reg.files[idx].published = false;
-        await unsharePublic(drive, key);
-        await unsharePdfCopies(drive, key);
+        // Εφαρμογή GitHub → καμία ενέργεια Drive (ψευτο-ID, δεν υπάρχει permission)
+        if (!reg.files[idx].isApp && !String(key).startsWith('gh:')) {
+          await unsharePublic(drive, key);
+          await unsharePdfCopies(drive, key);
+        }
       }
       await saveRegistry(drive, reg);
       const items = buildItems(reg);
