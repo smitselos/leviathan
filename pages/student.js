@@ -29,7 +29,19 @@ function openExternal(url){
 
 // Λήψη: τα native Google (χωρίς κατάληξη) δεν έχουν bytes στο uc?export=download —
 // δίνουμε το δημόσιο PDF αντίγραφο (pdfId), αλλιώς server export (gdoc=1&dl=1).
+// Εφαρμογή GitHub: το item φέρει ghUrl (στατικό λινκ Vercel) ή id 'gh:…'.
+// Δεν είναι Drive αρχείο — ανοίγει/μοιράζεται απευθείας το ghUrl.
+function appUrlOf(f){
+  if(f?.ghUrl) return f.ghUrl;
+  if(typeof f?.id==='string' && f.id.startsWith('gh:')){
+    const origin=typeof window!=='undefined'?window.location.origin:'https://leviathan-olive.vercel.app';
+    return origin+'/apps/'+f.id.slice(3).split('/').map(encodeURIComponent).join('/');
+  }
+  return null;
+}
 function downloadUrl(f){
+  const app=appUrlOf(f);
+  if(app) return app; // εφαρμογή → «λήψη» = άνοιγμα του στατικού λινκ
   const noExt=!/\.[a-z0-9]{2,6}$/i.test(f.name||'');
   if(noExt) return f.pdfId
     ? `https://drive.google.com/uc?id=${f.pdfId}&export=download`
@@ -117,6 +129,8 @@ function PublicView({teacher,isMobile,hasSession}){
   },[files,search]);
 
   const openFile=(f)=>{
+    const app=appUrlOf(f);
+    if(app){ openExternal(app); return; } // εφαρμογή GitHub → στατικό λινκ
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google (Docs/Slides/Sheets): χωρίς κατάληξη — το /api/publish δεν δίνει mimeType
@@ -136,6 +150,8 @@ function PublicView({teacher,isMobile,hasSession}){
   };
 
   const getFileUrl=(f)=>{
+    const app=appUrlOf(f);
+    if(app)return app;
     if(/\.html?$/i.test(f.name))return `${typeof window!=='undefined'?window.location.origin:''}/api/student-file?id=${f.id}`;
     return `https://drive.google.com/file/d/${f.id}/view`;
   };
@@ -443,6 +459,8 @@ function StudentView({myEmail,isMobile,router}){
 
   const openFile=(f)=>{
     markSeen(f.id);
+    const app=appUrlOf(f);
+    if(app){ openExternal(app); return; } // εφαρμογή GitHub → στατικό λινκ
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google: χωρίς κατάληξη
@@ -479,6 +497,8 @@ function StudentView({myEmail,isMobile,router}){
   };
 
   const getFileUrl=(f)=>{
+    const app=appUrlOf(f);
+    if(app)return app;
     if(/\.html?$/i.test(f.name))return `${window.location.origin}/api/student-file?id=${f.id}`;
     return `https://drive.google.com/file/d/${f.id}/view`;
   };
@@ -1219,7 +1239,7 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const [visibilityInfo,setVisibilityInfo]=useState(null);
   const [activeTag,setActiveTag]=useState(null);
   const [qrFile,setQrFile]=useState(null);
-  const getFileUrl=f=>`https://drive.google.com/file/d/${f.id}/view`;
+  const getFileUrl=f=>appUrlOf(f)||`https://drive.google.com/file/d/${f.id}/view`;
   const getVisLabel=(v)=>{
     if(!v||v==='none')return null;
     if(v==='public')return '🌐 Δημόσιο';
@@ -1250,6 +1270,8 @@ function TeacherView({teacher,myEmail,hasSession,isMobile,router}){
   const filtered=useMemo(()=>{let r=[...files];if(activeTag)r=r.filter(f=>(f.tags||[]).includes(activeTag));if(search.trim()){const q=search.toLowerCase();r=r.filter(f=>f.name.toLowerCase().includes(q)||(f.tags||[]).some(t=>t.toLowerCase().includes(q)));}return r;},[files,search,activeTag]);
 
   const openFile=f=>{
+    const app=appUrlOf(f);
+    if(app){ openExternal(app); return; } // εφαρμογή GitHub → στατικό λινκ
     const isHtml=/\.html?$/i.test(f.name);
     const isOffice=/\.(docx?|pptx?|xlsx?)$/i.test(f.name);
     const isGDoc=!/\.[a-z0-9]{2,6}$/i.test(f.name||''); // native Google: χωρίς κατάληξη
