@@ -416,6 +416,7 @@ export default function Home() {
   const [ghOpenFolder, setGhOpenFolder] = useState(null); // όνομα ανοιχτού υποφακέλου GitHub
   const [ghSearch, setGhSearch] = useState('');
   const [ghCopied, setGhCopied] = useState(null);    // path εφαρμογής που μόλις αντιγράφηκε
+  const [ghAppVis, setGhAppVis] = useState({});      // { 'gh:<path>': visibility } — κατάσταση μοιράσματος εφαρμογών
 
   // Live & Συνδέσεις
   const [liveFile, setLiveFile] = useState(null);
@@ -610,7 +611,12 @@ export default function Home() {
       const df = await rf.json(); const dr = await rr.json();
       setFolders(Array.isArray(df.folders) ? df.folders : []);
       setAppsFolderId(df.appsFolderId || null);
-      setFiles(Array.isArray(dr.files) ? dr.files : []);
+      const allFiles = Array.isArray(dr.files) ? dr.files : [];
+      setFiles(allFiles);
+      // Ανασύσταση κατάστασης μοιράσματος εφαρμογών GitHub (entries με id 'gh:…')
+      const appVis = {};
+      allFiles.forEach((f) => { if (typeof f.id === 'string' && f.id.startsWith('gh:') && f.visibility && f.visibility !== 'none') appVis[f.id] = f.visibility; });
+      setGhAppVis(appVis);
     } catch (e) {}
     setLoading(false);
   }, []);
@@ -1009,15 +1015,6 @@ export default function Home() {
         ? nonEmptyQs.map(q => ({ id: 'final_' + q.code, code: q.code, text: q.text, selected: true }))
         : [],
     }));
-    // Επανασυγκέντρωση σχολίων/ετικετών/info από τα πηγαία κείμενα του δικτύου
-    // (ίδια λογική με το mergeAndSave) — αλλιώς το αναγεννημένο PDF τα χάνει.
-    const allTags = [...new Set(net.items.flatMap(item => fileTags(item.fileId)))];
-    const allComment = net.items
-      .map(item => { const c = fileComment(item.fileId); return c.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + c.trim() : ''; })
-      .filter(Boolean).join('\n\n');
-    const allInfo = net.items
-      .map(item => { const inf = fileInfo(item.fileId); return inf.trim() ? '▸ ' + (item.name || '').replace(/\.[^.]+$/, '') + ':\n' + inf.trim() : ''; })
-      .filter(Boolean).join('\n\n');
     // Στόχος του merge: ΤΟ ΑΡΧΕΙΟ ΠΟΥ ΑΓΓΙΞΕ ο χρήστης (fileId) — όχι το τυχόν
     // ξεπερασμένο net.pdfFileId. Έτσι ο δεσμός συγκλίνει στο σωστό αντίγραφο.
     const filteredNetwork = { ...net, pdfFileId: fileId, items: filteredItems };
@@ -1035,12 +1032,8 @@ export default function Home() {
         // Σφράγισε το ΝΕΟ συγχωνευμένο αρχείο με τη μόνιμη ταυτότητα του δικτύου
         // (νέο fileId μετά την αναγέννηση → αλλιώς χάνει networkId/ετικέτα «Δίκτυο» και το 🔄 δεν το ξαναβρίσκει)
         try {
-          const metaPatch = { id: d.pdfFileId, networkId: net.id, _isNetwork: true,
-            tags: [...new Set(['Δίκτυο', ...(net.tags||[]), ...allTags])] };
-          if (allComment) metaPatch.comment = allComment;
-          if (allInfo) metaPatch.info = allInfo;
           await fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(metaPatch) });
+            body: JSON.stringify({ id: d.pdfFileId, networkId: net.id, _isNetwork: true, tags: [...new Set(['Δίκτυο', ...(net.tags||[])])] }) });
         } catch {}
         setNetMsg('✓ PDF ενημερώθηκε');
         setTimeout(() => setNetMsg(''), 2500);
@@ -1334,12 +1327,19 @@ export default function Home() {
     setLiveCenterCode(null);
     setLiveSentItems([]);
   };
-  const setVisibility = async (id, visibility) => {
+  const setVisibility = async (id, visibility, appMeta) => {
     setPublishing(true);
     let ok = false;
     try {
-      const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, visibility, message: shareMessage.trim() || undefined }) });
-      if (r.ok) { setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none' } : f)); ok = true; }
+      // appMeta (εφαρμογή GitHub): { app:true, ghUrl, name } — ο server καταχωρεί
+      // την εφαρμογή στο registry ΧΩΡΙΣ ενέργειες Drive (είναι ήδη δημόσια στο Vercel).
+      const body = { id, visibility, message: shareMessage.trim() || undefined, ...(appMeta || {}) };
+      const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if (r.ok) {
+        setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none' } : f));
+        if (appMeta?.app) setGhAppVis((prev) => ({ ...prev, [id]: visibility })); // ενημέρωση ένδειξης κάρτας εφαρμογής
+        ok = true;
+      }
     } catch(e) {}
     setPublishing(false);
     if (ok) { setVisibilityPicker(null); setShareMessage(''); }
@@ -1350,6 +1350,13 @@ export default function Home() {
     setShareMessage('');
     setVisibilityDraft(fileOf(id).visibility || 'none'); // ξεκίνα από την αποθηκευμένη κατάσταση
     setVisibilityPicker(id);
+  };
+  // Μοίρασμα εφαρμογής GitHub — ανοίγει το ΙΔΙΟ modal ορατότητας με app object
+  const togglePublishApp = (app) => {
+    const savedV = ghAppVis[app.id] || 'none';
+    setShareMessage('');
+    setVisibilityDraft(savedV);
+    setVisibilityPicker({ _shareApp: true, id: app.id, name: app.name, _ghUrl: app._ghUrl, visibility: savedV });
   };
   const openNetwork = async () => {
     setActiveView('network');
@@ -2239,6 +2246,15 @@ export default function Home() {
                               <button onClick={() => window.open(ghUrl(a), '_blank')} style={{ ...btn('mini'), color:PALETTE.mustard.deep }}>Άνοιγμα ↗</button>
                               <button onClick={() => copyGh(a)} style={{ ...btn('mini'), color: ghCopied === a.path ? '#16a34a' : '#555' }}>{ghCopied === a.path ? '✓ Αντιγράφηκε' : '🔗 Λινκ'}</button>
                               <button onClick={() => addLiveItem({ kind:'url', url:ghUrl(a), name:a.name })} style={{ ...btn('mini'), color:'#5c7a3a' }}>➕ Live</button>
+                              {(() => {
+                                const av = ghAppVis['gh:' + a.path];
+                                const lbl = shareLabel(av);
+                                return (
+                                  <button onClick={() => togglePublishApp({ id:'gh:' + a.path, name:a.name, _ghUrl:ghUrl(a) })}
+                                    style={{ ...btn('mini'), color: av && av !== 'none' ? '#fff' : PALETTE.peach.deep, background: av && av !== 'none' ? '#16a34a' : undefined }}
+                                    title="Μοίρασμα σε μαθητές/συνδέσεις">{lbl || '👤 Μοίρασμα'}</button>
+                                );
+                              })()}
                             </div>
                           </div>
                         ))}
@@ -3539,7 +3555,11 @@ export default function Home() {
 
       {/* Visibility Picker */}
       {visibilityPicker && (() => {
-        const curFile = fileOf(visibilityPicker);
+        // Το visibilityPicker κρατά είτε ID αρχείου (string) είτε ολόκληρο ghApp
+        // object ({ _shareApp:true, id:'gh:…', name, _ghUrl }) για εφαρμογές GitHub.
+        const isAppShare = typeof visibilityPicker === 'object' && visibilityPicker?._shareApp;
+        const shareId = isAppShare ? visibilityPicker.id : visibilityPicker;
+        const curFile = isAppShare ? visibilityPicker : fileOf(visibilityPicker);
         const savedV = curFile?.visibility || 'none';
         const curV = visibilityDraft; // οι επιλογές γίνονται τοπικά (draft) — αποστολή μόνο με «Αποθήκευση»
         const isDirty = curV !== savedV;
@@ -3663,7 +3683,7 @@ export default function Home() {
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={closePicker} disabled={publishing}
                   style={{ flex:1, padding:'11px', borderRadius:12, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80', opacity:publishing?0.5:1 }}>Άκυρο</button>
-                <button onClick={()=>setVisibility(visibilityPicker, curV)} disabled={publishing || !isDirty}
+                <button onClick={()=>setVisibility(shareId, curV, isAppShare ? { app:true, ghUrl:curFile._ghUrl, name:curFile.name } : null)} disabled={publishing || !isDirty}
                   style={{ flex:2, padding:'11px', borderRadius:12, border:'none', background: (!isDirty||publishing) ? '#a7d7b9' : '#16a34a', color:'#fff', fontSize:13, fontWeight:700, cursor:(publishing||!isDirty)?'default':'pointer' }}>
                   {publishing ? 'Αποθήκευση…' : 'Αποθήκευση'}
                 </button>
