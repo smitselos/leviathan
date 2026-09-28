@@ -1,0 +1,606 @@
+<title>Ανατομία του Παραπλανητή</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Alegreya+Sans:wght@400;500;700&family=GFS+Didot&display=swap">
+<style>
+  /* ── Ζεστό «χειρόγραφο» κρεμ, χρυσό μελάνι, βαθύ μπλε· ροή καρτών με αναστροφή ── */
+  :root{
+    color-scheme: light;
+    --paper:#d9d2c4; --paper-2:#cfc7b7;
+    --card:#fff8ec;  --card-2:#efe7d6; --card-edge:#e3ddd0;
+    --ink:#182131;   --ink-2:#3a3226;  --muted:#6a5836;
+    --gold:#b6883f;  --gold-deep:#9a7a35; --gold-soft:#cda85f;
+    --line:#cbbf9f;
+    --correct:#2f5222; --correct-bg:#e5efd7; --correct-edge:#bcd3a3;
+    --dist:#8a6420;    --dist-bg:#f4ead0;    --dist-edge:#dcc487;
+    --wrong:#7a2f1a;   --wrong-bg:#f6ded3;   --wrong-edge:#e8bda8;
+    --display:'GFS Didot','Alegreya',Georgia,serif;
+    --serif:'Alegreya',Georgia,serif;
+    --sans:'Alegreya Sans',system-ui,sans-serif;
+    --r:16px;
+    --shadow:0 1px 0 #fff8 inset, 0 10px 30px -12px rgba(24,33,49,.35), 0 2px 6px -2px rgba(24,33,49,.18);
+  }
+  html,body{height:100%}
+  body{
+    margin:0; background:
+      radial-gradient(120% 90% at 50% -10%, #e2dbcd 0%, var(--paper) 55%, var(--paper-2) 100%) fixed;
+    color:var(--ink-2); font-family:var(--serif);
+    font-size:16px; line-height:1.5; -webkit-text-size-adjust:100%;
+  }
+  *{box-sizing:border-box}
+
+  .app{
+    min-height:100%; display:flex; flex-direction:column;
+    max-width:760px; margin:0 auto; padding:0 16px;
+    padding-block: 14px 18px;
+  }
+
+  /* Header */
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:5;
+    background:linear-gradient(var(--paper) 72%, rgba(217,210,196,0));
+    padding-top:6px; padding-bottom:10px;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  .brand h1{
+    font-family:var(--display); font-weight:400; color:var(--ink);
+    font-size:clamp(1.55rem,5.6vw,2.15rem); line-height:1.05; margin:0;
+    text-wrap:balance; letter-spacing:.2px;
+  }
+  .brand .sub{
+    font-family:var(--sans); font-size:.74rem; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--gold-deep); font-weight:700;
+  }
+  .segbar{display:flex; gap:8px; margin-top:12px}
+  .seg{
+    flex:1; font-family:var(--sans); font-weight:700; font-size:.82rem;
+    letter-spacing:.05em; padding:9px 8px; border-radius:11px; cursor:pointer;
+    border:1px solid var(--line); background:var(--card-2); color:var(--muted);
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    transition:.18s; -webkit-tap-highlight-color:transparent;
+  }
+  .seg .cnt{font-size:.72rem; opacity:.7}
+  .seg[aria-current="true"]{
+    background:var(--ink); color:#f3ead6; border-color:var(--ink);
+    box-shadow:0 6px 16px -8px rgba(24,33,49,.6);
+  }
+  .seg:not([aria-current="true"]):hover{border-color:var(--gold-soft); color:var(--ink-2)}
+
+  .progress{height:4px; border-radius:4px; background:#0000; margin-top:12px;
+    box-shadow:inset 0 0 0 1px var(--card-edge); overflow:hidden; background:var(--card-2)}
+  .progress > i{display:block; height:100%; width:0;
+    background:linear-gradient(90deg,var(--gold-soft),var(--gold-deep)); transition:width .3s}
+
+  /* Card viewport */
+  main{flex:1; display:flex; align-items:stretch; padding:16px 0; perspective:1600px}
+  .card{
+    position:relative; width:100%; background:
+      linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--card-edge); border-radius:var(--r);
+    box-shadow:var(--shadow);
+    padding:22px 22px 20px; overflow:auto;
+    transform-origin:center; transform-style:preserve-3d;
+    transition:transform .26s ease; will-change:transform;
+    min-height:340px; display:flex; flex-direction:column;
+  }
+  .card.flipping{transform:rotateY(90deg)}
+  @media (prefers-reduced-motion:reduce){ .card{transition:opacity .18s} .card.flipping{transform:none;opacity:0} }
+
+  .eyebrow{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap}
+  .chip{
+    font-family:var(--sans); font-weight:700; font-size:.68rem; letter-spacing:.13em;
+    text-transform:uppercase; padding:4px 10px; border-radius:999px;
+    color:var(--gold-deep); background:#fff6e2; border:1px solid var(--gold-soft);
+  }
+  .chip.k{color:var(--ink); background:var(--card-2); border-color:var(--line)}
+  .card h2{
+    font-family:var(--display); font-weight:400; color:var(--ink);
+    font-size:clamp(1.35rem,4.6vw,1.75rem); line-height:1.14; margin:.1rem 0 .5rem;
+    text-wrap:balance;
+  }
+  .lead{font-size:1.02rem; color:var(--ink-2)}
+  .card p{margin:.55rem 0}
+  .card strong{color:var(--ink)}
+  .quote{
+    font-style:italic; color:var(--muted); border-left:3px solid var(--gold-soft);
+    padding-left:12px; margin:.7rem 0;
+  }
+
+  /* Σχεδιαγραμματική θεωρία */
+  .sk{list-style:none; margin:.3rem 0 0; padding:0; display:grid; gap:8px}
+  .sk li{padding:9px 12px; border:1px solid var(--card-edge); border-radius:11px; background:var(--card)}
+  .sk b{display:block; font-family:var(--sans); font-weight:700; font-size:.66rem; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--gold-deep); margin-bottom:2px}
+  .sk span{display:block; color:var(--ink-2); font-size:1rem}
+  .sk em{font-style:italic; color:var(--ink); font-weight:500}
+  .flow{list-style:none; margin:.3rem 0 0; padding:0; display:grid; gap:8px}
+  .flow li{display:flex; gap:11px; align-items:center; font-size:1.02rem; color:var(--ink-2)}
+  .flow b{color:var(--ink); font-family:var(--sans); font-weight:700}
+  .mini{font-size:.98rem; color:var(--muted); margin:.2rem 0 .55rem}
+  .scale{display:flex; gap:8px; flex-wrap:wrap; margin:.3rem 0 .7rem}
+  .sc{font-family:var(--sans); font-weight:700; font-size:.92rem; padding:8px 14px; border-radius:10px; border:1px solid}
+  .sc.x{color:var(--wrong); background:var(--wrong-bg); border-color:var(--wrong-edge)}
+  .sc.ok{color:var(--correct); background:var(--correct-bg); border-color:var(--correct-edge)}
+
+  .steps{list-style:none; margin:.4rem 0 0; padding:0; display:grid; gap:9px}
+  .steps li{display:flex; gap:11px; align-items:flex-start}
+  .steps .num, .flow .num{
+    flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+    font-family:var(--sans); font-weight:700; font-size:.82rem; color:#fff;
+    background:var(--gold-deep); box-shadow:0 2px 6px -2px rgba(154,122,53,.7);
+  }
+  .traps{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
+  .trap{font-family:var(--sans); font-weight:700; font-size:.82rem; color:var(--wrong);
+    background:var(--wrong-bg); border:1px solid var(--wrong-edge); padding:5px 11px; border-radius:9px}
+
+  /* Exercise front */
+  .qtext{font-size:1.08rem; color:var(--ink); font-weight:500; margin:.2rem 0 .8rem}
+  .opts{list-style:none; margin:0; padding:0; display:grid; gap:9px}
+  .opt{
+    display:flex; gap:11px; align-items:flex-start; text-align:right;
+    width:100%; font-family:var(--serif); font-size:1rem; color:var(--ink-2);
+    background:var(--card); border:1.5px solid var(--card-edge); border-radius:12px;
+    padding:11px 13px; cursor:pointer; transition:.15s; -webkit-tap-highlight-color:transparent;
+    text-align:start;
+  }
+  .opt:hover{border-color:var(--gold-soft)}
+  .opt .lk{
+    flex:none; width:24px; height:24px; border-radius:7px; display:grid; place-items:center;
+    font-family:var(--sans); font-weight:700; font-size:.85rem;
+    background:var(--card-2); color:var(--muted); border:1px solid var(--line);
+  }
+  .opt.sel{border-color:var(--ink); background:#fffdf6}
+  .opt.sel .lk{background:var(--ink); color:#f3ead6; border-color:var(--ink)}
+  /* revealed roles */
+  .opt.reveal{cursor:default}
+  .opt.correct{background:var(--correct-bg); border-color:var(--correct-edge)}
+  .opt.correct .lk{background:var(--correct); color:#fff; border-color:var(--correct)}
+  .opt.dist{background:var(--dist-bg); border-color:var(--dist-edge)}
+  .opt.dist .lk{background:var(--dist); color:#fff; border-color:var(--dist)}
+  .opt.wrong{background:var(--wrong-bg); border-color:var(--wrong-edge)}
+  .opt.wrong .lk{background:var(--wrong); color:#fff; border-color:var(--wrong)}
+  .hint{font-family:var(--sans); font-size:.82rem; color:var(--muted); margin-top:12px; display:flex; gap:7px; align-items:center}
+
+  /* Exercise back — commentary */
+  .verdict{
+    font-family:var(--sans); font-weight:700; font-size:.92rem; letter-spacing:.02em;
+    display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border-radius:10px;
+    background:var(--correct-bg); color:var(--correct); border:1px solid var(--correct-edge); margin-bottom:4px;
+  }
+  .analysis{list-style:none; margin:.7rem 0 0; padding:0; display:grid; gap:10px}
+  .row{border-radius:12px; padding:11px 13px; border:1px solid var(--card-edge); background:var(--card)}
+  .row.correct{background:var(--correct-bg); border-color:var(--correct-edge)}
+  .row.dist{background:var(--dist-bg); border-color:var(--dist-edge)}
+  .row.wrong{background:var(--wrong-bg); border-color:var(--wrong-edge)}
+  .row .rh{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:3px}
+  .row .rk{font-family:var(--sans); font-weight:700; width:22px; height:22px; border-radius:6px;
+    display:grid; place-items:center; font-size:.8rem; color:#fff; flex:none}
+  .row.correct .rk{background:var(--correct)} .row.dist .rk{background:var(--dist)} .row.wrong .rk{background:var(--wrong)}
+  .tag{font-family:var(--sans); font-weight:700; font-size:.68rem; letter-spacing:.09em; text-transform:uppercase;
+    padding:3px 8px; border-radius:999px}
+  .tag.correct{color:var(--correct); background:#fff; border:1px solid var(--correct-edge)}
+  .tag.dist{color:var(--dist); background:#fff; border:1px solid var(--dist-edge)}
+  .tag.wrong{color:var(--wrong); background:#fff; border:1px solid var(--wrong-edge)}
+  .tech{font-family:var(--sans); font-weight:500; font-size:.86rem; color:var(--ink-2)}
+  .row .note{font-size:.96rem; color:var(--ink-2); margin:2px 0 0}
+  .modelbox{margin-top:12px; padding:12px 14px; border-radius:12px; background:#fff6e2;
+    border:1px dashed var(--gold-soft)}
+  .modelbox .ml{font-family:var(--sans); font-weight:700; font-size:.72rem; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--gold-deep); margin-bottom:4px}
+  .modelbox p{margin:0; font-style:italic; color:var(--ink-2)}
+
+  /* Footer nav */
+  footer.nav{
+    position:sticky; bottom:0; z-index:5;
+    padding-top:12px; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 4px);
+    background:linear-gradient(rgba(217,210,196,0), var(--paper) 42%);
+    display:flex; align-items:center; gap:10px;
+  }
+  .btn{
+    font-family:var(--sans); font-weight:700; font-size:.9rem; cursor:pointer;
+    border-radius:12px; padding:11px 15px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink); transition:.15s; -webkit-tap-highlight-color:transparent;
+    display:inline-flex; align-items:center; gap:7px;
+  }
+  .btn:hover{border-color:var(--gold-soft)}
+  .btn:disabled{opacity:.4; cursor:default}
+  .btn.flip{flex:1; justify-content:center; background:var(--ink); color:#f3ead6; border-color:var(--ink)}
+  .btn.flip:hover{background:#20304a}
+  .btn.flip.back{background:var(--gold-deep); border-color:var(--gold-deep); color:#fff8ec}
+  .counter{font-family:var(--sans); font-size:.8rem; color:var(--muted); min-width:52px; text-align:center;
+    font-variant-numeric:tabular-nums}
+  .score{margin-left:auto; font-family:var(--sans); font-size:.78rem; color:var(--muted);
+    display:flex; align-items:center; gap:6px}
+  .score b{color:var(--correct); font-size:.95rem}
+
+  @media (max-width:460px){
+    .card{padding:18px 15px}
+    .seg{font-size:.76rem; padding:8px 6px}
+    .btn{padding:10px 12px; font-size:.85rem}
+    .btn .lbl{display:none}
+    .btn.flip .lbl{display:inline}
+  }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Ανατομία του Παραπλανητή</h1>
+      <span class="sub">Ερωτήσεις κλειστού τύπου · Β1</span>
+    </div>
+    <div class="segbar" role="tablist">
+      <button class="seg" id="segTheory" role="tab"><span>ΘΕΩΡΙΑ</span><span class="cnt" id="ctT"></span></button>
+      <button class="seg" id="segEx" role="tab"><span>ΑΣΚΗΣΕΙΣ</span><span class="cnt" id="ctE"></span></button>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+  </header>
+
+  <main><section class="card" id="card" aria-live="polite"></section></main>
+
+  <footer class="nav">
+    <button class="btn" id="prev">‹ <span class="lbl">Προηγ.</span></button>
+    <button class="btn flip" id="flip">Αναστροφή</button>
+    <button class="btn" id="next"><span class="lbl">Επόμ.</span> ›</button>
+    <span class="counter" id="counter"></span>
+    <span class="score" id="scoreBox" hidden>Σκορ <b id="score">0</b>/<span id="scoreTot">0</span></span>
+  </footer>
+</div>
+
+<script>
+/* ═══════════ ΠΕΡΙΕΧΟΜΕΝΟ ═══════════ */
+
+const THEORY = [
+  { term:"Ο σκοπός της άσκησης",
+    body:`<p class="lead">Οι ερωτήσεις κλειστού τύπου <strong>δεν ζητούν γνώμη ούτε γενική γνώση</strong> — ζητούν κατανόηση του κειμένου.</p>
+      <p>Η σωστή απάντηση είναι πάντα <strong>τεκμηριώσιμη</strong> από συγκεκριμένο σημείο. Ο κανόνας-κλειδί που πρέπει να εσωτερικεύσει ο μαθητής:</p>
+      <p class="quote">«Μπορώ να δείξω με το δάχτυλο πού το λέει το κείμενο;» Αν όχι, η επιλογή είναι ύποπτη — όσο «σωστή» κι αν ακούγεται.</p>` },
+
+  { term:"Η μέθοδος των τεσσάρων βημάτων",
+    body:`<ol class="steps">
+      <li><span class="num">1</span><div><strong>Διάβασε πρώτα την εκφώνηση</strong> και εντόπισε τη λέξη-κλειδί: <em>τι ακριβώς</em> ρωτάει.</div></li>
+      <li><span class="num">2</span><div><strong>Γύρνα στο κείμενο</strong> και βρες το σχετικό χωρίο· μην απαντάς «από μνήμης».</div></li>
+      <li><span class="num">3</span><div><strong>Απόκλεισε επιλογές για να βρεις τη σωστή.</strong> Ψάξε <em>γιατί</em> κάθε λανθασμένη είναι λανθασμένη.</div></li>
+      <li><span class="num">4</span><div><strong>Επαλήθευσε</strong> ότι η επιλογή καλύπτει <em>όλη</em> την εκφώνηση, όχι μόνο ένα μέρος της.</div></li>
+    </ol>` },
+
+  { term:"Γιατί υπάρχουν οι παραπλανητές",
+    body:`<p class="lead">Η αποτελεσματικότητα μιας ερώτησης δεν κρίνεται από τη σωστή απάντηση, αλλά από την <strong>ποιότητα των παραπλανητικών επιλογών</strong> (distractors).</p>
+      <p>Ένας καλός παραπλανητής δεν είναι «γεμιστικό»: είναι η επιλογή που ο μαθητής ο οποίος <em>δεν</em> έχει κατακτήσει πλήρως το ζητούμενο μπορεί εύλογα να διαλέξει. Έτσι η ερώτηση δεν ελέγχει απλώς τη γνώση — <strong>διαγιγνώσκει</strong> το είδος της παρανόησης.</p>
+      <p>Η <strong>διατύπωση των παραπλανητών</strong> γίνεται σκόπιμα έτσι ώστε να οδηγήσει σε λάθος τον μαθητή που διαβάζει επιπόλαια, βιαστικά και χωρίς κρίση — και να ξεχωρίσει, αντίθετα, ο <strong>επιμελής και σκεπτόμενος</strong> αναγνώστης.</p>` },
+
+  { term:"Τύπος Α · Μερική / επιφανειακή αλήθεια",
+    body:`<p>Ο παραπλανητής είναι σωστός σε ένα σημείο ή υπό μία οπτική, αλλά <strong>αστοχεί ως προς το συγκεκριμένο ζητούμενο</strong>.</p>
+      <p>Ο μαθητής που διαβάζει επιφανειακά «αναγνωρίζει» το γνώριμο στοιχείο και παρασύρεται. Το αντίδοτο: ξεχώρισε το «<em>τι λέει</em>» από το «<em>γιατί το λέει</em>».</p>
+      <p class="quote">Βλ. Άσκηση 1 (επιλ. α) και Άσκηση 7 (επιλ. γ).</p>` },
+
+  { term:"Τύπος Β · Αναδιατύπωση που αντιστρέφει το νόημα",
+    body:`<p>Η επιλογή περιέχει οικείες λέξεις του κειμένου, αλλά <strong>αντιστρέφει τη σχέση ή τη σειρά</strong> τους.</p>
+      <p>Ακούγεται γνώριμη, γι' αυτό και επικίνδυνη. Απαιτεί προσοχή στο <em>ποιος κάνει τι</em> και <em>με ποια σειρά</em>.</p>
+      <p class="quote">Βλ. Άσκηση 4 (επιλ. α) και Άσκηση 6 (επιλ. β).</p>` },
+
+  { term:"Τύπος Γ · Αλλοίωση του βαθμού / της έντασης",
+    body:`<p>Η επιλογή κρατά το σωστό θέμα αλλά <strong>μεγεθύνει ή σμικρύνει την ένταση</strong>: «αποφασιστικός» αντί «συμπληρωματικός», «αντιγράφω» αντί «μελετώ».</p>
+      <p>Εδώ κρίνεται η ακρίβεια στην απόχρωση — η πιο «λεπτή» διάκριση.</p>
+      <p class="quote">Βλ. Άσκηση 3 (επιλ. α, γ) και Άσκηση 9 (επιλ. β).</p>` },
+
+  { term:"Τύπος Δ · Ψευδο-περιορισμός",
+    body:`<p>Η επιλογή <strong>προσθέτει όρο που το κείμενο δεν θέτει</strong>: «μόνο όταν…», «αποκλειστικά», «να μη…».</p>
+      <p>Φαίνεται πιο «ειδική» και άρα πιο σωστή — στην πραγματικότητα στενεύει αυθαίρετα το νόημα.</p>
+      <p class="quote">Βλ. Άσκηση 8 (επιλ. α, β, γ) και Άσκηση 7 (επιλ. α, β).</p>` },
+
+  { term:"Τύπος Ε · Εννοιολογική εγγύτητα & ομοιογένεια",
+    body:`<p>Ο ισχυρός παραπλανητής ανήκει στο <strong>ίδιο σημασιολογικό πεδίο</strong> με τη σωστή απάντηση και έχει ανάλογο μήκος, δομή και ύφος.</p>
+      <p>Ο εντελώς άσχετος ή ατημέλητος παραπλανητής «προδίδεται» και απορρίπτεται χωρίς πραγματική γνώση — άρα δεν διακρίνει τους μαθητές.</p>` },
+
+  { term:"Οι λέξεις-παγίδες: τα απόλυτα",
+    body:`<p>Άναψε κόκκινο φως στα απόλυτα. Σπανίως ένα κείμενο υποστηρίζει κάτι απόλυτο — είναι τα πιο συχνά «μπαλώματα» των παραπλανητών.</p>
+      <div class="traps">
+        <span class="trap">μόνο</span><span class="trap">αποκλειστικά</span><span class="trap">αυστηρά</span>
+        <span class="trap">πάντα</span><span class="trap">ποτέ</span><span class="trap">όλοι</span><span class="trap">κανείς</span><span class="trap">με κανέναν τρόπο</span>
+      </div>` },
+
+  { term:"Η δυσκολότερη κατηγορία: η αξιολόγηση / κριτική κατανόηση",
+    body:`<p>Στην τριάδα <strong>θετικά / αρνητικά / κριτικά</strong>, το «κριτικά» σημαίνει <em>ζυγίζω και τις δύο όψεις</em>.</p>
+      <p>Οι δύο ακραίες, μονομερείς επιλογές «καίγονται» η μία την άλλη· η νηφάλια, μεσαία θέση είναι η ζητούμενη. Γι' αυτό συχνά μόνο εδώ ζητείται αιτιολόγηση.</p>
+      <p class="quote">Βλ. Άσκηση 5 — η μοναδική που απαιτεί τεκμηρίωση.</p>` },
+];
+
+const BRIDGE = {
+  term:"Από τη θεωρία στην πράξη",
+  body:`<p class="lead">Τώρα εφαρμόζουμε: <strong>10 ερωτήσεις κλειστού τύπου</strong> από το Β1, με βάση το Κείμενο 1 (συνέντευξη Μ. Βερνίκου) και το σκίτσο.</p>
+    <p>Σε κάθε κάρτα, <strong>διάλεξε</strong> την απάντηση που θεωρείς σωστή. Έπειτα πάτησε <strong>«Αναστροφή»</strong>: η πίσω όψη δείχνει τη σωστή απάντηση και <strong>σχολιάζει την τεχνική παραπλάνησης</strong> κάθε λανθασμένης επιλογής.</p>
+    <p class="hint">◆ Λεζάντα: <span class="tag correct" style="margin:0 4px">Σωστή</span> <span class="tag dist" style="margin:0 4px">Παραπλανητής</span></p>`
+};
+
+const EX = [
+ { n:1, q:"Η Μ. Βερνίκου αφηγείται στην πρώτη παράγραφο ένα περιστατικό για να:",
+   opts:[
+    {k:"α", t:"πληροφορήσει για ένα προσωπικό της βίωμα.", role:"dist", tech:"Μερική / επιφανειακή αλήθεια",
+      note:"Πράγματι πρόκειται για προσωπικό βίωμα — αυτό όμως είναι το «τι», όχι το «γιατί». Η αφήγηση δεν έχει πληροφοριακό, αλλά στοχαστικό σκοπό."},
+    {k:"β", t:"αναδείξει την προσφορά της τέχνης της φωτογραφίας.", role:"dist", tech:"Εντελώς εκτός στόχευσης",
+      note:"Το περιστατικό δεν εξυμνεί την προσφορά της φωτογραφίας· αντίθετα, προειδοποιεί για την υπερβολή της."},
+    {k:"γ", t:"προβληματίσει για τη σχέση μας με τη φωτογραφία.", role:"correct",
+      note:"Το περιστατικό στην Τανζανία καταλήγει στο «Πρώτα ζήσε και μετά φωτογράφισε» — λειτουργεί ως αφόρμηση προβληματισμού."},
+   ]},
+
+ { n:2, q:"Η Μαρίνα Βερνίκου επικρίνει τους σημερινούς γονείς, επειδή:",
+   opts:[
+    {k:"α", t:"έχουν υπερβεί το μέτρο στη λήψη φωτογραφιών.", role:"correct",
+      note:"«…μαζεύονται χιλιάδες φωτογραφίες. Ποιος ο λόγος αυτής της υπερβολής;» Η κριτική αφορά ρητά την υπέρβαση του μέτρου."},
+    {k:"β", t:"είναι ιδιαίτερα φειδωλοί στα κλικ.", role:"dist", tech:"Αντιστροφή νοήματος",
+      note:"Φειδωλές ήταν οι παλιότερες γενιές. Η επιλογή αποδίδει στους σημερινούς γονείς το ακριβώς αντίθετο από αυτό που λέει το κείμενο."},
+    {k:"γ", t:"φωτογραφίζουν σημαντικές στιγμές της οικογενειακής ζωής.", role:"dist", tech:"Ευνοϊκή αναδιατύπωση (μερική αλήθεια)",
+      note:"Ισχύει επιφανειακά, όμως η Βερνίκου δεν ψέγει το ότι φωτογραφίζουν στιγμές, αλλά την υπερβολή («κάθε δευτερόλεπτο»)."},
+   ]},
+
+ { n:3, q:"Σύμφωνα με τη Μ. Βερνίκου, ως προς τα ενδιαφέροντα με τα οποία θα ασχοληθεί το παιδί:",
+   opts:[
+    {k:"α", t:"είναι αποφασιστικός ο ρόλος των γονιών.", role:"dist", tech:"Αλλοίωση βαθμού (υπερτονισμός)",
+      note:"Υπερτονίζει τον ρόλο του γονιού. Το κείμενο του δίνει τα «ερεθίσματα», όχι την απόφαση: «το παιδί… να αποφασίζει»."},
+    {k:"β", t:"οι γονείς έχουν ρόλο συμπληρωματικό / ενισχυτικό.", role:"correct",
+      note:"«Ο γονιός να δίνει τα ερεθίσματα και το παιδί να βλέπει τι του ταιριάζει και να αποφασίζει.» Ρόλος υποστηρικτικός."},
+    {k:"γ", t:"δεν εμπλέκονται με κανέναν τρόπο οι γονείς.", role:"dist", tech:"Ακραία αλλοίωση + απόλυτο",
+      note:"Το απόλυτο «με κανέναν τρόπο» αναιρεί τα «ερεθίσματα» που ρητά δίνει ο γονιός."},
+   ]},
+
+ { n:4, q:"Σχετικά με την τέχνη της φωτογραφίας η Μ. Βερνίκου υποστηρίζει:",
+   opts:[
+    {k:"α", t:"την προτεραιότητα της τεχνικής έναντι του ταλέντου.", role:"dist", tech:"Αντιστροφή ιεράρχησης",
+      note:"Αντιστρέφει τη σχέση: η Βερνίκου λέει το αντίθετο — προηγείται το ταλέντο, η τεχνική έρχεται «στην πορεία»."},
+    {k:"β", t:"τον πρωταρχικό ρόλο σήμερα των τεχνολογικών εφαρμογών.", role:"dist", tech:"Εύλογη αλλά εκτός εστίασης",
+      note:"Η τεχνολογία «σε βοηθά να κάνεις θαύματα», αλλά δεν ανάγεται σε πρωταρχικό παράγοντα· πρωταρχικό είναι το ταλέντο."},
+    {k:"γ", t:"την προτεραιότητα του ταλέντου έναντι της τεχνικής και των τεχνολογικών εφαρμογών.", role:"correct",
+      note:"«Ταλέντο είναι, από εκεί ξεκινούν όλα. Την τεχνική… θα τη βρεις στην πορεία.»"},
+   ]},
+
+ { n:5, q:"Η Βερνίκου αντιμετωπίζει τις επιδράσεις της τεχνολογίας στη σχέση του ανθρώπου με τη φωτογραφία:",
+   note5:"Η μοναδική ερώτηση που ζητά αιτιολόγηση (40-50 λέξεις). Πρόκειται για την «τριάδα διαβάθμισης»: δύο μονομερή άκρα και μία νηφάλια, κριτική μέση θέση.",
+   opts:[
+    {k:"α", t:"θετικά", role:"dist", tech:"Μονομερής θέση",
+      note:"Κρατά μόνο τη θετική όψη («θαύματα»), αγνοώντας την επιφύλαξη («θύματα των ευκολιών»)."},
+    {k:"β", t:"αρνητικά", role:"dist", tech:"Μονομερής θέση (αντίθετη)",
+      note:"Κρατά μόνο την επιφύλαξη, αγνοώντας το αναγνωρισμένο όφελος."},
+    {k:"γ", t:"κριτικά", role:"correct",
+      note:"Ζυγίζει και τις δύο όψεις: αναγνωρίζει το όφελος, αλλά επισημαίνει τον κίνδυνο και το μέτρο."},
+   ],
+   model:"Η Βερνίκου δεν απορρίπτει ούτε εξιδανικεύει την τεχνολογία. Αναγνωρίζει ότι «σε βοηθά να κάνεις θαύματα», όμως προειδοποιεί πως «είμαστε ενίοτε θύματα των ευκολιών της νέας εποχής» και ότι «χρειάζεται μέτρο». Ζυγίζοντας όφελος και κίνδυνο, υιοθετεί στάση κριτική — όχι μονομερώς θετική ή αρνητική." },
+
+ { n:6, q:"Η Μαρίνα Βερνίκου συμβουλεύει τους νέους:",
+   opts:[
+    {k:"α", t:"πρώτα να ζουν τις στιγμές και μετά να τις φωτογραφίζουν.", role:"correct",
+      note:"«Πρώτα ζήσε και μετά φωτογράφισε» — το κεντρικό μήνυμα της συνέντευξης."},
+    {k:"β", t:"πρώτα να φωτογραφίζουν τις στιγμές και μετά να τις ζουν.", role:"dist", tech:"Αντιστροφή σειράς",
+      note:"Αντιστρέφει τη σειρά — ακριβώς το αντίθετο του μηνύματος."},
+    {k:"γ", t:"να φωτογραφίζουν και να ζουν τις στιγμές παράλληλα.", role:"dist", tech:"Φαινομενικός συμβιβασμός",
+      note:"Μοιάζει «ισορροπημένη μέση λύση», αλλά το κείμενο θέτει σαφή προτεραιότητα (πρώτα η ζωή), όχι ταυτοχρονία."},
+    {k:"δ", t:"να φωτογραφίζουν τις στιγμές που ζουν.", role:"dist", tech:"Επιφανειακή αναδιατύπωση",
+      note:"Διατηρεί τη φωτογράφιση στο επίκεντρο· χάνει την ουσία («μη φιλτράρεις τη ζωή σου μέσα από τον φακό»)."},
+   ]},
+
+ { n:7, q:"Για τη Μ. Βερνίκου η φωτογραφία είναι:",
+   opts:[
+    {k:"α", t:"αυστηρά μια επαγγελματική υπόθεση.", role:"dist", tech:"Ψευδο-περιορισμός («αυστηρά»)",
+      note:"Το απόλυτο «αυστηρά» περιορίζει άδικα· η φωτογραφία ξεκίνησε ως παιδική αγάπη, όχι ως επάγγελμα."},
+    {k:"β", t:"αποκλειστικά για προσωπική και οικογενειακή ενασχόληση.", role:"dist", tech:"Ψευδο-περιορισμός («αποκλειστικά»)",
+      note:"Το «αποκλειστικά» αποκλείει το επαγγελματικό σκέλος, που όμως υπάρχει."},
+    {k:"γ", t:"απλώς τρόπος αποφόρτισής της στα μαθητικά της χρόνια.", role:"dist", tech:"Μερική αλήθεια + υποβάθμιση («απλώς»)",
+      note:"Αληθές εν μέρει (την αποφόρτιζε), αλλά το «απλώς» και ο περιορισμός στα μαθητικά χρόνια υποβαθμίζουν τη συνέχεια."},
+    {k:"δ", t:"κάτι που ως μαθήτρια αγάπησε και μετέτρεψε σε επάγγελμα.", role:"correct",
+      note:"«τη φωτογραφία ως παιδί την αγάπησα πιο πολύ» — και την εξέλιξε σε επάγγελμα."},
+   ]},
+
+ { n:8, q:"Η Μαρίνα Βερνίκου συμβουλεύει όσους αρχίζουν τώρα να φωτογραφίζουν:",
+   opts:[
+    {k:"α", t:"να προσέχουν το καλό καδράρισμα και να μη χρησιμοποιούν κινητό τηλέφωνο.", role:"dist", tech:"Προσθήκη απαγόρευσης",
+      note:"Εισάγει απαγόρευση που το κείμενο δεν θέτει· ρητά δέχεται «είτε κινητό είτε μηχανή»."},
+    {k:"β", t:"να δίνουν προσοχή στο σωστό κάδρο μόνο όταν χρησιμοποιούν κινητό.", role:"dist", tech:"Ψευδο-περιορισμός («μόνο όταν»)",
+      note:"Το «μόνο όταν» εισάγει όρο που δεν υπάρχει στο κείμενο."},
+    {k:"γ", t:"να δίνουν προσοχή στο κάδρο μόνο όταν δεν χρησιμοποιούν κινητό.", role:"dist", tech:"Ψευδο-περιορισμός (αντίστροφος όρος)",
+      note:"Ίδια παγίδα με αντεστραμμένο όρο — εξίσου αστήρικτη."},
+    {k:"δ", t:"να δίνουν προσοχή στο σωστό κάδρο με όποιο μέσο κι αν φωτογραφίζουν.", role:"correct",
+      note:"«σημασία έχει να βρίσκει το σωστό κάδρο, είτε χρησιμοποιεί κινητό τηλέφωνο είτε μηχανή»."},
+   ]},
+
+ { n:9, q:"Η Μαρίνα Βερνίκου συμβουλεύει όσους αρχίζουν τώρα να φωτογραφίζουν:",
+   opts:[
+    {k:"α", t:"να μη στηρίζονται σε άλλους φωτογράφους.", role:"dist", tech:"Αντιστροφή νοήματος",
+      note:"Αντίθετο του κειμένου: προτρέπει να βρεις και να «διαβάσεις» τους αγαπημένους σου φωτογράφους."},
+    {k:"β", t:"να αντιγράφουν τους αγαπημένους τους φωτογράφους.", role:"dist", tech:"Αλλοίωση βαθμού (μελέτη → αντιγραφή)",
+      note:"«Διάβασέ τους… με τη δική σου ματιά, με το δικό σου στυλ» ≠ αντιγραφή."},
+    {k:"γ", t:"να μελετούν τους αγαπημένους τους φωτογράφους.", role:"correct",
+      note:"«βρες τους αγαπημένους σου φωτογράφους, ‘διάβασέ’ τους, δες τι κάνουν»."},
+    {k:"δ", t:"να μη χρησιμοποιούν κινητό τηλέφωνο για φωτογράφιση.", role:"dist", tech:"Άσχετος εισαγόμενος όρος",
+      note:"Άσχετη προϋπόθεση, «δανεισμένη» από άλλη ερώτηση για να παραπλανήσει."},
+   ]},
+
+ { n:10, q:"Οι άνθρωποι που απεικονίζονται στο σκίτσο (Κείμενο 2):",
+   opts:[
+    {k:"α", t:"υιοθετούν τη βασική προτροπή της Μ. Βερνίκου στο Κείμενο 1.", role:"dist", tech:"Παγίδα διακειμενικότητας",
+      note:"Μοιάζει να «συνδέει» τα δύο κείμενα, αλλά οι εικονιζόμενοι κάνουν το αντίθετο: φωτογραφίζουν αντί να ζήσουν ή να βοηθήσουν."},
+    {k:"β", t:"αισθάνονται ικανοποίηση από τη φωτογράφιση της τραγικής σκηνής.", role:"correct",
+      note:"Απορροφημένοι στη λήψη, αδιαφορούν για το δράμα — η στάση που σατιρίζει το σκίτσο. Προκύπτει και με αποκλεισμό των υπολοίπων."},
+    {k:"γ", t:"ανταποκρίνονται στην έκκληση για βοήθεια.", role:"dist", tech:"Άρνηση της εικόνας",
+      note:"Το χέρι που βυθίζεται αγνοείται· κανείς δεν βοηθά. Ευθέως αντίθετο με το σκίτσο."},
+    {k:"δ", t:"κατανοούν τη δύσκολη θέση του φωτογραφιζόμενου.", role:"dist", tech:"Φαινομενική ενσυναίσθηση",
+      note:"Υπονοεί ενσυναίσθηση που η εικόνα διαψεύδει: η αδιαφορία είναι ακριβώς το θέμα."},
+   ]},
+];
+
+const ROLE_TAG = { correct:"Σωστή", wrong:"Εντελώς λάθος", dist:"Παραπλανητής" };
+const VERD = { correct:"✓ Σωστή απάντηση" };
+
+/* ═══════════ ΡΟΗ ═══════════ */
+const SEQ = [];
+SEQ.push({ kind:"intro", phase:"intro" });
+THEORY.forEach((t,i)=>SEQ.push({ kind:"theory", phase:"theory", data:t, n:i+1, total:THEORY.length }));
+SEQ.push({ kind:"bridge", phase:"intro" });
+EX.forEach((e,i)=>SEQ.push({ kind:"ex", phase:"ex", data:e, n:i+1, total:EX.length }));
+
+const IDX_THEORY = SEQ.findIndex(s=>s.phase==="theory");
+const IDX_EX = SEQ.findIndex(s=>s.phase==="ex");
+
+let pos = 0;
+const back = {};          // pos -> showing back?
+const answered = {};      // ex n -> chosen key
+
+const cardEl = document.getElementById('card');
+const flipBtn = document.getElementById('flip');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildIntro(){
+  return `<div class="eyebrow"><span class="chip">Οδηγός</span></div>
+    <h2>Πώς «διαβάζεται» μια κλειστή ερώτηση</h2>
+    <p class="lead">Σε κάθε ερώτηση κλειστού τύπου υπάρχουν τρεις ή τέσσερις επιλογές: <strong>μία σωστή</strong> και <strong>οι υπόλοιπες παραπλανητικές</strong> (distractors).</p>
+    <p>Η πρόκληση δεν είναι να «θυμηθείς» τη σωστή, αλλά να αναγνωρίσεις <em>γιατί</em> αστοχεί η καθεμία λανθασμένη. Αυτή η εφαρμογή ξεκινά από τη <strong>θεωρία</strong> και μετά την εφαρμόζει σε <strong>όλες τις ασκήσεις του Β1</strong>.</p>
+    <p class="hint">◆ Πάτησε «Επόμ.» για να ξεκινήσεις — ή διάλεξε ενότητα από πάνω.</p>`;
+}
+
+function buildTheory(item){
+  return `<div class="eyebrow"><span class="chip k">Θεωρία</span><span class="chip">${item.n} / ${item.total}</span></div>
+    <h2>${esc(item.data.term)}</h2>
+    ${item.data.body}`;
+}
+
+function buildBridge(){
+  return `<div class="eyebrow"><span class="chip">Γέφυρα</span></div>
+    <h2>${esc(BRIDGE.term)}</h2>${BRIDGE.body}`;
+}
+
+function buildExFront(item){
+  const e = item.data;
+  const chosen = answered[e.n];
+  const opts = e.opts.map(o=>{
+    const sel = chosen===o.k ? ' sel':'';
+    return `<li><button class="opt${sel}" data-k="${o.k}">
+      <span class="lk">${o.k}</span><span>${esc(o.t)}</span></button></li>`;
+  }).join('');
+  return `<div class="eyebrow"><span class="chip k">Άσκηση</span><span class="chip">${e.n} / ${item.total}</span>
+      ${e.model?'<span class="chip">+ αιτιολόγηση</span>':''}</div>
+    <p class="qtext">${e.n}. ${esc(e.q)}</p>
+    <ul class="opts">${opts}</ul>
+    <p class="hint">◆ Διάλεξε και πάτησε «Αναστροφή» για τον σχολιασμό.</p>`;
+}
+
+function buildExBack(item){
+  const e = item.data;
+  const chosen = answered[e.n];
+  const rows = e.opts.map(o=>{
+    const tagTxt = ROLE_TAG[o.role];
+    const techLine = o.tech ? `<span class="tech">· ${esc(o.tech)}</span>` : '';
+    const you = chosen===o.k ? ' <span class="tech">— η επιλογή σου</span>' : '';
+    return `<li class="row ${o.role}">
+      <div class="rh"><span class="rk">${o.k}</span><span class="tag ${o.role}">${tagTxt}</span>${techLine}${you}</div>
+      <p class="note">${esc(o.note)}</p></li>`;
+  }).join('');
+  const correctK = e.opts.find(o=>o.role==='correct').k;
+  const noteLine = e.note5 ? `<p style="margin-top:2px;color:var(--muted)">${esc(e.note5)}</p>` : '';
+  const model = e.model ? `<div class="modelbox"><div class="ml">Ενδεικτική αιτιολόγηση (40-50 λέξεις)</div><p>${esc(e.model)}</p></div>` : '';
+  return `<div class="eyebrow"><span class="chip k">Ανάλυση ${e.n}</span></div>
+    <div class="verdict">${VERD.correct} — <b style="margin-inline-start:4px">${correctK}</b></div>
+    ${noteLine}
+    <ul class="analysis">${rows}</ul>
+    ${model}`;
+}
+
+function render(){
+  const item = SEQ[pos];
+  const showBack = !!back[pos];
+  let html='';
+  if(item.kind==='intro') html=buildIntro();
+  else if(item.kind==='theory') html = showBack ? buildTheory(item) : buildTheory(item);
+  else if(item.kind==='bridge') html=buildBridge();
+  else if(item.kind==='ex') html = showBack ? buildExBack(item) : buildExFront(item);
+  cardEl.innerHTML = html;
+  cardEl.scrollTop = 0;
+
+  // option clicks (front of exercise only)
+  if(item.kind==='ex' && !showBack){
+    cardEl.querySelectorAll('.opt').forEach(b=>{
+      b.addEventListener('click',()=>{
+        answered[item.data.n] = b.dataset.k;
+        cardEl.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+        b.classList.add('sel');
+        updateScore();
+      });
+    });
+  }
+
+  // flip availability — αναστροφή μόνο στις ασκήσεις
+  const flippable = item.kind==='ex';
+  flipBtn.disabled = !flippable;
+  flipBtn.style.visibility = flippable ? 'visible':'hidden';
+  flipBtn.classList.toggle('back', showBack);
+  flipBtn.textContent = showBack ? '↩ Επιστροφή στην ερώτηση' : 'Αναστροφή ↦ σχολιασμός';
+
+  prevBtn.disabled = pos===0;
+  nextBtn.disabled = pos===SEQ.length-1;
+
+  document.getElementById('counter').textContent =
+    (item.phase==='theory') ? `Θ ${item.n}/${item.total}` :
+    (item.phase==='ex') ? `Α ${item.n}/${item.total}` : '•';
+
+  // segmented + progress
+  document.getElementById('segTheory').setAttribute('aria-current', item.phase==='theory');
+  document.getElementById('segEx').setAttribute('aria-current', item.phase==='ex');
+  document.getElementById('bar').style.width = ((pos+1)/SEQ.length*100)+'%';
+
+  const sb = document.getElementById('scoreBox');
+  sb.hidden = item.phase!=='ex';
+  updateScore();
+}
+
+function updateScore(){
+  let ok=0;
+  EX.forEach(e=>{ const c=answered[e.n]; if(c && e.opts.find(o=>o.k===c && o.role==='correct')) ok++; });
+  document.getElementById('score').textContent = ok;
+  document.getElementById('scoreTot').textContent = Object.keys(answered).length;
+}
+
+/* flip animation: half-turn swap (robust to variable heights) */
+let flipping=false;
+function doFlip(){
+  const item=SEQ[pos];
+  if(flipping || !(item.kind==='theory'||item.kind==='ex')) return;
+  // theory has no separate back content here; treat flip as no-op for theory front->front
+  flipping=true;
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  cardEl.classList.add('flipping');
+  const swap=()=>{ back[pos]=!back[pos]; render(); };
+  if(reduce){ setTimeout(()=>{ swap(); cardEl.classList.remove('flipping'); flipping=false; },160); return; }
+  const onEnd=()=>{
+    cardEl.removeEventListener('transitionend',onEnd);
+    swap();
+    cardEl.style.transition='none'; cardEl.style.transform='rotateY(-90deg)';
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+      cardEl.style.transition=''; cardEl.classList.remove('flipping'); cardEl.style.transform='';
+      flipping=false;
+    });});
+  };
+  cardEl.addEventListener('transitionend',onEnd,{once:true});
+}
+
+/* Theory cards: flip just reveals nothing extra, so hide flip for theory; keep for ex.
+   We make theory non-flippable to avoid confusion — flip is meaningful for exercises. */
+function refreshFlipRole(){}
+
+function go(d){ const t=pos+d; if(t<0||t>=SEQ.length) return; pos=t; back[pos]= back[pos]||false; render(); }
+function jump(i){ pos=i; render(); }
+
+prevBtn.addEventListener('click',()=>go(-1));
+nextBtn.addEventListener('click',()=>go(1));
+flipBtn.addEventListener('click',doFlip);
+document.getElementById('segTheory').addEventListener('click',()=>jump(IDX_THEORY));
+document.getElementById('segEx').addEventListener('click',()=>jump(IDX_EX));
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') go(1);
+  else if(e.key==='ArrowLeft') go(-1);
+  else if(e.key===' '||e.key==='Enter'){ if(SEQ[pos].kind==='ex'){ e.preventDefault(); doFlip(); } }
+});
+
+document.getElementById('ctT').textContent = THEORY.length;
+document.getElementById('ctE').textContent = EX.length;
+render();
+</script>
