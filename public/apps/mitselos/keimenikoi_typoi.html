@@ -825,6 +825,8 @@
         }
 
         // Σωστός χειρισμός πεδίων CSV με εσωτερικές αλλαγές γραμμής (μέσα σε "...").
+        // Χωρίζει ΚΑΙ σε πεδία (κόμμα εκτός εισαγωγικών) ΚΑΙ σε εγγραφές (νέα γραμμή
+        // εκτός εισαγωγικών), επιστρέφοντας πίνακα-2D [εγγραφή][πεδίο].
         function splitCSVRecords(csv) {
             const records = [];
             let field = '';
@@ -835,6 +837,8 @@
                 if (c === '"') {
                     if (inQuotes && csv[i + 1] === '"') { field += '"'; i++; }
                     else inQuotes = !inQuotes;
+                } else if (c === ',' && !inQuotes) {
+                    record.push(field); field = '';
                 } else if (c === '\n' && !inQuotes) {
                     record.push(field); records.push(record); field = ''; record = [];
                 } else if (c === '\r') {
@@ -880,19 +884,21 @@
                 return;
             }
 
-            // Σειρά προσπαθειών: ΠΡΩΤΑ απευθείας (το δημοσιευμένο CSV του Google
-            // στέλνει CORS headers και είναι άμεσα προσβάσιμο), μετά proxies ως
-            // εφεδρεία. Έτσι αποφεύγεται η καθυστέρηση από αργούς/άστοχους proxies.
+            // Στρατηγική φόρτωσης (βάσει δοκιμών):
+            //  • Η ΑΜΕΣΗ σύνδεση στο δημοσιευμένο CSV του Google είναι η αξιόπιστη
+            //    (στέλνει CORS headers, ~1-2s). Τη δοκιμάζουμε ΠΡΩΤΗ, με γενναιόδωρο
+            //    όριο και ΜΙΑ επανάληψη (η πρώτη «ψυχρή» κλήση μπορεί να αργήσει).
+            //  • Οι proxies μπαίνουν μόνο ως ύστατη εφεδρεία και με ΣΥΝΤΟΜΟ όριο,
+            //    ώστε ένας «νεκρός» proxy να μην κρεμάει τη φόρτωση.
+            const direct = (u) => u;
             const proxies = [
-                (u) => u,
-                (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
                 (u) => 'https://corsproxy.io/?' + encodeURIComponent(u)
             ];
 
             // Cache-busting: μοναδική παράμετρος σε κάθε φόρτωση, ώστε να μη
             // σερβίρεται παλιά (cached) έκδοση του φύλλου από browser/proxy.
             const sep = GOOGLE_SHEET_CSV_URL.includes('?') ? '&' : '?';
-            const freshUrl = GOOGLE_SHEET_CSV_URL + sep + 'cb=' + Date.now();
+            const mkFresh = () => GOOGLE_SHEET_CSV_URL + sep + 'cb=' + Date.now();
 
             // Βοηθητικό fetch με χρονικό όριο, ώστε μια προσπάθεια που «κολλάει»
             // να μην καθυστερεί όλη τη φόρτωση.
@@ -906,23 +912,34 @@
                 }
             }
 
-            for (const getProxyUrl of proxies) {
-                try {
-                    const response = await fetchWithTimeout(getProxyUrl(freshUrl), 8000);
-                    if (!response.ok) continue;
-                    const csv = await response.text();
-                    if (!csv || csv.trim().startsWith('<!') || csv.trim().startsWith('<html')) continue;
-                    const parsed = parseCSV(csv);
-                    if (parsed.length > 0) {
-                        allData = parsed;
-                        state.screen = 'selection';
-                        render();
-                        return;
-                    }
-                } catch (e) { continue; }
+            async function tryLoad(buildUrl, ms) {
+                const response = await fetchWithTimeout(buildUrl(mkFresh()), ms);
+                if (!response.ok) return false;
+                const csv = await response.text();
+                if (!csv || csv.trim().startsWith('<!') || csv.trim().startsWith('<html')) return false;
+                const parsed = parseCSV(csv);
+                if (parsed.length > 0) {
+                    allData = parsed;
+                    state.screen = 'selection';
+                    render();
+                    return true;
+                }
+                return false;
             }
 
-            // Εφεδρική λύση: ενσωματωμένα δεδομένα.
+            // 1) Άμεση σύνδεση, έως 2 προσπάθειες με μεγάλο όριο (15s).
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try { if (await tryLoad(direct, 15000)) return; }
+                catch (e) { /* επόμενη προσπάθεια */ }
+            }
+
+            // 2) Proxies ως ύστατη εφεδρεία, με σύντομο όριο (7s) ο καθένας.
+            for (const getProxyUrl of proxies) {
+                try { if (await tryLoad(getProxyUrl, 7000)) return; }
+                catch (e) { continue; }
+            }
+
+            // 3) Εφεδρική λύση: ενσωματωμένα δεδομένα (πλήρη, 20 κείμενα).
             allData = FALLBACK_DATA.slice();
             state.screen = 'selection';
             render();
