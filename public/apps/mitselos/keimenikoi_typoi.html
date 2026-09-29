@@ -851,9 +851,14 @@
                 (u) => u
             ];
 
+            // Cache-busting: μοναδική παράμετρος σε κάθε φόρτωση, ώστε να μη
+            // σερβίρεται παλιά (cached) έκδοση του φύλλου από browser/proxy.
+            const sep = GOOGLE_SHEET_CSV_URL.includes('?') ? '&' : '?';
+            const freshUrl = GOOGLE_SHEET_CSV_URL + sep + 'cb=' + Date.now();
+
             for (const getProxyUrl of proxies) {
                 try {
-                    const response = await fetch(getProxyUrl(GOOGLE_SHEET_CSV_URL));
+                    const response = await fetch(getProxyUrl(freshUrl), { cache: 'no-store' });
                     if (!response.ok) continue;
                     const csv = await response.text();
                     if (!csv || csv.trim().startsWith('<!') || csv.trim().startsWith('<html')) continue;
