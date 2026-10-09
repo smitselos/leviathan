@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="el"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Η εξήγηση — Εισαγωγή</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Alegreya+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=GFS+Didot&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#182131; --ink-2:#212d42;
+    --parchment:#e7edf1; --parchment-2:#dbe4ec;
+    --gold:#2f7c8c; --gold-soft:#7bb3bf;
+    --page-bg:#cdd8e1;
+    --ok:#4e7d3e; --ok-bg:#e5efd7; --ok-bd:#bcd3a3;
+    --ko:#b54a2a; --ko-bg:#f6ded3; --ko-bd:#e8bda8;
+    --shadow:rgba(20,26,38,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 90% at 50% 0%, #dde6ee 0%, var(--page-bg) 60%, #c2cfdb 100%);
+    color:var(--ink);font-family:"Alegreya",Georgia,serif;
+    min-height:100dvh;display:flex;align-items:stretch;justify-content:center;
+    padding:12dvh 6vw;overflow:hidden;
+  }
+  #slot{flex:1 1 auto;min-width:0;position:relative;display:flex;--gutter:clamp(30px,7%,74px)}
+  #cardhost{position:absolute;inset:0;display:flex}
+  .zone{position:absolute;top:0;bottom:0;border:none;background:transparent;cursor:pointer;padding:0;z-index:5}
+  .zone:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+  .zone.left{left:0;width:var(--gutter)}
+  .zone.right{right:0;width:var(--gutter)}
+  .zone.center{left:var(--gutter);right:var(--gutter);z-index:4;pointer-events:none;cursor:default}
+  #slot.flippable .zone.center{pointer-events:auto;cursor:pointer}
+  /* Βελάκια πλοήγησης που αναβοσβήνουν (αριστερά/δεξιά) */
+  .zone.left::after,.zone.right::after{content:"";position:absolute;top:50%;width:16px;height:16px;
+    border:0 solid var(--gold);border-top-width:3px;border-right-width:3px;border-radius:2px;
+    opacity:.85;animation:navblink 1.4s ease-in-out infinite;pointer-events:none}
+  .zone.left::after{left:50%;transform:translate(-30%,-50%) rotate(-135deg)}
+  .zone.right::after{right:50%;transform:translate(30%,-50%) rotate(45deg)}
+  @keyframes navblink{0%,100%{opacity:.18}50%{opacity:.95}}
+  @media (prefers-reduced-motion:reduce){.zone.left::after,.zone.right::after{animation:none;opacity:.6}}
+
+  /* ── Κάρτα ασκήσεων / γέφυρας ── */
+  .card{--sc:1;width:100%;height:100%;position:relative;border-radius:18px;
+    background:linear-gradient(150deg,var(--parchment) 0%,var(--parchment-2) 100%);
+    border:1px solid rgba(24,33,49,.12);box-shadow:0 18px 40px -14px var(--shadow);
+    padding:clamp(22px,4vw,40px) var(--gutter);display:flex;flex-direction:column;justify-content:center;
+    overflow:hidden}
+  .card.tall{justify-content:flex-start}
+  .card.tall .prompt{margin-bottom:calc(10px * var(--sc))}
+  .card.tall .matchrow{grid-template-columns:1fr auto 1fr}
+  .card.tall .mcell{padding:calc(9px * var(--sc)) calc(12px * var(--sc))}
+  .card.tall .fillwrap{gap:calc(8px * var(--sc))}
+  .card.tall .fillopt{padding:calc(9px * var(--sc)) calc(14px * var(--sc))}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes slideR{from{opacity:0;transform:translateX(14%)}to{opacity:1;transform:none}}
+  @keyframes slideL{from{opacity:0;transform:translateX(-14%)}to{opacity:1;transform:none}}
+  #cardhost.slideR{animation:slideR .55s cubic-bezier(.25,.8,.25,1)}
+  #cardhost.slideL{animation:slideL .55s cubic-bezier(.25,.8,.25,1)}
+  #cardhost.fadeIn{animation:fade .38s cubic-bezier(.25,.8,.25,1)}
+
+  .navhint{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);
+    display:flex;gap:6px;align-items:center;z-index:20;
+    font-family:"Alegreya Sans",sans-serif;font-size:.85rem;letter-spacing:.05em;color:#526975;
+    background:rgba(233,240,245,.85);border:1px solid rgba(47,124,140,.28);border-radius:24px;
+    padding:4px 6px;box-shadow:0 4px 14px rgba(20,26,38,.14);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .navhint .cue{white-space:nowrap;background:transparent;border:none;color:inherit;font:inherit;letter-spacing:inherit;cursor:pointer;padding:8px 14px;border-radius:20px;transition:background .15s,color .15s}
+  .navhint .cue:hover:not(:disabled){background:rgba(47,124,140,.15);color:#3f5560}
+  .navhint .cue:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .navhint .cue:disabled{opacity:.28;cursor:default}
+  .navhint .mid{color:#3f5560;font-weight:700}
+  .navhint .mid.dim{opacity:.28;font-weight:500;cursor:default;pointer-events:none}
+  .navhint .sep{width:1px;height:16px;background:rgba(47,124,140,.4)}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+  .eyebrow{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:calc(clamp(.8rem,1.8vw,.95rem) * var(--sc));
+    letter-spacing:.2em;text-transform:uppercase;color:#2c7280}
+  .badge{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.6rem;letter-spacing:.1em;
+    text-transform:uppercase;color:#45606c;background:rgba(47,124,140,.16);
+    border:1px solid rgba(47,124,140,.3);border-radius:20px;padding:3px 10px;white-space:nowrap}
+  .prompt{font-family:"Alegreya Sans",sans-serif;font-weight:600;font-size:calc(clamp(1.1rem,3.4vw,1.3rem) * var(--sc));
+    color:var(--ink-2);margin-bottom:calc(14px * var(--sc));line-height:1.4}
+  .sentence{font-family:"GFS Didot",serif;font-size:calc(clamp(1.08rem,3.7vw,1.4rem) * var(--sc));line-height:1.4;
+    color:#1c2830;background:#dde8ef;border:1px solid rgba(47,124,140,.42);border-radius:12px;
+    padding:calc(15px * var(--sc)) calc(18px * var(--sc));margin-bottom:calc(16px * var(--sc))}
+  .sentence .src{display:block;margin-top:calc(8px * var(--sc));font-family:"Alegreya Sans",sans-serif;font-style:normal;
+    font-size:calc(clamp(.72rem,2vw,.82rem) * var(--sc));color:#5c7a84;letter-spacing:.02em}
+  .sentence.clk .tok{cursor:pointer;border-radius:5px;padding:0 1px;transition:background .15s}
+  @media(hover:hover){.sentence.clk .tok:hover{background:rgba(47,124,140,.2)}}
+  .sentence .tok.correct{background:var(--ok-bg);box-shadow:inset 0 0 0 1px var(--ok-bd);color:#2f5222}
+  .sentence .tok.wrong{background:var(--ko-bg);box-shadow:inset 0 0 0 1px var(--ko-bd);color:#7a2f1a}
+  .clk-hint{font-family:"Alegreya Sans",sans-serif;font-size:calc(clamp(.9rem,2.4vw,1rem) * var(--sc));color:#5c7a84;margin:-6px 0 calc(14px * var(--sc))}
+  .options{display:grid;gap:calc(10px * var(--sc))}
+  .options.two{grid-template-columns:1fr 1fr}
+  .opt{font-family:"Alegreya Sans",sans-serif;font-weight:400;font-size:calc(clamp(1.02rem,2.9vw,1.15rem) * var(--sc));
+    text-align:left;padding:calc(12px * var(--sc)) calc(16px * var(--sc));border-radius:12px;cursor:pointer;color:var(--ink);
+    background:#f6fafc;border:1px solid rgba(24,33,49,.16);transition:all .15s}
+  .opt:hover:not(:disabled){border-color:var(--gold);background:#fff}
+  .opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:var(--ok-bg);border-color:var(--ok-bd);color:#2f5222}
+  .opt.wrong{background:var(--ko-bg);border-color:var(--ko-bd);color:#7a2f1a}
+  .opt .mark{float:right;font-weight:700}
+
+  /* ── Συμπλήρωση (fill) ── */
+  .fillwrap{display:flex;flex-wrap:wrap;gap:calc(9px * var(--sc));margin-bottom:calc(4px * var(--sc))}
+  .fillopt{font-family:"Alegreya Sans",sans-serif;font-weight:600;font-size:calc(clamp(1rem,2.8vw,1.12rem) * var(--sc));
+    padding:calc(10px * var(--sc)) calc(15px * var(--sc));border-radius:22px;cursor:pointer;color:var(--ink);
+    background:#f6fafc;border:1px solid rgba(24,33,49,.2);transition:all .15s}
+  .fillopt:hover:not(:disabled){border-color:var(--gold);background:#fff}
+  .fillopt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .fillopt:disabled{cursor:default}
+  .fillopt.correct{background:var(--ok-bg);border-color:var(--ok-bd);color:#2f5222}
+  .fillopt.wrong{background:var(--ko-bg);border-color:var(--ko-bd);color:#7a2f1a}
+  .blank{display:inline-block;min-width:calc(90px * var(--sc));border-bottom:2px solid var(--gold);text-align:center;color:#285f6b;font-weight:700}
+
+  /* ── Αντιστοίχιση (match) ── */
+  .matchgrid{display:flex;flex-direction:column;gap:calc(9px * var(--sc))}
+  .matchrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:calc(8px * var(--sc))}
+  .mcell{font-family:"Alegreya Sans",sans-serif;font-size:calc(clamp(.95rem,2.6vw,1.08rem) * var(--sc));
+    padding:calc(11px * var(--sc)) calc(13px * var(--sc));border-radius:11px;background:#eef4f8;
+    border:1px solid rgba(24,33,49,.14);line-height:1.3}
+  .mcell.left{color:#1c2830;font-weight:500}
+  .mcell.right{cursor:pointer;background:#f6fafc;transition:all .15s}
+  .mcell.right:hover:not(.locked){border-color:var(--gold);background:#fff}
+  .mcell.right.sel{border-color:var(--gold);background:#d9ecf0;box-shadow:0 0 0 2px rgba(47,124,140,.3)}
+  .mcell.right.correct{background:var(--ok-bg);border-color:var(--ok-bd);color:#2f5222}
+  .mcell.right.wrong{background:var(--ko-bg);border-color:var(--ko-bd);color:#7a2f1a}
+  .marrow{font-weight:700;color:var(--gold);font-size:calc(1.1rem * var(--sc))}
+  .match-hint{font-family:"Alegreya Sans",sans-serif;font-size:calc(clamp(.86rem,2.3vw,.96rem) * var(--sc));color:#5c7a84;margin-bottom:calc(10px * var(--sc))}
+
+  .feedback{margin-top:calc(14px * var(--sc));border-radius:12px;padding:calc(13px * var(--sc)) calc(16px * var(--sc));font-size:calc(clamp(.9rem,2.7vw,.98rem) * var(--sc));
+    line-height:1.4;display:none}
+  .feedback.show{display:block;animation:fade .25s ease}
+  .feedback.ok{background:var(--ok-bg);border:1px solid var(--ok-bd);color:#2f5222}
+  .feedback.ko{background:var(--ko-bg);border:1px solid var(--ko-bd);color:#7a2f1a}
+  .feedback b{font-weight:700}
+
+  /* ── Θεωρία (flip) ── */
+  .thwrap{width:100%;height:100%;perspective:min(2200px,180vmin);perspective-origin:50% 50%;display:flex;align-items:stretch}
+  .thcard{position:relative;width:100%;height:100%;transform-style:preserve-3d;cursor:pointer;border-radius:16px;transition:transform .55s cubic-bezier(.4,.02,.2,1)}
+  .thcard.flipped{transform:rotateY(180deg)}
+  .thcard.animBack{animation:flipToBack .55s cubic-bezier(.4,.02,.2,1) forwards}
+  .thcard.animFront{animation:flipToFront .55s cubic-bezier(.4,.02,.2,1) forwards}
+  @keyframes flipToBack{from{transform:rotateY(0deg)}to{transform:rotateY(180deg)}}
+  @keyframes flipToFront{from{transform:rotateY(180deg)}to{transform:rotateY(0deg)}}
+  .thcard:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    border-radius:16px;padding:clamp(22px,4vw,40px) var(--gutter);
+    box-shadow:0 18px 40px -12px var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .col{display:flex;flex-direction:column;min-height:0;overflow:hidden;font-size:var(--fs,18px)}
+  .col.main{flex:3 1 0}
+  .col.aside{flex:2 1 0}
+  .front{background:linear-gradient(160deg,var(--ink-2) 0%,var(--ink) 70%);color:var(--parchment)}
+  .front::after{content:"";position:absolute;inset:12px;border:1px solid rgba(47,124,140,.35);border-radius:9px;pointer-events:none}
+  .kicker{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.62em;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--gold-soft);line-height:1.2}
+  .main .kicker{margin-bottom:auto}
+  .term{font-family:"GFS Didot",serif;font-size:1.95em;line-height:1.05;color:#fff;margin:.18em 0 .32em}
+  .term .initial{color:var(--gold-soft)}
+  .def{font-size:1em;line-height:1.46;color:var(--parchment)}
+  .scholion{margin-top:.7em;padding-top:.6em;border-top:1px solid rgba(47,124,140,.3)}
+  .scholion .h{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.58em;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:.4em}
+  .scholion p{font-size:.86em;line-height:1.42;color:rgba(223,232,240,.86)}
+  .flip-hint{flex:0 0 auto;margin-top:.6em;padding:8px 14px;display:inline-flex;align-items:center;gap:.55em;align-self:flex-start;
+    font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:1rem;letter-spacing:.05em;color:var(--gold-soft);
+    background:rgba(47,124,140,.14);border:1px solid rgba(47,124,140,.45);border-radius:22px}
+  .flip-hint svg{width:20px;height:20px;opacity:1;flex:0 0 auto}
+  .back .flip-hint{color:#285c68;background:rgba(47,124,140,.18);border-color:rgba(47,124,140,.5)}
+  .back{transform:rotateY(180deg);background:linear-gradient(150deg,var(--parchment) 0%,var(--parchment-2) 100%);color:var(--ink)}
+  .back::after{content:"";position:absolute;inset:12px;border:1px solid rgba(24,33,49,.14);border-radius:9px;pointer-events:none}
+  .back .kicker{color:#2c7280}
+  .back .def{color:var(--ink)}
+  .term-small{font-family:"GFS Didot",serif;font-size:1.28em;line-height:1.1;color:var(--ink);margin:.25em 0 .5em}
+
+  /* πίνακας θεωρίας (πίσω όψη) */
+  .thtable{display:flex;flex-direction:column;border:1px solid rgba(24,33,49,.16);border-radius:10px;overflow:hidden;margin-top:.3em}
+  .thtable .trow{display:grid;grid-template-columns:var(--tcols,1fr 1.25fr);border-top:1px solid rgba(24,33,49,.12)}
+  .thtable .trow:first-child{border-top:none}
+  .thtable .trow.htr{background:rgba(47,124,140,.16)}
+  .thtable .tc{padding:.4em .55em;font-size:.9em;line-height:1.28}
+  .thtable .tc+.tc{border-left:1px solid rgba(24,33,49,.12)}
+  .thtable .htr .tc{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.66em;letter-spacing:.08em;text-transform:uppercase;color:#285f6b}
+  .thtable .tc.k{font-family:"Alegreya Sans",sans-serif;font-weight:600;color:#1f2b33}
+  .thtable .tc.v{font-style:italic;color:#243038}
+  .ex-note{margin-top:.6em;padding-top:.55em;border-top:1px solid rgba(24,33,49,.14);font-size:.84em;line-height:1.4;color:#354852}
+  .ex-note .h{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:.6em;letter-spacing:.18em;text-transform:uppercase;color:#2c7280;margin-bottom:.4em}
+
+  @media (min-width:820px),(orientation:landscape){
+    body{padding:8dvh}
+    .options.two{grid-template-columns:1fr 1fr}
+    .options:not(.two){grid-template-columns:1fr}
+    .face{display:grid;grid-template-columns:1.05fr 1fr;column-gap:clamp(60px,10vw,180px);align-content:stretch}
+    .col.aside{justify-content:flex-start;padding-left:clamp(18px,2.2vw,28px);max-height:82%}
+    .front .col.aside{border-left:1px solid rgba(47,124,140,.32)}
+    .back .col.aside{border-left:1px solid rgba(24,33,49,.16)}
+    .scholion,.ex-note{border-top:none;margin-top:0;padding-top:0}
+    .flip-hint{position:absolute;bottom:clamp(18px,2.6vw,28px);right:var(--gutter);left:auto;margin:0;padding:0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .thcard.animBack{animation-duration:.3s}
+    .thcard.animFront{animation-duration:.3s}
+    #cardhost.slideR,#cardhost.slideL,#cardhost.fadeIn{animation-duration:.2s}
+  }
+  #slot.no-prev .zone.left{display:none}
+  #slot.no-next .zone.right{display:none}
+  #cardhost.dragging{transition:none!important}
+  #cardhost.snapback{transition:transform .26s cubic-bezier(.2,.7,.3,1), opacity .26s ease}
+  #slot{touch-action:pan-y}
+  .card.gate .title{font-family:"GFS Didot",serif;font-size:calc(clamp(1.8rem,6vw,2.6rem) * var(--sc));line-height:1.08;color:var(--ink);margin-bottom:calc(14px * var(--sc))}
+  .card.gate .title .initial{color:var(--gold)}
+  .card.gate .lead{font-size:calc(clamp(1rem,3vw,1.15rem) * var(--sc));line-height:1.5;color:#2b3a42;margin-bottom:calc(20px * var(--sc))}
+  .card.gate .actions{display:flex;gap:calc(10px * var(--sc));flex-wrap:wrap}
+  .reveal-btn{font-family:"Alegreya Sans",sans-serif;font-weight:700;font-size:calc(.9rem * var(--sc));cursor:pointer;
+    color:var(--parchment);background:var(--ink);border:none;border-radius:12px;padding:calc(12px * var(--sc)) calc(18px * var(--sc));
+    transition:background .2s;align-self:flex-start}
+  .reveal-btn:hover{background:var(--ink-2)}
+  .reveal-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .card.gate .btn-secondary{background:transparent;color:var(--ink);border:1px solid rgba(24,33,49,.35)}
+  .card.gate .btn-secondary:hover{background:rgba(24,33,49,.05)}
+  .card.gate .score{font-family:"GFS Didot",serif;font-size:calc(clamp(2.2rem,7vw,3rem) * var(--sc));color:var(--gold);line-height:1;margin:calc(6px * var(--sc)) 0 calc(18px * var(--sc))}
+  .card.gate .score small{font-family:"Alegreya Sans",sans-serif;font-size:.4em;color:#45606c;letter-spacing:.06em;font-weight:600}
+  #copyr{position:fixed;top:calc(12dvh - 34px);left:6vw;display:inline-flex;align-items:center;gap:6px;font-family:"Alegreya Sans",sans-serif;font-size:.72rem;letter-spacing:.03em;color:#45606c;background:rgba(233,240,245,.6);border:1px solid rgba(47,124,140,.28);border-radius:20px;padding:5px 11px;z-index:60;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;white-space:nowrap;max-width:calc(100vw - 120px);overflow:hidden;text-overflow:ellipsis}
+  #copyr .sym{font-weight:700;color:#285f6b}
+  @media (min-width:820px),(orientation:landscape){#copyr{top:calc(8dvh - 34px);left:8dvh}}
+  @media (max-width:520px){#copyr{font-size:.62rem;padding:4px 9px}}
+  #topbar{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));display:flex;gap:8px;z-index:60}
+  .tb-btn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(24,33,49,.18);background:rgba(255,255,255,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#182131;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .18s ease,transform .12s ease,box-shadow .18s ease;box-shadow:0 2px 8px rgba(20,26,38,.12)}
+  .tb-btn:hover{background:rgba(255,255,255,.92);transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,26,38,.18)}
+  .tb-btn:active{transform:translateY(0)}
+  .tb-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .tb-btn svg{width:18px;height:18px}
+</style>
+</head>
+<body>
+  <div id="copyr" aria-label="copyright"><span class="sym">©</span>Α. &amp; Σ. Μητσέλος — ΕΛΛΗΝΟΕΚΔΟΤΙΚΗ, 2026</div>
+  <div id="topbar" aria-hidden="false">
+    <button id="btnHome" class="tb-btn" aria-label="Επιστροφή στην αρχή"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg></button>
+    <button id="btnClose" class="tb-btn" aria-label="Κλείσιμο"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
+  </div>
+  <div id="slot">
+    <div id="cardhost"></div>
+    <button class="zone left" id="zLeft" aria-label="Προηγούμενο"></button>
+    <button class="zone center" id="zCenter" aria-label="Αναστροφή"></button>
+    <button class="zone right" id="zRight" aria-label="Επόμενο"></button>
+  </div>
+  <div class="navhint">
+    <button type="button" class="cue" id="navPrev">‹ προηγούμενη</button><span class="sep"></span><button type="button" class="cue mid" id="hintMid">↻ αναστροφή</button><span class="sep"></span><button type="button" class="cue" id="navNext">επόμενη ›</button>
+  </div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   ΕΙΣΑΓΩΓΗ ΣΤΙΣ ΣΤΡΑΤΗΓΙΚΕΣ ΠΕΙΘΟΥΣ — εισαγωγικές ασκήσεις
+   Ο μαθητής ΔΕΝ χρειάζεται ορολογία: παρατηρεί τι επιδιώκει ο
+   συντάκτης και πώς «χτυπάει» ο λόγος του, πριν φτάσει στη θεωρία.
+   Όλα τα αποσπάσματα είναι αυθεντικά (σχολικά βιβλία Γυμνασίου).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════
+   ΕΙΣΑΓΩΓΗ ΣΤΗΝ ΕΞΗΓΗΣΗ — εισαγωγικές ασκήσεις
+   Ο μαθητής ΔΕΝ χρειάζεται ορολογία: παρατηρεί τι κάνει ο συντάκτης
+   και σε ποιο ερώτημα απαντά, ξεχωρίζει την εξήγηση από την
+   επιχειρηματολογία, και μετά περνά στη θεωρία.
+   Όλα τα αποσπάσματα είναι αυθεντικά (σχολικά βιβλία Γυμνασίου).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ══ ΑΣΚΗΣΕΙΣ (10) ══ */
+const EX = [
+
+  /* 1 — τι κάνει; (εξηγεί vs υποστηρίζει άποψη) */
+  {type:"mc",domain:"Τι κάνει ο γράφων;",
+   prompt:"Διάβασε το απόσπασμα. Τι κάνει κυρίως ο συντάκτης;",
+   sentence:"«Τα αέρια του θερμοκηπίου […] σχηματίζουν ένα «στρώμα» πάνω από το έδαφος της Γης […] και, αφού επιτρέψουν να εισέλθει η υπέρυθρη ακτινοβολία του ήλιου, αυτή απορροφάται κατά ένα μέρος από τη Γη και την ατμόσφαιρα.»<span class=\'src\'>«Το φαινόμενο του θερμοκηπίου», Επιλέγω κι επικοινωνώ, Α΄ Γυμνασίου</span>",
+   options:["Υποστηρίζει μια άποψη για να μας πείσει","Μας εξηγεί πώς και γιατί συμβαίνει ένα υπαρκτό φαινόμενο","Αφηγείται ένα περιστατικό"],answer:1,
+   explain:"<b>Εξηγεί.</b> Το φαινόμενο του θερμοκηπίου είναι <b>πραγματικό και αδιαμφισβήτητο</b>· ο συντάκτης δεν υπερασπίζεται άποψη — μας δείχνει <b>πώς</b> λειτουργεί και <b>γιατί</b> εμφανίζεται."},
+
+  /* 2 — ακολουθία βημάτων; (ναι/όχι) → εξήγηση «πώς» */
+  {type:"yesno",domain:"Πώς γίνεται;",
+   prompt:"«Στο απόσπασμα εξηγείται η αλυσίδα των βημάτων/συμβάντων που οδηγούν σε σεισμό.» Ισχύει;",
+   sentence:"«Ολόκληρη η Γη περιβάλλεται από ένα σκληρό στρώμα πετρωμάτων, που λέγεται λιθόσφαιρα. […] Όταν αυτές υπερνικήσουν την αντοχή του υλικού της λιθόσφαιρας το πέτρωμα σπάει και δημιουργείται έτσι ένα σεισμικό ρήγμα. […] Έτσι τα σεισμικά κύματα φτάνουν ως την επιφάνεια της Γης και αποτελούν τον σεισμό.»<span class=\'src\'>Επιλέγω κι επικοινωνώ, Β΄ Γυμνασίου</span>",
+   options:["ΝΑΙ","ΟΧΙ"],answer:0,
+   explain:"<b>Ναι.</b> Ο συντάκτης ξετυλίγει μια <b>αλυσίδα συμβάντων</b> (πετρώματα → ρήγμα → σεισμικά κύματα → σεισμός): μας δείχνει <b>πώς</b> γίνεται ένα υπαρκτό, αδιαμφισβήτητο φαινόμενο. Αυτό είναι <b>εξήγηση</b> — κι όχι επιχειρηματολογία, που θα αφορούσε μια αμφισβητούμενη άποψη."},
+
+  /* 3 — τα δύο «γιατί» (mc) */
+  {type:"mc",domain:"Δύο διαφορετικά «γιατί»",
+   prompt:"Και οι δύο προτάσεις αρχίζουν με «Γιατί». Ποια ανήκει σε <b>εξήγηση</b> της εμφάνισης ενός φαινομένου — κι όχι σε άποψη που πρέπει να αποδειχθεί;",
+   sentence:"α) «Γιατί γίνονται οι σεισμοί;»<br>β) «Γιατί πρέπει να απαγορευτούν τα κινητά στο σχολείο;»",
+   options:["Η (α) — ρωτά για την αιτία ενός πραγματικού φαινομένου","Η (β) — ρωτά για την αιτία ενός πραγματικού φαινομένου","Καμία από τις δύο"],answer:0,
+   explain:"Το «Γιατί γίνονται οι σεισμοί;» ζητά την <b>αιτία ενός υπαρκτού φαινομένου</b> → <b>εξήγηση</b>. Το «Γιατί πρέπει να απαγορευτούν τα κινητά;» αφορά <b>άποψη που αμφισβητείται</b> → <b>επιχειρηματολογία</b>. Ίδια λέξη, δύο διαφορετικά «γιατί»."},
+
+  /* 4 — αντιστοίχιση ερώτημα → είδος εξήγησης (match) */
+  {type:"match",domain:"Σε ποιο ερώτημα απαντά;",
+   prompt:"Κάθε εξήγηση απαντά σε άλλο ερώτημα. Ταίριαξε την ερώτηση με αυτό που ζητά.",
+   matchHint:"Πάτησε ένα κουτί δεξιά για να το ταιριάξεις με τη γραμμή που δείχνεις.",
+   left:["«Πώς σχηματίζεται η βροχή;»","«Γιατί αυξάνεται η ανεργία των νέων;»","«Τι προκαλεί η υπερβολική χρήση του κινητού;»"],
+   right:["Ζητά τη σειρά των βημάτων (πώς)","Ζητά τα αίτια / τους παράγοντες (γιατί)","Ζητά τις συνέπειες / τα αποτελέσματα (τι προκαλεί)"],
+   answer:[0,1,2],
+   explain:"Τρία ερωτήματα, τρεις μορφές εξήγησης: <b>πώς;</b> (ακολουθία βημάτων) · <b>γιατί;</b> (αίτια) · <b>τι προκαλεί;</b> (αποτελέσματα). Αυτά θα ονομάσεις στη θεωρία."},
+
+  /* 5 — κλικ στη λέξη-«πώς» (clk) */
+  {type:"clk",domain:"Το «πώς» της εξήγησης",
+   prompt:"Το απόσπασμα εξηγεί πώς γίνεται η βροχή, βήμα-βήμα. Κάνε κλικ στη λέξη που δείχνει το <b>πρώτο</b> βήμα της σειράς.",
+   sentence:"Αρχικά , λόγω της υψηλής θερμοκρασίας, προκαλείται εξάτμιση των υδάτων· στη συνέχεια σχηματίζονται σύννεφα.",
+   clkHint:"Ποια λέξη ξεκινά τη χρονική αλυσίδα των συμβάντων;",
+   answerWord:"Αρχικά",
+   explain:"Το <b>«Αρχικά»</b> (όπως και «στη συνέχεια», «έπειτα», «στο τέλος») δείχνει <b>χρονική ακολουθία</b>: η εξήγηση παρουσιάζει τα βήματα με τη σειρά που συμβαίνουν — απαντά στο <b>«πώς;»</b>.<br><span style=\'font-size:.9em\'>(Επιλέγω κι επικοινωνώ, Β΄ Γυμνασίου)</span>"},
+
+  /* 6 — σε ποιο ερώτημα; (mc) παραγοντική */
+  {type:"mc",domain:"Αίτια ή αποτελέσματα;",
+   prompt:"Σε ποιο ερώτημα απαντά αυτό το απόσπασμα;",
+   sentence:"«Οι νέοι διαχρονικά πλήττονται περισσότερο από την ανεργία. […] Η σημαντικότερη από αυτές είναι η οικονομική κατάσταση της χώρας. […] Επιπλέον, οι επιχειρήσεις είναι πιο πιθανό να απολύσουν τους νεότερους […]. Τέλος, οι νέοι στην Ελλάδα είναι περισσότερο εξαρτημένοι από τη γονική στέγη.»<span class=\'src\'>Επιλέγω κι επικοινωνώ, Β΄ Γυμνασίου</span>",
+   options:["«Πώς γίνεται;» — δίνει τα βήματα","«Γιατί συμβαίνει;» — δίνει τα αίτια","«Τι προκαλεί;» — δίνει τα αποτελέσματα"],answer:1,
+   explain:"Απαντά στο <b>«γιατί;»</b>: απαριθμεί <b>αίτια / παράγοντες</b> (οικονομική κατάσταση, απολύσεις νεότερων, γονική στέγη) που οδηγούν στη νεανική ανεργία."},
+
+  /* 7 — συνεπαγωγική: αποτελέσματα; (ναι/όχι) */
+  {type:"yesno",domain:"Τι προκαλεί;",
+   prompt:"«Εδώ ο συντάκτης παρουσιάζει κυρίως τα αποτελέσματα / τις συνέπειες ενός φαινομένου.» Ισχύει;",
+   sentence:"«Η αυξημένη χρήση του αυτοκινήτου στα αστικά κέντρα επιφέρει αλυσιδωτές συνέπειες. Πρώτα απ᾽ όλα, προκαλεί μεγαλύτερη κυκλοφοριακή συμφόρηση […]. Επιπλέον, αυξάνεται η ατμοσφαιρική ρύπανση […]. Απόρροια όλων αυτών είναι και η υποβάθμιση της ποιότητας ζωής στην πόλη.»<span class=\'src\'>Επιλέγω κι επικοινωνώ, Β΄ Γυμνασίου</span>",
+   options:["ΝΑΙ","ΟΧΙ"],answer:0,
+   explain:"<b>Ναι.</b> Με δείκτες «επιφέρει», «προκαλεί», «απόρροια» ο συντάκτης ξετυλίγει τα <b>αποτελέσματα</b> της χρήσης του αυτοκινήτου — απαντά στο <b>«τι προκαλεί;»</b>."},
+
+  /* 8 — συμπλήρωση: εξήγηση ως τεκμήριο → κατευθυντική (fill) */
+  {type:"fill",domain:"Συμπλήρωσε",
+   prompt:"Διάβασε και διάλεξε τη λέξη που συμπληρώνει σωστά την παρατήρηση.",
+   sentence:"«Η απουσία ποδηλατοδρόμων έχει ως αποτέλεσμα οι μαθητές να μην πηγαίνουμε με το ποδήλατο στο σχολείο και να κινδυνεύουμε στον δρόμο.»<br><span style=\'font-size:.9em\'>Ο μαθητής-συντάκτης του χωρίου επιδιώκει να πείσει για την ανάγκη κατασκευής ποδηλατοδρόμου.</span><span class=\'src\'>Επιλέγω κι επικοινωνώ (διασκευή)</span>",
+   fillText:"Εδώ η εξήγηση των συνεπειών δεν μένει απλή πληροφορία· γίνεται ___ για να στηρίξει το αίτημα.",
+   fillOptions:["τεκμήριο που πείθει","αφήγηση","περιγραφή"],answer:0,
+   explain:"Όταν η εξήγηση χρησιμοποιείται ως <b>τεκμήριο / απόδειξη</b> για να μας κατευθύνει σε σκέψη ή δράση, πλησιάζει την επιχειρηματολογία. Αυτή είναι η <b>κατευθυντική</b> εξήγηση."},
+
+  /* 9 — πρόθεση: ενημερώνει ή κατευθύνει; (mc) */
+  {type:"mc",domain:"Ποια η πρόθεση;",
+   prompt:"Τι επιδιώκει ο συντάκτης με αυτή την εξήγηση των αιτιών κρυολογήματος και γρίπης;",
+   sentence:"«Το κοινό κρυολόγημα προκαλείται από ιούς διαφορετικούς από τους ιούς της γρίπης. Τα συμπτώματα του κρυολογήματος χαρακτηρίζονται συνήθως ως πιο ελαφρά […]. Αντίθετα, η γρίπη είναι πιο σοβαρή, αφού μπορεί να προκαλέσει σοβαρή νόσηση και επιπλοκές.»<span class=\'src\'>Επιλέγω κι επικοινωνώ, Α΄ Γυμνασίου</span>",
+   options:["Απλώς να μας πληροφορήσει αντικειμενικά για τη διαφορά τους","Να μας πείσει να είμαστε πιο προσεκτικοί, ώστε να μην κρυολογήσουμε","Να μας περιγράψει πώς μοιάζει ένας άρρωστος"],answer:0,
+   explain:"Εδώ η εξήγηση είναι <b>αποφαντική / αναφορική</b>: μας <b>πληροφορεί αντικειμενικά</b> για τη διαφορά, <b>χωρίς</b> προτροπή ή αίτημα. Δεν μας λέει «προσέξτε» ή «εμβολιαστείτε» — αν το έκανε, θα γινόταν <b>κατευθυντική</b>."},
+
+  /* 10 — τελική αντιστοίχιση: αποφαντική vs κατευθυντική (match) */
+  {type:"match",domain:"Σύνοψη — πρόθεση",
+   prompt:"Ταίριαξε κάθε στόχο με την πρόθεση που του ταιριάζει.",
+   matchHint:"Πάτησε ένα κουτί δεξιά για να το ταιριάξεις με τη γραμμή που δείχνεις.",
+   left:["«…επιδιώκει να μας πληροφορήσει, με στοιχεία, για ένα θέμα.»","«…χρησιμοποιεί την εξήγηση για να μας πείσει να πάρουμε θέση / να δράσουμε.»"],
+   right:["Απλή ενημέρωση (αποφαντική εξήγηση)","Εξήγηση-τεκμήριο που κατευθύνει (κατευθυντική)"],
+   answer:[0,1],
+   explain:"Δύο προθέσεις: η <b>αποφαντική/αναφορική</b> απλώς ενημερώνει· η <b>κατευθυντική/παραδειγματική</b> αξιοποιεί την εξήγηση ως <b>τεκμήριο</b> για να μας πείσει. Εδώ η εξήγηση αγγίζει την επιχειρηματολογία."}
+];
+
+/* ══ ΘΕΩΡΙΑ — σε πίνακες (όχι αναλυτικά) ══
+   Κάθε κάρτα: μπροστά = ορισμός· πίσω = σύντομος πίνακας. */
+const TH = [
+  {cat:"Πρώτα απ᾽ όλα",term:"Εξήγηση ≠ Επιχειρηματολογία",
+   def:"Και οι δύο μπορεί να αρχίζουν με «γιατί», αλλά είναι <b>δύο διαφορετικά «γιατί»</b>:<br>• η <b>εξήγηση</b> αφορά <b>πραγματικά, αδιαμφισβήτητα</b> φαινόμενα (μας λέει <b>πώς</b> και <b>γιατί</b> συμβαίνουν)·<br>• η <b>επιχειρηματολογία</b> αφορά <b>αμφισβητούμενες απόψεις</b> (μας πείθει <b>γιατί η θέση μας είναι σωστή</b>).",
+   means:"Υπαρκτό φαινόμενο ≠ αμφισβητούμενη άποψη.",
+   tcols:"1fr 1fr",
+   table:[
+     ["Εξήγηση","Επιχειρηματολογία"],
+     ["Υπαρκτό φαινόμενο","Αμφισβητούμενη θέση"],
+     ["«Γιατί γίνονται οι σεισμοί;»","«Γιατί ν᾽ απαγορευτούν τα κινητά;»"],
+     ["Ερμηνεύει (πώς/γιατί)","Υποστηρίζει μια άποψη"],
+     ["Πληροφορεί","Πείθει"]
+   ],
+   note:"Κλειδί: αμφισβητείται αυτό που λέει; Αν όχι → εξήγηση. Αν ναι → επιχειρηματολογία."},
+
+  {cat:"Οι τρεις μορφές",term:"Πώς; Γιατί; Τι προκαλεί;",
+   def:"Ανάλογα με το ερώτημα στο οποίο απαντά, η εξήγηση παίρνει <b>τρεις μορφές</b>: <b>ακολουθιακή</b> (σειρά βημάτων), <b>παραγοντική</b> (αίτια) και <b>συνεπαγωγική</b> (αποτελέσματα).",
+   means:"Κάθε μορφή απαντά σε άλλο ερώτημα.",
+   tcols:"1.1fr 1fr",
+   table:[
+     ["Μορφή","Απαντά στο…"],
+     ["Ακολουθιακή (αλυσίδα συμβάντων)","«Πώς;»"],
+     ["Παραγοντική (αίτια)","«Γιατί;»"],
+     ["Συνεπαγωγική (αποτελέσματα)","«Τι προκαλεί;»"]
+   ],
+   note:"Δείκτες: «αρχικά, στη συνέχεια» (πώς) · «επειδή, λόγω» (γιατί) · «προκαλεί, απόρροια» (τι προκαλεί)."},
+
+  {cat:"Ως προς την πρόθεση",term:"Αποφαντική / Κατευθυντική",
+   def:"Ανάλογα με τον στόχο του συντάκτη, η εξήγηση είναι: <b>αποφαντική/αναφορική</b> (απλώς <b>ενημερώνει</b> αντικειμενικά) ή <b>κατευθυντική/παραδειγματική</b> (αξιοποιεί την εξήγηση ως <b>τεκμήριο</b>, για να μας <b>κατευθύνει</b> σε σκέψη ή δράση — εδώ πλησιάζει την επιχειρηματολογία).",
+   means:"Ενημερώνει ή κατευθύνει;",
+   tcols:"1fr 1.25fr",
+   table:[
+     ["Μορφή","Στόχος"],
+     ["Αποφαντική / αναφορική","Πληροφορεί αντικειμενικά"],
+     ["Κατευθυντική / παραδειγματική","Πείθει — η εξήγηση γίνεται τεκμήριο"]
+   ],
+   note:"Η κατευθυντική εξήγηση είναι η «γέφυρα» προς την επιχειρηματολογία."}
+];
+
+/* ══ Δόμηση ακολουθίας: Εισαγωγή → Ασκήσεις → Γέφυρα → Θεωρία → Τέλος ══ */
+const SEQ=[];
+SEQ.push({kind:"intro",phase:"Εισαγωγή"});
+EX.forEach((e,idx)=>SEQ.push({kind:"ex",data:e,phase:"Ασκήσεις",n:idx+1,total:EX.length}));
+const BRIDGE_IDX=SEQ.length;
+SEQ.push({kind:"bridge",phase:"Γέφυρα"});
+const THEORY_IDX=SEQ.length;
+TH.forEach((t,idx)=>SEQ.push({kind:"th",data:t,phase:"Θεωρία",n:idx+1,total:TH.length}));
+SEQ.push({kind:"end",phase:"Τέλος"});
+
+const exState=EX.map(()=>({answered:false,correct:false,picks:[]}));
+let p=0, flipped=false;
+const slot=document.getElementById('slot');
+const norm=s=>s.toLowerCase().replace(/[«».,:!·()"'‘’…]/g,'').trim();
+const firstLetter=t=>`<span class="initial">${t.charAt(0)}</span>${t.slice(1)}`;
+
+const host=document.getElementById('cardhost');
+
+function fitCol(col){
+  // Στήλες με πίνακα θεωρίας διαβάζονται καλύτερα σε μικρότερο μέγεθος:
+  // περιορίζουμε το άνω όριο ώστε ο πίνακας να μη «φουσκώνει».
+  const hasTable = !!col.querySelector('.thtable');
+  const capHi = hasTable ? 24 : 180;
+  let lo=10,hi=Math.max(hasTable?16:52, Math.min(capHi, col.clientHeight*0.16));
+  for(let it=0;it<14;it++){const mid=(lo+hi)/2;col.style.setProperty('--fs',mid+'px');
+    const of=col.scrollHeight>col.clientHeight+1||col.scrollWidth>col.clientWidth+1;
+    if(of)hi=mid;else lo=mid;}
+  col.style.setProperty('--fs',Math.floor(lo)+'px');
+}
+function fitTheory(){requestAnimationFrame(()=>{
+  host.querySelectorAll('.face').forEach(face=>{
+    const cols=[...face.querySelectorAll('.col')];
+    cols.forEach(fitCol);
+    // Αν η όψη έχει πίνακα, ο ΠΙΝΑΚΑΣ ορίζει το μέγεθος ανάγνωσης.
+    // Η δεξιά στήλη (σημείωση) ακολουθεί το μέγεθος του πίνακα, ποτέ το αντίστροφο,
+    // ώστε μια μεγάλη σημείωση να μη «μικραίνει» ολόκληρη την κάρτα.
+    const tableCol=face.querySelector('.col.main .thtable')?face.querySelector('.col.main'):null;
+    if(tableCol && cols.length>1){
+      const fsTable=parseFloat(getComputedStyle(tableCol).getPropertyValue('--fs'))||18;
+      cols.forEach(c=>{ if(c===tableCol) return;
+        const own=parseFloat(getComputedStyle(c).getPropertyValue('--fs'))||18;
+        // η σημείωση παίρνει το μέγεθος του πίνακα, αλλά μικραίνει αν δεν χωράει εκεί
+        c.style.setProperty('--fs', Math.min(fsTable, own)+'px');
+      });
+    }
+  });
+});}
+
+function fitCard(){
+  const card=host.querySelector('.card');
+  if(!card) return;
+  requestAnimationFrame(()=>{
+    const ref = Math.min(card.clientHeight, card.clientWidth*0.62);
+    const areaCap = Math.min(4.5, Math.max(1, ref/360));
+    let lo=0.6, hi=areaCap;
+    card.style.setProperty('--sc',hi);
+    if(card.scrollHeight<=card.clientHeight+1){ return; }
+    for(let it=0; it<16; it++){
+      const mid=(lo+hi)/2;
+      card.style.setProperty('--sc',mid);
+      if(card.scrollHeight>card.clientHeight+1) hi=mid; else lo=mid;
+    }
+    card.style.setProperty('--sc',lo);
+  });
+}
+
+/* ── render dispatch ── */
+let __swipeInProgress=false;
+function animateHost(dir){
+  if(__swipeInProgress) return;
+  host.classList.remove('slideR','slideL','fadeIn');
+  void host.offsetWidth;
+  host.classList.add(dir>0?'slideR':dir<0?'slideL':'fadeIn');
+}
+function render(dir){
+  const item=SEQ[p];
+  document.getElementById('slot').classList.toggle('flippable', item.kind==="th"||item.kind==="bridge");
+  document.getElementById('slot').classList.toggle('no-prev', item.kind==="intro");
+  document.getElementById('slot').classList.toggle('no-next', item.kind==="end");
+  document.getElementById('navPrev').disabled = item.kind==="intro";
+  document.getElementById('navNext').disabled = item.kind==="end";
+  document.getElementById('hintMid').classList.toggle('dim', item.kind!=="th"&&item.kind!=="bridge");
+  if(item.kind==="intro"){ renderIntro(); fitCard(); }
+  else if(item.kind==="ex"){ renderEx(item.data, EX.indexOf(item.data)); fitCard(); }
+  else if(item.kind==="bridge"){ renderBridge(); fitCard(); }
+  else if(item.kind==="end"){ renderEnd(); fitCard(); }
+  else renderTheory(item.data);
+  animateHost(dir||0);
+}
+
+/* Εισαγωγική κάρτα */
+function renderIntro(){
+  host.innerHTML=`<div class="card gate intro">
+    <div class="head"><span class="eyebrow">Καλωσόρισες</span><span class="badge">Ασκήσεις + Θεωρία</span></div>
+    <div class="title">${firstLetter("Η εξήγηση")}</div>
+    <div class="lead">Πριν μάθεις τους όρους, <b>παρατήρησε</b>. Σε <b>10 σύντομες ασκήσεις</b> θα δεις αυθεντικά αποσπάσματα και θα προσπαθήσεις να νιώσεις <b>τι κάνει</b> ο συντάκτης — πότε απλώς <b>εξηγεί</b> ένα υπαρκτό φαινόμενο (κι όχι μια άποψη), σε ποιο <b>ερώτημα απαντά</b> (πώς; γιατί; τι προκαλεί;) και πότε η εξήγηση θέλει να μας <b>κατευθύνει</b>. Στο τέλος θα περάσεις στη <b>θεωρία</b> και θα δώσεις ονόματα σε όσα μόλις αναγνώρισες.<br>Πλοήγηση: πάτησε στις <b>άκρες</b> (αριστερά/δεξιά) ή στο <b>κέντρο</b> της κάρτας (όπου υπάρχει αναστροφή) για περισσότερα.</div>
+    <div class="actions">
+      <button class="reveal-btn" id="startBtn">Ξεκίνησε τις ασκήσεις →</button>
+      <button class="reveal-btn btn-secondary" id="jumpBtn">Μετάβαση στη θεωρία →</button>
+    </div>
+  </div>`;
+  host.querySelector('#startBtn').addEventListener('click',()=>go(1));
+  host.querySelector('#jumpBtn').addEventListener('click',()=>{ p=THEORY_IDX; render(1); });
+}
+
+/* Τελική κάρτα */
+function renderEnd(){
+  const total=EX.length;
+  const correct=exState.filter(s=>s.correct).length;
+  host.innerHTML=`<div class="card gate end">
+    <div class="head"><span class="eyebrow">Τέλος</span><span class="badge">Ολοκληρώθηκε</span></div>
+    <div class="title">Έφτασες στο τέλος</div>
+    <div class="score">${correct}<small> / ${total} σωστές</small></div>
+    <div class="lead">Τώρα ξεχωρίζεις την <b>εξήγηση</b> από την επιχειρηματολογία, αναγνωρίζεις σε ποιο <b>ερώτημα</b> απαντά (πώς; γιατί; τι προκαλεί;) και πότε είναι <b>αποφαντική</b> ή <b>κατευθυντική</b>. Θέλεις να ξαναδοκιμάσεις ή να δεις πάλι τη θεωρία;</div>
+    <div class="actions">
+      <button class="reveal-btn" id="restartBtn">↻ Επανεκκίνηση</button>
+      <button class="reveal-btn btn-secondary" id="backTheoryBtn">← Επιστροφή στη θεωρία</button>
+    </div>
+  </div>`;
+  host.querySelector('#restartBtn').addEventListener('click',()=>{
+    exState.forEach(s=>{s.answered=false;s.correct=false;s.picks=[];});
+    p=0; render(0);
+  });
+  host.querySelector('#backTheoryBtn').addEventListener('click',()=>{ p=THEORY_IDX; render(-1); });
+}
+
+/* Ασκήσεις */
+function renderEx(e,exIdx){
+  const st=exState[exIdx];
+  const domainLabel=e.domain==="—"?"Άσκηση":e.domain;
+  const typeLabel = e.type==="clk"?"Κλικ στη λέξη"
+                   :e.type==="yesno"?"Ναι / Όχι"
+                   :e.type==="match"?"Αντιστοίχιση"
+                   :e.type==="fill"?"Συμπλήρωση"
+                   :"Πολλαπλή επιλογή";
+  const tall = (e.type==="match");
+  let b=`<div class="card${tall?' tall':''}"><div class="head"><span class="eyebrow">${domainLabel}</span><span class="badge">${typeLabel}</span></div>`;
+  b+=`<div class="prompt">${e.prompt}</div>`;
+
+  if(e.type==="clk"){
+    const toks=e.sentence.split(" ").map((w,idx)=>`<span class="tok" data-idx="${idx}">${w}</span>`).join(" ");
+    b+=`<div class="sentence clk">${toks}</div>`;
+    if(!st.answered) b+=`<div class="clk-hint">${e.clkHint||"Κάνε κλικ στη σωστή λέξη."}</div>`;
+
+  }else if(e.type==="match"){
+    if(e.sentence) b+=`<div class="sentence">${e.sentence}</div>`;
+    if(!st.answered) b+=`<div class="match-hint">${e.matchHint||"Πάτησε ένα κουτί δεξιά για να ταιριάξει με τη γραμμή που δείχνεις."}</div>`;
+    b+=`<div class="matchgrid">`;
+    e.left.forEach((L,i)=>{
+      b+=`<div class="matchrow">
+            <div class="mcell left">${L}</div>
+            <div class="marrow">→</div>
+            <div class="mcell right" data-ri="${i}"></div>
+          </div>`;
+    });
+    b+=`</div>`;
+    // «Τράπεζα» επιλογών — μέσα στο αρχικό HTML, ώστε το fitCard να μετρήσει σωστά
+    const order = e._order || (e._order = shuffleIdx(e.right.length));
+    b+=`<div class="fillwrap matchbank">`+order.map(oi=>`<button class="fillopt" data-ri="${oi}">${e.right[oi]}</button>`).join("")+`</div>`;
+
+  }else if(e.type==="fill"){
+    if(e.sentence) b+=`<div class="sentence">${e.sentence}</div>`;
+    b+=`<div class="prompt" style="font-size:calc(clamp(1rem,2.9vw,1.15rem)*var(--sc))">${e.fillText.replace('___','<span class="blank" id="theBlank">______</span>')}</div>`;
+    b+=`<div class="fillwrap">`+e.fillOptions.map((o,idx)=>`<button class="fillopt" data-idx="${idx}">${o}</button>`).join("")+`</div>`;
+
+  }else{ /* mc / yesno */
+    b+=`<div class="sentence">${e.sentence}</div>`;
+    const two=e.options.length===2?" two":"";
+    b+=`<div class="options${two}">`+e.options.map((o,idx)=>`<button class="opt" data-idx="${idx}">${o}</button>`).join("")+`</div>`;
+  }
+
+  b+=`<div class="feedback"></div></div>`;
+  host.innerHTML=b;
+  const card=host.querySelector('.card'); card.scrollTop=0;
+
+  if(e.type==="clk") bindClk(e,st,card);
+  else if(e.type==="match") bindMatch(e,st,card);
+  else if(e.type==="fill") bindFill(e,st,card);
+  else bindOptions(e,st,card);
+
+  if(st.answered) replay(e,st,card);
+}
+
+function fb(card,ok,e){const f=card.querySelector('.feedback');f.className='feedback show '+(ok?'ok':'ko');
+  f.innerHTML=(ok?'✓ Σωστά. ':'✗ Όχι ακριβώς. ')+e.explain; fitCard();}
+
+function bindOptions(e,st,card){
+  card.querySelectorAll('.opt').forEach(btn=>btn.addEventListener('click',()=>{
+    if(st.answered)return;const idx=+btn.dataset.idx,ok=idx===e.answer;st.answered=true;st.correct=ok;
+    card.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true;
+      if(k===e.answer){x.classList.add('correct');x.insertAdjacentHTML('beforeend','<span class="mark">✓</span>');}});
+    if(!ok){btn.classList.add('wrong');btn.insertAdjacentHTML('beforeend','<span class="mark">✗</span>');}
+    fb(card,ok,e);
+  }));
+}
+
+function bindClk(e,st,card){
+  card.querySelectorAll('.tok').forEach(tok=>tok.addEventListener('click',()=>{
+    if(st.answered)return;const ok=norm(tok.textContent)===norm(e.answerWord);st.answered=true;st.correct=ok;
+    if(ok)tok.classList.add('correct');
+    else{tok.classList.add('wrong');card.querySelectorAll('.tok').forEach(t=>{if(norm(t.textContent)===norm(e.answerWord))t.classList.add('correct');});}
+    fb(card,ok,e);
+  }));
+}
+
+function bindFill(e,st,card){
+  const blank=card.querySelector('#theBlank');
+  card.querySelectorAll('.fillopt').forEach(btn=>btn.addEventListener('click',()=>{
+    if(st.answered)return;const idx=+btn.dataset.idx,ok=idx===e.answer;st.answered=true;st.correct=ok;
+    if(blank) blank.textContent=e.fillOptions[idx];
+    card.querySelectorAll('.fillopt').forEach((x,k)=>{x.disabled=true;
+      if(k===e.answer)x.classList.add('correct');});
+    if(!ok){btn.classList.add('wrong'); if(blank){blank.style.color='#7a2f1a';blank.style.borderColor='#b54a2a';}}
+    fb(card,ok,e);
+  }));
+}
+
+/* Αντιστοίχιση: ο μαθητής πατάει δεξιά κουτιά με τη σειρά· κάθε επιλογή
+   γεμίζει την επόμενη κενή γραμμή. Μόλις γεμίσουν όλες → έλεγχος. */
+function bindMatch(e,st,card){
+  const slots = card.querySelectorAll('.mcell.right'); // μία ανά γραμμή (data-ri = σειρά left)
+  const bank = card.querySelector('.matchbank');
+  const assigned = []; // assigned[rowIndex] = rightIndex
+
+  let selRight=null; // {btn, ri}
+  function clearSel(){ if(selRight){selRight.btn.classList.remove('sel');} selRight=null; }
+
+  bank.querySelectorAll('.fillopt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(st.answered)return;
+      if(btn.disabled) return;
+      if(selRight && selRight.btn===btn){ clearSel(); return; }
+      clearSel();
+      selRight={btn, ri:+btn.dataset.ri};
+      btn.classList.add('sel');
+    });
+  });
+
+  slots.forEach(slotCell=>{
+    slotCell.addEventListener('click',()=>{
+      if(st.answered)return;
+      const row=+slotCell.dataset.ri;
+      if(selRight){
+        // αν η γραμμή ήταν ήδη γεμάτη, ελευθέρωσε το προηγούμενο κουμπί
+        if(assigned[row]!=null){
+          const prevBtn=bank.querySelector(`.fillopt[data-ri="${assigned[row]}"]`);
+          if(prevBtn){prevBtn.disabled=false;prevBtn.style.opacity='';}
+        }
+        assigned[row]=selRight.ri;
+        slotCell.textContent=e.right[selRight.ri];
+        slotCell.classList.add('filled');
+        selRight.btn.disabled=true; selRight.btn.style.opacity='.35';
+        clearSel();
+        // όλα γεμάτα;
+        if(assigned.filter(x=>x!=null).length===e.left.length){
+          checkMatch();
+        }
+      } else if(assigned[row]!=null){
+        // ξαναβάλε στη διάθεση
+        const prevBtn=bank.querySelector(`.fillopt[data-ri="${assigned[row]}"]`);
+        if(prevBtn){prevBtn.disabled=false;prevBtn.style.opacity='';}
+        assigned[row]=null; slotCell.textContent=''; slotCell.classList.remove('filled');
+      }
+    });
+  });
+
+  function checkMatch(){
+    let allOk=true;
+    slots.forEach(slotCell=>{
+      const row=+slotCell.dataset.ri;
+      const ok = assigned[row]===e.answer[row];
+      slotCell.classList.add(ok?'correct':'wrong','locked');
+      if(!ok) allOk=false;
+    });
+    bank.querySelectorAll('.fillopt').forEach(b=>b.disabled=true);
+    st.answered=true; st.correct=allOk; st.picks=assigned.slice();
+    fb(card,allOk,e);
+  }
+}
+
+function shuffleIdx(n){
+  const a=[...Array(n).keys()];
+  for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function replay(e,st,card){
+  if(e.type==="clk"){
+    card.querySelectorAll('.tok').forEach(t=>{if(norm(t.textContent)===norm(e.answerWord))t.classList.add('correct');});
+  }else if(e.type==="match"){
+    const slots=card.querySelectorAll('.mcell.right');
+    const bank=card.querySelector('.matchbank');
+    slots.forEach(slotCell=>{
+      const row=+slotCell.dataset.ri;
+      const ri = (st.picks && st.picks[row]!=null) ? st.picks[row] : e.answer[row];
+      slotCell.textContent=e.right[ri];
+      const ok=ri===e.answer[row];
+      slotCell.classList.add(ok?'correct':'wrong','locked');
+    });
+    if(bank) bank.querySelectorAll('.fillopt').forEach(b=>{b.disabled=true;b.style.opacity='.35';});
+  }else if(e.type==="fill"){
+    const blank=card.querySelector('#theBlank');
+    if(blank) blank.textContent=e.fillOptions[e.answer];
+    card.querySelectorAll('.fillopt').forEach((x,k)=>{x.disabled=true;if(k===e.answer)x.classList.add('correct');});
+  }else{
+    card.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true;if(k===e.answer){x.classList.add('correct');x.insertAdjacentHTML('beforeend','<span class="mark">✓</span>');}});
+  }
+  fb(card,st.correct,e);
+}
+
+/* Γέφυρα (επαγωγική μετάβαση στη θεωρία) */
+function renderBridge(){
+  host.innerHTML=`<div class="thwrap"><div class="thcard" id="thcard" tabindex="0" role="button" aria-label="Κάρτα γέφυρας. Πάτησε για την εξήγηση.">
+    <div class="face back" style="transform:none">
+      <div class="col main">
+        <div class="kicker">Γέφυρα</div>
+        <div class="term-small">Μόλις ξεχώρισες την εξήγηση και είδες πού «κοιτάζει». Τι πρόσεξες;</div>
+        <div class="def" style="margin-top:.4em">Η εξήγηση αφορά <b>πραγματικά φαινόμενα</b> (όχι αμφισβητούμενες απόψεις) και απαντά σε <b>τρία ερωτήματα</b> — ανάλογα δε με την πρόθεση, άλλοτε μόνο <b>ενημερώνει</b> κι άλλοτε <b>κατευθύνει</b>.</div>
+        <div class="thtable" style="margin-top:.8em;--tcols:1fr 1fr">
+          <div class="trow htr"><div class="tc">Ερώτημα</div><div class="tc">Μορφή εξήγησης</div></div>
+          <div class="trow"><div class="tc k">«Πώς;»</div><div class="tc v">ακολουθιακή</div></div>
+          <div class="trow"><div class="tc k">«Γιατί;»</div><div class="tc v">παραγοντική</div></div>
+          <div class="trow"><div class="tc k">«Τι προκαλεί;»</div><div class="tc v">συνεπαγωγική</div></div>
+        </div>
+      </div>
+      <div class="col aside"><div class="ex-note"><div class="h">Ερώτηση</div><span>Πάτησε στο κέντρο για τα τρία κλειδιά της θεωρίας.</span></div></div>
+      <div class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>Δες την εξήγηση →</div>
+    </div>
+    <div class="face front" style="transform:rotateY(180deg)">
+      <div class="col main">
+        <div class="kicker">Τα τρία κλειδιά</div>
+        <div class="term-small">Τώρα τους δίνουμε όνομα</div>
+        <div class="def" style="margin-top:.4em"><b>Εξήγηση ≠ επιχειρηματολογία</b> — υπαρκτό φαινόμενο, όχι αμφισβητούμενη άποψη.<br><b>Τρεις μορφές</b> — ακολουθιακή (πώς;), παραγοντική (γιατί;), συνεπαγωγική (τι προκαλεί;).<br><b>Πρόθεση</b> — αποφαντική (ενημερώνει) ή κατευθυντική (πείθει).</div>
+      </div>
+      <div class="col aside"><div class="scholion"><div class="h">Κράτα το</div><p>Ένα κείμενο μπορεί να <b>συνδυάζει</b> μορφές εξήγησης. Προχώρησε τώρα στη θεωρία για καθένα κλειδί.</p></div></div>
+      <div class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>Προχώρησε στη θεωρία →</div>
+    </div>
+  </div></div>`;
+  flipped=false;
+  fitTheory();
+}
+
+/* Θεωρία (flip) — μπροστά ορισμός, πίσω πίνακας */
+function renderTheory(c){
+  const rows = c.table.map((r,ri)=>`<div class="trow${ri===0?' htr':''}"><div class="tc ${ri===0?'':'k'}">${r[0]}</div><div class="tc ${ri===0?'':'v'}">${r[1]}</div></div>`).join("");
+  host.innerHTML=`<div class="thwrap"><div class="thcard" id="thcard" tabindex="0" role="button" aria-label="Κάρτα θεωρίας. Πάτησε για τον πίνακα.">
+    <div class="face front">
+      <div class="col main"><div class="kicker">${c.cat}</div><div class="term">${firstLetter(c.term)}</div><div class="def">${c.def}</div></div>
+      <div class="col aside"><div class="scholion"><div class="h">Με μια ματιά</div><p>${c.means}</p></div></div>
+      <div class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>Πάτησε για τον πίνακα</div>
+    </div>
+    <div class="face back">
+      <div class="col main"><div class="kicker">Πώς το αναγνωρίζεις</div><div class="term-small">${c.term}</div>
+        <div class="thtable" style="--tcols:${c.tcols||'1fr 1.3fr'}">${rows}</div></div>
+      <div class="col aside"><div class="ex-note"><div class="h">Σημείωση</div><span>${c.note}</span></div></div>
+      <div class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>Επιστροφή στον ορισμό</div>
+    </div>
+  </div></div>`;
+  flipped=false;
+  fitTheory();
+}
+
+/* Πλοήγηση & ζώνες αφής */
+function flipCurrent(){
+  const t=host.querySelector('#thcard'); if(!t) return;
+  flipped=!flipped;
+  t.classList.remove('animBack','animFront');
+  void t.offsetWidth;
+  if(flipped){ t.classList.add('flipped','animBack'); }
+  else { t.classList.remove('flipped'); t.classList.add('animFront'); }
+}
+function canGo(dir){
+  if(dir<0 && SEQ[p].kind==="intro") return false;
+  if(dir>0 && SEQ[p].kind==="end")   return false;
+  return true;
+}
+function go(dir){
+  if(!canGo(dir)) return;
+  p=(p+dir+SEQ.length)%SEQ.length;flipped=false;render(dir);
+}
+
+document.getElementById('btnHome').addEventListener('click',()=>{p=0;flipped=false;render(0);});
+document.getElementById('btnClose').addEventListener('click',()=>{try{window.close();}catch(e){}if(!window.closed){history.length>1?history.back():location.replace('about:blank');}});
+document.getElementById('zLeft').addEventListener('click',()=>go(-1));
+document.getElementById('zRight').addEventListener('click',()=>go(1));
+document.getElementById('zCenter').addEventListener('click',()=>{ if(SEQ[p].kind==="th"||SEQ[p].kind==="bridge") flipCurrent(); });
+document.getElementById('navPrev').addEventListener('click',()=>go(-1));
+document.getElementById('navNext').addEventListener('click',()=>go(1));
+document.getElementById('hintMid').addEventListener('click',()=>{ if(SEQ[p].kind==="th"||SEQ[p].kind==="bridge") flipCurrent(); });
+
+/* ── Σύρσιμο καρτών (drag/swipe οριζόντια) ── */
+(function(){
+  const THRESHOLD=10, COMMIT=70;
+  let sx=0, sy=0, dx=0, active=false, dragging=false, didDrag=false, pid=null;
+  const skipDrag = t => !!(t && t.closest && t.closest('.opt, .tok, .fillopt, .mcell.right, .reveal-btn, button:not(.zone), input, textarea, select, a'));
+  slot.addEventListener('pointerdown',ev=>{
+    didDrag=false;
+    if(ev.button!==0 && ev.pointerType==='mouse') return;
+    if(skipDrag(ev.target)) return;
+    active=true; dragging=false; pid=ev.pointerId;
+    sx=ev.clientX; sy=ev.clientY; dx=0;
+    host.classList.remove('snapback');
+  });
+  window.addEventListener('pointermove',ev=>{
+    if(!active||ev.pointerId!==pid) return;
+    dx=ev.clientX-sx; const dy=ev.clientY-sy;
+    if(!dragging){
+      if(Math.abs(dy)>THRESHOLD && Math.abs(dy)>Math.abs(dx)){ active=false; return; }
+      if(Math.abs(dx)>THRESHOLD){
+        dragging=true; didDrag=true;
+        host.classList.remove('slideR','slideL','fadeIn');
+        host.classList.add('dragging');
+      } else return;
+    }
+    const w=slot.clientWidth||600;
+    host.style.transform=`translateX(${dx}px) rotate(${dx/w*3}deg)`;
+    host.style.opacity=String(Math.max(.45, 1-Math.abs(dx)/(w*.9)));
+    ev.preventDefault();
+  },{passive:false});
+  function end(ev){
+    if(!active||(ev && ev.pointerId!==pid)) return;
+    active=false;
+    if(!dragging){ return; }
+    host.classList.remove('dragging');
+    if(Math.abs(dx)>COMMIT && canGo(dx<0?1:-1)){
+      const dir = dx<0 ? 1 : -1;
+      const w=slot.clientWidth||600;
+      const startDx=dx;
+      const ghost=document.createElement('div');
+      ghost.className='cardghost';
+      ghost.style.cssText=`position:absolute;inset:0;display:flex;pointer-events:none;z-index:3;will-change:transform,opacity;transition:transform .34s cubic-bezier(.2,.7,.3,1),opacity .34s ease;transform:translateX(${startDx}px) rotate(${startDx/w*3}deg);opacity:${host.style.opacity||1};`;
+      ghost.innerHTML=host.innerHTML;
+      slot.appendChild(ghost);
+      host.classList.remove('snapback','slideR','slideL','fadeIn');
+      host.style.transition='none';
+      host.style.transform=`translateX(${dir>0? w : -w}px)`;
+      host.style.opacity='1';
+      __swipeInProgress=true;
+      go(dir);
+      requestAnimationFrame(()=>{
+        host.style.transition='transform .34s cubic-bezier(.2,.7,.3,1),opacity .34s ease';
+        host.style.transform='translateX(0)';
+        host.style.opacity='1';
+        ghost.style.transform=`translateX(${dir>0? -w*1.05 : w*1.05}px) rotate(${(dir>0?-1:1)*4}deg)`;
+        ghost.style.opacity='0';
+      });
+      setTimeout(()=>{
+        ghost.remove();
+        host.style.transition='';
+        host.style.transform='';
+        host.style.opacity='';
+        __swipeInProgress=false;didDrag=false;
+      },360);
+    } else {
+      host.classList.add('snapback');
+      host.style.transform=''; host.style.opacity='';
+      setTimeout(()=>host.classList.remove('snapback'),280);
+    }
+  }
+  window.addEventListener('pointerup',end);
+  window.addEventListener('pointercancel',end);
+  window.addEventListener('click',ev=>{
+    if(didDrag){ didDrag=false; ev.preventDefault(); ev.stopPropagation(); }
+  },true);
+})();
+
+document.addEventListener('keydown',ev=>{
+  if(ev.key==='ArrowRight')go(1);
+  else if(ev.key==='ArrowLeft')go(-1);
+  else if((ev.key===' '||ev.key==='Enter') && (SEQ[p].kind==="th"||SEQ[p].kind==="bridge")){ ev.preventDefault(); flipCurrent(); }
+});
+window.addEventListener('resize',()=>{ if(SEQ[p].kind==="th"||SEQ[p].kind==="bridge")fitTheory(); else fitCard(); });
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ if(SEQ[p].kind==="th"||SEQ[p].kind==="bridge")fitTheory(); else fitCard(); },120));
+
+render();
+</script>
+</body></html>
