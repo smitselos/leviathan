@@ -540,6 +540,8 @@ export default function Home() {
   // 📷 Φωτογραφίες → PDF για την παρουσίαση Live
   const [livePhotos, setLivePhotos] = useState([]); // [{file,url}]
   const [livePhotoBusy, setLivePhotoBusy] = useState(false);
+  // 📄 Αρχεία από τη συσκευή (PDF / Word) → Drive → Live
+  const [liveDocBusy, setLiveDocBusy] = useState('');
   const [createMenu, setCreateMenu] = useState(false); // μενού: Νέο / Συγχώνευση
   const [createMenuFolder, setCreateMenuFolder] = useState(''); // προεπιλεγμένος φάκελος (αν ανοίγει από φάκελο)
   const [newDocForm, setNewDocForm] = useState(false); // φόρμα νέου εγγράφου
@@ -1670,6 +1672,42 @@ export default function Home() {
       clearLivePhotos();
     } catch (err) { alert('Σφάλμα: ' + (err.message || 'δημιουργίας PDF')); }
     setLivePhotoBusy(false);
+  };
+
+  // ── Live: αρχεία από τη συσκευή (iCloud, Αρχεία, Λήψεις…) → Drive → σύνθεση ──
+  const uploadToDrive = async (file, parent) => {
+    const metadata = { name: file.name, mimeType: file.type || undefined, ...(parent ? { parents: [parent] } : {}) };
+    const auth = { Authorization: 'Bearer ' + session.accessToken };
+    if (file.size <= 5 * 1024 * 1024) {
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', file);
+      const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType', { method:'POST', headers:auth, body:form });
+      return r.json();
+    }
+    // Μεγάλα αρχεία (> 5 MB): resumable upload
+    const init = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,mimeType', {
+      method:'POST', headers:{ ...auth, 'Content-Type':'application/json; charset=UTF-8' }, body: JSON.stringify(metadata) });
+    const loc = init.headers.get('Location');
+    if (!loc) throw new Error('Αποτυχία έναρξης ανεβάσματος');
+    const r = await fetch(loc, { method:'PUT', body:file });
+    return r.json();
+  };
+  const addLiveDocs = async (e) => {
+    const fs = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!fs.length || liveDocBusy) return;
+    const parent = folders[0]?.id;
+    try {
+      for (let i = 0; i < fs.length; i++) {
+        setLiveDocBusy(`${i + 1}/${fs.length}`);
+        const doc = await uploadToDrive(fs[i], parent);
+        if (!doc.id) throw new Error(doc.error?.message || ('Αποτυχία: ' + fs[i].name));
+        await registerFiles([{ id: doc.id, name: doc.name, mimeType: doc.mimeType, folderId: parent || '' }]);
+        addLiveItem({ kind: 'file', id: doc.id, name: doc.name });
+      }
+    } catch (err) { alert('Σφάλμα: ' + (err.message || 'ανεβάσματος')); }
+    setLiveDocBusy('');
   };
 
   // Κόκκινο σήμα στο εικονίδιο της εφαρμογής (PWA badge) — κινητό & desktop
@@ -3135,6 +3173,18 @@ export default function Home() {
                 {livePhotos.length > 0 && (
                   <button onClick={clearLivePhotos} style={{ background:'none', border:'none', color:'#aeaeb8', fontSize:12, cursor:'pointer', marginTop:8, padding:0 }}>Καθαρισμός όλων</button>
                 )}
+              </div>
+
+              {/* 📄 Αρχεία από τη συσκευή (PDF / Word) */}
+              <div style={{ marginBottom:16, padding:'14px 16px', background:'#fff', border:'1px solid #ebebeb', borderRadius:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:PALETTE.cream.deep, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>📄 Αρχεία από τη συσκευή</div>
+                <div style={{ fontSize:12, color:'#6b6b80', marginBottom:10 }}>PDF ή Word από iCloud, «Αρχεία», Λήψεις ή φακέλους του υπολογιστή — ανεβαίνουν στο Drive και μπαίνουν στην παρουσίαση.</div>
+                <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px', borderRadius:10, border:'2px dashed #e8e0c8', background:PALETTE.cream.bgSoft, color:PALETTE.cream.deep, fontSize:13, fontWeight:600, cursor: liveDocBusy ? 'default' : 'pointer', opacity: liveDocBusy ? 0.6 : 1 }}>
+                  {liveDocBusy ? `⏳ Ανέβασμα ${liveDocBusy}…` : '📂 Επιλογή αρχείων (PDF / Word)'}
+                  <input type="file" multiple disabled={!!liveDocBusy}
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={addLiveDocs} style={{ display:'none' }} />
+                </label>
               </div>
 
               {/* Προσθήκη ΝΕΩΝ στοιχείων στο ενεργό Live */}
