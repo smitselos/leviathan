@@ -27,12 +27,13 @@ export default function ResultsPage() {
   const fetchData = useCallback(async () => {
     if (!code) return;
     try {
-      const r = await fetch(`/api/quiz-results?code=${code}`);
+      const t = router.query.t; // αρχειοθετημένη συνεδρία
+      const r = await fetch(t ? `/api/quiz-results?archive=${code}:${t}` : `/api/quiz-results?code=${code}`);
       if (r.status === 404) { setError('Δεν υπάρχει ενεργή συνεδρία με αυτόν τον κωδικό.'); return; }
       const j = await r.json();
       setData(j.data); setError(null);
     } catch (e) {}
-  }, [code]);
+  }, [code, router.query.t]);
 
   useEffect(() => {
     if (!code) return;
