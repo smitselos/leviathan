@@ -17,11 +17,12 @@ export default function PollView() {
   const fetchData = useCallback(async () => {
     if (!code) return;
     try {
-      const r = await fetch(`/api/live-poll?code=${code}`);
+      const t = router.query.t; // αρχειοθετημένη συνεδρία
+      const r = await fetch(t ? `/api/live-poll?archive=${code}:${t}` : `/api/live-poll?code=${code}`);
       if (r.status === 404) { setError('Δεν υπάρχει ενεργή ψηφοφορία με αυτόν τον κωδικό.'); return; }
       const j = await r.json(); setData(j.data); setError(null);
     } catch (e) {}
-  }, [code]);
+  }, [code, router.query.t]);
 
   useEffect(() => { if (!code) return; fetchData(); const iv = setInterval(fetchData, 3000); return () => clearInterval(iv); }, [code, fetchData]);
 
