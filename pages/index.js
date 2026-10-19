@@ -483,6 +483,16 @@ export default function Home() {
   // ── Ζωντανά στοιχεία: Ψηφοφορία · Νέφος λέξεων · Σύντομος λόγος ──
   // Ίδιο πρότυπο με activateQuizLive: start → κωδικός → προβολή στο Live + QR εισόδου.
   const [liveExtraBusy, setLiveExtraBusy] = useState(false);
+  // 📜 Ιστορικό αποτελεσμάτων: { type:'poll'|'quiz', items:[...] }
+  const [liveHistory, setLiveHistory] = useState(null);
+  const loadLiveHistory = async (type) => {
+    if (liveHistory?.type === type) { setLiveHistory(null); return; }
+    try {
+      const r = await fetch(type === 'poll' ? '/api/live-poll?history=1' : '/api/quiz-results?history=1');
+      const d = await r.json();
+      setLiveHistory({ type, items: d.items || [] });
+    } catch { setLiveHistory({ type, items: [] }); }
+  };
   const activateLiveExtra = async (type, body, viewPath, label) => {
     if (liveExtraBusy) return;
     setLiveExtraBusy(true);
@@ -3064,6 +3074,34 @@ export default function Home() {
                     ✍️ Σύντομος λόγος
                   </button>
                 </div>
+                {/* 📜 Ιστορικό αποτελεσμάτων (μόνιμο αρχείο) */}
+                <div style={{ display:'flex', gap:14, marginTop:10 }}>
+                  <button onClick={() => loadLiveHistory('poll')}
+                    style={{ background:'none', border:'none', color:'#35564e', fontSize:12, fontWeight: liveHistory?.type==='poll' ? 800 : 600, cursor:'pointer', padding:0 }}>
+                    📜 Ιστορικό ψηφοφοριών
+                  </button>
+                  <button onClick={() => loadLiveHistory('quiz')}
+                    style={{ background:'none', border:'none', color:'#35564e', fontSize:12, fontWeight: liveHistory?.type==='quiz' ? 800 : 600, cursor:'pointer', padding:0 }}>
+                    📜 Ιστορικό κουίζ
+                  </button>
+                </div>
+                {liveHistory && (liveHistory.items.length === 0
+                  ? <div style={{ fontSize:12, color:'#8a8574', marginTop:6 }}>Δεν υπάρχουν αποθηκευμένα αποτελέσματα.</div>
+                  : <div style={{ display:'flex', flexDirection:'column', gap:4, marginTop:6 }}>
+                      {liveHistory.items.map(p => {
+                        const isPoll = liveHistory.type === 'poll';
+                        const href = (isPoll ? '/poll-view' : '/results') + `?code=${p.code}&t=${p.createdAt}`;
+                        const title = isPoll ? p.question : p.quizName;
+                        const meta = isPoll ? `${p.totalVotes || 0} ψ.` : `${Object.keys(p.students || {}).length} μαθ.`;
+                        return (
+                          <div key={p.code + ':' + p.createdAt} onClick={() => window.open(href, '_blank')}
+                            style={{ display:'flex', gap:8, padding:'8px 10px', background:'#fff', border:'1px solid #d5e3df', borderRadius:10, cursor:'pointer', fontSize:12 }}>
+                            <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title || '—'}</span>
+                            <span style={{ color:'#8a8574', flexShrink:0 }}>{p.code} · {meta} · {new Date(p.createdAt).toLocaleDateString('el-GR')}</span>
+                          </div>
+                        );
+                      })}
+                    </div>)}
               </div>
 
               {/* 📷 Φωτογραφίες → ενιαίο PDF για την παρουσίαση */}
