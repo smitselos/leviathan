@@ -12,12 +12,15 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 import { createClient } from '@vercel/kv';
 
-const TTL = 14400; // 4 ώρες
+const TTL = 172800; // 48 ώρες (από την τελευταία απάντηση)
 
 const getKV = () => createClient({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN });
 
 const key = (code) => `quiz:${code}`;
 const activeKey = (email) => `quiz_active:${email}`;
+// Μόνιμο αρχείο (χωρίς λήξη): id = "code:createdAt"
+const archKey = (id) => `quiz_archive:${id}`;
+const histKey = (email) => `quiz_history:${email}`;
 
 // Κενή δομή συνεδρίας
 function emptySession({ code, teacher, quizName }) {
@@ -39,6 +42,24 @@ export default async function handler(req, res) {
   /* ─────────────── GET ─────────────── */
   if (req.method === 'GET') {
     const { code, active } = req.query;
+
+    // Αρχειοθετημένα αποτελέσματα / ιστορικό εκπαιδευτικού
+    if (req.query.archive) {
+      try {
+        const data = await kv.get(archKey(req.query.archive));
+        if (!data) return res.status(404).json({ error: 'Not found' });
+        return res.status(200).json({ data });
+      } catch (e) { return res.status(500).json({ error: 'Failed' }); }
+    }
+    if (req.query.history) {
+      const session = await getServerSession(req, res, authOptions);
+      if (!session) return res.status(401).json({ error: 'Unauthorized' });
+      try {
+        const ids = await kv.lrange(histKey(session.user?.email), 0, 49);
+        const items = await Promise.all((ids || []).map((id) => kv.get(archKey(id))));
+        return res.status(200).json({ items: items.filter(Boolean) });
+      } catch (e) { return res.status(500).json({ error: 'Failed' }); }
+    }
 
     // Ενεργή συνεδρία του συνδεδεμένου εκπαιδευτικού
     if (active) {
@@ -78,6 +99,8 @@ export default async function handler(req, res) {
         });
         await kv.set(key(code), s, { ex: TTL });
         await kv.set(activeKey(session.user?.email), code, { ex: TTL });
+        await kv.set(archKey(`${code}:${s.createdAt}`), s);
+        await kv.lpush(histKey(session.user?.email), `${code}:${s.createdAt}`);
         return res.status(200).json({ ok: true, code });
       } catch (e) {
         console.error('[quiz start]', e.message);
@@ -137,6 +160,7 @@ export default async function handler(req, res) {
 
       data.updatedAt = Date.now();
       await kv.set(key(code), data, { ex: TTL });
+      await kv.set(archKey(`${code}:${data.createdAt}`), data);
 
       return res.status(200).json({ ok: true });
     } catch (e) {
