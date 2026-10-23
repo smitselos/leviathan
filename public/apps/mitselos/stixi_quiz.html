@@ -892,7 +892,9 @@ function getCatDisplayName(catKey) {
   return CAT_NAMES[catKey] || `Θέμα ${catKey}`;
 }
 
-// Επιστρέφει 1 τυχαία ερώτηση ανά βαθμό δυσκολίας, ταξινομημένες αύξουσα (1→2→3→…)
+// Πόσες ερωτήσεις ανά βαθμό δυσκολίας στο «Βήμα-Βήμα» (αν υπάρχουν λιγότερες, παίρνει όσες υπάρχουν)
+const QUESTIONS_PER_LEVEL = 3;
+// Επιστρέφει QUESTIONS_PER_LEVEL τυχαίες ερωτήσεις ανά βαθμό δυσκολίας, ταξινομημένες αύξουσα (1→2→3→…)
 function getQuestionsForCat(catKey, excludeIds=[]) {
   const pool = (catsByKey[catKey]||[]).filter(q => !excludeIds.includes(q.id));
   const byDiff = {};
@@ -902,7 +904,7 @@ function getQuestionsForCat(catKey, excludeIds=[]) {
   for (const d of diffs) {
     const arr = byDiff[d];
     if (!arr || !arr.length) continue;
-    picked.push(shuffle(arr)[0]);
+    picked.push(...shuffle(arr).slice(0, QUESTIONS_PER_LEVEL));
   }
   return picked; // σειρά: αύξουσα δυσκολία
 }
