@@ -2802,7 +2802,6 @@ function printSelWorksheet(questions, s) {
   const qrCornerInner = setIds.length ? `
       <a href="${setUrl}" style="display:inline-block;text-align:center;text-decoration:none;color:#000">
         <img src="${qrSrc}" alt="QR σετ ερωτήσεων" style="width:76px;height:76px;border:1px solid #ddd;border-radius:6px" loading="eager">
-        <div style="font-size:7pt;color:#666;margin-top:2px;line-height:1.2;max-width:92px">Σκανάρετε για το ίδιο σετ</div>
       </a>` : '';
 
   // 3η στήλη: λογότυπο αν υπάρχει· αλλιώς QR (αν υπάρχει σετ)
@@ -2863,6 +2862,19 @@ function printSelWorksheet(questions, s) {
   .pq-gap{border-bottom:1px solid #333;display:inline-block;min-width:80px}
   .pq-lines{margin-top:10px}
   .pq-line{border-bottom:1px solid #aaa;height:24px;margin-bottom:2px}
+  ${parseFloat(s.lineHeight) < 1.4 ? `
+  .hdr-table{margin-bottom:4px}.hdr-table td{padding:1px 0}
+  .hdr-line{margin-bottom:6px}
+  .print-title{margin-bottom:3px}
+  .print-instr{line-height:${s.lineHeight};margin-bottom:3px}
+  .print-score{margin-bottom:6px}
+  .pq-excerpt{margin-bottom:3px;padding:1px 0}
+  .pq-num{margin-bottom:1px}
+  .pq-q{margin-bottom:3px}
+  .pq-yn,.pq-opts,.pq-dd{margin-top:2px}
+  .pq-dd th,.pq-dd td{padding:2px 6px}
+  .pq-dd-ans{margin-top:3px}
+  .pq-lines{margin-top:4px}` : ''}
   @media print{
     .no-print{display:none!important}
     @page{margin:${s.marginV} ${s.marginH}}
@@ -2975,6 +2987,14 @@ function printParagraphWorksheet(paragraphs, s, withQuestions) {
   .pp-q{font-size:${s.fontSize};margin-top:6px}
   .pp-q-txt{font-weight:600}
   .pp-ans-line{border-bottom:1px solid #333;height:22px;margin-top:4px}
+  ${parseFloat(s.lineHeight) < 1.4 ? `
+  .hdr-table{margin-bottom:4px}.hdr-table td{padding:1px 0}
+  .hdr-line{margin-bottom:6px}
+  .print-title{margin-bottom:3px}
+  .print-instr{line-height:${s.lineHeight};margin-bottom:3px}
+  .print-score{margin-bottom:6px}
+  .pp-qs{margin-top:3px}
+  .pp-q{margin-top:2px}` : ''}
   @media print{
     .no-print{display:none!important}
     @page{margin:${s.marginV} ${s.marginH}}
@@ -3140,6 +3160,10 @@ loadData();
         <div>
           <label class="pm-lbl">Μέγεθος</label>
           <select class="pm-select" id="pmFontSize">
+            <option value="10px">10px (πολύ μικρά)</option>
+            <option value="11px">11px</option>
+            <option value="12px">12px</option>
+            <option value="13px">13px</option>
             <option value="10pt">10pt</option>
             <option value="10.5pt">10.5pt</option>
             <option value="11pt" selected>11pt</option>
@@ -3274,5 +3298,88 @@ loadData();
   </div>
 </div>
 
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ΛΕΒΙΑΘΑΝ — Ζωντανά αποτελέσματα (Κουίζ Live)
+   Ενεργό ΜΟΝΟ όταν ο σύνδεσμος έχει #...session=XXXX
+   Χωρίς κωδικό η εφαρμογή λειτουργεί ακριβώς όπως πριν.
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  var m = (location.hash || '').match(/session=(\d{4})/);
+  if (!m) return;
+  var CODE = m[1];
+  var API = (/vercel\.app$/.test(location.hostname) ? location.origin : 'https://leviathan-olive.vercel.app') + '/api/quiz-results';
+  var NAME = null, finalSent = false;
+  function askName(){
+    var n = null; try { n = localStorage.getItem('lev_name_' + CODE); } catch(e){}
+    while (!n || !n.trim()) { n = prompt('Γράψε το όνομά σου (θα το δει ο/η καθηγητής/τρια):'); if (n === null) n = ''; }
+    NAME = n.trim().slice(0, 40);
+    try { localStorage.setItem('lev_name_' + CODE, NAME); } catch(e){}
+  }
+  function send(body){
+    if (!NAME) askName();
+    body.code = CODE; body.student = NAME;
+    try { fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive:true }).catch(function(){}); } catch(e){}
+  }
+  function strip(h){ var d = document.createElement('div'); d.innerHTML = h || ''; return (d.textContent || '').trim(); }
+  function report(q, answer, ok){
+    if (!q) return;
+    var isMC = (q.type === 'MC' || q.type === 'YN');
+    var lbl = (typeof qTypeLabel === 'function') ? qTypeLabel(q.type) : q.type;
+    send({
+      qid: String(q.id != null ? q.id : (q.q || '').slice(0, 30)),
+      qtext: strip(q.q).slice(0, 300),
+      excerpt: strip(q.excerpt).slice(0, 600),
+      cat: q['Κατηγορία'] || q.catKey || '',
+      choice: isMC ? String(answer || '—') : ((ok ? '✓ ' : '✗ ') + lbl),
+      ok: !!ok
+    });
+  }
+  setTimeout(askName, 400);
+
+  // Βήμα-βήμα (προσαρμοστική πορεία)
+  var _doCheck = window.doCheck;
+  window.doCheck = function(){
+    var q = adp.queue[adp.qIdx];
+    var r = _doCheck.apply(this, arguments);
+    if (adp.answered) report(q, adp.answer, adp.roundResults[adp.roundResults.length - 1]);
+    return r;
+  };
+  // Εξάσκηση επιλεγμένων / σετ (QR)
+  var _doSelCheck = window.doSelCheck;
+  window.doSelCheck = function(){
+    var before = sel.results.length, q = sel.queue[sel.qIdx];
+    var r = _doSelCheck.apply(this, arguments);
+    if (sel.results.length > before) report(q, sel.answer, sel.results[sel.results.length - 1].ok);
+    return r;
+  };
+  // Ανάλυση παραγράφου (δομή + τρόπος ανάπτυξης)
+  if (typeof window.doDrillCheck === 'function') {
+    var _doDrillCheck = window.doDrillCheck;
+    window.doDrillCheck = function(){
+      var before = drll.results.length, p = drll.queue[drll.qIdx];
+      var aD = drll.answerDomi, aT = (drll.answerTropos || []).slice();
+      var r = _doDrillCheck.apply(this, arguments);
+      if (drll.results.length > before && p) {
+        var res = drll.results[drll.results.length - 1];
+        send({ qid: 'P' + String(p.id), qtext: 'Δομή & τρόπος ανάπτυξης', excerpt: strip(p.text).slice(0, 600),
+               cat: 'Παράγραφος', choice: String(aD || '—').slice(0, 20), ok: !!(res.domiOk && res.troposOk) });
+      }
+      return r;
+    };
+  }
+  // Τελικό σκορ στην οθόνη αποτελεσμάτων
+  var _render = window.render;
+  window.render = function(){
+    var r = _render.apply(this, arguments);
+    if (!finalSent) {
+      if (screen === 'adp_results') { finalSent = true; send({ final:true, score: adp.totalCorrect, totalQ: adp.totalAnswered }); }
+      else if (screen === 'sel_results') { finalSent = true; send({ final:true, score: sel.correct, totalQ: sel.total }); }
+      else if (screen === 'drill_results') { finalSent = true; send({ final:true, score: drll.results.filter(function(x){ return x.domiOk && x.troposOk; }).length, totalQ: drll.total }); }
+    }
+    return r;
+  };
+})();
+</script>
 </body>
 </html>
