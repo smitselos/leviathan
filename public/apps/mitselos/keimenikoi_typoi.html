@@ -1293,15 +1293,19 @@
                     <title>ΑΣΚΗΣΗ - Κειμενικοί Τύποι</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.6; }
-                        .print-title { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 20px; }
-                        .print-instructions { font-size: 11pt; text-align: justify; margin-bottom: 30px; line-height: 1.8; }
-                        .print-paragraph { margin-bottom: 25px; page-break-inside: avoid; }
-                        .print-paragraph-number { font-size: 11pt; margin-bottom: 8px; }
-                        .print-paragraph-text { font-size: 11pt; line-height: 1.8; text-align: justify; }
-                        .print-answer-section { margin-top: 10px; border: 1px dashed #ccc; padding: 10px; min-height: 50px; }
-                        .print-answer-section p { font-size: 10pt; color: #444; margin-bottom: 10px; }
-                        @media print { body { padding: 20px; } .no-print { display: none; } }
+                        :root { --fs: 11pt; --lh: 1.8; --gap: 25px; }
+                        body { font-family: 'Times New Roman', serif; padding: 40px; line-height: var(--lh); }
+                        .print-title { text-align: center; font-size: calc(var(--fs) + 7pt); font-weight: bold; margin-bottom: calc(var(--gap) * .8); }
+                        .print-instructions { font-size: var(--fs); text-align: justify; margin-bottom: var(--gap); line-height: var(--lh); }
+                        .print-paragraph { margin-bottom: var(--gap); page-break-inside: avoid; }
+                        .print-paragraph-number { font-size: var(--fs); margin-bottom: calc(var(--gap) * .3); }
+                        .print-paragraph-text { font-size: var(--fs); line-height: var(--lh); text-align: justify; }
+                        .print-answer-section { margin-top: calc(var(--gap) * .4); border: 1px dashed #ccc; padding: calc(var(--gap) * .4); min-height: 50px; }
+                        .print-answer-section p { font-size: calc(var(--fs) - 1pt); color: #444; margin-bottom: calc(var(--gap) * .4); }
+                        .lev-ctl { position: fixed; top: 20px; left: 20px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px 12px; font: 13px -apple-system, Segoe UI, sans-serif; box-shadow: 0 4px 16px rgba(0,0,0,.12); display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+                        .lev-ctl label { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+                        .lev-ctl select { font-size: 13px; padding: 2px 4px; }
+                        @media print { body { padding: 20px; } .no-print { display: none !important; } }
                     </style>
                 </head>
                 <body>
@@ -1312,6 +1316,23 @@
                         την επιλογή σας με βάση τα γλωσσικά χαρακτηριστικά και την πρόθεση του συντάκτη.
                     </div>
                     ${paragraphsHTML}
+                    <div class="no-print lev-ctl">
+                        <b>Μορφή εκτύπωσης</b>
+                        <label>Γράμματα
+                            <select onchange="document.documentElement.style.setProperty('--fs', this.value)">
+                                <option value="10px">10px</option><option value="11px">11px</option><option value="12px">12px</option>
+                                <option value="13px">13px</option><option value="11pt" selected>11pt</option><option value="12pt">12pt</option>
+                            </select></label>
+                        <label>Ύψος γραμμής
+                            <select onchange="document.documentElement.style.setProperty('--lh', this.value)">
+                                <option value="1.0">1.0</option><option value="1.2">1.2</option><option value="1.4">1.4</option>
+                                <option value="1.6">1.6</option><option value="1.8" selected>1.8</option>
+                            </select></label>
+                        <label>Απόσταση
+                            <select onchange="document.documentElement.style.setProperty('--gap', this.value)">
+                                <option value="6px">πυκνή</option><option value="12px">μικρή</option><option value="25px" selected>κανονική</option>
+                            </select></label>
+                    </div>
                     <button class="no-print" onclick="window.print()" style="
                         position: fixed; top: 20px; right: 20px; padding: 15px 30px;
                         font-size: 16px; background: #4f46e5; color: white; border: none;
@@ -1337,5 +1358,53 @@
             if (e.target.closest('.paragraph-text')) e.preventDefault();
         });
     </script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ΛΕΒΙΑΘΑΝ — Ζωντανά αποτελέσματα (Κουίζ Live)
+   Ενεργό ΜΟΝΟ όταν ο σύνδεσμος έχει #session=XXXX
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  var m = (location.hash || '').match(/session=(\d{4})/);
+  if (!m) return;
+  var CODE = m[1];
+  var API = (/vercel\.app$/.test(location.hostname) ? location.origin : 'https://leviathan-olive.vercel.app') + '/api/quiz-results';
+  var NAME = null, finalSent = false, lastKey = null;
+  function askName(){
+    var n = null; try { n = localStorage.getItem('lev_name_' + CODE); } catch(e){}
+    while (!n || !n.trim()) { n = prompt('Γράψε το όνομά σου (θα το δει ο/η καθηγητής/τρια):'); if (n === null) n = ''; }
+    NAME = n.trim().slice(0, 40);
+    try { localStorage.setItem('lev_name_' + CODE, NAME); } catch(e){}
+  }
+  function send(body){
+    if (!NAME) askName();
+    body.code = CODE; body.student = NAME;
+    try { fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive:true }).catch(function(){}); } catch(e){}
+  }
+  function hash(s){ var h = 0; for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; } return 'T' + (h >>> 0).toString(36); }
+  setTimeout(askName, 400);
+
+  var _render = window.render;
+  window.render = function(){
+    var r = _render.apply(this, arguments);
+    try {
+      if (state.screen === 'quiz') {
+        finalSent = false;
+        var cur = quizData[state.currentQuestion];
+        var key = state.currentQuestion + ':' + (cur && cur.keimeno || '').slice(0, 20);
+        if (state.showResult && cur && key !== lastKey) {
+          lastKey = key;
+          var txt = String(cur.keimeno || '');
+          send({ qid: hash(txt), qtext: 'Κειμενικός τύπος:', excerpt: txt.slice(0, 600), cat: cur.typos_keimenou || '',
+                 choice: String(state.selected || '—').slice(0, 20), ok: state.selected === cur.typos_keimenou });
+        }
+      } else if (state.screen === 'results' && !finalSent) {
+        finalSent = true; lastKey = null;
+        send({ final: true, score: state.score, totalQ: quizData.length });
+      }
+    } catch(e){}
+    return r;
+  };
+})();
+</script>
 </body>
 </html>
