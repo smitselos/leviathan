@@ -12,12 +12,16 @@ const FONT = '-apple-system,"Segoe UI",Roboto,sans-serif';
 // Υπολογισμός θέσεων: μετρά το πλάτος κάθε λέξης (canvas) και την τοποθετεί
 // σε αρχιμήδεια σπείρα από το κέντρο, αποφεύγοντας επικαλύψεις με τις ήδη
 // τοποθετημένες. Οι μεγαλύτερες (συχνότερες) μπαίνουν πρώτες, στο κέντρο.
-function computeLayout(terms, width, height) {
-  if (!width || !height || !terms.length || typeof document === 'undefined') return [];
+function computeLayout(terms, width, height, scale = 1) {
+  if (!width || !height || !terms.length || typeof document === 'undefined') return { out: [], fits: true };
   const canvas = computeLayout._c || (computeLayout._c = document.createElement('canvas'));
   const ctx = canvas.getContext('2d');
   const maxC = Math.max(1, ...terms.map((t) => t.count));
-  const sizeOf = (c) => { const min = 16, max = 64; if (maxC <= 1) return min + 12; return Math.round(min + (max - min) * (Math.log(c) / Math.log(maxC))); };
+  // Τα μεγέθη ακολουθούν το μέγεθος του πλαισίου (μεγάλη οθόνη → μεγάλα γράμματα)
+  const max = Math.max(28, Math.min(150, Math.min(width / 9, height / 5))) * scale;
+  const min = Math.max(12, max * 0.28);
+  const sizeOf = (c) => { if (maxC <= 1) return Math.round(min + (max - min) * 0.35); return Math.round(min + (max - min) * (Math.log(c) / Math.log(maxC))); };
+  let fits = true;
   const cx = width / 2, cy = height / 2, pad = 5;
   const placed = [];
   const out = [];
@@ -39,13 +43,23 @@ function computeLayout(terms, width, height) {
       const inside = x >= pad && y >= pad && x + w <= width - pad && y + h <= height - pad;
       const collides = placed.some((p) =>
         !(x + w + pad < p.x || x > p.x + p.w + pad || y + h + pad < p.y || y > p.y + p.h + pad));
-      if (!collides && (inside || s > maxSteps * 0.7)) { best = { x, y, w, h }; break; }
+      if (!collides && (inside || s > maxSteps * 0.7)) { if (!inside) fits = false; best = { x, y, w, h }; break; }
     }
-    if (!best) best = { x: cx - w / 2, y: cy - h / 2, w, h };
+    if (!best) { fits = false; best = { x: cx - w / 2, y: cy - h / 2, w, h }; }
     placed.push(best);
     out.push({ raw: t.raw, count: t.count, x: best.x, y: best.y, fs, weight, color: PALETTE[i % PALETTE.length] });
   });
-  return out;
+  return { out, fits };
+}
+
+// Αν δεν χωρούν όλες οι λέξεις, μικραίνουν σταδιακά μέχρι να χωρέσουν.
+function fitLayout(terms, width, height) {
+  let last = { out: [] };
+  for (const sc of [1, 0.85, 0.72, 0.6, 0.5, 0.42, 0.35, 0.28]) {
+    last = computeLayout(terms, width, height, sc);
+    if (last.fits) break;
+  }
+  return last.out;
 }
 
 export default function CloudView() {
@@ -55,6 +69,12 @@ export default function CloudView() {
   const [error, setError] = useState(null);
   const boxRef = useRef(null);
   const [boxW, setBoxW] = useState(0);
+  const [vh, setVh] = useState(800);
+  useEffect(() => {
+    const upd = () => setVh(window.innerHeight);
+    upd(); window.addEventListener('resize', upd);
+    return () => window.removeEventListener('resize', upd);
+  }, []);
 
   useEffect(() => { if (router.query.code) setCode(String(router.query.code)); }, [router.query.code]);
 
@@ -80,9 +100,10 @@ export default function CloudView() {
   }, [data]);
 
   const terms = useMemo(() => (data ? Object.values(data.terms || {}).sort((a, b) => b.count - a.count) : []), [data]);
-  const boxH = Math.round(Math.min(700, Math.max(360, boxW * 0.6)));
+  // Γεμίζει το παράθυρο (μείον κεφαλίδα/υποσέλιδο)· μικραίνει μαζί του
+  const boxH = Math.round(Math.max(300, vh - 150));
   const sig = useMemo(() => terms.map((t) => t.raw + ':' + t.count).join('|'), [terms]);
-  const positions = useMemo(() => computeLayout(terms, boxW, boxH), [sig, boxW, boxH]); // eslint-disable-line
+  const positions = useMemo(() => fitLayout(terms, boxW, boxH), [sig, boxW, boxH]); // eslint-disable-line
 
   if (!code) return <CodeGate router={router} to="cloud-view" title="Νέφος λέξεων" />;
 
@@ -138,7 +159,7 @@ function CodeGate({ router, to, title }) {
 }
 
 const S = {
-  wrap: { minHeight: '100vh', background: C.bg, fontFamily: FONT, padding: '16px 14px 24px', maxWidth: 900, margin: '0 auto' },
+  wrap: { minHeight: '100vh', background: C.bg, fontFamily: FONT, padding: '16px 14px 24px', maxWidth: 1800, margin: '0 auto' },
   brand: { fontSize: 10, letterSpacing: 2, color: C.accent, fontWeight: 700, textTransform: 'uppercase' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${C.line}` },
   card: { background: C.card, borderRadius: 16, padding: '18px 20px', marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: `1px solid ${C.line}` },
