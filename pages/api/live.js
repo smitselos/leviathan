@@ -9,7 +9,7 @@ import { authOptions } from './auth/[...nextauth]';
 import { getDrive, ensurePdfCopy, isOfficeFile } from '../../lib/drive';
 import { createClient } from '@vercel/kv';
 
-const LIVE_TTL = 14400; // 4 ώρες
+const LIVE_TTL = 86400; // 24 ώρες
 
 function getKV() {
   return createClient({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN });
