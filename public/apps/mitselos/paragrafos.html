@@ -445,7 +445,7 @@ let drll = {
 // ΕΠΙΛΟΓΗ state
 let sel = {
   filterType: 'all',       // 'all' | 'YN' | 'MC' | 'DD' | 'GAP' | 'CLK'
-  filterStep: 'all',       // 'all' | 1..9 (μείζων αριθμός κατηγορίας = βήμα)
+  filterStep: [],          // [] = όλα τα βήματα, αλλιώς array από αριθμούς βημάτων (πολλαπλή επιλογή)
   filterDiff: 'all',       // 'all' | 1 | 2 | 3
   filterCount: 10,         // 10 | 20 | 0 (=all)
   queue: [],
@@ -1599,7 +1599,16 @@ function attachEvents() {
   document.querySelectorAll('[data-sel-type]').forEach(b =>
     b.addEventListener('click', ()=>{ sel.filterType=b.dataset.selType; sel.queue=[]; render(); }));
   document.querySelectorAll('[data-sel-step]').forEach(b =>
-    b.addEventListener('click', ()=>{ const v=b.dataset.selStep; sel.filterStep=v==='all'?'all':parseInt(v); sel.queue=[]; render(); }));
+    b.addEventListener('click', ()=>{
+      const v=b.dataset.selStep;
+      if (v==='all') { sel.filterStep=[]; }
+      else {
+        const n=parseInt(v);
+        const idx=sel.filterStep.indexOf(n);
+        if (idx!==-1) sel.filterStep.splice(idx,1); else sel.filterStep.push(n);
+      }
+      sel.queue=[]; render();
+    }));
   document.querySelectorAll('[data-sel-diff]').forEach(b =>
     b.addEventListener('click', ()=>{ const v=b.dataset.selDiff; sel.filterDiff=v==='all'?'all':parseInt(v); sel.queue=[]; render(); }));
   document.querySelectorAll('[data-sel-count]').forEach(b =>
@@ -1615,7 +1624,7 @@ function attachEvents() {
     const count = sel.filterCount === 0 ? pool.length : Math.min(sel.filterCount, pool.length);
     // Αν έχει επιλεγεί συγκεκριμένο βήμα, δεν υπάρχει «όλα τα βήματα» — απλό δείγμα.
     // Αλλιώς αναλογική κατανομή στα βήματα που επιβιώνουν από τα φίλτρα.
-    sel.queue = (sel.filterStep === 'all')
+    sel.queue = (sel.filterStep.length === 0)
       ? sampleProportionalByStep(count, pool)
       : shuffle(pool).slice(0, count);
     openPrintModal(sel.queue);
@@ -1966,7 +1975,7 @@ function sampleProportionalByStep(total, sourcePool) {
 function getSelPool() {
   return allQ.filter(q => {
     if (sel.filterType !== 'all' && q.type !== sel.filterType) return false;
-    if (sel.filterStep !== 'all' && getStepOf(q) !== sel.filterStep) return false;
+    if (sel.filterStep.length > 0 && !sel.filterStep.includes(getStepOf(q))) return false;
     if (sel.filterDiff !== 'all' && q.diff !== sel.filterDiff) return false;
     return true;
   });
@@ -2061,7 +2070,8 @@ function renderSelSetup() {
   const stepMap = [{v:'all', lbl:'Όλα'}, ...stepsPresent.map(n => ({v:n, lbl:`${n}. ${CAT_NAMES[n] || 'Βήμα '+n}`}))];
   const stepChips = stepMap.map(({v, lbl}) => {
     const cnt = v==='all' ? allQ.length : allQ.filter(q=>getStepOf(q)===v).length;
-    return `<button class="fchip ${sel.filterStep===v?'active':''}" data-sel-step="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
+    const isActive = v==='all' ? sel.filterStep.length===0 : sel.filterStep.includes(v);
+    return `<button class="fchip ${isActive?'active':''}" data-sel-step="${v}">${lbl} <span class="fchip-count">(${cnt})</span></button>`;
   }).join('');
 
   const diffMap = [
