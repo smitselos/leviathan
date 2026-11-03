@@ -1,7 +1,5 @@
 // pages/class.js — Δημόσια σελίδα μαθητή (πλαίσιο ονόματος καθηγητή + υλικό)
-// 1. Δημόσια (χωρίς auth ή ?teacher=email) → μόνο δημόσια αρχεία
-// 2. Μαθητής (logged in, role=student) → dashboard μαθητή
-// 3. Εκπαιδευτικός (logged in, role=teacher) → δημοσιεύσεις του
+// Χωρίς σύνδεση: ?teacher=email → δημόσια αρχεία· με κωδικό τάξης (ψευδομέιλ) → και το υλικό της τάξης.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
