@@ -425,7 +425,6 @@ export default function Home() {
   const [linkNameInput, setLinkNameInput] = useState('');
   const [customUrls, setCustomUrls] = useState([]);
   const [modalPickerSection, setModalPickerSection] = useState(null);
-  const [studentUrl, setStudentUrl] = useState('/student');
   const [publishing, setPublishing] = useState(false);
   const [liveSending, setLiveSending] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
@@ -542,7 +541,10 @@ export default function Home() {
   const [livePhotoBusy, setLivePhotoBusy] = useState(false);
   // 📄 Αρχεία από τη συσκευή (PDF / Word) → Drive → Live
   const [liveDocBusy, setLiveDocBusy] = useState('');
-  const [createMenu, setCreateMenu] = useState(false); // μενού: Νέο / Συγχώνευση
+  const [createMenu, setCreateMenu] = useState(false); // μενού: Εικόνα / Αρχείο συσκευής / Νέο / Συγχώνευση
+  const [createUpFolder, setCreateUpFolder] = useState(''); // φάκελος για εικόνα/αρχείο από το μενού
+  const [createImgChoice, setCreateImgChoice] = useState(false); // εμφάνιση «Λήψη» / «Από φωτογραφίες»
+  const camInputRef = useRef(null), galInputRef = useRef(null), devInputRef = useRef(null);
   const [createMenuFolder, setCreateMenuFolder] = useState(''); // προεπιλεγμένος φάκελος (αν ανοίγει από φάκελο)
   const [newDocForm, setNewDocForm] = useState(false); // φόρμα νέου εγγράφου
   const [newDocName, setNewDocName] = useState('');
@@ -550,7 +552,7 @@ export default function Home() {
   const [newDocTemplate, setNewDocTemplate] = useState(''); // '' = κενό, αλλιώς id προτύπου
   const [newDocBusy, setNewDocBusy] = useState(false);
   const [inboxSaveTarget, setInboxSaveTarget] = useState(null); // fileId+i for which item shows folder picker
-  const [userRole, setUserRole] = useState(null); // 'teacher' | 'student'
+  const [userRole, setUserRole] = useState(null); // 'teacher'
   const [contactInfo, setContactInfo] = useState({}); // { email: {firstName,lastName,email,school,roleTitle,phone,note} }
   const [contactPicker, setContactPicker] = useState(null); // email του χρήστη που επεξεργαζόμαστε
   const [contactDraft, setContactDraft] = useState({});
@@ -587,7 +589,6 @@ export default function Home() {
   const [msgPhotoBusy, setMsgPhotoBusy] = useState(false);
   const [msgStatActive, setMsgStatActive] = useState(null);
   const isTeacher = userRole === 'teacher';
-  const isStudent = userRole === 'student';
 
   const authErrRef = useRef(0);
   useEffect(() => {
@@ -661,8 +662,13 @@ export default function Home() {
       const r = await fetch('/api/role');
       const d = await r.json();
       if (d.role) {
-        if (d.role === 'student') { router.replace('/student'); return; }
+        // Η εφαρμογή μαθητή καταργήθηκε → το /login δείχνει μήνυμα παραπομπής στη σελίδα τάξης
+        if (d.role === 'student') { router.replace('/login'); return; }
         setUserRole(d.role);
+      } else {
+        // Χωρίς ρόλο → αυτόματα «εκπαιδευτικός» (δεν υπάρχει πλέον επιλογή ρόλου)
+        setUserRole('teacher');
+        fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ role:'teacher' }) }).catch(() => {});
       }
     } catch {}
   };
@@ -1427,8 +1433,11 @@ export default function Home() {
   };
 
   // ── Picker / Upload (στον τρέχοντα φάκελο) ──
-  const openPicker = async () => {
-    if (!openFolder) return;
+  // targetId (string): φάκελος από το μενού «Δημιουργία αρχείου»· αλλιώς ο ανοιχτός φάκελος
+  const openPicker = async (targetId) => {
+    const fromMenu = typeof targetId === 'string' && targetId;
+    const fid = fromMenu ? targetId : openFolder?.id;
+    if (!fid) return;
     try {
       setBusy('picker'); await loadPickerApi();
       const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS).setIncludeFolders(false)
@@ -1440,8 +1449,9 @@ export default function Home() {
         .setAppId(process.env.NEXT_PUBLIC_GOOGLE_APP_ID)
         .setCallback(async (data) => {
           if (data.action === window.google.picker.Action.PICKED) {
-            const items = (data.docs || []).map((d) => ({ id:d.id, name:d.name, mimeType:d.mimeType, folderId: openFolder.id }));
+            const items = (data.docs || []).map((d) => ({ id:d.id, name:d.name, mimeType:d.mimeType, folderId: fid }));
             if (items.length) await registerFiles(items);
+            if (fromMenu && items.length) { const fl = folders.find((f) => f.id === fid); if (fl) openFolderView(fl); }
           }
           setBusy('');
         }).build();
@@ -1451,18 +1461,22 @@ export default function Home() {
   const onUpload = async (e) => {
     const list = Array.from(e.target.files || []); e.target.value = '';
     if (!list.length || !openFolder) return;
+    await uploadFilesTo(list, openFolder.id);
+  };
+  // Ανέβασμα αρχείων συσκευής σε συγκεκριμένο φάκελο (κοινό: κουμπί «Ανέβασμα» + μενού «Δημιουργία αρχείου»)
+  const uploadFilesTo = async (list, folderId) => {
     setBusy('upload');
     try {
       const added = [];
       for (const file of list) {
-        const metadata = { name: file.name, mimeType: file.type || 'application/octet-stream', parents: [openFolder.id] };
+        const metadata = { name: file.name, mimeType: file.type || 'application/octet-stream', parents: [folderId] };
         const form = new FormData();
         form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
         form.append('file', file);
         const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType',
           { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken }, body: form });
         const doc = await res.json();
-        if (doc.id) added.push({ id:doc.id, name:doc.name, mimeType:doc.mimeType, folderId: openFolder.id });
+        if (doc.id) added.push({ id:doc.id, name:doc.name, mimeType:doc.mimeType, folderId });
       }
       if (added.length) await registerFiles(added);
       // Προθέρμανση: για Office αρχεία η δημιουργία του PDF αντιγράφου ξεκινά ΤΩΡΑ
@@ -1478,6 +1492,28 @@ export default function Home() {
       }
     } catch (err) { alert('Σφάλμα ανεβάσματος: ' + err.message); }
     setBusy('');
+  };
+  // Μενού «Δημιουργία αρχείου» → προεπιλογή φακέλου (ο ανοιχτός ή ο πρώτος)
+  useEffect(() => {
+    if (!createMenu) return;
+    setCreateUpFolder(createMenuFolder || folders[0]?.id || '');
+    setCreateImgChoice(false);
+  }, [createMenu]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Εικόνα (λήψη/φωτογραφίες) ή αρχείο από συσκευή → ανέβασμα στον επιλεγμένο φάκελο → άνοιγμα φακέλου
+  const onCreateUpload = async (e, isCamera) => {
+    let list = Array.from(e.target.files || []); e.target.value = '';
+    const fid = createUpFolder;
+    if (!list.length || !fid) return;
+    if (isCamera) {
+      // Η κάμερα δίνει γενικό όνομα (image.jpg) → μοναδικό όνομα με ημερομηνία/ώρα
+      const d = new Date(), p = (n) => String(n).padStart(2, '0');
+      const stamp = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
+      list = list.map((f, i) => new File([f], `Φωτογραφία ${stamp}${list.length > 1 ? '-' + (i+1) : ''}.${(f.type.split('/')[1] || 'jpg').replace('jpeg','jpg')}`, { type: f.type || 'image/jpeg' }));
+    }
+    setCreateMenu(false); setCreateImgChoice(false);
+    await uploadFilesTo(list, fid);
+    const fl = folders.find((f) => f.id === fid);
+    if (fl) openFolderView(fl);
   };
   const removeFile = async (id) => {
     const choice = prompt('Αφαίρεση αρχείου.\n\n  1 = αφαίρεση μόνο από τη λίστα (μένει στο Drive)\n  2 = διαγραφή και από το Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)', '1');
@@ -2199,7 +2235,8 @@ export default function Home() {
                 {/* Κανονικός φάκελος */}
                 {isMobile ? (
                   <>
-                    {/* Κινητό: 3 μικρά εικονίδια — Merge · Drive · Ανέβασμα */}
+                    {/* Κινητό: μικρά εικονίδια — Νέο (μενού: εικόνα/αρχείο/έγγραφο) · Merge · Drive · Ανέβασμα */}
+                    <button onClick={() => { setCreateMenuFolder(openFolder.id); setCreateMenu(true); }} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Νέο: εικόνα, αρχείο, έγγραφο">＋</button>
                     <button onClick={() => { setNewNetFolder(openFolder.id); setNewNetName(openFolder.name + ' — συγχώνευση'); setActiveView('netBuilder'); setShowNewNetForm(true); }} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Συγχώνευση σε PDF">🔗</button>
                     <button onClick={openPicker} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Από Google Drive">{busy==='picker'?'…':'📁'}</button>
                     <button onClick={() => uploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), padding:'7px 11px', fontSize:15 }} title="Ανέβασμα αρχείου">{busy==='upload'?'…':'⬆️'}</button>
@@ -3237,6 +3274,49 @@ export default function Home() {
             <h2 style={{ fontSize:18, fontWeight:600, margin:'0 0 4px', color:'#1a1a1a' }}>Δημιουργία αρχείου</h2>
             <p style={{ fontSize:13, color:'#6b6b80', margin:'0 0 20px' }}>Διάλεξε τι θέλεις να δημιουργήσεις.</p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {/* Εικόνα / Αρχείο από συσκευή → ανέβασμα στον επιλεγμένο φάκελο */}
+              <select value={createUpFolder} onChange={e=>setCreateUpFolder(e.target.value)} title="Φάκελος για εικόνα / αρχείο"
+                style={{ width:'100%', padding:'9px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, background:'#fff', color:'#3d3a2e', cursor:'pointer' }}>
+                {folders.length===0 && <option value="">(Δεν υπάρχουν φάκελοι)</option>}
+                {folders.map(f => <option key={f.id} value={f.id}>📂 {f.name}</option>)}
+              </select>
+              <input ref={camInputRef} type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e=>onCreateUpload(e, true)} />
+              <input ref={galInputRef} type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e=>onCreateUpload(e, false)} />
+              <input ref={devInputRef} type="file" multiple style={{ display:'none' }} onChange={e=>onCreateUpload(e, false)} />
+              <button onClick={()=>setCreateImgChoice(v=>!v)} disabled={!createUpFolder || !!busy}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid '+(createImgChoice?'#8a7d4a':'#e0e0e0'), background:'#fafafa', cursor:createUpFolder&&!busy?'pointer':'default', textAlign:'left', opacity:createUpFolder?1:0.5 }}>
+                <span style={{ fontSize:24 }}>🖼️</span>
+                <span style={{ flex:1 }}>
+                  <span style={{ display:'block', fontSize:15, fontWeight:600, color:'#1a1a1a' }}>Εικόνα</span>
+                  <span style={{ display:'block', fontSize:12, color:'#6b6b80', marginTop:2 }}>Λήψη με την κάμερα ή επιλογή από τις φωτογραφίες</span>
+                </span>
+              </button>
+              {createImgChoice && (
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={()=>camInputRef.current?.click()}
+                    style={{ flex:1, padding:'12px', borderRadius:12, border:'1px solid #e8dfc4', background:'#f5f0e1', color:'#3d3a2e', fontSize:14, fontWeight:600, cursor:'pointer' }}>📷 Λήψη</button>
+                  <button onClick={()=>galInputRef.current?.click()}
+                    style={{ flex:1, padding:'12px', borderRadius:12, border:'1px solid #e8dfc4', background:'#f5f0e1', color:'#3d3a2e', fontSize:14, fontWeight:600, cursor:'pointer' }}>🖼️ Από φωτογραφίες</button>
+                </div>
+              )}
+              <button onClick={()=>devInputRef.current?.click()} disabled={!createUpFolder || !!busy}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:createUpFolder&&!busy?'pointer':'default', textAlign:'left', opacity:createUpFolder?1:0.5 }}>
+                <span style={{ fontSize:24 }}>📎</span>
+                <span style={{ flex:1 }}>
+                  <span style={{ display:'block', fontSize:15, fontWeight:600, color:'#1a1a1a' }}>Αρχείο από συσκευή</span>
+                  <span style={{ display:'block', fontSize:12, color:'#6b6b80', marginTop:2 }}>Ανέβασε PDF, Word, εικόνα ή άλλο αρχείο</span>
+                </span>
+              </button>
+              <button onClick={()=>{ const fid=createUpFolder; setCreateMenu(false); openPicker(fid); }} disabled={!createUpFolder || !!busy}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:createUpFolder&&!busy?'pointer':'default', textAlign:'left', opacity:createUpFolder?1:0.5 }}>
+                <span style={{ fontSize:24 }}>📁</span>
+                <span style={{ flex:1 }}>
+                  <span style={{ display:'block', fontSize:15, fontWeight:600, color:'#1a1a1a' }}>Από Google Drive</span>
+                  <span style={{ display:'block', fontSize:12, color:'#6b6b80', marginTop:2 }}>Επίλεξε αρχεία που έχεις ήδη στο Drive σου</span>
+                  <span style={{ display:'block', fontSize:11, color:'#b45309', marginTop:4 }}>⚠️ Στο Safari λειτουργεί μόνο αν επιτρέψεις τα cookies τρίτων (απενεργοποίηση «Αποτροπή παρακολούθησης μεταξύ ιστότοπων»)</span>
+                </span>
+              </button>
+              <div style={{ height:1, background:'#ebebeb', margin:'4px 0' }} />
               <button onClick={()=>{ setCreateMenu(false); setNewDocFolder(createMenuFolder || folders[0]?.id||''); setNewDocTemplate(''); setNewDocForm(true); }}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', borderRadius:14, border:'2px solid #e0e0e0', background:'#fafafa', cursor:'pointer', textAlign:'left' }}>
                 <span style={{ fontSize:24 }}>📝</span>
