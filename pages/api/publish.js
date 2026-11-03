@@ -73,6 +73,25 @@ function filterForVisitor(items, visitorEmail, connections, isOwner) {
   });
 }
 
+// Παραλήπτες (εισερχόμενα) ενός visibility· public/connections → όλες οι συνδέσεις
+function recipientsOf(vis, conns) {
+  if (!vis || vis === 'none') return [];
+  if (vis === 'public' || vis === 'connections') return [...(conns || [])];
+  if (vis.startsWith('user:')) return [vis.slice(5)];
+  if (vis.startsWith('users:')) { try { return JSON.parse(vis.slice(6)) || []; } catch { return []; } }
+  return [];
+}
+
+// Σβήσιμο αρχείου (αυτού του αποστολέα) από τα εισερχόμενα ενός παραλήπτη
+async function removeFromInbox(recipEmail, fileId, fromEmail) {
+  try {
+    const kv = getKV();
+    const inbox = await kv.get(`inbox:${recipEmail}`) || [];
+    const kept = inbox.filter(i => !(i.fileId === fileId && i.fromEmail === fromEmail));
+    if (kept.length !== inbox.length) await kv.set(`inbox:${recipEmail}`, kept, { ex:60*60*24*90 });
+  } catch (e) { console.error('[publish] removeFromInbox', e.message); }
+}
+
 export default async function handler(req, res) {
   const kv = getKV();
 
@@ -184,8 +203,16 @@ export default async function handler(req, res) {
         kv.set(KV_KEY(myEmail), items),
       ]);
 
-      // Push στο inbox των παραληπτών αν άλλαξε το visibility
-      if (visibility !== prevVisibility && visibility !== 'none') {
+      // Εισερχόμενα παραληπτών — μόνο οι ΔΙΑΦΟΡΕΣ ανάμεσα σε παλιό και νέο visibility:
+      //  • όσοι ΠΡΟΣΤΕΘΗΚΑΝ → λαμβάνουν το αρχείο (οι υπόλοιποι δεν ξαναειδοποιούνται)
+      //  • όσοι ΑΦΑΙΡΕΘΗΚΑΝ (ή απόσυρση) → το αρχείο σβήνεται από τα εισερχόμενά τους
+      if (visibility !== prevVisibility) {
+        const conns = await kv.get(`conn:${myEmail}`) || [];
+        const prevRecips = recipientsOf(prevVisibility, conns);
+        const nextRecips = recipientsOf(visibility, conns);
+        const added = nextRecips.filter(e => !prevRecips.includes(e));
+        const removed = prevRecips.filter(e => !nextRecips.includes(e));
+
         const inboxEntry = {
           fileId: id, fileName: file.name,
           fromEmail: myEmail, fromName: myName,
@@ -195,22 +222,16 @@ export default async function handler(req, res) {
           ghUrl: reg.files[idx].ghUrl || null, // εφαρμογή GitHub → άνοιγμα απευθείας του στατικού λινκ
           isApp: !!reg.files[idx].isApp,
         };
-        const conns = await kv.get(`conn:${myEmail}`) || [];
-        let recipients = [];
-        if (visibility === 'public') recipients = conns;
-        else if (visibility === 'connections') recipients = conns;
-        else if (visibility.startsWith('user:')) recipients = [visibility.replace('user:','')];
-        else if (visibility.startsWith('users:')) {
-          try { recipients = JSON.parse(visibility.slice(6)); } catch(e) { recipients = []; }
-        }
-
-        await Promise.all(recipients.map(async recipEmail => {
-          const inbox = await kv.get(`inbox:${recipEmail}`) || [];
-          const filtered = inbox.filter(i => i.fileId !== id);
-          filtered.push(inboxEntry);
-          const trimmed = filtered.sort((a,b)=>b.sentAt-a.sentAt).slice(0,100);
-          await kv.set(`inbox:${recipEmail}`, trimmed, { ex:60*60*24*90 });
-        }));
+        await Promise.all([
+          ...added.map(async recipEmail => {
+            const inbox = await kv.get(`inbox:${recipEmail}`) || [];
+            const filtered = inbox.filter(i => !(i.fileId === id && i.fromEmail === myEmail));
+            filtered.push(inboxEntry);
+            const trimmed = filtered.sort((a,b)=>b.sentAt-a.sentAt).slice(0,100);
+            await kv.set(`inbox:${recipEmail}`, trimmed, { ex:60*60*24*90 });
+          }),
+          ...removed.map(recipEmail => removeFromInbox(recipEmail, id, myEmail)),
+        ]);
       }
 
       return res.status(200).json({ ok: true, items, pdfFailed });
@@ -222,6 +243,8 @@ export default async function handler(req, res) {
       if (!key) return res.status(400).json({ error: 'Missing key' });
       const idx = reg.files.findIndex(f => f.id === key);
       if (idx !== -1) {
+        const prevRecips = recipientsOf(reg.files[idx].visibility, await kv.get(`conn:${myEmail}`) || []);
+        await Promise.all(prevRecips.map(e => removeFromInbox(e, key, myEmail)));
         reg.files[idx].visibility = 'none';
         reg.files[idx].published = false;
         // Εφαρμογή GitHub → καμία ενέργεια Drive (ψευτο-ID, δεν υπάρχει permission)
