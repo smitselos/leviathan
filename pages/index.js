@@ -1440,9 +1440,15 @@ export default function Home() {
     if (!fid) return;
     try {
       setBusy('picker'); await loadPickerApi();
+      const MIMES = 'application/pdf,application/vnd.google-apps.document,application/vnd.google-apps.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html';
+      // Καρτέλα 1: «Το Drive μου» — πλοήγηση σε φακέλους (οι φάκελοι ανοίγουν, δεν επιλέγονται)
+      const folderView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS)
+        .setParent('root').setIncludeFolders(true).setSelectFolderEnabled(false)
+        .setMimeTypes('application/vnd.google-apps.folder,' + MIMES).setLabel('Το Drive μου');
+      // Καρτέλα 2: όλα τα αρχεία σε μία λίστα (με αναζήτηση)
       const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS).setIncludeFolders(false)
-        .setMimeTypes('application/pdf,application/vnd.google-apps.document,application/vnd.google-apps.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html');
-      const picker = new window.google.picker.PickerBuilder().addView(view)
+        .setMimeTypes(MIMES).setLabel('Όλα τα αρχεία');
+      const picker = new window.google.picker.PickerBuilder().addView(folderView).addView(view)
         .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
         .setOAuthToken(session.accessToken)
         .setDeveloperKey(process.env.NEXT_PUBLIC_GOOGLE_API_KEY)
