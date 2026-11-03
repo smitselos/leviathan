@@ -579,6 +579,7 @@ export default function Home() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupMembers, setNewGroupMembers] = useState([]);
+  const [newGroupPseudo, setNewGroupPseudo] = useState(''); // ψευδομέιλ για προσθήκη σε ομάδα
   const [groupMsg, setGroupMsg] = useState('');
   const [msgFolder, setMsgFolder] = useState(null); // {type:'inbox'|'sent'|'search'|'user'|'group', email?, group?, name}
   const [msgSearch, setMsgSearch] = useState('');
@@ -1623,6 +1624,14 @@ export default function Home() {
   const byNewestInbox = (a, b) => (b.sentAt || 0) - (a.sentAt || 0);
   const sentToUser = (email) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.includes(email); return false; }).sort(byNewestSent);
   const sentToGroup = (g) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.some(e => (g.members || []).includes(e)); return false; }).sort(byNewestSent);
+  // Ψευδομέιλ (κωδικοί τάξης): δεν αποθηκεύονται ως επαφές — συγκεντρώνονται από τα απεσταλμένα
+  // αρχεία (visibility user:/users:) όσοι παραλήπτες δεν είναι συνδέσεις.
+  const pseudoRecipients = () => {
+    const conn = new Set((networkData.connections || []).map(c => c.email));
+    const set = new Set();
+    files.forEach(f => { const t = visTargets(f); if (Array.isArray(t)) t.forEach(e => { if (e && !conn.has(e)) set.add(e); }); });
+    return [...set].sort();
+  };
   const allSentFiles = () => files.filter(f => { const v = f.visibility; return v && v !== 'none'; }).sort(byNewestSent);
   const msgInbox = () => [...(networkData.inbox || [])].sort(byNewestInbox);
   const inboxFromUser = (email) => (networkData.inbox || []).filter(i => i.fromEmail === email).sort(byNewestInbox);
@@ -2668,8 +2677,8 @@ export default function Home() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, flexWrap:'wrap' }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a' }}>👥 Ομάδες</div>
                   {groupMsg && <span style={{ fontSize:11, color: groupMsg.startsWith('✓')?'#15803d':groupMsg.startsWith('✗')?'#dc2626':'#8a8a9a' }}>{groupMsg}</span>}
-                  <button onClick={()=>{ setShowNewGroup(v=>!v); setNewGroupName(''); setNewGroupMembers([]); }} disabled={(networkData.connections||[]).length===0}
-                    style={{ marginLeft:'auto', ...btn('mini'), fontSize:12, opacity:(networkData.connections||[]).length===0?0.5:1 }}>+ Νέα ομάδα</button>
+                  <button onClick={()=>{ setShowNewGroup(v=>!v); setNewGroupName(''); setNewGroupMembers([]); setNewGroupPseudo(''); }}
+                    style={{ marginLeft:'auto', ...btn('mini'), fontSize:12 }}>+ Νέα ομάδα</button>
                 </div>
                 {showNewGroup && (
                   <div style={{ background:'#fff', borderRadius:14, border:'1px solid '+PALETTE.peach.accent, padding:'14px 16px', marginBottom:12 }}>
@@ -2681,6 +2690,18 @@ export default function Home() {
                         return <button key={c.email} onClick={()=>toggleGroupMember(c.email)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 12px', borderRadius:10, border:sel?'2px solid #16a34a':'1px solid #ebebeb', background:sel?'#f0fdf4':'#fafafa', cursor:'pointer', textAlign:'left' }}>
                           <span style={{ flex:1, fontSize:13, color:'#1a1a1a' }}>{nm}</span>{sel&&<span style={{ color:'#16a34a', fontSize:15 }}>✓</span>}</button>;
                       })}
+                      {/* Ψευδομέιλ: όσα έχουν ήδη χρησιμοποιηθεί + όσα προστέθηκαν τώρα */}
+                      {[...new Set([...pseudoRecipients(), ...newGroupMembers.filter(e=>!(networkData.connections||[]).some(c=>c.email===e))])].map(e=>{ const sel=newGroupMembers.includes(e); const nm=e.endsWith('@gmail.com')?e.slice(0,-10):e;
+                        return <button key={'p_'+e} onClick={()=>toggleGroupMember(e)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 12px', borderRadius:10, border:sel?'2px solid #16a34a':'1px solid #ebebeb', background:sel?'#f0fdf4':'#fafafa', cursor:'pointer', textAlign:'left' }}>
+                          <span style={{ fontSize:14 }}>✉️</span><span style={{ flex:1, fontSize:13, color:'#1a1a1a' }}>{nm}</span>{sel&&<span style={{ color:'#16a34a', fontSize:15 }}>✓</span>}</button>;
+                      })}
+                    </div>
+                    <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                      <input value={newGroupPseudo} onChange={e=>setNewGroupPseudo(e.target.value)} placeholder="+ ψευδομέιλ, π.χ. g1lykeio"
+                        onKeyDown={e=>{ if(e.key==='Enter'){ e.preventDefault(); let v=newGroupPseudo.trim().toLowerCase().replace(/\s+/g,''); if(v){ if(!v.includes('@')) v+='@gmail.com'; if(!newGroupMembers.includes(v)) toggleGroupMember(v); } setNewGroupPseudo(''); } }}
+                        style={{ flex:1, padding:'9px 12px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:isMobile?16:13, boxSizing:'border-box' }} />
+                      <button onClick={()=>{ let v=newGroupPseudo.trim().toLowerCase().replace(/\s+/g,''); if(v){ if(!v.includes('@')) v+='@gmail.com'; if(!newGroupMembers.includes(v)) toggleGroupMember(v); } setNewGroupPseudo(''); }} disabled={!newGroupPseudo.trim()}
+                        style={{ padding:'9px 14px', borderRadius:10, border:'none', background:newGroupPseudo.trim()?'#16a34a':'#e0e0e0', color:'#fff', fontSize:13, fontWeight:600, cursor:newGroupPseudo.trim()?'pointer':'default' }}>+</button>
                     </div>
                     <div style={{ display:'flex', gap:8, marginTop:12 }}>
                       <button onClick={()=>setShowNewGroup(false)} style={{ flex:1, padding:'10px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fff', fontSize:13, cursor:'pointer', color:'#6b6b80' }}>Ακύρωση</button>
@@ -2731,6 +2752,24 @@ export default function Home() {
                   );
                 })}
               </div>
+              {/* Ψευδομέιλ (κωδικοί τάξης) — από τα απεσταλμένα· οι μαθητές τα βλέπουν στη σελίδα τάξης */}
+              {pseudoRecipients().length > 0 && (
+                <div style={{ marginTop:20 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', marginBottom:4 }}>✉️ Ψευδομέιλ ({pseudoRecipients().length})</div>
+                  <div style={{ fontSize:11, color:'#8a8a9a', marginBottom:10 }}>Κωδικοί τάξης στους οποίους έχεις στείλει υλικό. Οι μαθητές το βλέπουν στη σελίδα τάξης.</div>
+                  {pseudoRecipients().map(e => { const nm = e.endsWith('@gmail.com') ? e.slice(0,-10) : e; const n = sentToUser(e).length; return (
+                    <div key={e} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', background:'#fff', borderRadius:14, border:'1px solid #ebebeb', marginBottom:8 }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background:PALETTE.mustard?.bg || '#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>✉️</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nm}</div>
+                        <div style={{ fontSize:11, color:'#6b6b80' }}>{n} {n===1?'αρχείο':'αρχεία'}</div>
+                      </div>
+                      <button onClick={()=>{ setActiveView('messages'); setOpenFolder(null); setMsgSearch(''); setExpandedInbox(null); setMsgFolder({ type:'user', email:e, name:nm }); }}
+                        style={{ padding:'6px 14px', borderRadius:10, border:'1px solid #e0e0e0', background:'#fafafa', color:'#3d3a2e', fontSize:12, cursor:'pointer', flexShrink:0 }}>📤 Απεσταλμένα</button>
+                    </div>
+                  ); })}
+                </div>
+              )}
             </div>
           )}
 
@@ -2911,6 +2950,7 @@ export default function Home() {
             const folderItems=[
               ...groups.map(g=>{ const ic=inboxFromGroup(g), st=sentToGroup(g); return { type:'folder', view:'g_'+g.id, name:g.name, icon:'👥', tone:'peach', desc:`📥 ${ic.length} · 📤 ${st.length}`, badge:unseenInbox(ic), open:()=>{setExpandedInbox(null);setMsgFolder({type:'group',group:g,name:g.name});} }; }),
               ...conns.map(c=>{ const nm=cName(c); const ic=inboxFromUser(c.email), st=sentToUser(c.email); return { type:'folder', view:'u_'+c.email, name:nm, icon:(nm.charAt(0)||'?').toUpperCase(), tone:'cream', desc:`📥 ${ic.length} · 📤 ${st.length}`, badge:unseenInbox(ic), open:()=>{setExpandedInbox(null);setMsgFolder({type:'user',email:c.email,name:nm});} }; }),
+              ...pseudoRecipients().map(e=>{ const nm=e.endsWith('@gmail.com')?e.slice(0,-10):e; const st=sentToUser(e); return { type:'folder', view:'p_'+e, name:nm, icon:'✉️', tone:'mustard', desc:`✉️ ψευδομέιλ · 📤 ${st.length}`, badge:0, open:()=>{setExpandedInbox(null);setMsgFolder({type:'user',email:e,name:nm});} }; }),
             ];
 
             return (
@@ -3749,6 +3789,15 @@ export default function Home() {
           else if (next.length === 1) setVisibilityDraft(`user:${next[0]}`);
           else setVisibilityDraft(`users:${JSON.stringify(next)}`);
         };
+        // Ομάδα: αν είναι ήδη επιλεγμένα ΟΛΑ τα μέλη → αποεπιλογή τους· αλλιώς προσθήκη όλων
+        const toggleGroupShare = (g) => {
+          const mem = g.members || [];
+          const allSel = mem.length > 0 && mem.every(e => curUsers.includes(e));
+          const next = allSel ? curUsers.filter(e => !mem.includes(e)) : [...new Set([...curUsers, ...mem])];
+          if (next.length === 0) setVisibilityDraft('none');
+          else if (next.length === 1) setVisibilityDraft(`user:${next[0]}`);
+          else setVisibilityDraft(`users:${JSON.stringify(next)}`);
+        };
         const closePicker = () => { setVisibilityPicker(null); setShareMessage(''); setCustomRecipient(''); };
         // Ψευδομέιλ: ομαλοποίηση όπως στη Light — πεζά, χωρίς κενά, @gmail.com αν λείπει το @
         const addCustomRecipient = () => {
@@ -3788,6 +3837,23 @@ export default function Home() {
                   </button>
                 );
               })}
+
+              {/* Ομάδες — ένα πάτημα επιλέγει/αποεπιλέγει όλα τα μέλη (συνδέσεις και ψευδομέιλ) */}
+              {groups.length > 0 && <>
+                <div style={{ fontSize:11, color:'#aeaeb8', margin:'10px 0 6px', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>👥 Ομάδες</div>
+                {groups.map(g => { const mem = g.members || []; const allSel = mem.length > 0 && mem.every(e => curUsers.includes(e)); return (
+                  <button key={g.id} className="vp-opt" onClick={()=>toggleGroupShare(g)}
+                    style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', borderRadius:12,
+                      border: allSel ? '2px solid #16a34a' : '1px solid #ebebeb', background: allSel ? '#f0fdf4' : '#fafafa', cursor:'pointer', marginBottom:6, textAlign:'left' }}>
+                    <span style={{ fontSize:18 }}>👥</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:500, color:'#1a1a1a' }}>{g.name}</div>
+                      <div style={{ fontSize:11, color:'#6b6b80' }}>{mem.length} μέλη</div>
+                    </div>
+                    {allSel && <span style={{ fontSize:16, color:'#16a34a', flexShrink:0 }}>✓</span>}
+                  </button>
+                ); })}
+              </>}
 
               {/* Συγκεκριμένοι χρήστες — additive, πολλαπλή επιλογή χωρίς κλείσιμο */}
               {(networkData.connections||[]).length > 0 && <>
