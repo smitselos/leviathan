@@ -1570,7 +1570,7 @@ export default function Home() {
     setViewing(f); setShowMetaPanel(false); setTagInput(''); setMobileZoom(1);
   };
 
-  // ── Ομάδες χρηστών (hybrid: server /api/student-groups + localStorage) ──
+  // ── Ομάδες χρηστών (hybrid: server /api/user-groups + localStorage) ──
   const GROUPS_LSKEY = () => 'lev_groups_' + (session?.user?.email || '');
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -1578,7 +1578,7 @@ export default function Home() {
     try { const r = localStorage.getItem(LS); const loc = r ? JSON.parse(r) || [] : []; if (loc.length) setGroups(loc); } catch {}
     (async () => {
       try {
-        const r = await fetch('/api/student-groups'); const d = await r.json();
+        const r = await fetch('/api/user-groups'); const d = await r.json();
         if (Array.isArray(d.groups) && d.groups.length) { setGroups(d.groups); try { localStorage.setItem(LS, JSON.stringify(d.groups)); } catch {} }
       } catch {}
     })();
@@ -1588,7 +1588,7 @@ export default function Home() {
     try { localStorage.setItem(GROUPS_LSKEY(), JSON.stringify(g)); } catch {}
     setGroupMsg('Αποθήκευση…');
     try {
-      const r = await fetch('/api/student-groups', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ groups: g }) });
+      const r = await fetch('/api/user-groups', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ groups: g }) });
       setGroupMsg(r.ok ? '✓ Αποθηκεύτηκε (συγχρονίζεται)' : '✗ Ο server απάντησε ' + r.status);
     } catch { setGroupMsg('✗ Χωρίς server — μόνο τοπικά'); }
     setTimeout(() => setGroupMsg(''), 6000);
