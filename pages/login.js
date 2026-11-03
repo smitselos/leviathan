@@ -1,14 +1,16 @@
-// pages/login.js — Σύνδεση + Επιλογή ρόλου + Βιβλιοθήκη
+// pages/login.js — Σύνδεση + Βιβλιοθήκη
+// Η εφαρμογή μαθητή καταργήθηκε: δεν υπάρχει πλέον επιλογή ρόλου. Κάθε νέος λογαριασμός
+// γίνεται «εκπαιδευτικός»· παλιοί λογαριασμοί με ρόλο «μαθητής» βλέπουν μήνυμα παραπομπής στη σελίδα τάξης.
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import StudentRetired from '../components/StudentRetired';
 
 export default function Login() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  const [showRolePicker, setShowRolePicker] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [retired, setRetired] = useState(false);
 
   // Μετά το OAuth, ελέγχουμε αν υπάρχει ρόλος
   useEffect(() => {
@@ -19,35 +21,28 @@ export default function Login() {
         const r = await fetch('/api/role');
         const d = await r.json();
         if (cancelled) return;
-        if (d.role) {
-          // Μαθητής → /student, εκπαιδευτικός → /
-          router.replace(d.role === 'student' ? '/student' : '/');
-        } else {
-          // Πρώτη φορά → επιλογή ρόλου
-          setShowRolePicker(true);
+        if (d.role === 'student') {
+          // Παλιός λογαριασμός μαθητή → μήνυμα (η εφαρμογή μαθητή καταργήθηκε)
+          setRetired(true);
           setChecking(false);
+          return;
         }
+        if (!d.role) {
+          // Πρώτη φορά → αυτόματα «εκπαιδευτικός» (χωρίς επιλογή ρόλου)
+          await fetch('/api/role', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'teacher' }),
+          });
+          if (cancelled) return;
+        }
+        router.replace('/');
       } catch {
-        if (!cancelled) { setChecking(false); setShowRolePicker(true); }
+        if (!cancelled) router.replace('/');
       }
     })();
     return () => { cancelled = true; };
   }, [status, router]);
-
-  const pickRole = async (role) => {
-    setSaving(true);
-    try {
-      await fetch('/api/role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role }),
-      });
-      router.replace(role === 'student' ? '/student' : '/');
-    } catch {
-      alert('Σφάλμα αποθήκευσης ρόλου. Δοκίμασε ξανά.');
-      setSaving(false);
-    }
-  };
 
   // Φόρτωση
   if (status === 'loading' || (status === 'authenticated' && checking)) {
@@ -60,45 +55,9 @@ export default function Login() {
     );
   }
 
-  // Επιλογή ρόλου (μετά το OAuth, πρώτη φορά)
-  if (status === 'authenticated' && showRolePicker) {
-    return (
-      <div style={S.page}>
-        <div style={{ ...S.card, maxWidth: 440 }}>
-          <img src="/logo.png" alt="Leviathan" style={{ height: 80, objectFit: 'contain', marginBottom: 12 }} />
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>
-            Καλώς ήρθες!
-          </div>
-          <p style={{ fontSize: 13, color: '#6b6b80', marginBottom: 28, lineHeight: 1.6 }}>
-            Πώς θα χρησιμοποιήσεις το ΛΕΒΙΑΘΑΝ;
-          </p>
-
-          <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-            {/* Εκπαιδευτικός */}
-            <button onClick={() => pickRole('teacher')} disabled={saving}
-              style={{ ...S.roleBtn, background: '#f5f0e1', borderColor: '#e8dfc4' }}>
-              <div style={S.roleIcon}>🎓</div>
-              <div style={S.roleLabel}>Εκπαιδευτικός</div>
-              <div style={S.roleDesc}>Ανέβασμα, σχόλια, ερωτήσεις, live, σύνδεση αρχείων</div>
-            </button>
-
-            {/* Μαθητής */}
-            <button onClick={() => pickRole('student')} disabled={saving}
-              style={{ ...S.roleBtn, background: '#e8f4f8', borderColor: '#c4dfe8' }}>
-              <div style={S.roleIcon}>📚</div>
-              <div style={S.roleLabel}>Μαθητής</div>
-              <div style={S.roleDesc}>Λήψη υλικού, σημειώσεις, ετικέτες, μοίρασμα</div>
-            </button>
-          </div>
-
-          {saving && <div style={{ fontSize: 13, color: '#8a7d4a' }}>Αποθήκευση…</div>}
-
-          <div style={{ fontSize: 11, color: '#aeaeb8', marginTop: 8 }}>
-            {session.user?.email}
-          </div>
-        </div>
-      </div>
-    );
+  // Παλιός λογαριασμός μαθητή
+  if (status === 'authenticated' && retired) {
+    return <StudentRetired email={session.user?.email} />;
   }
 
   // Αρχική οθόνη login (πριν το OAuth)
@@ -155,12 +114,4 @@ const S = {
     background: '#8a7d4a', color: '#fff', border: 'none', padding: '12px 28px',
     borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%',
   },
-  roleBtn: {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '24px 16px', borderRadius: 16, border: '2px solid', cursor: 'pointer',
-    transition: 'transform 0.15s, box-shadow 0.15s',
-  },
-  roleIcon: { fontSize: 36, marginBottom: 10 },
-  roleLabel: { fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 },
-  roleDesc: { fontSize: 11, color: '#6b6b80', lineHeight: 1.5 },
 };
