@@ -162,7 +162,19 @@ export default async function handler(req, res) {
       const prevVisibility = file.visibility || 'none';
       reg.files[idx].visibility = visibility;
       reg.files[idx].published = visibility !== 'none';
-      reg.files[idx].publishedAt = visibility !== 'none' ? new Date().toISOString() : null;
+      // Ημερομηνία ΠΡΩΤΗΣ αποστολής: μένει ίδια όταν αλλάζουν μόνο οι παραλήπτες·
+      // νέα ημερομηνία μόνο σε νέα αποστολή (από «καμία» ορατότητα)· μηδενίζεται στην απόσυρση.
+      if (visibility === 'none') reg.files[idx].publishedAt = null;
+      else if (prevVisibility === 'none' || !reg.files[idx].publishedAt) reg.files[idx].publishedAt = new Date().toISOString();
+      // Ημερομηνία αποστολής ΑΝΑ παραλήπτη (σειρά στον φάκελο κάθε χρήστη/ομάδας):
+      // νέοι παραλήπτες → τώρα· όσοι μένουν → κρατούν τη δική τους· όσοι αφαιρούνται → σβήνονται.
+      {
+        const connsNow = await kv.get(`conn:${myEmail}`) || [];
+        const prevR = recipientsOf(prevVisibility, connsNow), nextR = recipientsOf(visibility, connsNow);
+        const old = reg.files[idx].sentTo || {}, now = new Date().toISOString(), st = {};
+        nextR.forEach(e => { st[e] = (prevR.includes(e) && old[e]) ? old[e] : now; });
+        reg.files[idx].sentTo = st;
+      }
       // Αποθήκευση μηνύματος στο registry
       if (message !== undefined) reg.files[idx].shareMessage = message || '';
 

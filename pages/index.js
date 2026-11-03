@@ -1346,6 +1346,19 @@ export default function Home() {
     setLiveCenterCode(null);
     setLiveSentItems([]);
   };
+  // Ίδια λογική με τον server (publish.js): ημερομηνία αποστολής ανά παραλήπτη
+  const visRecipients = (v) => {
+    if (!v || v === 'none') return [];
+    if (v === 'public' || v === 'connections') return (networkData.connections || []).map(c => c.email);
+    if (v.startsWith('user:')) return [v.slice(5)];
+    if (v.startsWith('users:')) { try { return JSON.parse(v.slice(6)) || []; } catch { return []; } }
+    return [];
+  };
+  const nextSentTo = (f, visibility) => {
+    const prevR = visRecipients(f.visibility), old = f.sentTo || {}, now = new Date().toISOString(), st = {};
+    visRecipients(visibility).forEach(e => { st[e] = (prevR.includes(e) && old[e]) ? old[e] : now; });
+    return st;
+  };
   const setVisibility = async (id, visibility, appMeta) => {
     setPublishing(true);
     let ok = false;
@@ -1355,7 +1368,7 @@ export default function Home() {
       const body = { id, visibility, message: shareMessage.trim() || undefined, ...(appMeta || {}) };
       const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if (r.ok) {
-        setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none' } : f));
+        setFiles((p) => p.map((f) => f.id === id ? { ...f, visibility, published: visibility !== 'none', publishedAt: visibility === 'none' ? null : ((f.visibility && f.visibility !== 'none' && f.publishedAt) ? f.publishedAt : new Date().toISOString()), sentTo: nextSentTo(f, visibility) } : f));
         if (appMeta?.app) setGhAppVis((prev) => ({ ...prev, [id]: visibility })); // ενημέρωση ένδειξης κάρτας εφαρμογής
         ok = true;
       }
@@ -1620,10 +1633,24 @@ export default function Home() {
     return null;
   };
   // Νεότερο πρώτα: απεσταλμένα κατά δημοσίευση, εισερχόμενα κατά παραλαβή
-  const byNewestSent = (a, b) => ((b.publishedAt || '').localeCompare(a.publishedAt || '')) || ((b.addedAt || 0) - (a.addedAt || 0));
+  // Χρόνος αποστολής: ημερομηνία δημοσίευσης· αν λείπει, η ημερομηνία προσθήκης
+  const sentTime = (f) => (f.publishedAt ? Date.parse(f.publishedAt) : 0) || f.addedAt || 0;
+  const byNewestSent = (a, b) => sentTime(b) - sentTime(a);
   const byNewestInbox = (a, b) => (b.sentAt || 0) - (a.sentAt || 0);
-  const sentToUser = (email) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.includes(email); return false; }).sort(byNewestSent);
-  const sentToGroup = (g) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.some(e => (g.members || []).includes(e)); return false; }).sort(byNewestSent);
+  // Ημερομηνία αποστολής σε συγκεκριμένους παραλήπτες (πιο πρόσφατη)· αλλιώς η γενική
+  const sentTimeTo = (f, emails) => { const st = f.sentTo || {}; const ts = emails.map(e => st[e] ? Date.parse(st[e]) : 0); const m = Math.max(0, ...ts); return m || sentTime(f); };
+  const sentToUser = (email) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.includes(email); return false; }).sort((a, b) => sentTimeTo(b, [email]) - sentTimeTo(a, [email]));
+  // Ομάδα: μετρά η ΚΟΙΝΗ αποστολή — η ημερομηνία που έλαβαν τα περισσότερα μέλη μαζί
+  // (ισοπαλία → η νεότερη)· μεμονωμένη μεταγενέστερη αποστολή σε ένα μέλος δεν αλλάζει τη θέση.
+  const groupSentTime = (f, members) => {
+    const st = f.sentTo || {}; const cnt = {};
+    members.forEach(e => { if (st[e]) cnt[st[e]] = (cnt[st[e]] || 0) + 1; });
+    const dates = Object.keys(cnt);
+    if (!dates.length) return sentTime(f);
+    dates.sort((x, y) => (cnt[y] - cnt[x]) || (Date.parse(y) - Date.parse(x)));
+    return Date.parse(dates[0]);
+  };
+  const sentToGroup = (g) => files.filter(f => { const t = visTargets(f); if (!t) return false; if (t.all) return true; if (Array.isArray(t)) return t.some(e => (g.members || []).includes(e)); return false; }).sort((a, b) => groupSentTime(b, g.members || []) - groupSentTime(a, g.members || []));
   // Ψευδομέιλ (κωδικοί τάξης): δεν αποθηκεύονται ως επαφές — συγκεντρώνονται από τα απεσταλμένα
   // αρχεία (visibility user:/users:) όσοι παραλήπτες δεν είναι συνδέσεις.
   const pseudoRecipients = () => {
@@ -1661,7 +1688,7 @@ export default function Home() {
     const visibility = recipients.length === 1 ? 'user:' + recipients[0] : 'users:' + JSON.stringify(recipients);
     const r = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: doc.id, visibility }) });
     if (!r.ok) throw new Error('Σφάλμα δημοσίευσης');
-    setFiles(p => p.map(f => f.id === doc.id ? { ...f, visibility, published: true } : f));
+    setFiles(p => p.map(f => f.id === doc.id ? { ...f, visibility, published: true, publishedAt: new Date().toISOString(), sentTo: nextSentTo(f, visibility) } : f));
     return doc;
   };
   const handleMsgFileSelect = async (e) => {

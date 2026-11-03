@@ -37,6 +37,8 @@ export default async function handler(req, res) {
           links: Array.isArray(f.links) ? f.links : (prev.links || []),
           published: typeof f.published === 'boolean' ? f.published : (prev.published || false),
           visibility: typeof f.visibility === 'string' ? f.visibility : (prev.visibility || 'none'),
+          publishedAt: f.publishedAt || prev.publishedAt || null, // σειρά «Απεσταλμένων» — να μη χάνεται σε re-POST
+          sentTo: f.sentTo || prev.sentTo || null, // ημερομηνία αποστολής ανά παραλήπτη
           pdfId: f.pdfId || prev.pdfId || null, // PDF αντίγραφο Office — να μη χάνεται σε re-POST
           // ── Ταυτότητα «Δικτύου Κειμένων»: πρέπει να ΕΠΙΒΙΩΝΕΙ σε κάθε re-POST ──
           // Χωρίς αυτά, το συγχωνευμένο PDF «ξεχνά» σε ποιο δίκτυο ανήκει και το 🔄
