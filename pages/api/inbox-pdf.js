@@ -4,7 +4,7 @@
 //   1. Κατεβάζει τα bytes μέσω public download URL (δεν χρειάζεται Drive API access στο πρωτότυπο)
 //   2. Τα ανεβάζει ως προσωρινό Google Doc στο Drive ΤΟΥ συνδεδεμένου χρήστη (με μετατροπή)
 //   3. Κάνει export PDF και διαγράφει το προσωρινό
-// Απαιτεί session (μαθητής ή εκπαιδευτικός). Για PublicView χωρίς auth → δεν χρησιμοποιείται.
+// Απαιτεί session εκπαιδευτικού. Η δημόσια σελίδα τάξης (χωρίς auth) δεν το χρησιμοποιεί.
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 
