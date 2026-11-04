@@ -2423,7 +2423,11 @@ export default function Home() {
                                 <h3 style={S.folderTitle}>{trunc(f.name.replace(/\.html?$/i, ''), 42)}</h3>
                                 <p style={{ ...S.folderDesc, opacity:0.55, fontSize:11 }}>{sub ? '📂 ' + sub.name : 'Εφαρμογές'}</p>
                                 <div style={{ ...S.folderFoot, borderTopColor:'#f0f0f0', display:'flex', gap:6, flexWrap:'wrap' }}>
-                                  <button onClick={() => openViewer(f)} style={{ ...btn('mini'), color:PALETTE.mustard.deep }}>Άνοιγμα ↗</button>
+                                  <button onClick={() => {
+                                    // Άνοιγμα σε ξεχωριστή σελίδα (όχι στο παράθυρο προβολής) — μέσω /api/file με το token του χρήστη
+                                    fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
+                                    window.open('/api/file/' + encodeURIComponent(f.id), '_blank');
+                                  }} style={{ ...btn('mini'), color:PALETTE.mustard.deep }}>Άνοιγμα ↗</button>
                                   <button onClick={() => router.push('/creator?edit=' + encodeURIComponent(f.id))} style={{ ...btn('mini'), color:'#555' }} title="Επεξεργασία στον Δημιουργό">✎ Επεξεργασία</button>
                                   <button onClick={() => addLiveItem({ kind:'file', id:f.id, name:f.name })} style={{ ...btn('mini'), color:'#5c7a3a' }}>➕ Live</button>
                                   <button onClick={() => togglePublish(f.id)}
