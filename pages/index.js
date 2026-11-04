@@ -2067,6 +2067,7 @@ export default function Home() {
             badge={(networkData.received?.length||0) + unseenTotal} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.apps} label="Εφαρμογές" active={activeView==='apps'} onClick={openApps} />
+          <NavItem icon={Icon.netAdd} label="Δημιουργός εφαρμογών" onClick={() => router.push('/creator')} />
           <div style={S.navDiv} />
           <NavItem icon={Icon.send} label="Εισερχ./Απεστ." active={activeView==='messages'} onClick={openMessages}
             badge={unseenTotal} />
@@ -2313,8 +2314,12 @@ export default function Home() {
             const ghFolders = ghApps ? (ghApps.folders || []) : [];
             const inFolder = ghOpenFolder ? ghFolders.find(fl => fl.name === ghOpenFolder) : null;
             const q = ghSearch.trim().toLowerCase();
+            // «Οι εφαρμογές μου» — εφαρμογές του χρήστη στον φάκελο «Εφαρμογές» του Drive (ρίζα + υποφάκελοι)
+            const MY_APPS = '__mine__';
+            const myApps = [...allAppFiles].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
             const scope = q
               ? ghAppList.filter(a => (a.name || '').toLowerCase().includes(q) || (a.folder || '').toLowerCase().includes(q) || (a.path || '').toLowerCase().includes(q))
+              : ghOpenFolder === MY_APPS ? []
               : inFolder ? (inFolder.apps || []).map(a => ({ ...a, folder: inFolder.name }))
               : (ghApps ? (ghApps.root || []) : []).map(a => ({ ...a, folder: '' }));
             const showFolders = !q && !ghOpenFolder;
@@ -2323,12 +2328,15 @@ export default function Home() {
             <>
               <div style={{ ...S.pageHeader, gap: isMobile ? 8 : 14 }}>
                 <button onClick={ghOpenFolder ? () => { setGhOpenFolder(null); setGhSearch(''); } : goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
-                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{ghOpenFolder ? <>📂 {trunc(ghOpenFolder, isMobile ? 14 : 30)}</> : 'Εφαρμογές'}</h1>
+                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{ghOpenFolder === MY_APPS ? '⭐ Οι εφαρμογές μου' : ghOpenFolder ? <>📂 {trunc(ghOpenFolder, isMobile ? 14 : 30)}</> : 'Εφαρμογές'}</h1>
                 <div style={{ flex:1 }} />
-                <span style={{ fontSize:11, fontWeight:700, color:'#8a7d4a', background:'#efe9d5', padding:'4px 10px', borderRadius:999, whiteSpace:'nowrap' }}>⚡ GitHub</span>
+                <button onClick={() => router.push('/creator')} style={{ ...btn('mini'), fontSize:12, padding:'6px 12px', whiteSpace:'nowrap' }} title="Δημιουργία εφαρμογής από πρότυπο">＋ Νέα εφαρμογή</button>
+                <span style={{ fontSize:11, fontWeight:700, color:'#8a7d4a', background:'#efe9d5', padding:'4px 10px', borderRadius:999, whiteSpace:'nowrap' }}>{ghOpenFolder === MY_APPS ? '⭐ Drive' : '⚡ GitHub'}</span>
               </div>
               <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:14 }}>
-                Οι εφαρμογές φορτώνονται αυτόματα από το GitHub (φάκελος public/apps). Ανέβασε ένα .html σε υποφάκελο και, μετά το deploy, εμφανίζεται εδώ.
+                {ghOpenFolder === MY_APPS
+                  ? 'Οι εφαρμογές σου στον φάκελο «Εφαρμογές» του Google Drive — όσες φτιάχνεις με το «＋ Νέα εφαρμογή» μπαίνουν εδώ.'
+                  : 'Οι εφαρμογές φορτώνονται αυτόματα από το GitHub (φάκελος public/apps). Ανέβασε ένα .html σε υποφάκελο και, μετά το deploy, εμφανίζεται εδώ.'}
               </p>
               <input type="search" placeholder="Αναζήτηση εφαρμογής…" value={ghSearch} onChange={(e) => setGhSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:20 }} />
@@ -2339,8 +2347,20 @@ export default function Home() {
                       Δεν βρέθηκε το apps-manifest.json. Βεβαιώσου ότι υπάρχει το scripts/generate-apps-manifest.js και το «prebuild» στο package.json.
                     </div>
                   )}
-                  {showFolders && ghFolders.length > 0 && (
+                  {showFolders && (
                     <div style={{ ...S.cardsGrid, marginBottom: scope.length ? 22 : 0 }}>
+                      {/* Πρώτη κάρτα: οι εφαρμογές του χρήστη (Drive) */}
+                      <div className="ch" onClick={() => setGhOpenFolder(MY_APPS)}
+                        style={{ ...S.folderCard, background:PALETTE.mustard.bgSoft, border:'1.5px solid ' + PALETTE.mustard.accent }}>
+                        <div style={S.folderTop}>
+                          <div style={{ ...S.folderIcon, background:PALETTE.mustard.bg, color:PALETTE.mustard.deep, fontSize:18 }}>⭐</div>
+                        </div>
+                        <h3 style={{ ...S.folderTitle, color:'#3d3a2e' }}>Οι εφαρμογές μου</h3>
+                        <p style={{ ...S.folderDesc, color:'#3d3a2e', opacity:0.6 }}>Google Drive · {myApps.length} εφαρμογές</p>
+                        <div style={{ ...S.folderFoot, borderTopColor:PALETTE.mustard.accent }}>
+                          <button style={{ ...S.linkBtn, color:PALETTE.mustard.deep }}>Άνοιγμα φακέλου →</button>
+                        </div>
+                      </div>
                       {ghFolders.map((fl) => (
                         <div key={fl.name} className="ch" onClick={() => setGhOpenFolder(fl.name)}
                           style={{ ...S.folderCard, background:'#fbfaf4', border:'1.5px dashed #c9bd93' }}>
@@ -2356,7 +2376,35 @@ export default function Home() {
                       ))}
                     </div>
                   )}
-                  {scope.length === 0 && !(showFolders && ghFolders.length > 0)
+                  {ghOpenFolder === MY_APPS && !q ? (
+                    myApps.length === 0
+                      ? <div style={S.empty}>Δεν υπάρχουν ακόμα εφαρμογές σου. <button onClick={() => router.push('/creator')} style={{ ...S.linkBtn, color:PALETTE.mustard.deep }}>＋ Νέα εφαρμογή</button></div>
+                      : <div style={S.cardsGrid}>
+                          {myApps.map((f) => {
+                            const sub = f.folderId !== appsFolderId ? files.find((x) => x.id === f.folderId) : null;
+                            const lbl = shareLabel(f.visibility);
+                            return (
+                              <div key={f.id} className="ch" style={{ ...S.folderCard, background:'#fff' }}>
+                                <div style={S.folderTop}>
+                                  <div style={{ ...S.folderIcon, background:PALETTE.mustard.bg, color:PALETTE.mustard.deep, fontSize:18 }}>⚡</div>
+                                  <button onClick={(e) => { e.stopPropagation(); setQrFile(f); }} title="QR"
+                                    style={{ background:'transparent', border:'none', cursor:'pointer', color:'#8a7d4a', padding:2 }}>{QrIcon}</button>
+                                </div>
+                                <h3 style={S.folderTitle}>{trunc(f.name.replace(/\.html?$/i, ''), 42)}</h3>
+                                <p style={{ ...S.folderDesc, opacity:0.55, fontSize:11 }}>{sub ? '📂 ' + sub.name : 'Εφαρμογές'}</p>
+                                <div style={{ ...S.folderFoot, borderTopColor:'#f0f0f0', display:'flex', gap:6, flexWrap:'wrap' }}>
+                                  <button onClick={() => openViewer(f)} style={{ ...btn('mini'), color:PALETTE.mustard.deep }}>Άνοιγμα ↗</button>
+                                  <button onClick={() => router.push('/creator?edit=' + encodeURIComponent(f.id))} style={{ ...btn('mini'), color:'#555' }} title="Επεξεργασία στον Δημιουργό">✎ Επεξεργασία</button>
+                                  <button onClick={() => addLiveItem({ kind:'file', id:f.id, name:f.name })} style={{ ...btn('mini'), color:'#5c7a3a' }}>➕ Live</button>
+                                  <button onClick={() => togglePublish(f.id)}
+                                    style={{ ...btn('mini'), color: lbl ? '#fff' : PALETTE.peach.deep, background: lbl ? '#16a34a' : undefined }}
+                                    title="Μοίρασμα σε μαθητές/συνδέσεις">{lbl || '👤 Μοίρασμα'}</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                  ) : scope.length === 0 && !showFolders
                     ? <div style={S.empty}>{q ? 'Καμία εφαρμογή δεν ταιριάζει στην αναζήτηση.' : 'Καμία εφαρμογή ακόμα — ανέβασε .html αρχεία στο public/apps του GitHub.'}</div>
                     : scope.length > 0 && (
                       <div style={S.cardsGrid}>
