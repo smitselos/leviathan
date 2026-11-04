@@ -479,7 +479,6 @@ select.gap-in{cursor:pointer;}
   <div class="start-accent"></div>
   <div class="start-sub" id="sSub"></div>
   <div class="deck-pick" id="deckPick"></div>
-  <button class="btn-start" onclick="if(curDk!==null) startQuiz()">Έναρξη →</button>
   <div class="start-credits">
     <svg class="credits-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -564,9 +563,9 @@ document.getElementById('sCredits').textContent=QUIZ.credits||'';
   const wrap=document.getElementById('deckPick');
   DECKS.forEach((d,i)=>{
     const c=document.createElement('div');
-    c.className='deck-card'+(i===0?' active':'');
+    c.className='deck-card';
     c.id='pick'+i;
-    c.onclick=()=>pickDeck(i);
+    c.onclick=()=>{ pickDeck(i); startQuiz(); }; // πάτημα κάρτας = άμεση έναρξη
     c.innerHTML=
       `<div class="dc-num">${String(i+1).padStart(2,'0')}</div>`+
       (d.label?`<div class="dc-title">${esc(d.label)}</div>`:'')+
@@ -606,10 +605,7 @@ function levSend(body){
 /* ═════════════════════════════════════
    NAVIGATION
    ═════════════════════════════════════ */
-function pickDeck(n){
-  curDk=n;
-  DECKS.forEach((_,i)=>document.getElementById('pick'+i).classList.toggle('active',i===n));
-}
+function pickDeck(n){ curDk=n; }
 function goStart(){
   document.getElementById('startScreen').style.display='flex';
   document.getElementById('quizScreen').classList.remove('active');
