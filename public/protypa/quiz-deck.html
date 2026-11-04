@@ -198,7 +198,7 @@ body{
   background:#fff;border-radius:10px;
   box-shadow:var(--shadow);
   border:1px solid rgba(107,63,160,.12);
-  display:grid;grid-template-columns:minmax(220px, 25%) 1fr;
+  display:grid;grid-template-columns:minmax(260px, 40%) 1fr; /* φαρδύτερη η ερώτηση (ήταν 25%) */
   overflow:hidden;
   animation:cardIn .3s ease both;
 }
@@ -230,7 +230,7 @@ body{
   position:relative;z-index:1;
 }
 .bc-qtype{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600;position:relative;z-index:1;}
-.bc-result{font-size:26px;color:#fff;position:relative;z-index:1;}
+.bc-result{font-size:48px;font-weight:700;line-height:1;color:#fff;position:relative;z-index:1;}
 
 .bc-right{
   padding:24px 28px;
@@ -378,7 +378,7 @@ body{
   .bc-qnum{display:none;}
   .bc-qtype{display:none;}
   .bc-qtext{font-size:clamp(15px, 4.5vw, 20px);flex:1;}
-  .bc-result{font-size:28px;}
+  .bc-result{font-size:40px;}
   .bc-right{padding:12px 12px;gap:clamp(6px, 2vw, 10px);}
   .opt-btn{padding:clamp(10px, 3vw, 14px) clamp(12px, 3.5vw, 16px);font-size:clamp(14px, 4vw, 17px);border-radius:8px;gap:9px;min-height:auto;}
   .opt-lbl{font-size:clamp(13px, 3.5vw, 16px);}
@@ -408,7 +408,7 @@ body{
   .bc-qnum{font-size:clamp(9px, 1.2vw, 1.6vh);letter-spacing:3px;}
   .bc-qtext{font-size:clamp(16px, 2.5vw, 3.2vh);line-height:1.55;}
   .bc-qtype{font-size:clamp(9px, 1.1vw, 1.5vh);letter-spacing:2px;}
-  .bc-result{font-size:clamp(28px, 4vw, 5vh);}
+  .bc-result{font-size:clamp(52px, 7vw, 11vh);}
   .bc-right{padding:clamp(24px, 3.5vw, 4.5vh);gap:clamp(10px, 1.5vw, 2vh);}
   .opt-btn{padding:clamp(14px, 2vw, 2.5vh) clamp(18px, 2.5vw, 3vh);font-size:clamp(14px, 2vw, 2.8vh);line-height:1.55;border-radius:8px;gap:clamp(10px, 1.5vw, 2vh);}
   .opt-lbl{font-size:clamp(12px, 1.8vw, 2.5vh);}
@@ -728,8 +728,16 @@ function buildTF(q,container){
 /* ═════════════════════════════════════
    DRAG DROP (αντιστοίχιση)
    ═════════════════════════════════════ */
+// Ανακάτεμα χωρίς «σταθερά σημεία»: κανένα στοιχείο της τράπεζας δεν μένει
+// στη θέση της σωστής του αντιστοίχισης (ans[θέση] = στοιχείο της θέσης).
+function derange(q){
+  const n=q.items.length, idx=q.items.map((_,i)=>i);
+  if(n<2) return idx;
+  for(let t=0;t<80;t++){ const o=shuffle(idx); if(o.every((v,p)=>v!==q.ans[p])) return o; }
+  return idx.map((_,p)=>q.ans[(p+1)%n]); // εφεδρικά: κυκλική μετατόπιση
+}
 function buildDrag(q,container){
-  const order=shuffle(q.items.map((_,i)=>i));
+  const order=derange(q);
   const slotVal=new Array(q.tgts.length).fill(null);
   const chips={}, zones=[];
   let tapSel=null;

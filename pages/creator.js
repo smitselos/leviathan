@@ -447,6 +447,7 @@ export default function Creator() {
       {saveOpen && (
         <SaveDialog
           data={data} problems={allProblems} editing={editing} drive={drive} status={status} token={token}
+          defaultFolder={typeof router.query.folder === 'string' ? router.query.folder : ''}
           onClose={() => setSaveOpen(false)} onGo={(p) => { setSaveOpen(false); if (p.d >= 0) { setSel({ d: p.d, q: p.q }); setPanel('question'); } else setPanel('general'); }}
           getHtml={finalHtml}
           onSaved={(ed) => { setEditing(ed); loadDrive(); }}
@@ -691,10 +692,11 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
 // ═════════════════════════════════════════════════════════════════
 // Αποθήκευση
 // ═════════════════════════════════════════════════════════════════
-function SaveDialog({ data, problems, editing, drive, status, token, onClose, onGo, getHtml, onSaved, onLogin }) {
+function SaveDialog({ data, problems, editing, drive, status, token, onClose, onGo, getHtml, onSaved, onLogin, defaultFolder }) {
   const [name, setName] = useState(editing?.name || withHtml(safeName(data.title)));
   const [mode, setMode] = useState(editing ? 'overwrite' : 'new');
-  const [folderId, setFolderId] = useState(editing?.folderId || '');
+  // Προεπιλογή: ο φάκελος της εφαρμογής ή ο υποφάκελος από όπου ξεκίνησε (?folder=)
+  const [folderId, setFolderId] = useState(editing?.folderId || defaultFolder || '');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [err, setErr] = useState('');
