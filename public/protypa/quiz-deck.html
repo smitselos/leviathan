@@ -160,6 +160,8 @@ body{
 
 /* ═══ QUIZ SCREEN ═══ */
 #quizScreen{display:none;min-height:100vh;flex-direction:column;}
+#quizScreen.active{height:100vh;height:100dvh;min-height:0;} /* σταθερό ύψος → αυτόματη προσαρμογή γραμμάτων */
+.big-card{min-height:0;}
 #quizScreen.active{display:flex;}
 
 .quiz-topbar{
@@ -373,7 +375,8 @@ body{
 
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:640px){
-  .big-card{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  .big-card{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
+  .bc-left{max-height:42dvh;}
   .bc-left{min-height:27vh;padding:22px 18px;flex-direction:row;align-items:center;gap:10px;} /* ψηλότερη ζώνη ερώτησης στο κινητό */
   .bc-qnum{display:none;}
   .bc-qtype{display:none;}
@@ -710,7 +713,36 @@ function renderCard(){
   ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick}[q.t]||buildMCQ)(q,right);
   card.appendChild(left); card.appendChild(right);
   stage.appendChild(card);
+  fitCard();
 }
+
+/* ═════════════════════════════════════
+   ΑΥΤΟΜΑΤΗ ΠΡΟΣΑΡΜΟΓΗ ΓΡΑΜΜΑΤΩΝ — όλο το υλικό μέσα στο πλαίσιο
+   • Ερώτηση: μικραίνει το μέγεθος γραμμάτων μέχρι να χωρέσει (όριο 13px)
+   • Απαντήσεις/σχόλιο: σμίκρυνση όλης της στήλης (zoom) μέχρι να χωρέσει (όριο 60%)
+   • Αν ούτε τότε χωρά (πολύ μεγάλο κείμενο) → κύλιση μέσα στη στήλη
+   ═════════════════════════════════════ */
+function fitCard(){
+  const left=document.getElementById('bcLeft'), right=document.getElementById('bcRight');
+  if(!left||!right) return;
+  const qt=left.querySelector('.bc-qtext');
+  if(qt){
+    // Περίσσευμα = πόσο ξεπερνά το κάτω άκρο του περιεχομένου το εσωτερικό πλαίσιο
+    // (μετριούνται μόνο τα στοιχεία — όχι ο διακοσμητικός κύκλος ::after)
+    const leftOver=()=>{ const r=left.getBoundingClientRect(), pb=parseFloat(getComputedStyle(left).paddingBottom)||0;
+      let bottom=0; for(const c of left.children){ const cr=c.getBoundingClientRect(); if(cr.height) bottom=Math.max(bottom,cr.bottom); }
+      return bottom-(r.bottom-pb); };
+    qt.style.fontSize='';
+    let fs=parseFloat(getComputedStyle(qt).fontSize)||18, guard=0;
+    while(leftOver()>1 && fs>13 && guard++<40){ fs=Math.max(13,fs*0.93); qt.style.fontSize=fs+'px'; }
+  }
+  right.style.zoom='';
+  let z=1, g2=0;
+  while(right.scrollHeight>right.clientHeight+1 && z>0.6 && g2++<20){ z=Math.max(0.6,z-0.05); right.style.zoom=z; }
+}
+let _fitT=null;
+window.addEventListener('resize',()=>{ clearTimeout(_fitT); _fitT=setTimeout(fitCard,120); });
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitCard);
 
 /* ═════════════════════════════════════
    MCQ  &  ΣΩΣΤΟ / ΛΑΘΟΣ
@@ -989,6 +1021,7 @@ function finishQuestion(ok,q,container,autoFix){
   const btnNext=document.getElementById('btnNext');
   btnNext.textContent=done<total?'Επόμενη →':'Αποτελέσματα →';
   btnNext.classList.add('show');
+  fitCard();
   setTimeout(()=>fb.scrollIntoView({behavior:'smooth',block:'nearest'}),150);
   if(!retryMode){
     const qi=DECKS[curDk].qs.indexOf(q);
