@@ -143,6 +143,7 @@ export default function Creator() {
   const [narrow, setNarrow] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
   const fileRef = useRef(null);
+  const savedJson = useRef(null); // περιεχόμενο όπως είναι αποθηκευμένο στο Drive → πρόχειρο μόνο αν υπάρχουν αλλαγές
 
   const tpl = TEMPLATES.find((t) => t.id === tplId) || TEMPLATES[0];
   const token = session?.accessToken;
@@ -174,6 +175,8 @@ export default function Creator() {
   // Αυτόματη αποθήκευση πρόχειρου (στη συσκευή)
   useEffect(() => {
     if (step !== 'edit' || !data) return;
+    // Ίδιο με την αποθηκευμένη στο Drive εφαρμογή → δεν υπάρχει πρόχειρο (σβήνεται)
+    if (savedJson.current && JSON.stringify(data) === savedJson.current) { lsSet(DRAFT_KEY, null); return; }
     const t = setTimeout(() => lsSet(DRAFT_KEY, { data, editing, at: Date.now() }), 600);
     return () => clearTimeout(t);
   }, [data, editing, step]);
@@ -183,7 +186,8 @@ export default function Creator() {
     return n ? `${n}, ${new Date().getFullYear()}` : '';
   };
   const startNew = () => { setData(newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
-  const openData = (d, ed) => { setData(normalizeQuiz(d)); setEditing(ed || null); setSel({ d: 0, q: 0 }); setPanel('question'); setStep('edit'); };
+  // fromDrive: άνοιγμα αποθηκευμένης εφαρμογής → δεν είναι πρόχειρο μέχρι να γίνει αλλαγή
+  const openData = (d, ed, fromDrive) => { const nd = normalizeQuiz(d); savedJson.current = fromDrive ? JSON.stringify(nd) : null; setData(nd); setEditing(ed || null); setSel({ d: 0, q: 0 }); setPanel('question'); setStep('edit'); };
 
   const openDriveApp = async (f) => {
     if (!token) return;
@@ -193,7 +197,7 @@ export default function Creator() {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = parseHtml(await r.text());
       if (!d) alert('Η εφαρμογή «' + f.name + '» δεν δημιουργήθηκε με πρότυπο του Δημιουργού, οπότε δεν μπορεί να ανοίξει εδώ.');
-      else openData(d, { id: f.id, name: f.name, folderId: f.folderId });
+      else openData(d, { id: f.id, name: f.name, folderId: f.folderId }, true);
     } catch (e) { alert('Δεν ήταν δυνατό το άνοιγμα: ' + e.message); }
     setLoadingApp('');
   };
@@ -450,7 +454,7 @@ export default function Creator() {
           defaultFolder={typeof router.query.folder === 'string' ? router.query.folder : ''}
           onClose={() => setSaveOpen(false)} onGo={(p) => { setSaveOpen(false); if (p.d >= 0) { setSel({ d: p.d, q: p.q }); setPanel('question'); } else setPanel('general'); }}
           getHtml={finalHtml}
-          onSaved={(ed) => { setEditing(ed); loadDrive(); }}
+          onSaved={(ed) => { savedJson.current = JSON.stringify(data); lsSet(DRAFT_KEY, null); setDraft(null); setEditing(ed); loadDrive(); }}
           onLogin={() => { lsSet(DRAFT_KEY, { data, editing, at: Date.now() }); signIn('google', { callbackUrl: '/creator' }); }}
         />
       )}
