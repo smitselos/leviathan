@@ -661,6 +661,20 @@ body,#startScreen,.quiz-topbar,.quiz-bottom{background:var(--cream);}
   .ls-div{height:1px;background:rgba(255,255,255,.06);margin:8px 4px;}
   .ls-foot{padding:8px;border-top:1px solid rgba(255,255,255,.06);}
 }
+/* ═══ Η χρωματιστή στήλη της ερώτησης μαζεύεται (υπολογιστής) — η ερώτηση περνά πάνω από τις απαντήσεις ═══ */
+.bc-tg,.bc-qmirror{display:none;}
+@media(min-width:641px){
+  .bc-tg{display:flex;align-items:center;justify-content:center;position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.12);color:#fff;cursor:pointer;z-index:3;font-size:15px;line-height:1;}
+  .bc-tg:hover{background:rgba(0,0,0,.25);}
+  .big-card{transition:grid-template-columns .2s ease;}
+  .big-card.qc{grid-template-columns:58px minmax(0,1fr)!important;}
+  .big-card.qc .bc-left{padding:14px 0;align-items:center;}
+  .big-card.qc .bc-left>*:not(.bc-tg){display:none!important;}
+  .big-card.qc .bc-left::after{display:none;}
+  .big-card.qc .bc-tg{position:static;}
+  .big-card.qc .bc-qmirror{display:block;font-weight:600;font-size:clamp(17px,1.7vw,24px);line-height:1.45;color:var(--ink);padding:0 0 12px;border-bottom:1px solid #E5DCC4;margin-bottom:4px;}
+  .bc-qmirror .qm-num{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px;}
+}
 </style>
 </head>
 <body>
@@ -1689,6 +1703,26 @@ ${s.key?`<div class="pkey-page"><div class="print-title">${esc(s.title)} — Λ�
   const _sq=startQuiz; startQuiz=function(){ const r=_sq.apply(this,arguments); mark(); return r; };
   const _gs=goStart; goStart=function(){ const r=_gs.apply(this,arguments); mark(); return r; };
   mark();
+})();
+
+/* Μάζεμα / άνοιγμα της στήλης της ερώτησης — κρατιέται για όλες τις ερωτήσεις */
+(function levQCol(){
+  let qOpen=true; try{ qOpen=localStorage.getItem('lev_q_open')!=='0'; }catch(e){}
+  const _rc=renderCard;
+  renderCard=function(){
+    const r=_rc.apply(this,arguments);
+    const card=document.querySelector('#cardStage .big-card'), left=document.getElementById('bcLeft'), right=document.getElementById('bcRight');
+    if(!card||!left||!right) return r;
+    const q=runList[curQi];
+    const tg=document.createElement('button'); tg.type='button'; tg.className='bc-tg';
+    const mirror=document.createElement('div'); mirror.className='bc-qmirror';
+    mirror.innerHTML=`<span class="qm-num">Ερώτηση ${curQi+1} / ${runList.length}</span>${fmt(q.q)}`;
+    right.insertBefore(mirror,right.firstChild);
+    const apply=()=>{ card.classList.toggle('qc',!qOpen); tg.textContent=qOpen?'‹':'›'; tg.title=qOpen?'Μάζεμα της στήλης της ερώτησης':'Άνοιγμα της στήλης της ερώτησης'; };
+    tg.onclick=()=>{ qOpen=!qOpen; try{ localStorage.setItem('lev_q_open',qOpen?'1':'0'); }catch(e){} apply(); setTimeout(()=>{ try{ fitCard(); }catch(e){} },230); };
+    left.appendChild(tg); apply(); try{ fitCard(); }catch(e){}
+    return r;
+  };
 })();
 
 /* ═════════════════════════════════════
