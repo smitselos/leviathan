@@ -235,6 +235,7 @@ body{
 .bc-result{font-size:48px;font-weight:700;line-height:1;color:#fff;position:relative;z-index:1;}
 
 .bc-right>*{flex-shrink:0;} /* να μη «ζουλιούνται» η τράπεζα και οι θέσεις (επικάλυψη στο κινητό) */
+.bc-right>*{flex-shrink:0;} /* τα στοιχεία δεν «ζουλιούνται»· η στήλη κυλά */
 .bc-right{
   padding:24px 28px;
   display:flex;flex-direction:column;
@@ -895,6 +896,7 @@ function renderCard(){
    • Απαντήσεις/σχόλιο: σμίκρυνση όλης της στήλης (zoom) μέχρι να χωρέσει (όριο 60%)
    • Αν ούτε τότε χωρά (πολύ μεγάλο κείμενο) → κύλιση μέσα στη στήλη
    ═════════════════════════════════════ */
+const NO_ZOOM=matchMedia('(max-width:640px)').matches || (/^((?!chrome|chromium|crios|fxios|android|edg).)*safari/i.test(navigator.userAgent)) || /iPad|iPhone|iPod/.test(navigator.userAgent);
 function fitCard(){
   const left=document.getElementById('bcLeft'), right=document.getElementById('bcRight');
   if(!left||!right) return;
@@ -910,6 +912,9 @@ function fitCard(){
     while(leftOver()>1 && fs>13 && guard++<40){ fs=Math.max(13,fs*0.93); qt.style.fontSize=fs+'px'; }
   }
   right.style.zoom='';
+  // Στο κινητό και στο Safari (iPhone/iPad/Mac) όχι CSS zoom — χαλά τη διάταξη
+  // (π.χ. στην αντιστοίχιση οι κάρτες έπεφταν πάνω στις προτάσεις)· εκεί η στήλη απλώς κυλά.
+  if(NO_ZOOM) return;
   let z=1, g2=0;
   while(right.scrollHeight>right.clientHeight+1 && z>0.6 && g2++<20){ z=Math.max(0.6,z-0.05); right.style.zoom=z; }
 }
