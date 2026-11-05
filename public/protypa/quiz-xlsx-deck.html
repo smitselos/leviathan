@@ -234,6 +234,7 @@ body{
 .bc-qtype{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600;position:relative;z-index:1;}
 .bc-result{font-size:48px;font-weight:700;line-height:1;color:#fff;position:relative;z-index:1;}
 
+.bc-right>*{flex-shrink:0;} /* να μη «ζουλιούνται» η τράπεζα και οι θέσεις (επικάλυψη στο κινητό) */
 .bc-right{
   padding:24px 28px;
   display:flex;flex-direction:column;
@@ -388,6 +389,7 @@ body{
   .fb-box{font-size:clamp(13px, 3.8vw, 16px);padding:clamp(10px, 3vw, 14px);}
   .fb-ref{font-size:clamp(11px, 3vw, 13px);}
   .slot-lbl{font-size:11.5px;width:90px;}
+  .slot-row{flex-wrap:wrap;gap:4px 10px;} .slot-row .slot-lbl{width:100%;} .slot-row .slot-zone{flex:1 1 100%;}
   .drag-chip{font-size:12px;padding:6px 11px;}
   .drag-bank{min-height:40px;padding:8px 10px;}
   .slot-zone{min-height:36px;font-size:12px;}
@@ -1086,7 +1088,9 @@ function buildDrag(q,container){
       const it=slotVal[ti];
       // ans[θέση] = στοιχείο που ανήκει σε αυτή τη θέση (όπως στο αρχικό κουίζ)
       const belongs=it===null?undefined:q.tgts[q.ans.indexOf(it)];
-      if(it!==null && belongs!==undefined && norm(belongs,true)===norm(q.tgts[ti],true)) z.classList.add('ok-slot');
+      // …ή αν το στοιχείο έχει το ΙΔΙΟ κείμενο με το σωστό (επαναλαμβανόμενες απαντήσεις, π.χ. «Επιστημική» ×2)
+      const sameItem=it!==null && norm(q.items[it],true)===norm(q.items[q.ans[ti]],true);
+      if(it!==null && (sameItem || (belongs!==undefined && norm(belongs,true)===norm(q.tgts[ti],true)))) z.classList.add('ok-slot');
       else{z.classList.add('ko-slot');allOk=false;}
     });
     sub.style.display='none'; bank.style.display='none'; instr.style.display='none';
