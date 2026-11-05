@@ -1418,11 +1418,12 @@ const PR_LET='ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ';
 const $pm=id=>document.getElementById(id);
 function openPrintModal(){
   const box=$pm('pmDecks');
-  box.innerHTML=DECKS.map((d,i)=>`<label class="pm-deck"><input type="checkbox" value="${i}" checked><span><b>${String(i+1).padStart(2,'0')}</b> ${esc(d.label||('Ενότητα '+(i+1)))}${d.ktitle?' — <i>'+fmt(d.ktitle)+'</i>':''}</span><small>${d.qs.length} ερ.</small></label>`).join('');
+  box.innerHTML=DECKS.map((d,i)=>`<label class="pm-deck"><input type="checkbox" value="${i}"${PR_SEL.has(i)?' checked':''}><span><b>${String(i+1).padStart(2,'0')}</b> ${esc(d.label||('Ενότητα '+(i+1)))}${d.ktitle?' — <i>'+fmt(d.ktitle)+'</i>':''}</span><small>${d.qs.length} ερ.</small></label>`).join('');
   if(!$pm('pmTitle').dataset.set){ $pm('pmTitle').value=(QUIZ.title||'ΑΣΚΗΣΗ'); $pm('pmTitle').dataset.set='1'; }
   prSum();
   $pm('printModalOverlay').classList.add('active');
 }
+let PR_SEL=new Set(); // καμία προεπιλεγμένη ενότητα· η επιλογή κρατιέται όσο είναι ανοιχτή η σελίδα
 function prPicked(){ return [...$pm('pmDecks').querySelectorAll('input:checked')].map(x=>+x.value); }
 function prSum(){
   const p=prPicked(), n=p.reduce((s,i)=>s+DECKS[i].qs.length,0);
@@ -1436,9 +1437,9 @@ function closePrintModal(){ $pm('printModalOverlay').classList.remove('active');
   if(!DECKS.length) $pm('btnPrintOpen').style.display='none';
   $pm('pmClose').onclick=closePrintModal; $pm('pmCancel').onclick=closePrintModal;
   ov.addEventListener('click',e=>{ if(e.target===ov) closePrintModal(); });
-  $pm('pmDecks').addEventListener('change',prSum);
-  $pm('pmAll').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=true); prSum(); };
-  $pm('pmNone').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=false); prSum(); };
+  $pm('pmDecks').addEventListener('change',()=>{ PR_SEL=new Set(prPicked()); prSum(); });
+  $pm('pmAll').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=true); PR_SEL=new Set(prPicked()); prSum(); };
+  $pm('pmNone').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=false); PR_SEL=new Set(); prSum(); };
   $pm('pmShowLines').onchange=function(){ $pm('pmLinesCountRow').style.display=this.checked?'block':'none'; };
   $pm('pmWatermarkOn').onchange=function(){ $pm('pmWatermarkRow').style.display=this.checked?'block':'none'; };
   $pm('pmPrint').onclick=()=>{ const s=collectPrintSettings(); if(!s.decks.length) return; closePrintModal(); printWorksheet(s); };
