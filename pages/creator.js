@@ -25,6 +25,14 @@ const TEMPLATES = [
     types: ['Πολλαπλής επιλογής', 'Σωστό / Λάθος', 'Αντιστοίχιση', 'Συμπλήρωση κενών', 'Επιλογή λέξεων', 'Αναδιάταξη', 'Ταξινόμηση', 'Μικρό σταυρόλεξο'],
   },
   {
+    id: 'quiz-xlsx-deck',
+    badge: 'xlsx',
+    name: 'Κουίζ ενοτήτων · xlsx',
+    file: '/protypa/quiz-xlsx-deck.html',
+    desc: 'Το κουίζ ενοτήτων με εισαγωγή / εξαγωγή Excel: ανεβάζετε ένα xlsx και οι ερωτήσεις μπαίνουν αυτόματα στις ενότητες (δέχεται και τη μορφή των εφαρμογών ΜΗΤΣΕΛΟΣ). Επιπλέον: βαθμός δυσκολίας με φίλτρο για τον μαθητή και στην εκτύπωση, σχόλιο για κάθε επιλογή.',
+    types: ['Εισαγωγή / εξαγωγή xlsx', 'Βαθμός δυσκολίας', 'Σχόλιο ανά επιλογή', 'Όλοι οι τύποι του κουίζ'],
+  },
+  {
     id: 'crossword-deck',
     kind: 'cw',
     name: 'Σταυρόλεξα ενοτήτων',
@@ -53,7 +61,7 @@ const tplOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 const isCwData = (d) => d && d.template === 'crossword-deck';
 const isParaData = (d) => d && d.template === 'paragraph-deck';
 const isSortData = (d) => d && d.template === 'sort-deck';
-const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : 'quiz-deck');
+const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : d && d.template === 'quiz-xlsx-deck' ? 'quiz-xlsx-deck' : 'quiz-deck');
 
 const C = {
   purple: '#6B3FA0', purpleDark: '#4A2D6F', purpleLight: '#8B6BB5', navy: '#1B2A4A', cyan: '#4AAFC7',
@@ -88,8 +96,8 @@ function newQuestion(t, keep = {}) {
   return { ...base, q: base.q || 'Επίλεξε…', text: '' };
 }
 function newDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', qs: [newQuestion('mcq')] }; }
-function newQuiz(credits) {
-  return { v: 1, template: 'quiz-deck', title: '', eyebrow: 'Κουίζ αυτοαξιολόγησης', heading: '', subtitle: 'Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.', credits: credits || '', year: new Date().getFullYear(), shuffleOpts: false, shuffleQs: false, decks: [newDeck(1)] };
+function newQuiz(credits, tid) {
+  return { v: 1, template: tid || 'quiz-deck', title: '', eyebrow: 'Κουίζ αυτοαξιολόγησης', heading: '', subtitle: 'Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.', credits: credits || '', year: new Date().getFullYear(), shuffleOpts: false, shuffleQs: false, decks: [newDeck(1)] };
 }
 // ── Σταυρόλεξο: ενότητα = { label, ktitle, author, sub, seed, words:[{w,c}] } ──
 const newWord = () => ({ w: '', c: '' });
@@ -329,7 +337,7 @@ async function exportQuizXlsx(data, fileName) {
 }
 // Ένα παράδειγμα από κάθε τύπο — για «Υπόδειγμα Excel»
 function sampleQuizData(credits) {
-  const d = newQuiz(credits); d.title = 'Κουίζ από Excel'; d.heading = 'Κουίζ από *Excel*';
+  const d = newQuiz(credits, 'quiz-xlsx-deck'); d.title = 'Κουίζ από Excel'; d.heading = 'Κουίζ από *Excel*';
   d.decks = [{ label: 'Ενότητα 1', ktitle: 'Παραδείγματα τύπων', author: '', sub: 'Ένα παράδειγμα από κάθε τύπο', qs: [
     { ...newQuestion('mcq'), q: 'Ποια έγκλιση εκφράζει εντολή;', opts: ['Οριστική', 'Προστακτική', 'Υποτακτική', ''], ans: 1 },
     { ...newQuestion('tf'), q: 'Η παθητική σύνταξη αποσιωπά συχνά τον δράστη.', ans: 0 },
@@ -450,7 +458,7 @@ async function importQuizXlsx(file, credits) {
     const iL = ix(/^ενοτητ/), iT = ix(/^τιτλ/), iA = ix(/^συγγραφ|^πηγ/), iS = ix(/^θεματ|^αξον/);
     dRows.slice(1).forEach((r) => { const L = String(r[iL] || '').trim(); if (!L) return; const d = deckOf[L] || (decks.push(deckOf[L] = { label: L, ktitle: '', author: '', sub: '', qs: [] }), deckOf[L]); if (iT >= 0) d.ktitle = String(r[iT] || '').trim(); if (iA >= 0) d.author = String(r[iA] || '').trim(); if (iS >= 0) d.sub = String(r[iS] || '').trim(); });
   }
-  const data = newQuiz(credits);
+  const data = newQuiz(credits, 'quiz-xlsx-deck');
   const gRows = aoa(findSheet(/^γενικ/));
   const yes = (v) => /^(ναι|ν|yes|1|true|x|✓)$/.test(xlN(v));
   gRows.forEach((r) => { const k = xlN(r[0]), v = String(r[1] == null ? '' : r[1]).trim(); if (!k) return;
@@ -560,7 +568,7 @@ export default function Creator() {
     const n = session?.user?.name || '';
     return n;
   };
-  const startNew = (id) => { savedJson.current = null; setTplId(id); setCwInfo(null); setData(tplOf(id).kind === 'cw' ? newCw(defaultCredits()) : tplOf(id).kind === 'para' ? newPara(defaultCredits()) : tplOf(id).kind === 'sort' ? newSort(defaultCredits()) : newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
+  const startNew = (id) => { savedJson.current = null; setTplId(id); setCwInfo(null); setData(tplOf(id).kind === 'cw' ? newCw(defaultCredits()) : tplOf(id).kind === 'para' ? newPara(defaultCredits()) : tplOf(id).kind === 'sort' ? newSort(defaultCredits()) : newQuiz(defaultCredits(), id)); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
   // fromDrive: άνοιγμα αποθηκευμένης εφαρμογής → δεν είναι πρόχειρο μέχρι να γίνει αλλαγή
   const openData = (d, ed, fromDrive) => { const nd = normalizeData(d); setTplId(tplIdOfData(d)); setCwInfo(null); savedJson.current = fromDrive ? JSON.stringify(nd) : null; setData(nd); setEditing(ed || null); setSel({ d: 0, q: 0 }); setPanel('question'); setStep('edit'); };
 
@@ -685,7 +693,7 @@ export default function Creator() {
       const r = await importQuizXlsx(f, defaultCredits());
       const nd = r.data.decks.length;
       const msg = `Βρέθηκαν ${r.n} ερωτήσεις σε ${nd} ${nd === 1 ? 'ενότητα' : 'ενότητες'}.` + (r.warnings.length ? '\n\nΠροσοχή:\n• ' + r.warnings.slice(0, 8).join('\n• ') + (r.warnings.length > 8 ? `\n… και ${r.warnings.length - 8} ακόμη` : '') : '');
-      if (step === 'edit' && data && !tpl.kind) {
+      if (step === 'edit' && data && tpl.id === 'quiz-xlsx-deck') {
         if (!confirm(msg + '\n\nΝα αντικαταστήσουν τις ενότητες και τις ερωτήσεις της εφαρμογής που επεξεργάζεστε;')) { setXlBusy(false); return; }
         const nq = normalizeData(r.data);
         upd((n) => { if (r.hasGen) ['title', 'eyebrow', 'heading', 'subtitle', 'credits', 'shuffleQs', 'shuffleOpts'].forEach((k) => { n[k] = nq[k]; }); n.decks = nq.decks; });
@@ -727,7 +735,10 @@ export default function Creator() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, marginBottom: 34 }}>
             {TEMPLATES.map((t) => (
               <div key={t.id} style={{ ...S.card, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <TemplateThumb kind={t.kind} />
+                <div style={{ position: 'relative' }}>
+                  <TemplateThumb kind={t.kind} />
+                  {t.badge && <span style={{ position: 'absolute', top: 10, right: 10, background: '#1D6F42', color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: 1, padding: '4px 9px', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,.18)' }}>{t.badge}</span>}
+                </div>
                 <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                   <div style={{ fontFamily: 'Literata,serif', fontSize: 19, fontWeight: 700, color: C.navy }}>{t.name}</div>
                   <div style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.55 }}>{t.desc}</div>
@@ -768,7 +779,7 @@ export default function Creator() {
             <input ref={fileRef} type="file" accept=".html,.htm,text/html" style={{ display: 'none' }} onChange={openLocalFile} />
           </div>
           <div style={{ ...S.card, marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={S.miniTitle}>📊 Κουίζ από Excel (xlsx)</div>
+            <div style={S.miniTitle}>📊 Κουίζ από Excel (xlsx) — πρότυπο «Κουίζ ενοτήτων · xlsx»</div>
             <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>Γράψτε τις ερωτήσεις σε φύλλο Excel ή Google Sheets — μία γραμμή ανά ερώτηση — και φορτώστε το. Κατεβάστε πρώτα το υπόδειγμα: έχει ένα παράδειγμα από κάθε τύπο και οδηγίες.</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button style={S.btnGhost} disabled={xlBusy} onClick={() => doExportXlsx(sampleQuizData(defaultCredits()), 'Υπόδειγμα κουίζ')}>⬇ Υπόδειγμα Excel</button>
@@ -804,7 +815,7 @@ export default function Creator() {
         {/* ── Αριστερά: γενικά, ενότητες, λίστα ερωτήσεων ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, position: narrow ? 'static' : 'sticky', top: 70 }}>
           <button onClick={() => setPanel('general')} style={{ ...S.navBtn, ...(panel === 'general' ? S.navBtnOn : {}) }}>⚙︎ Γενικά στοιχεία εφαρμογής</button>
-          {!tpl.kind && (
+          {tpl.id === 'quiz-xlsx-deck' && (
             <div style={{ ...S.card, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ ...S.miniTitle, margin: 0, flex: 1 }}>📊 Excel</span>
               <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Όλες οι ερωτήσεις σε αρχείο xlsx" onClick={() => doExportXlsx(data, data.title || 'kouiz')}>⬇ Εξαγωγή</button>
@@ -914,7 +925,7 @@ export default function Creator() {
             <CwWordsForm key={sel.d} deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} unplaced={(cwInfo?.unplaced || [])[sel.d] || []} />
           )}
           {panel === 'question' && q && (
-            <QuestionForm key={sel.d + ':' + sel.q} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
+            <QuestionForm key={sel.d + ':' + sel.q} adv={tpl.id === 'quiz-xlsx-deck'} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
               onUp={() => moveQ(sel.q, -1)} onDown={() => moveQ(sel.q, 1)} onDup={() => dupQ(sel.q)} onDel={() => delQ(sel.q)}
               onPrev={() => setSel((s) => ({ ...s, q: Math.max(0, s.q - 1) }))}
               onNext={() => sel.q < deck.qs.length - 1 ? setSel((s) => ({ ...s, q: s.q + 1 })) : addQuestion(q.t)} />
@@ -1224,7 +1235,7 @@ function MiniCwFields({ q, setQ }) {
   );
 }
 
-function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, onDel, onPrev, onNext }) {
+function QuestionForm({ adv, q, index, total, setQ, changeType, onUp, onDown, onDup, onDel, onPrev, onNext }) {
   const probs = problemsOf(q);
   const taRef = useRef(null);
   const wrapSel = () => {
@@ -1375,14 +1386,14 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
       {/* ── Μικρό σταυρόλεξο ── */}
       {q.t === 'cw' && <MiniCwFields q={q} setQ={setQ} />}
 
-      <Field label="Βαθμός δυσκολίας (προαιρετικός)" hint="Ο μαθητής μπορεί να διαλέξει δυσκολία στην αρχική οθόνη· το ίδιο φίλτρο υπάρχει και στην εκτύπωση.">
+      {adv && <Field label="Βαθμός δυσκολίας (προαιρετικός)" hint="Ο μαθητής μπορεί να διαλέξει δυσκολία στην αρχική οθόνη· το ίδιο φίλτρο υπάρχει και στην εκτύπωση.">
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[0, 1, 2, 3, 4, 5].map((v) => (
             <button key={v} onClick={() => setQ({ diff: v || undefined })} title={v ? 'Βαθμός ' + v : 'Χωρίς βαθμό'}
               style={{ ...S.typeChip, ...((+q.diff || 0) === v ? S.typeChipOn : {}) }}>{v ? `${v} ${'●'.repeat(v)}` : '—'}</button>
           ))}
         </div>
-      </Field>
+      </Field>}
 
       <details style={{ background: 'rgba(107,63,160,.04)', borderRadius: 10, padding: '10px 14px' }} open={!!(q.fbC || q.fbW || q.ref || (Array.isArray(q.fbs) && q.fbs.some((x) => String(x || '').trim())))}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13.5, color: C.purple }}>Ανατροφοδότηση / διόρθωση (προαιρετικά)</summary>
@@ -1393,7 +1404,7 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
           <Field label="✗ Σχόλιο / διόρθωση όταν απαντά λάθος" hint="Κενό → εμφανίζεται αυτόματα η σωστή απάντηση.">
             <textarea style={{ ...S.input, minHeight: 50 }} value={q.fbW} onChange={(e) => setQ({ fbW: e.target.value })} />
           </Field>
-          {q.t === 'mcq' && (
+          {adv && q.t === 'mcq' && (
             <Field label="Σχόλιο για κάθε επιλογή (προαιρετικό)" hint="Εμφανίζεται όταν ο μαθητής διαλέξει τη συγκεκριμένη επιλογή· όπου είναι κενό, ισχύουν τα παραπάνω σχόλια.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {q.opts.map((o, i) => (
