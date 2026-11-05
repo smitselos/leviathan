@@ -315,7 +315,9 @@ function quizToSheets(data) {
     ['   Σταυρόλεξο: Α = λέξη, Β = ορισμός. Το πλέγμα στήνεται αυτόματα. «Ρύθμιση» = διάταξη 2, 3… για άλλη τοποθέτηση.'],
     ['Προαιρετικά: Σχόλιο σωστού, Σχόλιο λάθους, Παραπομπή (π.χ. θεωρία), Δυσκολία (1–5).'],
     ['Πολλαπλής επιλογής: «Σχόλιο Α»–«Σχόλιο ΣΤ» = σχόλιο που εμφανίζεται όταν ο μαθητής διαλέξει τη συγκεκριμένη επιλογή.'],
-    ['Δέχεται επίσης αρχεία με τη μορφή των εφαρμογών ΜΗΤΣΕΛΟΣ (στήλες ID, Κατηγορία, Δυσκολία, Τύπος YN/MC/DD/CLK/GAP, Απόσπασμα, Κείμενο Ερώτησης…).'],
+    ['Δέχεται επίσης αρχεία με τη μορφή των εφαρμογών ΜΗΤΣΕΛΟΣ (στήλες ID, Κατηγορία, Δυσκολία, Τύπος YN/MC/DD/CLK/GAP/ORD/SORT, Απόσπασμα, Κείμενο Ερώτησης…).'],
+    ['   ORD: περίοδοι με τη σωστή σειρά στο «Απόσπασμα», χωρισμένες με «|» (Σωστή Απάντηση = σταθερή 1η, προαιρετικά).'],
+    ['   SORT: Αριστερά 1–4 = κατηγορίες· Δεξιά 1–4 = τα στοιχεία της αντίστοιχης κατηγορίας, χωρισμένα με «|».'],
     ['Φύλλο «Ενότητες»: τίτλος, συγγραφέας, άξονες κάθε κάρτας. Φύλλο «Γενικά»: η αρχική οθόνη.']];
   return { rows, decks, gen, help };
 }
@@ -354,7 +356,7 @@ function sampleQuizData(credits) {
 // Κείμενο Ερώτησης | Επιλογή Α–Δ | Σωστή Απάντηση | Αριστερά 1–4 | Δεξιά 1–4 | Λέξη-Στόχος | Διόρθωση 1–4 | Θεωρία
 const stripTags = (s) => String(s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/[ \t]+/g, ' ').trim();
 function mitselosRows(all, hi, col, getDeck, warnings) {
-  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap' };
+  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap', ord: 'order', sort: 'sort' };
   all.slice(hi + 1).forEach((r, ri) => {
     if (!r.some((c) => c)) return;
     const line = hi + ri + 2, id = col(r, 'ID') || ('γρ. ' + line);
@@ -400,8 +402,19 @@ function mitselosRows(all, hi, col, getDeck, warnings) {
       if (/_{2,}/.test(rest)) q = { ...newQuestion('gap'), q: withExc(instr), text: fill(rest) };
       else if (/_{2,}/.test(exc)) q = { ...newQuestion('gap'), q: qt || 'Συμπλήρωσε το κενό.', text: fill(exc) }; // το κενό είναι στο απόσπασμα
       else { warnings.push(`${id}: δεν βρέθηκε «____» στο κείμενο — το κενό μπήκε στο τέλος.`); q = { ...newQuestion('gap'), q: withExc(instr), text: rest + ' ' + blank }; }
+    } else if (t === 'order') {
+      // ORD: οι περίοδοι με τη ΣΩΣΤΗ σειρά στο «Απόσπασμα», χωρισμένες με «|» (ή στις Επιλογές Α–Δ)
+      let lines = exc.split('|').map((x) => x.trim()).filter(Boolean);
+      if (lines.length < 2) lines = ['Α', 'Β', 'Γ', 'Δ'].map((k) => stripTags(col(r, 'Επιλογή ' + k))).filter(Boolean);
+      if (lines.length < 2) { warnings.push(`${id}: ORD χωρίς περιόδους (γράψτε τες στο «Απόσπασμα» χωρισμένες με «|») — παραλείφθηκε.`); return; }
+      q = { ...newQuestion('order'), q: qt || 'Βάλε τις περιόδους στη σωστή σειρά.', lines, fixFirst: /σταθερ|fix/.test(xlN(col(r, 'Σωστή Απάντηση'))) };
+    } else if (t === 'sort') {
+      // SORT: Αριστερά 1–4 = κατηγορίες· Δεξιά 1–4 = τα στοιχεία της καθεμιάς, χωρισμένα με «|»
+      const cats = [1, 2, 3, 4].map((i) => ({ name: stripTags(col(r, 'Αριστερά ' + i)), items: stripTags(col(r, 'Δεξιά ' + i)).split('|').map((x) => x.trim()).filter(Boolean) })).filter((c) => c.name || c.items.length);
+      if (cats.length < 2) { warnings.push(`${id}: SORT με λιγότερες από 2 κατηγορίες (Αριστερά 1–4 / Δεξιά 1–4) — παραλείφθηκε.`); return; }
+      q = { ...newQuestion('sort'), q: withExc(qt || 'Ταξινόμησε τα στοιχεία στις σωστές κατηγορίες.'), cats };
     }
-    if (!q) return;
+    if (!q) { warnings.push(`${id}: ο τύπος «${raw}» δεν υποστηρίζεται σε αυτή τη μορφή — παραλείφθηκε.`); return; }
     if (t !== 'mcq' && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
     const df = parseInt(col(r, 'Δυσκολία')); if (df >= 1 && df <= 5) q.diff = df;
     deck.qs.push(q);
