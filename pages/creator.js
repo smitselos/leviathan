@@ -40,11 +40,20 @@ const TEMPLATES = [
     desc: 'Κάρτες-ενότητες στην αρχική οθόνη· σε κάθε παράγραφο οι περίοδοι εμφανίζονται ανακατεμένες και ο μαθητής τις βάζει στη σωστή σειρά (σύρσιμο ή βελάκια). Έλεγχος, λύση, σχόλιο, βαθμολογία και φύλλο εργασίας / PDF.',
     types: ['Περίοδοι με τη σωστή σειρά', 'Σύρσιμο ή βελάκια', 'Σχόλιο λύσης', 'Εκτύπωση / PDF'],
   },
+  {
+    id: 'sort-deck',
+    kind: 'sort',
+    name: 'Ταξινόμηση σε κατηγορίες',
+    file: '/protypa/sort-deck.html',
+    desc: 'Κάρτες-ενότητες στην αρχική οθόνη· σε κάθε άσκηση τα στοιχεία εμφανίζονται ανακατεμένα και ο μαθητής τα βάζει στη σωστή κατηγορία (σύρσιμο ή πάτημα). Έλεγχος, λύση, σχόλιο, βαθμολογία και φύλλο εργασίας / PDF.',
+    types: ['2–5 κατηγορίες', 'Σύρσιμο ή πάτημα', 'Σχόλιο λύσης', 'Εκτύπωση / PDF'],
+  },
 ];
 const tplOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 const isCwData = (d) => d && d.template === 'crossword-deck';
 const isParaData = (d) => d && d.template === 'paragraph-deck';
-const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : 'quiz-deck');
+const isSortData = (d) => d && d.template === 'sort-deck';
+const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : 'quiz-deck');
 
 const C = {
   purple: '#6B3FA0', purpleDark: '#4A2D6F', purpleLight: '#8B6BB5', navy: '#1B2A4A', cyan: '#4AAFC7',
@@ -135,7 +144,31 @@ function splitSentences(text) {
     .replace(/([.;!…])\s+(?=[«"(\[]?[Α-ΩΆ-ΏA-Z0-9])/g, '$1\u0001') // χωρίς lookbehind (συμβατό με παλαιότερο Safari)
     .split('\u0001').map((x) => x.trim()).filter(Boolean);
 }
-const normalizeData = (d) => (isCwData(d) ? normalizeCw(d) : isParaData(d) ? normalizePara(d) : normalizeQuiz(d));
+// ── Ταξινόμηση: ενότητα = { label, ktitle, author, sub, ps:[{ title, src, cats:[{ name, items:[] }], fb }] } ──
+const newSortItem = () => ({ title: '', src: '', cats: [{ name: '', items: [''] }, { name: '', items: [''] }], fb: '' });
+function newSortDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', ps: [newSortItem()] }; }
+function newSort(credits) {
+  return { v: 1, template: 'sort-deck', title: '', eyebrow: 'Ταξινόμηση σε κατηγορίες', heading: '', subtitle: 'Διάλεξε ενότητα. Βάλε κάθε στοιχείο στη σωστή κατηγορία και πάτησε «Έλεγχος».', credits: credits || '', decks: [newSortDeck(1)] };
+}
+function normalizeSort(d) {
+  const out = { ...newSort(''), ...d };
+  out.decks = (d.decks || []).map((dk) => ({ label: '', ktitle: '', author: '', sub: '', ...dk, ps: (dk.ps || []).map((x) => ({ ...newSortItem(), ...x, cats: Array.isArray(x.cats) && x.cats.length ? x.cats.map((c) => ({ name: c.name || '', items: Array.isArray(c.items) && c.items.length ? c.items : [''] })) : newSortItem().cats })) }));
+  out.decks.forEach((dk) => { if (!dk.ps.length) dk.ps = [newSortItem()]; });
+  if (!out.decks.length) out.decks = [newSortDeck(1)];
+  return out;
+}
+const sortCats = (x) => (x.cats || []).map((c) => ({ name: String(c.name || '').trim(), items: (c.items || []).map((v) => String(v).trim()).filter(Boolean) })).filter((c) => c.name || c.items.length);
+const sortCount = (x) => sortCats(x).reduce((s, c) => s + c.items.length, 0);
+function problemsOfSort(x) {
+  const p = [];
+  const cs = sortCats(x);
+  if (cs.length < 2) p.push('Χρειάζονται τουλάχιστον 2 κατηγορίες.');
+  if (cs.some((c) => !c.name)) p.push('Υπάρχει κατηγορία χωρίς όνομα.');
+  if (cs.some((c) => !c.items.length)) p.push('Υπάρχει κατηγορία χωρίς στοιχεία.');
+  if (sortCount(x) > 30) p.push('Πάνω από 30 στοιχεία — χώρισέ τα σε δύο ασκήσεις.');
+  return p;
+}
+const normalizeData = (d) => (isCwData(d) ? normalizeCw(d) : isParaData(d) ? normalizePara(d) : isSortData(d) ? normalizeSort(d) : normalizeQuiz(d));
 
 // Αντιστοίχιση: στον Δημιουργό κρατάμε ζεύγη (tgts[i] ↔ items[i]) → ans = ταυτοτική
 function normalizeQuiz(d) {
@@ -158,6 +191,7 @@ function normalizeQuiz(d) {
 function cleanForExport(d) {
   if (isCwData(d)) return { ...d, decks: d.decks.map((dk) => ({ ...dk, words: dk.words.map((x) => ({ w: String(x.w).trim(), c: String(x.c).trim() })).filter((x) => x.w || x.c) })) };
   if (isParaData(d)) return { ...d, decks: d.decks.map((dk) => ({ ...dk, ps: dk.ps.map((x) => ({ ...x, lines: paraLines(x) })) })) };
+  if (isSortData(d)) return { ...d, decks: d.decks.map((dk) => ({ ...dk, ps: dk.ps.map((x) => ({ ...x, cats: sortCats(x) })) })) };
   return {
     ...d,
     decks: d.decks.map((dk) => ({
@@ -252,6 +286,11 @@ export default function Creator() {
   const tpl = tplOf(tplId);
   const isCw = tpl.kind === 'cw';
   const isPara = tpl.kind === 'para';
+  const isSort = tpl.kind === 'sort';
+  const isPS = isPara || isSort; // ασκήσεις στο decks[].ps
+  const newPItem = isSort ? newSortItem : newParaItem;
+  const probsOfP = isSort ? problemsOfSort : problemsOfPara;
+  const pWord = isSort ? ['άσκηση', 'ασκήσεις', 'της άσκησης'] : ['παράγραφο', 'παράγραφοι', 'της παραγράφου'];
   const tplHtml = tplCache[tpl.id] || '';
   const token = session?.accessToken;
 
@@ -300,7 +339,7 @@ export default function Creator() {
     const n = session?.user?.name || '';
     return n ? `${n}, ${new Date().getFullYear()}` : '';
   };
-  const startNew = (id) => { savedJson.current = null; setTplId(id); setCwInfo(null); setData(tplOf(id).kind === 'cw' ? newCw(defaultCredits()) : tplOf(id).kind === 'para' ? newPara(defaultCredits()) : newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
+  const startNew = (id) => { savedJson.current = null; setTplId(id); setCwInfo(null); setData(tplOf(id).kind === 'cw' ? newCw(defaultCredits()) : tplOf(id).kind === 'para' ? newPara(defaultCredits()) : tplOf(id).kind === 'sort' ? newSort(defaultCredits()) : newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
   // fromDrive: άνοιγμα αποθηκευμένης εφαρμογής → δεν είναι πρόχειρο μέχρι να γίνει αλλαγή
   const openData = (d, ed, fromDrive) => { const nd = normalizeData(d); setTplId(tplIdOfData(d)); setCwInfo(null); savedJson.current = fromDrive ? JSON.stringify(nd) : null; setData(nd); setEditing(ed || null); setSel({ d: 0, q: 0 }); setPanel('question'); setStep('edit'); };
 
@@ -335,8 +374,8 @@ export default function Creator() {
   // ── Ενημερώσεις δεδομένων ──
   const upd = (fn) => setData((prev) => { const n = JSON.parse(JSON.stringify(prev)); fn(n); return n; });
   const deck = data?.decks[sel.d];
-  const q = (isCw || isPara) ? null : deck?.qs[sel.q];
-  const pItem = isPara ? deck?.ps[sel.q] : null;
+  const q = (isCw || isPS) ? null : deck?.qs[sel.q];
+  const pItem = isPS ? deck?.ps[sel.q] : null;
   const setQ = (patch) => upd((n) => { Object.assign(n.decks[sel.d].qs[sel.q], patch); });
 
   const addQuestion = (t) => {
@@ -357,7 +396,7 @@ export default function Creator() {
     setSel((s) => ({ ...s, q: Math.max(0, Math.min(s.q, deck.qs.length - 2)) }));
   };
   const addDeck = () => {
-    upd((n) => { n.decks.push(isCw ? newCwDeck(n.decks.length + 1) : isPara ? newParaDeck(n.decks.length + 1) : newDeck(n.decks.length + 1)); });
+    upd((n) => { n.decks.push(isCw ? newCwDeck(n.decks.length + 1) : isPara ? newParaDeck(n.decks.length + 1) : isSort ? newSortDeck(n.decks.length + 1) : newDeck(n.decks.length + 1)); });
     setSel({ d: data.decks.length, q: 0 }); setPanel('deck');
   };
   const delDeck = (i) => {
@@ -380,19 +419,20 @@ export default function Creator() {
     const out = [];
     if (isCwData(data)) data.decks.forEach((dk, di) => problemsOfCw(dk).forEach((m) => out.push({ d: di, q: -2, m })));
     else if (isParaData(data)) data.decks.forEach((dk, di) => dk.ps.forEach((x, pi) => problemsOfPara(x).forEach((m) => out.push({ d: di, q: pi, m }))));
+    else if (isSortData(data)) data.decks.forEach((dk, di) => dk.ps.forEach((x, pi) => problemsOfSort(x).forEach((m) => out.push({ d: di, q: pi, m }))));
     else data.decks.forEach((dk, di) => dk.qs.forEach((qq, qi) => problemsOf(qq).forEach((m) => out.push({ d: di, q: qi, m }))));
     if (!String(data.title || '').trim()) out.unshift({ d: -1, q: -1, m: 'Λείπει ο τίτλος της εφαρμογής (Γενικά).' });
     return out;
   }, [data]);
-  const deckCount = (dk) => (isCw ? (dk.words || []).filter((x) => String(x.w).trim()).length : isPara ? (dk.ps || []).length : dk.qs.length);
+  const deckCount = (dk) => (isCw ? (dk.words || []).filter((x) => String(x.w).trim()).length : isPS ? (dk.ps || []).length : dk.qs.length);
   // Αναδιάταξη: παράγραφοι της ενότητας
   const setP = (patch) => upd((n) => { Object.assign(n.decks[sel.d].ps[sel.q], patch); });
-  const addPara = () => { upd((n) => { n.decks[sel.d].ps.push(newParaItem()); }); setSel((s) => ({ d: s.d, q: data.decks[s.d].ps.length })); setPanel('question'); };
+  const addPara = () => { upd((n) => { n.decks[sel.d].ps.push(newPItem()); }); setSel((s) => ({ d: s.d, q: data.decks[s.d].ps.length })); setPanel('question'); };
   const movePara = (i, dir) => { const j = i + dir; if (j < 0 || j >= deck.ps.length) return; upd((n) => { const a = n.decks[sel.d].ps; [a[i], a[j]] = [a[j], a[i]]; }); setSel((s) => ({ ...s, q: j })); };
   const dupPara = (i) => { upd((n) => { const a = n.decks[sel.d].ps; a.splice(i + 1, 0, JSON.parse(JSON.stringify(a[i]))); }); setSel((s) => ({ ...s, q: i + 1 })); };
   const delPara = (i) => {
-    if (deck.ps.length === 1) { alert('Η ενότητα χρειάζεται τουλάχιστον μία παράγραφο.'); return; }
-    if (!confirm('Διαγραφή της παραγράφου ' + (i + 1) + ';')) return;
+    if (deck.ps.length === 1) { alert('Η ενότητα χρειάζεται τουλάχιστον μία ' + pWord[0] + '.'); return; }
+    if (!confirm('Διαγραφή ' + pWord[2] + ' ' + (i + 1) + ';')) return;
     upd((n) => { n.decks[sel.d].ps.splice(i, 1); });
     setSel((s) => ({ ...s, q: Math.max(0, Math.min(s.q, deck.ps.length - 2)) }));
   };
@@ -524,27 +564,27 @@ export default function Creator() {
             </div>
           </div>
 
-          {isPara ? (
+          {isPS ? (
             <div style={S.card}>
               <div style={{ ...S.miniTitle, display: 'flex', justifyContent: 'space-between' }}>
-                <span>Παράγραφοι · {deck.label || 'ενότητα'}</span><span>{deck.ps.length}</span>
+                <span>{isSort ? 'Ασκήσεις' : 'Παράγραφοι'} · {deck.label || 'ενότητα'}</span><span>{deck.ps.length}</span>
               </div>
               <div style={{ fontSize: 11.5, color: C.muted, margin: '-4px 0 8px' }}>Μία ή περισσότερες ανά ενότητα · σύνολο {totalQs}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: narrow ? 'none' : '42vh', overflowY: 'auto' }}>
                 {deck.ps.map((x, i) => {
-                  const bad = problemsOfPara(x).length > 0, on = panel === 'question' && sel.q === i;
+                  const bad = probsOfP(x).length > 0, on = panel === 'question' && sel.q === i;
                   return (
                     <button key={i} onClick={() => { setSel({ d: sel.d, q: i }); setPanel('question'); setPreviewStart(false); }} style={{ ...S.qItem, ...(on ? S.qItemOn : {}) }}>
                       <span style={{ width: 22, fontWeight: 700, color: on ? '#fff' : C.purpleLight }}>{i + 1}</span>
-                      <span style={{ width: 16, opacity: .8 }}>⇅</span>
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>{x.title || paraLines(x)[0] || <i style={{ opacity: .6 }}>κενή παράγραφος</i>}</span>
-                      <span style={{ fontSize: 11, opacity: .7 }}>{paraLines(x).length}</span>
+                      <span style={{ width: 16, opacity: .8 }}>{isSort ? '▤' : '⇅'}</span>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>{isSort ? (x.title || sortCats(x).map((c) => c.name).filter(Boolean).join(' · ') || <i style={{ opacity: .6 }}>κενή άσκηση</i>) : (x.title || paraLines(x)[0] || <i style={{ opacity: .6 }}>κενή παράγραφος</i>)}</span>
+                      <span style={{ fontSize: 11, opacity: .7 }}>{isSort ? sortCount(x) : paraLines(x).length}</span>
                       {bad && <span title="Ελλιπής" style={{ color: on ? '#ffd7d0' : C.bad }}>!</span>}
                     </button>
                   );
                 })}
               </div>
-              <button style={{ ...S.btnGhost, fontSize: 13, width: '100%', marginTop: 10 }} onClick={addPara}>＋ Νέα παράγραφος</button>
+              <button style={{ ...S.btnGhost, fontSize: 13, width: '100%', marginTop: 10 }} onClick={addPara}>{isSort ? '＋ Νέα άσκηση' : '＋ Νέα παράγραφος'}</button>
             </div>
           ) : isCw ? (
             <div style={S.card}>
@@ -593,6 +633,12 @@ export default function Creator() {
         <div style={{ ...S.card, padding: narrow ? 16 : 22, minWidth: 0 }}>
           {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} kind={tpl.kind} />}
           {panel === 'deck' && <DeckForm deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} onDelete={() => delDeck(sel.d)} onOpenQs={() => setPanel('question')} isCw={isCw} kind={tpl.kind} count={deckCount(deck)} />}
+          {panel === 'question' && isSort && pItem && (
+            <SortItemForm key={sel.d + ':' + sel.q} x={pItem} index={sel.q} total={deck.ps.length} setP={setP}
+              onUp={() => movePara(sel.q, -1)} onDown={() => movePara(sel.q, 1)} onDup={() => dupPara(sel.q)} onDel={() => delPara(sel.q)}
+              onPrev={() => setSel((s) => ({ ...s, q: Math.max(0, s.q - 1) }))}
+              onNext={() => (sel.q < deck.ps.length - 1 ? setSel((s) => ({ ...s, q: s.q + 1 })) : addPara())} />
+          )}
           {panel === 'question' && isPara && pItem && (
             <ParaForm key={sel.d + ':' + sel.q} x={pItem} index={sel.q} total={deck.ps.length} setP={setP}
               onUp={() => movePara(sel.q, -1)} onDown={() => movePara(sel.q, 1)} onDup={() => dupPara(sel.q)} onDel={() => delPara(sel.q)}
@@ -625,7 +671,7 @@ export default function Creator() {
 
       {saveOpen && (
         <SaveDialog
-          data={data} problems={allProblems} editing={editing} drive={drive} status={status} token={token} itemLbl={isPara ? 'Παρ.' : 'Ερ.'}
+          data={data} problems={allProblems} editing={editing} drive={drive} status={status} token={token} itemLbl={isPara ? 'Παρ.' : isSort ? 'Ασκ.' : 'Ερ.'}
           defaultFolder={typeof router.query.folder === 'string' ? router.query.folder : ''}
           onClose={() => setSaveOpen(false)} onGo={(p) => { setSaveOpen(false); if (p.d >= 0) { setSel({ d: p.d, q: Math.max(0, p.q) }); setPanel('question'); } else setPanel('general'); }}
           getHtml={finalHtml}
@@ -646,7 +692,7 @@ function GeneralForm({ data, upd, isCw, kind }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <FormTitle eyebrow="Γενικά" title="Η αρχική οθόνη της εφαρμογής" />
       <Field label="Τίτλος εφαρμογής" hint="Γίνεται και όνομα αρχείου στον ΛΕΒΙΑΘΑΝ.">
-        <input style={S.input} value={data.title} onChange={set('title')} placeholder={isCw ? 'π.χ. Σταυρόλεξα — Σχήματα λόγου' : kind === 'para' ? 'π.χ. Αναδιάταξη — Η δομή της παραγράφου' : 'π.χ. Κουίζ — 14η Διδακτική πρόταση'} autoFocus />
+        <input style={S.input} value={data.title} onChange={set('title')} placeholder={isCw ? 'π.χ. Σταυρόλεξα — Σχήματα λόγου' : kind === 'para' ? 'π.χ. Αναδιάταξη — Η δομή της παραγράφου' : kind === 'sort' ? 'π.χ. Ταξινόμηση — Είδη δευτερευουσών προτάσεων' : 'π.χ. Κουίζ — 14η Διδακτική πρόταση'} autoFocus />
       </Field>
       <Field label="Μικρή επικεφαλίδα (πάνω από τον τίτλο)">
         <input style={S.input} value={data.eyebrow} onChange={set('eyebrow')} />
@@ -660,7 +706,7 @@ function GeneralForm({ data, upd, isCw, kind }) {
       <Field label="Υπογραφή (κάτω μέρος)">
         <input style={S.input} value={data.credits} onChange={set('credits')} placeholder="π.χ. Α. & Σ. ΜΗΤΣΕΛΟΣ — ΕΛΛΗΝΟΕΚΔΟΤΙΚΗ, 2026" />
       </Field>
-      {!isCw && kind !== 'para' && <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+      {!isCw && kind !== 'para' && kind !== 'sort' && <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleQs} onChange={set('shuffleQs')} /> Ανακάτεμα σειράς ερωτήσεων</label>
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleOpts} onChange={set('shuffleOpts')} /> Ανακάτεμα επιλογών (πολλαπλής)</label>
       </div>}
@@ -673,7 +719,7 @@ function DeckForm({ deck, index, upd, onDelete, onOpenQs, isCw, kind, count }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <FormTitle eyebrow={'Ενότητα ' + String(index + 1).padStart(2, '0')} title="Η κάρτα της ενότητας στην αρχική οθόνη" />
-      <Field label="Ετικέτα κάρτας" hint={isCw ? 'π.χ. Ενότητα 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του σταυρόλεξου.' : kind === 'para' ? 'π.χ. Ενότητα 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια της άσκησης.' : 'π.χ. Κείμενο 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του κουίζ.'}>
+      <Field label="Ετικέτα κάρτας" hint={isCw ? 'π.χ. Ενότητα 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του σταυρόλεξου.' : (kind === 'para' || kind === 'sort') ? 'π.χ. Ενότητα 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια της άσκησης.' : 'π.χ. Κείμενο 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του κουίζ.'}>
         <input style={S.input} value={deck.label} onChange={set('label')} autoFocus />
       </Field>
       <Field label="Τίτλος (πλάγια γράμματα)">
@@ -686,7 +732,7 @@ function DeckForm({ deck, index, upd, onDelete, onOpenQs, isCw, kind, count }) {
         <input style={S.input} value={deck.sub} onChange={set('sub')} placeholder="π.χ. Αφήγηση · Μαρτυρία · Άποψη ειδικών" />
       </Field>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
-        <button style={S.btnPrimary} onClick={onOpenQs}>{isCw ? `Στις λέξεις (${count}) →` : kind === 'para' ? `Στις παραγράφους (${count}) →` : `Στις ερωτήσεις (${count}) →`}</button>
+        <button style={S.btnPrimary} onClick={onOpenQs}>{isCw ? `Στις λέξεις (${count}) →` : kind === 'para' ? `Στις παραγράφους (${count}) →` : kind === 'sort' ? `Στις ασκήσεις (${count}) →` : `Στις ερωτήσεις (${count}) →`}</button>
         <div style={{ flex: 1 }} />
         <button style={{ ...S.btnGhost, color: C.bad, borderColor: 'rgba(196,74,61,.35)' }} onClick={onDelete}>Διαγραφή ενότητας</button>
       </div>
@@ -808,6 +854,46 @@ function ParaForm({ x, index, total, setP, onUp, onDown, onDup, onDel, onPrev, o
         <button style={S.btnGhost} onClick={onPrev} disabled={index === 0}>← Προηγούμενη</button>
         <div style={{ flex: 1 }} />
         <button style={S.btnPrimary} onClick={onNext}>{index < total - 1 ? 'Επόμενη →' : '＋ Νέα παράγραφος'}</button>
+      </div>
+    </div>
+  );
+}
+
+// Ταξινόμηση: μία άσκηση (κατηγορίες με τα στοιχεία τους)
+function SortItemForm({ x, index, total, setP, onUp, onDown, onDup, onDel, onPrev, onNext }) {
+  const probs = problemsOfSort(x);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+        <FormTitle eyebrow={`Άσκηση ${index + 1} / ${total}`} title="Ταξινόμηση σε κατηγορίες" />
+        <div style={{ flex: 1 }} />
+        <div style={{ display: 'flex', gap: 4 }}>
+          <IconBtn title="Πάνω" onClick={onUp} disabled={index === 0}>↑</IconBtn>
+          <IconBtn title="Κάτω" onClick={onDown} disabled={index === total - 1}>↓</IconBtn>
+          <IconBtn title="Αντίγραφο" onClick={onDup}>⧉</IconBtn>
+          <IconBtn title="Διαγραφή" onClick={onDel} danger>🗑</IconBtn>
+        </div>
+      </div>
+      <Field label="Τίτλος (προαιρετικός)" hint="Εμφανίζεται στην αριστερή στήλη· αν μείνει κενός, μπαίνουν τα ονόματα των κατηγοριών.">
+        <input style={S.input} value={x.title} onChange={(e) => setP({ title: e.target.value })} placeholder="π.χ. Είδη επιρρηματικών προτάσεων" />
+      </Field>
+      <Field label="Πηγή (προαιρετική)">
+        <input style={S.input} value={x.src} onChange={(e) => setP({ src: e.target.value })} placeholder="π.χ. Κείμενο 3, Νεοελληνική Γλώσσα Β΄ Λυκείου" />
+      </Field>
+      <SortFields q={x} setQ={setP} />
+      <div style={{ fontSize: 12.5, color: C.muted, marginTop: -6 }}>Σύνολο στοιχείων: <b>{sortCount(x)}</b> · προτείνονται 6–20 ανά άσκηση.</div>
+      <Field label="Σχόλιο μετά τη λύση (προαιρετικό)" hint="π.χ. ποιες λέξεις-κλειδιά βοηθούν στην ταξινόμηση.">
+        <textarea style={{ ...S.input, minHeight: 60 }} value={x.fb} onChange={(e) => setP({ fb: e.target.value })} placeholder="π.χ. Αιτιολογικές: επειδή, αφού, γιατί · Τελικές: για να, να · Χρονικές: όταν, μόλις." />
+      </Field>
+      {probs.length > 0 && (
+        <div style={{ background: 'rgba(196,74,61,.06)', borderLeft: `3px solid ${C.bad}`, padding: '10px 14px', borderRadius: 6, fontSize: 13.5, color: C.bad }}>
+          {probs.map((m, i) => <div key={i}>• {m}</div>)}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, borderTop: `1px solid ${C.line}`, paddingTop: 12 }}>
+        <button style={S.btnGhost} onClick={onPrev} disabled={index === 0}>← Προηγούμενη</button>
+        <div style={{ flex: 1 }} />
+        <button style={S.btnPrimary} onClick={onNext}>{index < total - 1 ? 'Επόμενη →' : '＋ Νέα άσκηση'}</button>
       </div>
     </div>
   );
@@ -1233,6 +1319,29 @@ function Preview({ html, fill, onRestart, startMode, initialMode }) {
 }
 
 function TemplateThumb({ kind }) {
+  if (kind === 'sort') {
+    const bins = [['Α', ['▬▬', '▬▬▬']], ['Β', ['▬▬▬', '▬']], ['Γ', ['▬▬']]];
+    return (
+      <div style={{ height: 150, background: C.cream, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ position: 'absolute', width: 190, height: 190, borderRadius: '50%', left: -70, top: -80, background: C.gold }}>
+          <div style={{ position: 'absolute', inset: '16%', borderRadius: '50%', background: '#F0C9A8' }}><div style={{ position: 'absolute', inset: '25%', borderRadius: '50%', background: '#D94F4F' }} /></div>
+        </div>
+        <div style={{ position: 'absolute', width: 200, height: 200, borderRadius: '50%', right: -80, bottom: -100, background: `linear-gradient(135deg,${C.navy},${C.cyan})` }}>
+          <div style={{ position: 'absolute', inset: '18%', borderRadius: '50%', background: C.cyan }}><div style={{ position: 'absolute', inset: '25%', borderRadius: '50%', background: C.gold }} /></div>
+        </div>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'flex', gap: 6 }}>
+          {bins.map(([h, items], i) => (
+            <div key={i} style={{ width: 56, background: '#fff', borderRadius: 6, boxShadow: '2px 4px 12px rgba(26,22,16,.12)', border: '1.5px solid rgba(107,63,160,.18)', overflow: 'hidden' }}>
+              <div style={{ background: `linear-gradient(135deg,${C.purple},${C.purpleDark})`, color: '#fff', fontSize: 9, fontWeight: 700, padding: '3px 5px' }}>{h}</div>
+              <div style={{ padding: 4, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 44 }}>
+                {items.map((t, j) => <span key={j} style={{ fontSize: 7, color: C.purple, border: `1px solid ${C.purpleLight}`, borderRadius: 99, padding: '1px 4px', alignSelf: 'flex-start', letterSpacing: -1 }}>{t}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (kind === 'para') {
     const rows = [['3', '75%', C.purpleLight], ['1', '90%', C.purple], ['4', '60%', C.purpleLight], ['2', '82%', C.purpleLight]];
     return (

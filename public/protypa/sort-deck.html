@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Ταξινόμηση σε κατηγορίες</title>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#6B3FA0;
+  --purple-dark:#4A2D6F;
+  --purple-light:#8B6BB5;
+  --navy:#1B2A4A;
+  --cyan:#4AAFC7;
+  --coral:#E8735A;
+  --gold:#E8B84B;
+  --cream:#FAFAF7;
+  --ink:#1a1610;
+  --muted:#7a7060;
+  --correct:#2d8e4e;
+  --wrong:#c44a3d;
+  --shadow:4px 8px 28px rgba(26,22,16,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;color-scheme:light only;}
+@media(prefers-color-scheme:dark){
+  html,body{background:var(--cream)!important;color:var(--ink)!important;}
+  .big-card{background:#fff!important;}
+  .opt-btn{background:#fff!important;color:var(--ink)!important;}
+  .quiz-topbar,.quiz-bottom{background:var(--cream)!important;}
+  #startScreen{background:var(--cream)!important;}
+  .deck-card{background:#fff!important;color:var(--ink)!important;}
+}
+body{
+  background:var(--cream);
+  font-family:'Source Sans 3',sans-serif;
+  color:var(--ink);
+  min-height:100%;
+}
+
+/* ═══ DECORATIVE CIRCLES (book motif) — 2 sets ═══ */
+/* Κύκλος 1: πάνω δεξιά — navy/cyan/κίτρινο (όπως στο εξώφυλλο) */
+.circle-top{
+  position:absolute;bottom:-20vw;right:-25vw;
+  width:max(55vw,55vh);height:max(55vw,55vh);min-width:350px;min-height:350px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--navy),var(--cyan));
+  z-index:0;pointer-events:none;
+  animation:ballIn1 1.2s cubic-bezier(.34,1.56,.64,1) .2s both;
+}
+@media(min-width:769px){
+  .circle-top{right:-32vw;}
+}
+@keyframes ballIn1{
+  0%{transform:translate(0,60vh) scale(.3);opacity:0;}
+  60%{opacity:1;}
+  100%{transform:translate(0,0) scale(1);opacity:1;}
+}
+.circle-top::before{
+  content:'';position:absolute;
+  top:18%;left:18%;
+  width:64%;height:64%;border-radius:50%;
+  background:var(--cyan);
+}
+.circle-top::after{
+  content:'';position:absolute;
+  top:33%;left:33%;
+  width:34%;height:34%;border-radius:50%;
+  background:var(--gold);
+}
+
+/* Κύκλος 2: κάτω αριστερά — κίτρινο/σομόν/κόκκινο (εξώφυλλο) */
+.circle-bottom{
+  position:absolute;top:-15vw;left:-35vw;
+  width:max(55vw,55vh);height:max(55vw,55vh);min-width:350px;min-height:350px;
+  border-radius:50%;
+  background:#E8B84B;
+  z-index:0;pointer-events:none;
+  animation:ballIn2 1.4s cubic-bezier(.34,1.56,.64,1) .5s both;
+}
+@media(min-width:769px){
+  .circle-bottom{left:-32vw;}
+}
+@keyframes ballIn2{
+  0%{transform:translate(-40vw,-40vh) scale(.3);opacity:0;}
+  60%{opacity:1;}
+  100%{transform:translate(0,0) scale(1);opacity:1;}
+}
+.circle-bottom::before{
+  content:'';position:absolute;
+  top:16%;left:16%;
+  width:68%;height:68%;border-radius:50%;
+  background:#F0C9A8;
+}
+.circle-bottom::after{
+  content:'';position:absolute;
+  top:32%;left:32%;
+  width:36%;height:36%;border-radius:50%;
+  background:#D94F4F;
+}
+
+/* ═══ START SCREEN ═══ */
+#startScreen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:40px 20px;text-align:center;
+  position:relative;z-index:1;
+}
+.start-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-light);font-weight:600;margin-bottom:10px;position:relative;z-index:2;}
+.start-title{font-family:'Literata',serif;font-size:clamp(24px,5vw,42px);font-weight:700;line-height:1.2;margin-bottom:6px;color:var(--navy);position:relative;z-index:2;text-shadow:0 2px 10px rgba(255,255,255,0.8),0 0 20px rgba(255,255,255,0.5);}
+.start-title em{font-style:italic;color:var(--purple);}
+.start-accent{width:70px;height:3px;background:linear-gradient(90deg,var(--purple),var(--cyan));margin:14px auto 22px;border-radius:2px;position:relative;z-index:2;}
+.start-sub{color:var(--muted);font-size:14px;max-width:460px;line-height:1.6;margin-bottom:36px;position:relative;z-index:2;text-shadow:0 2px 8px rgba(255,255,255,0.7),0 0 16px rgba(255,255,255,0.4);}
+.start-credits{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:1.5px;color:rgba(26,22,16,.5);font-weight:400;z-index:2;text-shadow:0 1px 4px rgba(255,255,255,.6);border-top:1px solid rgba(26,22,16,.2);padding-top:8px;white-space:nowrap;display:flex;align-items:center;gap:6px;justify-content:center;}
+.credits-logo{width:16px;height:16px;opacity:0.7;flex-shrink:0;}
+@media(min-width:769px){
+  .start-credits{color:var(--ink);opacity:0.6;border-top-color:rgba(26,22,16,.3);}
+  .credits-logo{opacity:0.5;}
+}
+
+.deck-pick{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;position:relative;z-index:2;}
+.deck-card{
+  background:#fff;border-radius:10px;box-shadow:var(--shadow);
+  padding:22px 28px;width:240px;cursor:pointer;
+  border:2.5px solid transparent;transition:all .22s;
+  text-align:left;position:relative;overflow:hidden;
+}
+.deck-card::before{
+  content:'';position:absolute;top:0;left:0;width:5px;height:100%;
+  background:linear-gradient(180deg,var(--purple),var(--cyan));
+  border-radius:10px 0 0 10px;
+}
+.deck-card:hover{transform:translateY(-3px);cursor:pointer;}
+.deck-card.active{border-color:var(--purple);border-width:3px;background:#fff;box-shadow:0 0 20px rgba(107,63,160,0.2),4px 8px 28px rgba(26,22,16,.16);}
+.deck-card.active .dc-num{color:var(--purple);opacity:.35;font-size:48px;}
+.deck-card.active .dc-title{color:var(--purple);}
+.deck-card.active .dc-ktitle{color:var(--purple-dark);}
+.deck-card.active .dc-author{color:var(--coral);}
+.deck-card.active .dc-sub{color:var(--muted);}
+.dc-num{font-family:'Literata',serif;font-size:40px;font-weight:700;opacity:.07;line-height:1;margin-bottom:6px;color:var(--purple);}
+.dc-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--purple-light);margin-bottom:5px;}
+.dc-ktitle{font-family:'Literata',serif;font-size:14px;font-style:italic;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:4px;}
+.dc-author{font-size:11.5px;font-weight:600;color:var(--coral);margin-bottom:7px;}
+.dc-sub{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid rgba(26,22,16,.08);padding-top:7px;margin-top:2px;}
+
+.btn-start{
+  position:relative;z-index:2;align-self:center;
+  padding:16px 52px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+  color:#fff;
+  border:none;border-radius:8px;
+  font-size:16px;font-weight:700;
+  font-family:'Source Sans 3',sans-serif;
+  cursor:pointer;transition:all .2s;
+  letter-spacing:.5px;
+  box-shadow:0 4px 16px rgba(107,63,160,.3);
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(107,63,160,.4);}
+.dc-count{font-size:10.5px;font-weight:700;color:var(--purple-light);margin-top:6px;letter-spacing:.5px;}
+@media(max-width:640px){
+  .deck-pick{flex-direction:column;align-items:center;}
+  .deck-card{width:90%;max-width:320px;}
+  .circle-top{min-width:400px;min-height:400px;width:140vw;height:140vw;bottom:-35vw;right:-20vw;top:auto;}
+  .circle-bottom{min-width:400px;min-height:400px;width:140vw;height:140vw;top:5vh;left:-50vw;bottom:auto;}
+  .start-title{text-shadow:0 2px 8px rgba(255,255,255,0.8),0 0 16px rgba(255,255,255,0.5);}
+  .start-sub{text-shadow:0 1px 6px rgba(255,255,255,0.6);font-size:13px;}
+}
+
+/* ═══ ΟΘΟΝΗ ΑΣΚΗΣΗΣ ═══ */
+#exScreen{display:none;flex-direction:column;height:100vh;height:100dvh;}
+#exScreen.active{display:flex;}
+.ex-top{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(107,63,160,.1);background:var(--cream);}
+.ex-top-l,.ex-top-r{display:flex;align-items:center;gap:12px;min-width:0;}
+.btn-quit{background:none;border:1px solid rgba(107,63,160,.25);border-radius:4px;padding:5px 12px;font-size:12px;font-family:'Source Sans 3',sans-serif;cursor:pointer;color:var(--purple-light);white-space:nowrap;}
+.btn-quit:hover{border-color:var(--purple);color:var(--purple);}
+.ex-lbl{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ex-score{font-size:13px;color:var(--muted);white-space:nowrap;}
+.ex-score strong{font-family:'Literata',serif;font-size:17px;}
+.s-c{color:var(--correct);}.s-w{color:var(--wrong);}
+.progress-wrap{flex-shrink:0;height:3px;background:rgba(107,63,160,.08);}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .4s ease;}
+
+.ex-stage{flex:1;min-height:0;display:flex;padding:12px;}
+.ex-card{width:100%;min-height:0;background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid rgba(107,63,160,.12);display:grid;grid-template-columns:minmax(230px,30%) minmax(0,1fr);overflow:hidden;animation:cardIn .3s ease both;}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.ex-left{padding:28px 24px;display:flex;flex-direction:column;gap:12px;color:#fff;background:linear-gradient(160deg,var(--purple),var(--purple-dark));transition:background .3s;}
+.ex-left.ok{background:linear-gradient(160deg,var(--correct),#1E6B3A);}
+.ex-left.ko{background:linear-gradient(160deg,var(--wrong),#8B2D23);}
+.ex-num{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:600;}
+.ex-title{font-family:'Literata',serif;font-size:clamp(18px,2.2vw,24px);font-weight:700;line-height:1.3;}
+.ex-src{font-size:13px;color:rgba(255,255,255,.75);font-style:italic;}
+.ex-instr{font-size:14.5px;line-height:1.55;color:rgba(255,255,255,.9);border-top:1px solid rgba(255,255,255,.2);padding-top:12px;}
+.ex-result{font-size:15px;font-weight:700;line-height:1.5;}
+.ex-right{min-height:0;display:flex;flex-direction:column;}
+.ex-list{flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;position:relative;}
+.ex-fb{margin:0 18px 14px;background:rgba(45,142,78,.08);border-left:3px solid var(--correct);border-radius:6px;padding:10px 14px;font-size:15px;line-height:1.55;display:none;}
+.ex-fb.show{display:block;}
+.ex-fb.ko{background:rgba(196,74,61,.07);border-left-color:var(--wrong);}
+
+.ex-bottom{flex-shrink:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;padding:10px 16px;border-top:1px solid rgba(107,63,160,.1);background:var(--cream);}
+.ex-bottom .info{flex:1;font-size:11px;color:var(--muted);min-width:120px;}
+.ex-btn{padding:10px 18px;border-radius:8px;border:1.5px solid rgba(107,63,160,.28);background:#fff;color:var(--purple);font-weight:700;font-size:14px;font-family:'Source Sans 3',sans-serif;cursor:pointer;}
+.ex-btn:hover{border-color:var(--purple);}
+.ex-btn.primary{background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:#fff;border-color:transparent;box-shadow:0 3px 12px rgba(107,63,160,.25);}
+.ex-btn[hidden]{display:none;}
+
+/* ═══ ΑΠΟΤΕΛΕΣΜΑΤΑ ═══ */
+#resultsScreen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center;}
+#resultsScreen.active{display:flex;}
+.res-score{font-family:'Literata',serif;font-size:72px;font-weight:700;line-height:1;color:var(--purple);}
+.res-denom{font-size:28px;opacity:.5;margin-left:4px;}
+.res-label{font-size:14px;color:var(--muted);margin-top:6px;}
+.res-gold{width:70px;height:3px;background:linear-gradient(90deg,var(--purple),var(--cyan));margin:20px auto;border-radius:2px;}
+.res-msg{font-size:16px;line-height:1.65;max-width:440px;}
+.res-btns{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:22px;}
+.res-btns .ex-btn{min-width:260px;}
+
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:var(--shadow);z-index:40;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;}
+.modal{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal.show{display:flex;}
+.dialog{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:26px 24px;max-width:420px;width:100%;text-align:center;}
+.dialog h2{font-family:'Literata',serif;color:var(--navy);font-size:24px;margin-bottom:8px;}
+.dialog p{color:var(--muted);font-size:15px;line-height:1.55;margin-bottom:18px;}
+.dialog .btns{display:flex;flex-direction:column;gap:10px;}
+
+@media(max-width:768px){
+  .ex-card{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
+  .ex-left{padding:14px 16px;gap:6px;}
+  .ex-title{font-size:17px;}
+  .ex-instr{font-size:13px;padding-top:6px;}
+  .ex-num{display:none;}
+  .ex-stage{padding:8px;}
+  .ex-list{padding:10px;gap:8px;}
+  .ex-top{padding:8px 10px;}
+  .ex-bottom{padding:8px 10px;}
+  .ex-bottom .info{display:none;}
+  .ex-btn{padding:9px 14px;font-size:13.5px;}
+  .ex-fb{margin:0 10px 10px;font-size:14px;}
+}
+
+/* ═══ ΕΚΤΥΠΩΣΗ / PDF ═══ */
+#printArea{display:none;}
+@media print{
+  @page{size:A4;margin:15mm;}
+  html,body{background:#fff!important;height:auto;}
+  body>*:not(#printArea){display:none!important;}
+  #printArea{display:block;color:#000;font-family:'Source Sans 3',sans-serif;}
+  .pa-page{page-break-after:always;}
+  .pa-page:last-child{page-break-after:auto;}
+  .pa-head{border-bottom:2px solid #6B3FA0;padding-bottom:6px;margin-bottom:10px;}
+  .pa-eyebrow{font-size:9pt;letter-spacing:2px;text-transform:uppercase;color:#6B3FA0;font-weight:700;}
+  .pa-title{font-family:'Literata',serif;font-size:18pt;font-weight:700;}
+  .pa-meta{font-size:10pt;margin-top:2px;}
+  .pa-name{font-size:10pt;margin:8px 0 12px;}
+  .pa-instr{font-size:10.5pt;margin-bottom:10px;}
+  .pa-ex{break-inside:avoid;margin-bottom:9mm;}
+  .pa-ex h3{font-family:'Literata',serif;font-size:12.5pt;margin:0 0 4px;}
+  .pa-ex .src{font-size:9.5pt;font-style:italic;margin-bottom:4px;}
+  .pa-ex ol{list-style:none;margin:0;padding:0;}
+  .pa-ex li{font-family:'Literata',serif;font-size:11pt;line-height:1.5;margin:0 0 4px;display:flex;gap:3mm;}
+  .pa-ex li b{min-width:7mm;font-family:'Source Sans 3',sans-serif;}
+  .pa-order{font-size:10.5pt;margin-top:4px;}
+  .pa-box{display:inline-block;width:9mm;height:7mm;border:1px solid #000;margin-right:2mm;vertical-align:middle;}
+  .pa-sol{font-family:'Literata',serif;font-size:11pt;line-height:1.6;}
+  .pa-key{font-size:10pt;font-weight:700;margin-bottom:3px;}
+  .pa-foot{font-size:8pt;color:#555;margin-top:8px;text-align:center;}
+}
+
+/* ═══ ΤΑΞΙΝΟΜΗΣΗ ═══ */
+.sort-bank{display:flex;flex-wrap:wrap;gap:8px;min-height:50px;padding:10px;border:2px dashed rgba(107,63,160,.22);border-radius:10px;background:rgba(107,63,160,.03);}
+.sort-bank:empty::after{content:'✓ Όλα τοποθετήθηκαν — πάτησε «Έλεγχος»';color:var(--muted);font-size:13.5px;align-self:center;}
+.sort-chip{padding:9px 14px;background:#fff;border:1.5px solid rgba(107,63,160,.3);border-radius:999px;font-size:clamp(15px,1.7vw,18px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1.3;font-family:'Source Sans 3',sans-serif;}
+.sort-chip.sel{background:var(--purple);color:#fff;border-color:var(--purple);}
+.sort-chip.ok{border-color:var(--correct);background:#eef8f1;color:var(--correct);font-weight:700;}
+.sort-chip.ko{border-color:var(--wrong);background:#fdeeec;color:var(--wrong);}
+.sort-chip .fix{font-size:.75em;opacity:.85;margin-left:4px;}
+.sort-ghost{position:fixed;z-index:999;pointer-events:none;box-shadow:0 10px 24px rgba(26,22,16,.25);transform:translate(-50%,-50%) scale(1.05);}
+.sort-bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
+.sort-bin{border:2px solid rgba(107,63,160,.2);border-radius:10px;background:#fff;min-height:120px;display:flex;flex-direction:column;cursor:pointer;transition:border-color .15s,background .15s;}
+.sort-bin.over{border-color:var(--purple);background:rgba(107,63,160,.06);}
+.sort-bin h4{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--purple),var(--purple-dark));margin:0;padding:9px 12px;border-radius:7px 7px 0 0;display:flex;justify-content:space-between;gap:6px;}
+.sort-bin h4 span{opacity:.7;font-weight:400;}
+.sort-bin .sb-items{display:flex;flex-wrap:wrap;gap:6px;padding:10px;flex:1;align-content:flex-start;}
+.sort-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--purple-light);font-weight:700;}
+@media(max-width:768px){ .sort-bins{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;} .sort-chip{padding:8px 12px;font-size:15px;} .sort-bin{min-height:90px;} }
+@media print{
+  .pa-tbl{width:100%;border-collapse:collapse;margin:6px 0 4px;table-layout:fixed;}
+  .pa-tbl th{background:#efe8f8;border:1px solid #000;padding:4px 6px;font-size:10pt;text-align:left;}
+  .pa-tbl td{border:1px solid #000;padding:4px 6px;font-size:10.5pt;height:7mm;vertical-align:top;}
+  .pa-bank{font-size:11pt;line-height:1.8;margin:4px 0 6px;}
+  .pa-bank span{display:inline-block;border:1px solid #888;border-radius:10px;padding:0 7px;margin:0 4px 4px 0;}
+}
+</style>
+</head>
+<body>
+
+<div id="startScreen" style="position:relative;overflow:hidden;">
+  <div class="circle-top"></div>
+  <div class="circle-bottom"></div>
+  <div class="start-eyebrow" id="sEyebrow"></div>
+  <div class="start-title" id="sTitle"></div>
+  <div class="start-accent"></div>
+  <div class="start-sub" id="sSub"></div>
+  <div class="deck-pick" id="deckPick"></div>
+  <div class="start-credits">
+    <svg class="credits-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="12" y="15" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">C</text>
+    </svg>
+    <span id="sCredits"></span>
+  </div>
+</div>
+
+<!-- ══ ΑΣΚΗΣΗ ══ -->
+<div id="exScreen">
+  <div class="ex-top">
+    <div class="ex-top-l">
+      <button class="btn-quit" onclick="goStart()">← Έξοδος</button>
+      <div class="ex-lbl" id="exLabel"></div>
+    </div>
+    <div class="ex-top-r">
+      <div class="ex-score">✓ <strong class="s-c" id="sc">0</strong> &nbsp; ✗ <strong class="s-w" id="sw">0</strong></div>
+      <div class="ex-score" id="sn" style="opacity:.6"></div>
+    </div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
+  <div class="ex-stage">
+    <div class="ex-card" id="exCard">
+      <div class="ex-left" id="exLeft">
+        <div class="ex-num" id="exNum"></div>
+        <div class="ex-title" id="exTitle"></div>
+        <div class="ex-src" id="exSrc"></div>
+        <div class="ex-instr" id="exInstr"></div>
+        <div class="ex-result" id="exResult"></div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-list" id="exList"></div>
+        <div class="ex-fb" id="exFb"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ex-bottom">
+    <div class="info" id="exInfo"></div>
+    <button class="ex-btn" onclick="openPrint()" title="Εκτύπωση / PDF της ενότητας">🖨</button>
+    <button class="ex-btn" id="btnSol" onclick="showSolution()">👁 Λύση</button>
+    <button class="ex-btn primary" id="btnCheck" onclick="check()">✓ Έλεγχος</button>
+    <button class="ex-btn primary" id="btnNext" onclick="next()" hidden>Επόμενη →</button>
+  </div>
+</div>
+
+<!-- ══ ΑΠΟΤΕΛΕΣΜΑΤΑ ══ -->
+<div id="resultsScreen">
+  <div class="res-score" id="resScore"></div>
+  <div class="res-label">ασκήσεις σωστά με την πρώτη</div>
+  <div class="res-gold"></div>
+  <div class="res-msg" id="resMsg"></div>
+  <div class="res-btns">
+    <button class="ex-btn primary" onclick="startDeck(curDk)">↺ Ξανά (ίδια ενότητα)</button>
+    <button class="ex-btn" onclick="openPrint()">🖨 Εκτύπωση / PDF</button>
+    <button class="ex-btn" onclick="goStart()">← Έξοδος στην αρχή</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal" id="printModal">
+  <div class="dialog">
+    <h2>Εκτύπωση / PDF</h2>
+    <p>Φύλλο εργασίας της ενότητας (πίνακας κατηγοριών). Στο παράθυρο εκτύπωσης διάλεξε εκτυπωτή ή <b>«Αποθήκευση ως PDF»</b>.</p>
+    <div class="btns">
+      <button class="ex-btn primary" onclick="doPrint(false)">📄 Φύλλο εργασίας</button>
+      <button class="ex-btn" onclick="doPrint(true)">📄 Φύλλο εργασίας + λύσεις</button>
+      <button class="ex-btn" onclick="closeModal('printModal')">Άκυρο</button>
+    </div>
+  </div>
+</div>
+<div id="printArea"></div>
+
+<script>
+/* ═════════════════════════════════════════════════════════════════
+   ΠΡΟΤΥΠΟ «Ταξινόμηση σε κατηγορίες» — ΛΕΒΙΑΘΑΝ
+   Τα δεδομένα βρίσκονται ΜΟΝΟ ανάμεσα στους δείκτες QUIZ_DATA.
+   Ο Δημιουργός του ΛΕΒΙΑΘΑΝ (/creator) τα γράφει και τα ξαναδιαβάζει
+   από εκεί — μην αλλάξετε τους δείκτες.
+   Ενότητα: { label, ktitle, author, sub, ps:[{ title, src, cats:[{name, items:[...]}], fb }] }
+   ═════════════════════════════════════════════════════════════════ */
+const QUIZ=/*QUIZ_DATA_START*/{"v":1,"template":"sort-deck","title":"Ταξινόμηση — Παράδειγμα","eyebrow":"Ταξινόμηση σε κατηγορίες","heading":"Ταξινόμηση σε *κατηγορίες*","subtitle":"Διάλεξε ενότητα. Βάλε κάθε στοιχείο στη σωστή κατηγορία και πάτησε «Έλεγχος».","credits":"ΛΕΒΙΑΘΑΝ","decks":[{"label":"Ενότητα 1","ktitle":"Δευτερεύουσες επιρρηματικές προτάσεις","author":"","sub":"Αιτιολογικές · Τελικές · Χρονικές","ps":[{"title":"Είδη επιρρηματικών προτάσεων","src":"","cats":[{"name":"Αιτιολογικές","items":["επειδή έβρεχε","αφού το ήθελες","γιατί ήταν κουρασμένος"]},{"name":"Τελικές","items":["για να μάθει","να τον δει από κοντά"]},{"name":"Χρονικές","items":["όταν ήρθε το καλοκαίρι","μόλις τελείωσε το μάθημα"]}],"fb":"Αιτιολογικές: επειδή, αφού, γιατί · Τελικές: για να, να · Χρονικές: όταν, μόλις."}]}]}/*QUIZ_DATA_END*/;
+
+/* ── Βοηθητικά ── */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');}
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+const cleanCats=p=>(p.cats||[]).map(c=>({name:String(c.name||'').trim(),items:(c.items||[]).map(s=>String(s||'').trim()).filter(Boolean)})).filter(c=>c.name&&c.items.length);
+const DECKS=(QUIZ.decks||[]).map(d=>Object.assign({},d,{ps:(d.ps||[]).filter(p=>cleanCats(p).length>=2)})).filter(d=>d.ps.length);
+
+/* ═════════════════════════════════════
+   ΑΡΧΙΚΗ ΟΘΟΝΗ
+   ═════════════════════════════════════ */
+document.title=QUIZ.title||'Ταξινόμηση σε κατηγορίες';
+document.getElementById('sEyebrow').textContent=QUIZ.eyebrow||'';
+document.getElementById('sTitle').innerHTML=fmt(QUIZ.heading||QUIZ.title||'');
+document.getElementById('sSub').innerHTML=fmt(QUIZ.subtitle||'');
+document.getElementById('sCredits').textContent=QUIZ.credits||'';
+(function buildDecks(){
+  const wrap=document.getElementById('deckPick');
+  DECKS.forEach((d,i)=>{
+    const c=document.createElement('div');
+    c.className='deck-card'; c.id='pick'+i; c.onclick=()=>startDeck(i);
+    c.innerHTML=`<div class="dc-num">${String(i+1).padStart(2,'0')}</div>`+
+      (d.label?`<div class="dc-title">${esc(d.label)}</div>`:'')+
+      (d.ktitle?`<div class="dc-ktitle">${fmt(d.ktitle)}</div>`:'')+
+      (d.author?`<div class="dc-author">${esc(d.author)}</div>`:'')+
+      (d.sub?`<div class="dc-sub">${fmt(d.sub)}</div>`:'')+
+      `<div class="dc-count">▤ ${d.ps.length} ${d.ps.length===1?'άσκηση':'ασκήσεις'}</div>`;
+    wrap.appendChild(c);
+  });
+  if(!DECKS.length) wrap.innerHTML='<div class="start-sub" style="margin:0">Δεν υπάρχουν ακόμη ασκήσεις.</div>';
+})();
+
+/* ═════════════════════════════════════
+   ΛΕΒΙΑΘΑΝ — ζωντανά αποτελέσματα (μόνο με #session=XXXX)
+   ═════════════════════════════════════ */
+const LEV_SESSION=(location.hash.match(/session=(\d{4})/)||[])[1]||null;
+const LEV_API=(/vercel\.app$/.test(location.hostname)?location.origin:'https://leviathan-olive.vercel.app')+'/api/quiz-results';
+let levName=null;
+function levAskName(){
+  if(!LEV_SESSION) return;
+  let n=null; try{n=localStorage.getItem('lev_name_'+LEV_SESSION);}catch(e){}
+  while(!n||!n.trim()){ n=prompt('Γράψε το όνομά σου (θα το δει ο/η καθηγητής/τρια):'); if(n===null) n=''; }
+  levName=n.trim().slice(0,40);
+  try{localStorage.setItem('lev_name_'+LEV_SESSION,levName);}catch(e){}
+}
+function levSend(body){
+  if(!LEV_SESSION||!levName) return;
+  try{ fetch(LEV_API,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({code:LEV_SESSION,student:levName},body)),keepalive:true}).catch(()=>{}); }catch(e){}
+}
+
+/* ═════════════════════════════════════
+   ΚΑΤΑΣΤΑΣΗ
+   ═════════════════════════════════════ */
+let curDk=0, curPi=0, score={c:0,w:0}, tries=0, solved=false, chips=[], bins=[], sel=null;
+const $=id=>document.getElementById(id);
+
+function goStart(){
+  $('startScreen').style.display='flex';
+  $('exScreen').classList.remove('active');
+  $('resultsScreen').classList.remove('active');
+}
+function startDeck(i){
+  if(LEV_SESSION&&!levName) levAskName();
+  curDk=i; curPi=0; score={c:0,w:0};
+  $('startScreen').style.display='none';
+  $('resultsScreen').classList.remove('active');
+  $('exScreen').classList.add('active');
+  $('exLabel').textContent=DECKS[i].label||('Ενότητα '+(i+1));
+  $('exInfo').textContent=QUIZ.credits?('© '+QUIZ.credits):'';
+  render();
+}
+function next(){ curPi++; if(curPi>=DECKS[curDk].ps.length) showResults(); else render(); }
+function showResults(){
+  $('exScreen').classList.remove('active');
+  $('resultsScreen').classList.add('active');
+  const s=score.c, t=DECKS[curDk].ps.length;
+  $('resScore').innerHTML=`${s}<span class="res-denom">/${t}</span>`;
+  $('resMsg').textContent= s>=t?'Εξαιρετικά! Όλες οι ασκήσεις σωστές με την πρώτη!':
+    s>=Math.ceil(t*.6)?'Πολύ καλά! Ξαναδές τα στοιχεία που μπέρδεψες.':
+    'Μελέτησε ξανά τα κριτήρια κάθε κατηγορίας και δοκίμασε πάλι.';
+  levSend({ final:true, score:s, totalQ:t });
+}
+function updateBar(){
+  const t=DECKS[curDk].ps.length;
+  $('sc').textContent=score.c; $('sw').textContent=score.w;
+  $('sn').textContent=`${curPi+1} / ${t}`;
+  $('progBar').style.width=(curPi/t*100)+'%';
+}
+
+/* ═════════════════════════════════════
+   ΑΣΚΗΣΗ ΤΑΞΙΝΟΜΗΣΗΣ
+   Πάτημα στοιχείου → πάτημα κατηγορίας, ή σύρσιμο (ποντίκι/αφή)
+   ═════════════════════════════════════ */
+function curP(){return DECKS[curDk].ps[curPi];}
+function render(){
+  updateBar();
+  const p=curP(), cats=cleanCats(p), total=cats.reduce((s,c)=>s+c.items.length,0);
+  tries=0; solved=false; sel=null;
+  $('exLeft').className='ex-left';
+  $('exNum').textContent=`Άσκηση ${curPi+1} / ${DECKS[curDk].ps.length}`;
+  $('exTitle').innerHTML=fmt(p.title||'Ταξινόμηση σε κατηγορίες');
+  $('exSrc').innerHTML=p.src?fmt(p.src):'';
+  $('exInstr').innerHTML=`Βάλε τα ${total} στοιχεία στις ${cats.length} κατηγορίες. Πάτα ένα στοιχείο και μετά την κατηγορία του (ή σύρε το). Πάτα ένα τοποθετημένο στοιχείο για να το επιστρέψεις.`;
+  $('exResult').textContent='';
+  $('exFb').className='ex-fb'; $('exFb').innerHTML='';
+  $('btnCheck').hidden=false; $('btnNext').hidden=true; $('btnSol').hidden=false;
+  const list=$('exList'); list.innerHTML='';
+  const lb=document.createElement('div'); lb.className='sort-lbl'; lb.textContent='Στοιχεία'; list.appendChild(lb);
+  const bank=document.createElement('div'); bank.className='sort-bank'; bank.id='bank'; list.appendChild(bank);
+  const lb2=document.createElement('div'); lb2.className='sort-lbl'; lb2.textContent='Κατηγορίες'; list.appendChild(lb2);
+  const wrap=document.createElement('div'); wrap.className='sort-bins'; list.appendChild(wrap);
+  bins=cats.map((c,ci)=>{ const b=document.createElement('div'); b.className='sort-bin'; b.dataset.ci=ci;
+    b.innerHTML=`<h4>${esc(c.name)}<span></span></h4><div class="sb-items"></div>`;
+    b.addEventListener('click',e=>{ if(solved||!sel||e.target.closest('.sort-chip')) return; place(sel,b); });
+    wrap.appendChild(b); return b; });
+  const all=[]; cats.forEach((c,ci)=>c.items.forEach(it=>all.push({it,ci})));
+  chips=shuffle(all).map(o=>{ const ch=document.createElement('div'); ch.className='sort-chip'; ch.textContent=o.it; ch.dataset.ci=o.ci; bank.appendChild(ch); enableChip(ch); return ch; });
+  counts();
+}
+function counts(){ bins.forEach(b=>{ b.querySelector('h4 span').textContent=b.querySelectorAll('.sort-chip').length||''; }); }
+function place(ch,bin){
+  (bin?bin.querySelector('.sb-items'):$('bank')).appendChild(ch);
+  ch.classList.remove('sel','ok','ko'); const f=ch.querySelector('.fix'); if(f) f.remove();
+  if(sel===ch) sel=null; clearMarks(); counts();
+}
+function clearMarks(){ $('exLeft').className='ex-left'; $('exResult').textContent=''; }
+function enableChip(ch){
+  let downX=0,downY=0,ghost=null,pid=null;
+  ch.addEventListener('pointerdown',e=>{ if(solved) return; pid=e.pointerId; downX=e.clientX; downY=e.clientY; ch.setPointerCapture(pid); });
+  ch.addEventListener('pointermove',e=>{
+    if(e.pointerId!==pid||solved) return;
+    if(!ghost){ if(Math.hypot(e.clientX-downX,e.clientY-downY)<7) return; ghost=ch.cloneNode(true); ghost.classList.add('sort-ghost'); ghost.classList.remove('sel'); document.body.appendChild(ghost); ch.style.opacity='.35'; }
+    e.preventDefault(); ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px';
+    const el=document.elementFromPoint(e.clientX,e.clientY), bin=el&&el.closest('.sort-bin');
+    bins.forEach(b=>b.classList.toggle('over',b===bin));
+    const lst=$('exList'), lr=lst.getBoundingClientRect(); if(e.clientY<lr.top+36) lst.scrollTop-=10; else if(e.clientY>lr.bottom-36) lst.scrollTop+=10;
+  });
+  const end=e=>{
+    if(e.pointerId!==pid) return; pid=null;
+    if(ghost){ const el=document.elementFromPoint(e.clientX,e.clientY); ghost.remove(); ghost=null; ch.style.opacity=''; bins.forEach(b=>b.classList.remove('over'));
+      const bin=el&&el.closest('.sort-bin'); if(bin) place(ch,bin); else if(el&&el.closest('.sort-bank')) place(ch,null); return; }
+    if(solved) return;
+    if(ch.parentElement.id!=='bank'){ place(ch,null); return; }
+    if(sel===ch){ ch.classList.remove('sel'); sel=null; return; }
+    if(sel) sel.classList.remove('sel'); sel=ch; ch.classList.add('sel');
+  };
+  ch.addEventListener('pointerup',end);
+  ch.addEventListener('pointercancel',()=>{ if(ghost){ghost.remove();ghost=null;ch.style.opacity='';} pid=null; });
+}
+
+/* ── Έλεγχος / λύση ── */
+function check(){
+  const p=curP(), left=$('bank').children.length;
+  if(left){ toast(`Μένουν ${left} στοιχεία να τοποθετήσεις`); return; }
+  tries++; let ok=0;
+  chips.forEach(ch=>{ const good=ch.closest('.sort-bin').dataset.ci===ch.dataset.ci; if(good) ok++; ch.classList.toggle('ok',good); ch.classList.toggle('ko',!good); });
+  const n=chips.length;
+  if(ok===n){ if(tries===1) score.c++; finishEx(true); return; }
+  $('exLeft').className='ex-left ko';
+  $('exResult').textContent=`${ok} από ${n} στη σωστή κατηγορία. Μετακίνησε τα κόκκινα και ξαναδοκίμασε!`;
+  if(tries===1){ score.w++; updateBar(); levSend({ qid:'S'+(curDk+1)+'-'+(curPi+1), qtext:p.title||'Ταξινόμηση', cat:'Ταξινόμηση σε κατηγορίες', choice:`${ok}/${n}`, ok:false }); }
+  toast(`${ok}/${n} σωστά — τα κόκκινα είναι σε λάθος κατηγορία`);
+}
+function finishEx(byStudent){
+  const p=curP(); solved=true; sel=null;
+  if(byStudent&&tries===1) levSend({ qid:'S'+(curDk+1)+'-'+(curPi+1), qtext:p.title||'Ταξινόμηση', cat:'Ταξινόμηση σε κατηγορίες', choice:'✓', ok:true });
+  $('exLeft').className='ex-left '+(byStudent?'ok':'ko');
+  $('exResult').textContent=byStudent?(tries===1?'✓ Σωστά με την πρώτη!':'✓ Σωστά!'):'Η σωστή ταξινόμηση:';
+  if(p.fb){ const fb=$('exFb'); fb.innerHTML=fmt(p.fb); fb.className='ex-fb show'+(byStudent?'':' ko'); }
+  $('btnCheck').hidden=true; $('btnSol').hidden=true; $('btnNext').hidden=false;
+  $('btnNext').textContent=curPi<DECKS[curDk].ps.length-1?'Επόμενη →':'Αποτελέσματα →';
+  updateBar();
+}
+function showSolution(){
+  if(!confirm('Να εμφανιστεί η σωστή ταξινόμηση;')) return;
+  if(tries===0){ score.w++; const p=curP(); levSend({ qid:'S'+(curDk+1)+'-'+(curPi+1), qtext:p.title||'Ταξινόμηση', cat:'Ταξινόμηση σε κατηγορίες', choice:'λύση', ok:false }); }
+  chips.forEach(ch=>{ const right=bins[+ch.dataset.ci]; const wasOk=ch.closest('.sort-bin')===right;
+    right.querySelector('.sb-items').appendChild(ch); ch.classList.remove('sel'); ch.classList.add(wasOk?'ok':'ko'); });
+  counts(); finishEx(false);
+}
+let toastT=null;
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function closeModal(id){$(id).classList.remove('show');}
+
+/* ═════════════════════════════════════
+   ΕΚΤΥΠΩΣΗ / PDF — φύλλο εργασίας της ενότητας
+   ═════════════════════════════════════ */
+function openPrint(){ $('printModal').classList.add('show'); }
+function sheet(withSol){
+  const d=DECKS[curDk];
+  let h=`<div class="pa-page"><div class="pa-head"><div class="pa-eyebrow">${esc(QUIZ.eyebrow||'Ταξινόμηση σε κατηγορίες')}${withSol?' · Λύσεις':''}</div>`+
+    `<div class="pa-title">${fmt(QUIZ.title||'')}</div><div class="pa-meta">${esc(d.label||'')}${d.ktitle?' — '+fmt(d.ktitle):''}</div></div>`;
+  if(!withSol) h+='<div class="pa-name">Ονοματεπώνυμο: ____________________________ &nbsp; Τμήμα: ________ &nbsp; Ημερομηνία: ___________</div>'+
+    '<div class="pa-instr">Γράψε κάθε στοιχείο στη στήλη της σωστής κατηγορίας.</div>';
+  d.ps.forEach((p,i)=>{
+    const cats=cleanCats(p), rows=Math.max(...cats.map(c=>c.items.length));
+    const all=[]; cats.forEach(c=>c.items.forEach(it=>all.push(it)));
+    const bank=all.slice().sort((a,b)=>a.localeCompare(b,'el')); // σταθερή (αλφαβητική) σειρά για το χαρτί
+    h+=`<div class="pa-ex"><h3>${i+1}. ${fmt(p.title||'Ταξινόμηση')}</h3>`+(p.src?`<div class="src">${fmt(p.src)}</div>`:'');
+    if(!withSol) h+=`<div class="pa-bank">${bank.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`;
+    h+='<table class="pa-tbl"><tr>'+cats.map(c=>`<th>${esc(c.name)}</th>`).join('')+'</tr>';
+    for(let r=0;r<rows;r++) h+='<tr>'+cats.map(c=>`<td>${withSol&&c.items[r]?esc(c.items[r]):''}</td>`).join('')+'</tr>';
+    h+='</table>'+(withSol&&p.fb?`<div class="src" style="margin-top:3px">${fmt(p.fb)}</div>`:'')+'</div>';
+  });
+  return h+(QUIZ.credits?`<div class="pa-foot">© ${esc(QUIZ.credits)}</div>`:'')+'</div>';
+}
+function doPrint(withSol){
+  closeModal('printModal');
+  $('printArea').innerHTML=sheet(false)+(withSol?sheet(true):'');
+  setTimeout(()=>window.print(),80);
+}
+
+/* ═════════════════════════════════════
+   ΠΡΟΕΠΙΣΚΟΠΗΣΗ (μόνο μέσα στον Δημιουργό)
+   ═════════════════════════════════════ */
+if(window.LEV_PREVIEW && DECKS.length){
+  const P=window.LEV_PREVIEW, d=Math.min(Math.max(P.d|0,0),DECKS.length-1);
+  if(P.q>=0){ curDk=d; startDeck(d); curPi=Math.min(P.q,DECKS[d].ps.length-1); render(); }
+}
+</script>
+</body>
+</html>
