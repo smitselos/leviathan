@@ -24,7 +24,17 @@ const TEMPLATES = [
     desc: 'Κάρτες-ενότητες στην αρχική οθόνη· ερωτήσεις μία-μία με άμεση ανατροφοδότηση, βαθμολογία και επανάληψη λαθών. Δουλεύει και με τα ζωντανά αποτελέσματα του Live.',
     types: ['Πολλαπλής επιλογής', 'Σωστό / Λάθος', 'Αντιστοίχιση', 'Συμπλήρωση κενών', 'Επιλογή λέξεων'],
   },
+  {
+    id: 'crossword-deck',
+    kind: 'cw',
+    name: 'Σταυρόλεξα ενοτήτων',
+    file: '/protypa/crossword-deck.html',
+    desc: 'Κάρτες-ενότητες στην αρχική οθόνη· κάθε ενότητα ανοίγει ένα σταυρόλεξο που στήνεται αυτόματα από τις λέξεις και τους ορισμούς σου. Έλεγχος, βοήθεια, λύση και εκτύπωση / PDF.',
+    types: ['Λέξεις & ορισμοί', 'Αυτόματο πλέγμα', 'Έλεγχος · Βοήθεια · Λύση', 'Εκτύπωση / PDF'],
+  },
 ];
+const tplOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
+const isCwData = (d) => d && d.template === 'crossword-deck';
 
 const C = {
   purple: '#6B3FA0', purpleDark: '#4A2D6F', purpleLight: '#8B6BB5', navy: '#1B2A4A', cyan: '#4AAFC7',
@@ -56,6 +66,34 @@ function newDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author:
 function newQuiz(credits) {
   return { v: 1, template: 'quiz-deck', title: '', eyebrow: 'Κουίζ αυτοαξιολόγησης', heading: '', subtitle: 'Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.', credits: credits || '', shuffleOpts: false, shuffleQs: false, decks: [newDeck(1)] };
 }
+// ── Σταυρόλεξο: ενότητα = { label, ktitle, author, sub, seed, words:[{w,c}] } ──
+const newWord = () => ({ w: '', c: '' });
+function newCwDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', seed: 1, words: [newWord(), newWord(), newWord()] }; }
+function newCw(credits) {
+  return { v: 1, template: 'crossword-deck', title: '', eyebrow: 'Σταυρόλεξο', heading: '', subtitle: 'Διάλεξε ενότητα και λύσε το σταυρόλεξο. Πάτησε ένα τετράγωνο και γράψε.', credits: credits || '', decks: [newCwDeck(1)] };
+}
+function normalizeCw(d) {
+  const out = { ...newCw(''), ...d };
+  out.decks = (d.decks || []).map((dk) => ({ label: '', ktitle: '', author: '', sub: '', seed: 1, ...dk, words: (dk.words || []).map((x) => ({ w: x.w || '', c: x.c || '' })) }));
+  if (!out.decks.length) out.decks = [newCwDeck(1)];
+  return out;
+}
+const cwNorm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z\u0391-\u03A90-9]/g, '');
+function problemsOfCw(dk) {
+  const p = [];
+  const rows = (dk.words || []).filter((x) => String(x.w).trim() || String(x.c).trim());
+  rows.forEach((x) => {
+    if (String(x.w).trim() && !String(x.c).trim()) p.push(`Η λέξη «${x.w}» δεν έχει ορισμό.`);
+    if (!String(x.w).trim() && String(x.c).trim()) p.push(`Ορισμός χωρίς λέξη: «${String(x.c).slice(0, 40)}».`);
+    if (String(x.w).trim() && cwNorm(x.w).length < 2) p.push(`Η λέξη «${x.w}» είναι πολύ μικρή (τουλάχιστον 2 γράμματα).`);
+  });
+  const seen = new Set();
+  rows.forEach((x) => { const a = cwNorm(x.w); if (a && seen.has(a)) p.push(`Η λέξη «${x.w}» υπάρχει δύο φορές.`); seen.add(a); });
+  if (rows.filter((x) => cwNorm(x.w).length >= 2).length < 3) p.push('Χρειάζονται τουλάχιστον 3 λέξεις.');
+  return p;
+}
+const normalizeData = (d) => (isCwData(d) ? normalizeCw(d) : normalizeQuiz(d));
+
 // Αντιστοίχιση: στον Δημιουργό κρατάμε ζεύγη (tgts[i] ↔ items[i]) → ans = ταυτοτική
 function normalizeQuiz(d) {
   const out = { ...newQuiz(''), ...d };
@@ -75,6 +113,7 @@ function normalizeQuiz(d) {
 }
 // Καθαρή μορφή για το αρχείο (χωρίς κενές επιλογές/παραπλανητικές)
 function cleanForExport(d) {
+  if (isCwData(d)) return { ...d, decks: d.decks.map((dk) => ({ ...dk, words: dk.words.map((x) => ({ w: String(x.w).trim(), c: String(x.c).trim() })).filter((x) => x.w || x.c) })) };
   return {
     ...d,
     decks: d.decks.map((dk) => ({
@@ -131,7 +170,8 @@ export default function Creator() {
   const router = useRouter();
   const [step, setStep] = useState('pick');          // pick | edit
   const [tplId, setTplId] = useState('quiz-deck');
-  const [tplHtml, setTplHtml] = useState('');
+  const [tplCache, setTplCache] = useState({});      // { [id]: html } — φορτώνονται όλα τα πρότυπα
+  const [cwInfo, setCwInfo] = useState(null);        // { unplaced: [[λέξεις που δεν χώρεσαν] ανά ενότητα] } από την προεπισκόπηση
   const [data, setData] = useState(null);
   const [sel, setSel] = useState({ d: 0, q: 0 });
   const [editing, setEditing] = useState(null);      // { id, name, folderId } — υπάρχουσα εφαρμογή στο Drive
@@ -145,7 +185,9 @@ export default function Creator() {
   const fileRef = useRef(null);
   const savedJson = useRef(null); // περιεχόμενο όπως είναι αποθηκευμένο στο Drive → πρόχειρο μόνο αν υπάρχουν αλλαγές
 
-  const tpl = TEMPLATES.find((t) => t.id === tplId) || TEMPLATES[0];
+  const tpl = tplOf(tplId);
+  const isCw = tpl.kind === 'cw';
+  const tplHtml = tplCache[tpl.id] || '';
   const token = session?.accessToken;
 
   useEffect(() => {
@@ -154,8 +196,16 @@ export default function Creator() {
   }, []);
   useEffect(() => { setDraft(lsGet(DRAFT_KEY)); }, []);
   useEffect(() => {
-    fetch(tpl.file + '?v=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then(setTplHtml).catch(() => setTplHtml(''));
-  }, [tpl.file]);
+    TEMPLATES.forEach((t) => {
+      fetch(t.file + '?v=' + Date.now(), { cache: 'no-store' }).then((r) => r.text())
+        .then((h) => setTplCache((c) => ({ ...c, [t.id]: h }))).catch(() => {});
+    });
+  }, []);
+  // Η προεπισκόπηση του σταυρόλεξου ενημερώνει ποιες λέξεις δεν χώρεσαν στο πλέγμα
+  useEffect(() => {
+    const on = (e) => { if (e.data && e.data.type === 'lev-cw-info') setCwInfo(e.data); };
+    window.addEventListener('message', on); return () => window.removeEventListener('message', on);
+  }, []);
 
   // Φάκελοι + εφαρμογές του χρήστη (ίδια API με το index.js)
   const loadDrive = useCallback(async () => {
@@ -185,9 +235,9 @@ export default function Creator() {
     const n = session?.user?.name || '';
     return n ? `${n}, ${new Date().getFullYear()}` : '';
   };
-  const startNew = () => { setData(newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
+  const startNew = (id) => { savedJson.current = null; setTplId(id); setCwInfo(null); setData(tplOf(id).kind === 'cw' ? newCw(defaultCredits()) : newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
   // fromDrive: άνοιγμα αποθηκευμένης εφαρμογής → δεν είναι πρόχειρο μέχρι να γίνει αλλαγή
-  const openData = (d, ed, fromDrive) => { const nd = normalizeQuiz(d); savedJson.current = fromDrive ? JSON.stringify(nd) : null; setData(nd); setEditing(ed || null); setSel({ d: 0, q: 0 }); setPanel('question'); setStep('edit'); };
+  const openData = (d, ed, fromDrive) => { const nd = normalizeData(d); setTplId(isCwData(d) ? 'crossword-deck' : 'quiz-deck'); setCwInfo(null); savedJson.current = fromDrive ? JSON.stringify(nd) : null; setData(nd); setEditing(ed || null); setSel({ d: 0, q: 0 }); setPanel('question'); setStep('edit'); };
 
   const openDriveApp = async (f) => {
     if (!token) return;
@@ -220,7 +270,7 @@ export default function Creator() {
   // ── Ενημερώσεις δεδομένων ──
   const upd = (fn) => setData((prev) => { const n = JSON.parse(JSON.stringify(prev)); fn(n); return n; });
   const deck = data?.decks[sel.d];
-  const q = deck?.qs[sel.q];
+  const q = isCw ? null : deck?.qs[sel.q];
   const setQ = (patch) => upd((n) => { Object.assign(n.decks[sel.d].qs[sel.q], patch); });
 
   const addQuestion = (t) => {
@@ -241,12 +291,12 @@ export default function Creator() {
     setSel((s) => ({ ...s, q: Math.max(0, Math.min(s.q, deck.qs.length - 2)) }));
   };
   const addDeck = () => {
-    upd((n) => { n.decks.push(newDeck(n.decks.length + 1)); });
+    upd((n) => { n.decks.push(isCw ? newCwDeck(n.decks.length + 1) : newDeck(n.decks.length + 1)); });
     setSel({ d: data.decks.length, q: 0 }); setPanel('deck');
   };
   const delDeck = (i) => {
     if (data.decks.length === 1) { alert('Η εφαρμογή χρειάζεται τουλάχιστον μία ενότητα.'); return; }
-    if (!confirm('Διαγραφή ολόκληρης της ενότητας «' + (data.decks[i].label || i + 1) + '» με όλες τις ερωτήσεις της;')) return;
+    if (!confirm('Διαγραφή ολόκληρης της ενότητας «' + (data.decks[i].label || i + 1) + '» με όλο το περιεχόμενό της;')) return;
     upd((n) => { n.decks.splice(i, 1); });
     setSel({ d: Math.max(0, i - 1), q: 0 });
   };
@@ -261,11 +311,13 @@ export default function Creator() {
   const allProblems = useMemo(() => {
     if (!data) return [];
     const out = [];
-    data.decks.forEach((dk, di) => dk.qs.forEach((qq, qi) => problemsOf(qq).forEach((m) => out.push({ d: di, q: qi, m }))));
+    if (isCwData(data)) data.decks.forEach((dk, di) => problemsOfCw(dk).forEach((m) => out.push({ d: di, q: -2, m })));
+    else data.decks.forEach((dk, di) => dk.qs.forEach((qq, qi) => problemsOf(qq).forEach((m) => out.push({ d: di, q: qi, m }))));
     if (!String(data.title || '').trim()) out.unshift({ d: -1, q: -1, m: 'Λείπει ο τίτλος της εφαρμογής (Γενικά).' });
     return out;
   }, [data]);
-  const totalQs = data ? data.decks.reduce((s, d) => s + d.qs.length, 0) : 0;
+  const deckCount = (dk) => (isCw ? (dk.words || []).filter((x) => String(x.w).trim()).length : dk.qs.length);
+  const totalQs = data ? data.decks.reduce((s, d) => s + deckCount(d), 0) : 0;
 
   // ── Προεπισκόπηση ──
   const [previewHtml, setPreviewHtml] = useState('');
@@ -273,11 +325,11 @@ export default function Creator() {
   useEffect(() => {
     if (!data || !tplHtml) return;
     const t = setTimeout(() => {
-      const pv = `<script>window.LEV_PREVIEW=${JSON.stringify({ d: sel.d, q: previewStart || panel !== 'question' ? -1 : sel.q })}</script>`;
+      const pv = `<script>window.LEV_PREVIEW=${JSON.stringify({ d: sel.d, q: previewStart || panel !== 'question' ? -1 : (isCw ? 0 : sel.q) })}</script>`;
       setPreviewHtml(buildHtml(tplHtml, data).replace(/<head>/i, '<head>' + pv));
     }, 450);
     return () => clearTimeout(t);
-  }, [data, tplHtml, sel, panel, previewStart]);
+  }, [data, tplHtml, sel, panel, previewStart, isCw]);
 
   const finalHtml = () => buildHtml(tplHtml, data);
   const testInTab = () => { const u = URL.createObjectURL(new Blob([finalHtml()], { type: 'text/html' })); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); };
@@ -309,7 +361,7 @@ export default function Creator() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, marginBottom: 34 }}>
             {TEMPLATES.map((t) => (
               <div key={t.id} style={{ ...S.card, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <TemplateThumb />
+                <TemplateThumb kind={t.kind} />
                 <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                   <div style={{ fontFamily: 'Literata,serif', fontSize: 19, fontWeight: 700, color: C.navy }}>{t.name}</div>
                   <div style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.55 }}>{t.desc}</div>
@@ -317,7 +369,7 @@ export default function Creator() {
                     {t.types.map((x) => <span key={x} style={S.pill}>{x}</span>)}
                   </div>
                   <div style={{ flex: 1 }} />
-                  <button style={{ ...S.btnPrimary, alignSelf: 'flex-start' }} onClick={() => { setTplId(t.id); startNew(); }} disabled={!tplHtml}>Νέα εφαρμογή →</button>
+                  <button style={{ ...S.btnPrimary, alignSelf: 'flex-start' }} onClick={() => startNew(t.id)} disabled={!tplCache[t.id]}>Νέα εφαρμογή →</button>
                 </div>
               </div>
             ))}
@@ -385,7 +437,7 @@ export default function Creator() {
                   <button onClick={() => { setSel({ d: i, q: 0 }); setPanel('deck'); }}
                     style={{ ...S.navBtn, flex: 1, ...(sel.d === i ? S.navBtnOn : {}) }}>
                     <b style={{ opacity: .5, marginRight: 6 }}>{String(i + 1).padStart(2, '0')}</b>{dk.label || 'Χωρίς όνομα'}
-                    <span style={{ float: 'right', fontSize: 11, opacity: .7 }}>{dk.qs.length}</span>
+                    <span style={{ float: 'right', fontSize: 11, opacity: .7 }}>{deckCount(dk)}</span>
                   </button>
                 </div>
               ))}
@@ -393,6 +445,18 @@ export default function Creator() {
             </div>
           </div>
 
+          {isCw ? (
+            <div style={S.card}>
+              <div style={{ ...S.miniTitle, display: 'flex', justifyContent: 'space-between' }}>
+                <span>Λέξεις · {deck.label || 'ενότητα'}</span><span>{deckCount(deck)}</span>
+              </div>
+              <div style={{ fontSize: 11.5, color: C.muted, margin: '-4px 0 8px' }}>Προτείνονται 8–20 λέξεις ανά σταυρόλεξο · σύνολο {totalQs}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
+                {deck.words.filter((x) => String(x.w).trim()).map((x, i) => <span key={i} style={S.pill}>{cwNorm(x.w)}</span>)}
+              </div>
+              <button style={{ ...S.navBtn, ...(panel === 'question' ? S.navBtnOn : {}) }} onClick={() => { setPanel('question'); setPreviewStart(false); }}>✎ Λέξεις και ορισμοί</button>
+            </div>
+          ) : (
           <div style={S.card}>
             <div style={{ ...S.miniTitle, display: 'flex', justifyContent: 'space-between' }}>
               <span>Ερωτήσεις · {deck.label || 'ενότητα'}</span>
@@ -421,12 +485,16 @@ export default function Creator() {
               ))}
             </div>
           </div>
+          )}
         </div>
 
         {/* ── Κέντρο: φόρμα ── */}
         <div style={{ ...S.card, padding: narrow ? 16 : 22, minWidth: 0 }}>
-          {panel === 'general' && <GeneralForm data={data} upd={upd} />}
-          {panel === 'deck' && <DeckForm deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} onDelete={() => delDeck(sel.d)} onOpenQs={() => setPanel('question')} />}
+          {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} />}
+          {panel === 'deck' && <DeckForm deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} onDelete={() => delDeck(sel.d)} onOpenQs={() => setPanel('question')} isCw={isCw} count={deckCount(deck)} />}
+          {panel === 'question' && isCw && (
+            <CwWordsForm key={sel.d} deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} unplaced={(cwInfo?.unplaced || [])[sel.d] || []} />
+          )}
           {panel === 'question' && q && (
             <QuestionForm key={sel.d + ':' + sel.q} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
               onUp={() => moveQ(sel.q, -1)} onDown={() => moveQ(sel.q, 1)} onDup={() => dupQ(sel.q)} onDel={() => delQ(sel.q)}
@@ -452,7 +520,7 @@ export default function Creator() {
         <SaveDialog
           data={data} problems={allProblems} editing={editing} drive={drive} status={status} token={token}
           defaultFolder={typeof router.query.folder === 'string' ? router.query.folder : ''}
-          onClose={() => setSaveOpen(false)} onGo={(p) => { setSaveOpen(false); if (p.d >= 0) { setSel({ d: p.d, q: p.q }); setPanel('question'); } else setPanel('general'); }}
+          onClose={() => setSaveOpen(false)} onGo={(p) => { setSaveOpen(false); if (p.d >= 0) { setSel({ d: p.d, q: Math.max(0, p.q) }); setPanel('question'); } else setPanel('general'); }}
           getHtml={finalHtml}
           onSaved={(ed) => { savedJson.current = JSON.stringify(data); lsSet(DRAFT_KEY, null); setDraft(null); setEditing(ed); loadDrive(); }}
           onLogin={() => { lsSet(DRAFT_KEY, { data, editing, at: Date.now() }); signIn('google', { callbackUrl: '/creator' }); }}
@@ -465,13 +533,13 @@ export default function Creator() {
 // ═════════════════════════════════════════════════════════════════
 // Φόρμες
 // ═════════════════════════════════════════════════════════════════
-function GeneralForm({ data, upd }) {
+function GeneralForm({ data, upd, isCw }) {
   const set = (k) => (e) => { const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value; upd((n) => { n[k] = v; }); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <FormTitle eyebrow="Γενικά" title="Η αρχική οθόνη της εφαρμογής" />
       <Field label="Τίτλος εφαρμογής" hint="Γίνεται και όνομα αρχείου στον ΛΕΒΙΑΘΑΝ.">
-        <input style={S.input} value={data.title} onChange={set('title')} placeholder="π.χ. Κουίζ — 14η Διδακτική πρόταση" autoFocus />
+        <input style={S.input} value={data.title} onChange={set('title')} placeholder={isCw ? 'π.χ. Σταυρόλεξα — Σχήματα λόγου' : 'π.χ. Κουίζ — 14η Διδακτική πρόταση'} autoFocus />
       </Field>
       <Field label="Μικρή επικεφαλίδα (πάνω από τον τίτλο)">
         <input style={S.input} value={data.eyebrow} onChange={set('eyebrow')} />
@@ -485,20 +553,20 @@ function GeneralForm({ data, upd }) {
       <Field label="Υπογραφή (κάτω μέρος)">
         <input style={S.input} value={data.credits} onChange={set('credits')} placeholder="π.χ. Α. & Σ. ΜΗΤΣΕΛΟΣ — ΕΛΛΗΝΟΕΚΔΟΤΙΚΗ, 2026" />
       </Field>
-      <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+      {!isCw && <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleQs} onChange={set('shuffleQs')} /> Ανακάτεμα σειράς ερωτήσεων</label>
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleOpts} onChange={set('shuffleOpts')} /> Ανακάτεμα επιλογών (πολλαπλής)</label>
-      </div>
+      </div>}
     </div>
   );
 }
 
-function DeckForm({ deck, index, upd, onDelete, onOpenQs }) {
+function DeckForm({ deck, index, upd, onDelete, onOpenQs, isCw, count }) {
   const set = (k) => (e) => { const v = e.target.value; upd((d) => { d[k] = v; }); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <FormTitle eyebrow={'Ενότητα ' + String(index + 1).padStart(2, '0')} title="Η κάρτα της ενότητας στην αρχική οθόνη" />
-      <Field label="Ετικέτα κάρτας" hint="π.χ. Κείμενο 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του κουίζ.">
+      <Field label="Ετικέτα κάρτας" hint={isCw ? 'π.χ. Ενότητα 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του σταυρόλεξου.' : 'π.χ. Κείμενο 1 — εμφανίζεται και πάνω αριστερά στη διάρκεια του κουίζ.'}>
         <input style={S.input} value={deck.label} onChange={set('label')} autoFocus />
       </Field>
       <Field label="Τίτλος (πλάγια γράμματα)">
@@ -511,10 +579,74 @@ function DeckForm({ deck, index, upd, onDelete, onOpenQs }) {
         <input style={S.input} value={deck.sub} onChange={set('sub')} placeholder="π.χ. Αφήγηση · Μαρτυρία · Άποψη ειδικών" />
       </Field>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
-        <button style={S.btnPrimary} onClick={onOpenQs}>Στις ερωτήσεις ({deck.qs.length}) →</button>
+        <button style={S.btnPrimary} onClick={onOpenQs}>{isCw ? `Στις λέξεις (${count}) →` : `Στις ερωτήσεις (${count}) →`}</button>
         <div style={{ flex: 1 }} />
         <button style={{ ...S.btnGhost, color: C.bad, borderColor: 'rgba(196,74,61,.35)' }} onClick={onDelete}>Διαγραφή ενότητας</button>
       </div>
+    </div>
+  );
+}
+
+// Σταυρόλεξο: λέξεις και ορισμοί μιας ενότητας
+function CwWordsForm({ deck, index, upd, unplaced }) {
+  const [paste, setPaste] = useState('');
+  const [showPaste, setShowPaste] = useState(false);
+  const probs = problemsOfCw(deck);
+  const setW = (i, k, v) => upd((d) => { d.words[i][k] = v; });
+  const add = () => upd((d) => { d.words.push(newWord()); });
+  const del = (i) => upd((d) => { d.words.splice(i, 1); if (!d.words.length) d.words.push(newWord()); });
+  // Επικόλληση λίστας: «λέξη — ορισμός», «λέξη: ορισμός» ή λέξη<Tab>ορισμός, μία ανά γραμμή
+  const importPaste = () => {
+    const rows = paste.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+      const m = l.match(/^(.+?)\s*(?:\t|\s[—–-]\s|:)\s*(.+)$/);
+      return m ? { w: m[1].trim(), c: m[2].trim() } : { w: l, c: '' };
+    });
+    if (!rows.length) return;
+    upd((d) => { d.words = d.words.filter((x) => String(x.w).trim() || String(x.c).trim()).concat(rows); });
+    setPaste(''); setShowPaste(false);
+  };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <FormTitle eyebrow={'Ενότητα ' + String(index + 1).padStart(2, '0') + ' · Σταυρόλεξο'} title="Λέξεις και ορισμοί" />
+      <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55, marginTop: -6 }}>
+        Γράψε κάθε λέξη και τον ορισμό της. Η λέξη μπορεί να γραφτεί με πεζά και τόνους — στο σταυρόλεξο μπαίνει με <b>κεφαλαία χωρίς τόνους</b>.
+        Το πλέγμα στήνεται αυτόματα (δες την προεπισκόπηση). Προτείνονται 8–20 λέξεις.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {deck.words.map((x, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <span style={{ width: 22, paddingTop: 10, fontWeight: 700, color: C.purpleLight, fontSize: 13, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+            <input style={{ ...S.input, width: '34%', minWidth: 0, flexShrink: 0, fontWeight: 600 }} value={x.w} placeholder="λέξη" onChange={(e) => setW(i, 'w', e.target.value)} />
+            <textarea style={{ ...S.input, flex: 1, minWidth: 0 }} rows={Math.min(5, Math.max(1, Math.ceil(String(x.c || '').length / 38)))} value={x.c} placeholder="ορισμός / ερώτηση"
+              onChange={(e) => setW(i, 'c', e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (i === deck.words.length - 1) add(); } }} />
+            <IconBtn danger title="Διαγραφή" onClick={() => del(i)}>✕</IconBtn>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button style={S.btnGhost} onClick={add}>＋ Λέξη</button>
+        <button style={S.btnGhost} onClick={() => setShowPaste((v) => !v)}>📋 Επικόλληση λίστας</button>
+        <div style={{ flex: 1 }} />
+        <button style={S.btnGhost} onClick={() => upd((d) => { d.seed = ((d.seed | 0) || 1) + 1; })} title="Άλλη τοποθέτηση των λέξεων στο πλέγμα">🔀 Νέα διάταξη πλέγματος</button>
+      </div>
+      {showPaste && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(107,63,160,.04)', borderRadius: 10, padding: 12 }}>
+          <div style={{ fontSize: 12.5, color: C.muted }}>Μία λέξη ανά γραμμή: <b>λέξη — ορισμός</b> ή <b>λέξη: ορισμός</b> (ή αντιγραφή δύο στηλών από Excel/Sheets).</div>
+          <textarea style={{ ...S.input, minHeight: 120 }} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={'μεταφορά — Σχήμα λόγου που…\nπαρομοίωση: Σύγκριση με το «σαν»'} />
+          <div><button style={S.btnPrimarySm} onClick={importPaste} disabled={!paste.trim()}>Προσθήκη στη λίστα</button></div>
+        </div>
+      )}
+      {unplaced.length > 0 && (
+        <div style={{ background: '#fff7e0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: '10px 14px', fontSize: 13.5, lineHeight: 1.5 }}>
+          ⚠ Δεν χώρεσαν στο πλέγμα: <b>{unplaced.join(', ')}</b>. Πάτησε «Νέα διάταξη πλέγματος», ή άλλαξε/πρόσθεσε λέξεις με κοινά γράμματα.
+        </div>
+      )}
+      {probs.length > 0 && (
+        <div style={{ background: 'rgba(196,74,61,.06)', borderLeft: `3px solid ${C.bad}`, padding: '10px 14px', borderRadius: 6, fontSize: 13.5, color: C.bad, lineHeight: 1.6 }}>
+          {probs.map((m, i) => <div key={i}>• {m}</div>)}
+        </div>
+      )}
     </div>
   );
 }
@@ -788,7 +920,7 @@ function SaveDialog({ data, problems, editing, drive, status, token, onClose, on
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 260, overflowY: 'auto' }}>
               {problems.slice(0, 40).map((p, i) => (
                 <button key={i} onClick={() => onGo(p)} style={{ ...S.qItem, color: C.bad }}>
-                  <span style={{ minWidth: 70, fontWeight: 700 }}>{p.d >= 0 ? `Εν.${p.d + 1} · Ερ.${p.q + 1}` : 'Γενικά'}</span>
+                  <span style={{ minWidth: 70, fontWeight: 700 }}>{p.d >= 0 ? (p.q >= 0 ? `Εν.${p.d + 1} · Ερ.${p.q + 1}` : `Εν.${p.d + 1}`) : 'Γενικά'}</span>
                   <span style={{ flex: 1, textAlign: 'left' }}>{p.m}</span><span>→</span>
                 </button>
               ))}
@@ -871,7 +1003,27 @@ function Preview({ html, fill, onRestart, startMode, initialMode }) {
   );
 }
 
-function TemplateThumb() {
+function TemplateThumb({ kind }) {
+  if (kind === 'cw') {
+    const cells = [[0, 2], [1, 2], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [3, 2], [3, 4], [4, 1], [4, 2], [4, 3], [4, 4], [5, 4]];
+    return (
+      <div style={{ height: 150, background: C.cream, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ position: 'absolute', width: 190, height: 190, borderRadius: '50%', left: -70, top: -80, background: C.gold }}>
+          <div style={{ position: 'absolute', inset: '16%', borderRadius: '50%', background: '#F0C9A8' }}><div style={{ position: 'absolute', inset: '25%', borderRadius: '50%', background: '#D94F4F' }} /></div>
+        </div>
+        <div style={{ position: 'absolute', width: 200, height: 200, borderRadius: '50%', right: -80, bottom: -100, background: `linear-gradient(135deg,${C.navy},${C.cyan})` }}>
+          <div style={{ position: 'absolute', inset: '18%', borderRadius: '50%', background: C.cyan }}><div style={{ position: 'absolute', inset: '25%', borderRadius: '50%', background: C.gold }} /></div>
+        </div>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', width: 5 * 20, height: 6 * 20, transform: 'translate(-50%,-50%)', background: '#fff', borderRadius: 6, boxShadow: '2px 4px 14px rgba(26,22,16,.14)' }}>
+          {cells.map(([r, c], i) => (
+            <div key={i} style={{ position: 'absolute', left: c * 20, top: r * 20, width: 20, height: 20, border: `1.5px solid ${C.navy}`, background: r === 2 ? 'rgba(107,63,160,.18)' : '#fff', fontSize: 11, fontWeight: 700, color: C.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {r === 2 ? 'ΛΕΞΗ!'[c] : ''}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ height: 150, background: C.cream, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.line}` }}>
       <div style={{ position: 'absolute', width: 190, height: 190, borderRadius: '50%', left: -70, top: -80, background: C.gold }}>

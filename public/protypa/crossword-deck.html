@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Σταυρόλεξο</title>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#6B3FA0;
+  --purple-dark:#4A2D6F;
+  --purple-light:#8B6BB5;
+  --navy:#1B2A4A;
+  --cyan:#4AAFC7;
+  --coral:#E8735A;
+  --gold:#E8B84B;
+  --cream:#FAFAF7;
+  --ink:#1a1610;
+  --muted:#7a7060;
+  --correct:#2d8e4e;
+  --wrong:#c44a3d;
+  --shadow:4px 8px 28px rgba(26,22,16,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;color-scheme:light only;}
+@media(prefers-color-scheme:dark){
+  html,body{background:var(--cream)!important;color:var(--ink)!important;}
+  .big-card{background:#fff!important;}
+  .opt-btn{background:#fff!important;color:var(--ink)!important;}
+  .quiz-topbar,.quiz-bottom{background:var(--cream)!important;}
+  #startScreen{background:var(--cream)!important;}
+  .deck-card{background:#fff!important;color:var(--ink)!important;}
+}
+body{
+  background:var(--cream);
+  font-family:'Source Sans 3',sans-serif;
+  color:var(--ink);
+  min-height:100%;
+}
+
+/* ═══ DECORATIVE CIRCLES (book motif) — 2 sets ═══ */
+/* Κύκλος 1: πάνω δεξιά — navy/cyan/κίτρινο (όπως στο εξώφυλλο) */
+.circle-top{
+  position:absolute;bottom:-20vw;right:-25vw;
+  width:max(55vw,55vh);height:max(55vw,55vh);min-width:350px;min-height:350px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--navy),var(--cyan));
+  z-index:0;pointer-events:none;
+  animation:ballIn1 1.2s cubic-bezier(.34,1.56,.64,1) .2s both;
+}
+@media(min-width:769px){
+  .circle-top{right:-32vw;}
+}
+@keyframes ballIn1{
+  0%{transform:translate(0,60vh) scale(.3);opacity:0;}
+  60%{opacity:1;}
+  100%{transform:translate(0,0) scale(1);opacity:1;}
+}
+.circle-top::before{
+  content:'';position:absolute;
+  top:18%;left:18%;
+  width:64%;height:64%;border-radius:50%;
+  background:var(--cyan);
+}
+.circle-top::after{
+  content:'';position:absolute;
+  top:33%;left:33%;
+  width:34%;height:34%;border-radius:50%;
+  background:var(--gold);
+}
+
+/* Κύκλος 2: κάτω αριστερά — κίτρινο/σομόν/κόκκινο (εξώφυλλο) */
+.circle-bottom{
+  position:absolute;top:-15vw;left:-35vw;
+  width:max(55vw,55vh);height:max(55vw,55vh);min-width:350px;min-height:350px;
+  border-radius:50%;
+  background:#E8B84B;
+  z-index:0;pointer-events:none;
+  animation:ballIn2 1.4s cubic-bezier(.34,1.56,.64,1) .5s both;
+}
+@media(min-width:769px){
+  .circle-bottom{left:-32vw;}
+}
+@keyframes ballIn2{
+  0%{transform:translate(-40vw,-40vh) scale(.3);opacity:0;}
+  60%{opacity:1;}
+  100%{transform:translate(0,0) scale(1);opacity:1;}
+}
+.circle-bottom::before{
+  content:'';position:absolute;
+  top:16%;left:16%;
+  width:68%;height:68%;border-radius:50%;
+  background:#F0C9A8;
+}
+.circle-bottom::after{
+  content:'';position:absolute;
+  top:32%;left:32%;
+  width:36%;height:36%;border-radius:50%;
+  background:#D94F4F;
+}
+
+/* ═══ START SCREEN ═══ */
+#startScreen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:40px 20px;text-align:center;
+  position:relative;z-index:1;
+}
+.start-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-light);font-weight:600;margin-bottom:10px;position:relative;z-index:2;}
+.start-title{font-family:'Literata',serif;font-size:clamp(24px,5vw,42px);font-weight:700;line-height:1.2;margin-bottom:6px;color:var(--navy);position:relative;z-index:2;text-shadow:0 2px 10px rgba(255,255,255,0.8),0 0 20px rgba(255,255,255,0.5);}
+.start-title em{font-style:italic;color:var(--purple);}
+.start-accent{width:70px;height:3px;background:linear-gradient(90deg,var(--purple),var(--cyan));margin:14px auto 22px;border-radius:2px;position:relative;z-index:2;}
+.start-sub{color:var(--muted);font-size:14px;max-width:460px;line-height:1.6;margin-bottom:36px;position:relative;z-index:2;text-shadow:0 2px 8px rgba(255,255,255,0.7),0 0 16px rgba(255,255,255,0.4);}
+.start-credits{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:1.5px;color:rgba(26,22,16,.5);font-weight:400;z-index:2;text-shadow:0 1px 4px rgba(255,255,255,.6);border-top:1px solid rgba(26,22,16,.2);padding-top:8px;white-space:nowrap;display:flex;align-items:center;gap:6px;justify-content:center;}
+.credits-logo{width:16px;height:16px;opacity:0.7;flex-shrink:0;}
+@media(min-width:769px){
+  .start-credits{color:var(--ink);opacity:0.6;border-top-color:rgba(26,22,16,.3);}
+  .credits-logo{opacity:0.5;}
+}
+
+.deck-pick{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;position:relative;z-index:2;}
+.deck-card{
+  background:#fff;border-radius:10px;box-shadow:var(--shadow);
+  padding:22px 28px;width:240px;cursor:pointer;
+  border:2.5px solid transparent;transition:all .22s;
+  text-align:left;position:relative;overflow:hidden;
+}
+.deck-card::before{
+  content:'';position:absolute;top:0;left:0;width:5px;height:100%;
+  background:linear-gradient(180deg,var(--purple),var(--cyan));
+  border-radius:10px 0 0 10px;
+}
+.deck-card:hover{transform:translateY(-3px);cursor:pointer;}
+.deck-card.active{border-color:var(--purple);border-width:3px;background:#fff;box-shadow:0 0 20px rgba(107,63,160,0.2),4px 8px 28px rgba(26,22,16,.16);}
+.deck-card.active .dc-num{color:var(--purple);opacity:.35;font-size:48px;}
+.deck-card.active .dc-title{color:var(--purple);}
+.deck-card.active .dc-ktitle{color:var(--purple-dark);}
+.deck-card.active .dc-author{color:var(--coral);}
+.deck-card.active .dc-sub{color:var(--muted);}
+.dc-num{font-family:'Literata',serif;font-size:40px;font-weight:700;opacity:.07;line-height:1;margin-bottom:6px;color:var(--purple);}
+.dc-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--purple-light);margin-bottom:5px;}
+.dc-ktitle{font-family:'Literata',serif;font-size:14px;font-style:italic;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:4px;}
+.dc-author{font-size:11.5px;font-weight:600;color:var(--coral);margin-bottom:7px;}
+.dc-sub{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid rgba(26,22,16,.08);padding-top:7px;margin-top:2px;}
+
+.btn-start{
+  position:relative;z-index:2;align-self:center;
+  padding:16px 52px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+  color:#fff;
+  border:none;border-radius:8px;
+  font-size:16px;font-weight:700;
+  font-family:'Source Sans 3',sans-serif;
+  cursor:pointer;transition:all .2s;
+  letter-spacing:.5px;
+  box-shadow:0 4px 16px rgba(107,63,160,.3);
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(107,63,160,.4);}
+.dc-count{font-size:10.5px;font-weight:700;color:var(--purple-light);margin-top:6px;letter-spacing:.5px;}
+@media(max-width:640px){
+  .deck-pick{flex-direction:column;align-items:center;}
+  .deck-card{width:90%;max-width:320px;}
+  .circle-top{min-width:400px;min-height:400px;width:140vw;height:140vw;bottom:-35vw;right:-20vw;top:auto;}
+  .circle-bottom{min-width:400px;min-height:400px;width:140vw;height:140vw;top:5vh;left:-50vw;bottom:auto;}
+  .start-title{text-shadow:0 2px 8px rgba(255,255,255,0.8),0 0 16px rgba(255,255,255,0.5);}
+  .start-sub{text-shadow:0 1px 6px rgba(255,255,255,0.6);font-size:13px;}
+}
+
+/* ═══ ΟΘΟΝΗ ΣΤΑΥΡΟΛΕΞΟΥ ═══ */
+#cwScreen{display:none;flex-direction:column;height:100vh;height:100dvh;}
+#cwScreen.active{display:flex;}
+.cw-top{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(107,63,160,.1);background:var(--cream);}
+.cw-top-l{display:flex;align-items:center;gap:12px;min-width:0;}
+.btn-quit{background:none;border:1px solid rgba(107,63,160,.25);border-radius:4px;padding:5px 12px;font-size:12px;font-family:'Source Sans 3',sans-serif;cursor:pointer;color:var(--purple-light);white-space:nowrap;}
+.btn-quit:hover{border-color:var(--purple);color:var(--purple);}
+.cw-lbl{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--purple);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cw-stat{font-size:13px;color:var(--muted);white-space:nowrap;}
+.cw-stat strong{font-family:'Literata',serif;font-size:16px;color:var(--correct);}
+.progress-wrap{flex-shrink:0;height:3px;background:rgba(107,63,160,.08);}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .4s ease;}
+
+.cw-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);gap:14px;padding:14px;}
+.cw-boardwrap{min-height:0;min-width:0;display:flex;flex-direction:column;gap:10px;}
+.cw-boardbox{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid rgba(107,63,160,.12);padding:10px;position:relative;overflow:hidden;}
+.cw-board{display:grid;gap:0;--cs:36px;user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+.cw-cell{width:var(--cs);height:var(--cs);position:relative;background:#fff;border:1px solid #2a2440;margin:0 -1px -1px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.cw-void{width:var(--cs);height:var(--cs);}
+.cw-cell .n{position:absolute;top:1px;left:2px;font-size:calc(var(--cs)*.27);line-height:1;color:#4a4060;font-weight:600;pointer-events:none;}
+.cw-cell .ch{font-family:'Source Sans 3',sans-serif;font-weight:700;font-size:calc(var(--cs)*.56);line-height:1;color:var(--ink);pointer-events:none;margin-top:calc(var(--cs)*.08);}
+.cw-cell.hl{background:#efe8f8;}
+.cw-cell.cur{background:#d9c8f0;box-shadow:inset 0 0 0 2px var(--purple);z-index:1;}
+.cw-cell.bad .ch{color:var(--wrong);}
+.cw-cell.bad{background:#fbe7e4;}
+.cw-cell.rev .ch{color:var(--purple);}
+.cw-cell.done{background:#e9f6ee;}
+.cw-cell.done.cur{background:#cfe9d8;box-shadow:inset 0 0 0 2px var(--correct);}
+
+.cw-cluebar{flex-shrink:0;background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:#fff;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;min-height:48px;}
+.cw-cluebar .cb-nav{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;flex-shrink:0;}
+.cw-cluebar .cb-txt{flex:1;font-family:'Literata',serif;font-size:15px;line-height:1.4;}
+.cw-cluebar .cb-txt b{font-family:'Source Sans 3',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-right:6px;}
+
+.cw-clues{min-height:0;overflow-y:auto;background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid rgba(107,63,160,.12);padding:14px 16px;}
+.cw-clues h3{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--purple-light);margin:6px 0 8px;}
+.cw-clues ol{list-style:none;margin:0 0 14px;padding:0;}
+.cw-clues li{display:flex;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;font-size:15px;line-height:1.4;}
+.cw-clues li .cn{font-weight:700;color:var(--purple);min-width:22px;white-space:nowrap;}
+.cw-clues li .ce{color:var(--muted);font-size:12.5px;white-space:nowrap;}
+.cw-clues li:hover{background:rgba(107,63,160,.05);}
+.cw-clues li.on{background:#efe8f8;}
+.cw-clues li.ok{color:var(--muted);}
+.cw-clues li.ok .ct{text-decoration:line-through;text-decoration-color:rgba(45,142,78,.6);}
+.cw-clues li.ok .cn::after{content:' ✓';color:var(--correct);}
+
+.cw-tools{flex-shrink:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px 14px;border-top:1px solid rgba(107,63,160,.1);background:var(--cream);}
+.cw-btn{padding:9px 16px;border-radius:8px;border:1.5px solid rgba(107,63,160,.28);background:#fff;color:var(--purple);font-weight:700;font-size:14px;font-family:'Source Sans 3',sans-serif;cursor:pointer;}
+.cw-btn:hover{border-color:var(--purple);}
+.cw-btn.primary{background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:#fff;border-color:transparent;}
+#kb{position:fixed;left:-100px;top:40%;width:40px;height:30px;opacity:0;font-size:16px;border:0;padding:0;}
+
+.cw-toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:var(--shadow);z-index:40;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center;}
+.cw-toast.show{opacity:1;}
+.cw-modal{position:fixed;inset:0;background:rgba(26,22,16,.45);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
+.cw-modal.show{display:flex;}
+.cw-dialog{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:26px 24px;max-width:420px;width:100%;text-align:center;}
+.cw-dialog h2{font-family:'Literata',serif;color:var(--navy);font-size:24px;margin-bottom:8px;}
+.cw-dialog p{color:var(--muted);font-size:15px;line-height:1.55;margin-bottom:18px;}
+.cw-dialog .big{font-family:'Literata',serif;font-size:56px;font-weight:700;color:var(--purple);line-height:1;margin-bottom:6px;}
+.cw-dialog .btns{display:flex;flex-direction:column;gap:10px;}
+.cw-warn{position:absolute;left:10px;right:10px;top:10px;background:#fff7e0;border:1px solid #e8b84b;color:#7a5a00;border-radius:8px;padding:8px 12px;font-size:13px;z-index:2;}
+
+@media(max-width:768px){
+  .cw-main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:10px;padding:10px;}
+  .cw-boardbox{flex:none;height:min(58dvh,100vw);}
+  .cw-clues{padding:10px 12px;}
+  .cw-cluebar .cb-txt{font-size:14px;}
+  .cw-top{padding:8px 10px;}
+  .cw-btn{padding:8px 12px;font-size:13px;}
+  .cw-tools{padding:8px 8px;gap:6px;}
+}
+
+/* ═══ ΕΚΤΥΠΩΣΗ / PDF ═══ */
+#printArea{display:none;}
+@media print{
+  @page{size:A4;margin:14mm;}
+  html,body{background:#fff!important;height:auto;}
+  body>*:not(#printArea){display:none!important;}
+  #printArea{display:block;color:#000;font-family:'Source Sans 3',sans-serif;}
+  .pa-page{page-break-after:always;}
+  .pa-page:last-child{page-break-after:auto;}
+  .pa-head{border-bottom:2px solid #6B3FA0;padding-bottom:6px;margin-bottom:10px;}
+  .pa-eyebrow{font-size:9pt;letter-spacing:2px;text-transform:uppercase;color:#6B3FA0;font-weight:700;}
+  .pa-title{font-family:'Literata',serif;font-size:18pt;font-weight:700;}
+  .pa-meta{font-size:10pt;margin-top:2px;}
+  .pa-name{font-size:10pt;margin:8px 0 10px;}
+  .pa-grid{border-collapse:collapse;margin:6px auto 12px;}
+  .pa-grid td{padding:0;text-align:center;vertical-align:middle;position:relative;}
+  .pa-grid td.c{border:1px solid #000;}
+  .pa-grid td .n{position:absolute;top:0.3mm;left:0.6mm;font-size:6.5pt;line-height:1;}
+  .pa-grid td .l{font-weight:700;}
+  .pa-clues{columns:2;column-gap:10mm;font-size:10.5pt;line-height:1.4;}
+  .pa-clues h4{font-size:9pt;letter-spacing:2px;text-transform:uppercase;color:#6B3FA0;margin:0 0 4px;break-after:avoid;}
+  .pa-clues ol{list-style:none;margin:0 0 8px;padding:0;}
+  .pa-clues li{margin-bottom:3px;break-inside:avoid;}
+  .pa-clues li b{display:inline-block;min-width:6mm;}
+  .pa-foot{font-size:8pt;color:#555;margin-top:8px;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<div id="startScreen" style="position:relative;overflow:hidden;">
+  <div class="circle-top"></div>
+  <div class="circle-bottom"></div>
+  <div class="start-eyebrow" id="sEyebrow"></div>
+  <div class="start-title" id="sTitle"></div>
+  <div class="start-accent"></div>
+  <div class="start-sub" id="sSub"></div>
+  <div class="deck-pick" id="deckPick"></div>
+  <div class="start-credits">
+    <svg class="credits-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="12" y="15" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">C</text>
+    </svg>
+    <span id="sCredits"></span>
+  </div>
+</div>
+
+<!-- ══ ΣΤΑΥΡΟΛΕΞΟ ══ -->
+<div id="cwScreen">
+  <div class="cw-top">
+    <div class="cw-top-l">
+      <button class="btn-quit" onclick="goStart()">← Έξοδος</button>
+      <div class="cw-lbl" id="cwLabel"></div>
+    </div>
+    <div class="cw-stat">✓ <strong id="cwDone">0</strong> / <span id="cwTotal">0</span> λέξεις</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
+  <div class="cw-main">
+    <div class="cw-boardwrap">
+      <div class="cw-boardbox" id="boardBox"><div class="cw-board" id="board"></div></div>
+      <div class="cw-cluebar">
+        <button class="cb-nav" onclick="stepWord(-1)" aria-label="Προηγούμενος ορισμός">‹</button>
+        <div class="cb-txt" id="clueBar"></div>
+        <button class="cb-nav" onclick="stepWord(1)" aria-label="Επόμενος ορισμός">›</button>
+      </div>
+    </div>
+    <div class="cw-clues" id="clues"></div>
+  </div>
+  <div class="cw-tools">
+    <button class="cw-btn" onclick="checkAll()">✓ Έλεγχος</button>
+    <button class="cw-btn" onclick="revealLetter()">💡 Γράμμα</button>
+    <button class="cw-btn" onclick="revealWord()">🔤 Λέξη</button>
+    <button class="cw-btn" onclick="askSolution()">👁 Λύση</button>
+    <button class="cw-btn" onclick="clearAll()">⌫ Καθαρισμός</button>
+    <button class="cw-btn primary" onclick="openPrint()">🖨 Εκτύπωση / PDF</button>
+  </div>
+  <input id="kb" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" aria-label="Πληκτρολόγιο σταυρόλεξου">
+</div>
+
+<div class="cw-toast" id="toast"></div>
+
+<div class="cw-modal" id="doneModal">
+  <div class="cw-dialog">
+    <div class="big">✓</div>
+    <h2 id="doneTitle">Συγχαρητήρια!</h2>
+    <p id="doneMsg"></p>
+    <div class="btns">
+      <button class="cw-btn primary" onclick="closeModal('doneModal');restartDeck()">↺ Ξανά από την αρχή</button>
+      <button class="cw-btn" onclick="closeModal('doneModal');openPrint()">🖨 Εκτύπωση / PDF</button>
+      <button class="cw-btn" onclick="closeModal('doneModal');goStart()">← Έξοδος στην αρχή</button>
+    </div>
+  </div>
+</div>
+
+<div class="cw-modal" id="printModal">
+  <div class="cw-dialog">
+    <h2>Εκτύπωση / PDF</h2>
+    <p>Στο παράθυρο εκτύπωσης διάλεξε εκτυπωτή ή <b>«Αποθήκευση ως PDF»</b>.</p>
+    <div class="btns">
+      <button class="cw-btn primary" onclick="doPrint(false)">📄 Φύλλο εργασίας (κενό)</button>
+      <button class="cw-btn" onclick="doPrint(true)">📄 Φύλλο εργασίας + λύσεις</button>
+      <button class="cw-btn" onclick="closeModal('printModal')">Άκυρο</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+/* ═════════════════════════════════════════════════════════════════
+   ΠΡΟΤΥΠΟ «Σταυρόλεξα ενοτήτων» — ΛΕΒΙΑΘΑΝ
+   Τα δεδομένα βρίσκονται ΜΟΝΟ ανάμεσα στους δείκτες QUIZ_DATA.
+   Ο Δημιουργός του ΛΕΒΙΑΘΑΝ (/creator) τα γράφει και τα ξαναδιαβάζει
+   από εκεί — μην αλλάξετε τους δείκτες.
+   Κάθε ενότητα: { label, ktitle, author, sub, seed, words:[{w:'λέξη', c:'ορισμός'}] }
+   Το πλέγμα στήνεται αυτόματα (ίδιο για όλους, με βάση το seed).
+   ═════════════════════════════════════════════════════════════════ */
+const QUIZ=/*QUIZ_DATA_START*/{"v":1,"template":"crossword-deck","title":"Σταυρόλεξο — Παράδειγμα","eyebrow":"Σταυρόλεξο","heading":"Παράδειγμα *σταυρόλεξου*","subtitle":"Διάλεξε ενότητα και λύσε το σταυρόλεξο. Πάτησε ένα τετράγωνο και γράψε.","credits":"ΛΕΒΙΑΘΑΝ","decks":[{"label":"Ενότητα 1","ktitle":"Σχήματα λόγου","author":"","sub":"Βασικοί όροι","seed":1,"words":[{"w":"μεταφορά","c":"Σχήμα λόγου που μεταφέρει μια ιδιότητα από ένα πράγμα σε άλλο"},{"w":"παρομοίωση","c":"Σύγκριση με το «σαν» ή το «όπως»"},{"w":"προσωποποίηση","c":"Άψυχο παρουσιάζεται να ενεργεί σαν άνθρωπος"},{"w":"αντίθεση","c":"Παράθεση εννοιών με αντίθετο νόημα"},{"w":"ειρωνεία","c":"Λέμε το αντίθετο από αυτό που εννοούμε"},{"w":"υπερβολή","c":"Μεγαλοποίηση της πραγματικότητας"},{"w":"ασύνδετο","c":"Σχήμα χωρίς συνδέσμους ανάμεσα στους όρους"},{"w":"επανάληψη","c":"Επαναφορά της ίδιας λέξης για έμφαση"}]}]}/*QUIZ_DATA_END*/;
+
+/* ── Βοηθητικά ── */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');}
+// Κεφαλαία χωρίς τόνους/διαλυτικά (ς→Σ)· μόνο γράμματα και ψηφία
+function cwNorm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-ZΑ-Ω0-9]/g,'');}
+// Μήκη λέξεων για πολυλεκτικές απαντήσεις: «σχήμα λόγου» → (5,5)
+function enumOf(s){const p=String(s||'').split(/[\s\-–]+/).map(cwNorm).filter(Boolean).map(x=>x.length);return p.join(',');}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const K=(r,c)=>r+','+c;
+const DIRS={A:[0,1],D:[1,0]};
+
+const DECKS=(QUIZ.decks||[]).filter(d=>d&&Array.isArray(d.words)&&d.words.filter(w=>cwNorm(w&&w.w).length>=2).length>=2);
+
+/* ═════════════════════════════════════
+   ΓΕΝΝΗΤΡΙΑ ΠΛΕΓΜΑΤΟΣ (ελεύθερη διάταξη)
+   ═════════════════════════════════════ */
+function tryLayout(order,rnd){
+  const grid=new Map(); const placed=[]; const deferred=[];
+  const put=(it,r,c,dir)=>{const[dr,dc]=DIRS[dir];for(let k=0;k<it.a.length;k++){const key=K(r+dr*k,c+dc*k);const cell=grid.get(key)||{ch:it.a[k],dirs:{}};cell.dirs[dir]=true;grid.set(key,cell);}placed.push(Object.assign({},it,{r,c,dir}));};
+  const fits=(a,r,c,dir)=>{
+    const[dr,dc]=DIRS[dir]; let cross=0;
+    if(grid.has(K(r-dr,c-dc))||grid.has(K(r+dr*a.length,c+dc*a.length))) return -1;
+    for(let k=0;k<a.length;k++){
+      const rr=r+dr*k, cc=c+dc*k, cell=grid.get(K(rr,cc));
+      if(cell){ if(cell.ch!==a[k]||cell.dirs[dir]) return -1; cross++; }
+      else{ const n1=dir==='A'?K(rr-1,cc):K(rr,cc-1), n2=dir==='A'?K(rr+1,cc):K(rr,cc+1); if(grid.has(n1)||grid.has(n2)) return -1; }
+    }
+    return cross;
+  };
+  const bbox=()=>{let a=1e9,b=-1e9,c=1e9,d=-1e9;grid.forEach((_,k)=>{const[r,cc]=k.split(',').map(Number);a=Math.min(a,r);b=Math.max(b,r);c=Math.min(c,cc);d=Math.max(d,cc);});return{r0:a,r1:b,c0:c,c1:d};};
+  const tryPlace=(it)=>{
+    let best=null; const bb=bbox();
+    grid.forEach((cell,key)=>{
+      const[r,c]=key.split(',').map(Number);
+      for(let j=0;j<it.a.length;j++){ if(it.a[j]!==cell.ch) continue;
+        for(const dir of ['A','D']){ if(cell.dirs[dir]) continue;
+          const[dr,dc]=DIRS[dir], r0=r-dr*j, c0=c-dc*j, x=fits(it.a,r0,c0,dir);
+          if(x<1) continue;
+          const r1=r0+dr*(it.a.length-1), c1=c0+dc*(it.a.length-1);
+          const h=Math.max(bb.r1,r1)-Math.min(bb.r0,r0)+1, w=Math.max(bb.c1,c1)-Math.min(bb.c0,c0)+1;
+          const score=x*12-(h*w)*0.15-Math.abs(h-w)*0.6+rnd()*2;
+          if(!best||score>best.score) best={score,r0,c0,dir};
+        }}
+    });
+    if(best){put(it,best.r0,best.c0,best.dir);return true;} return false;
+  };
+  order.forEach((it,i)=>{ if(i===0) put(it,0,0,rnd()<.5?'A':'D'); else if(!tryPlace(it)) deferred.push(it); });
+  const unplaced=deferred.filter(it=>!tryPlace(it));
+  const bb=bbox();
+  return {placed:placed.map(p=>Object.assign(p,{r:p.r-bb.r0,c:p.c-bb.c0})),unplaced,rows:bb.r1-bb.r0+1,cols:bb.c1-bb.c0+1};
+}
+function layoutDeck(dk){
+  const seen=new Set(), items=[];
+  (dk.words||[]).forEach((x,i)=>{const a=cwNorm(x&&x.w); if(a.length<2||seen.has(a)) return; seen.add(a); items.push({i,a,w:x.w,clue:x.c||'',en:enumOf(x.w)});});
+  const base=(dk.seed|0)||1; let best=null;
+  for(let t=0;t<48;t++){
+    const rnd=mulberry32(base*7919+t*104729);
+    const order=items.map(it=>({it,k:it.a.length+rnd()*3})).sort((p,q)=>q.k-p.k).map(x=>x.it);
+    const L=tryLayout(order,rnd);
+    const val=L.placed.length*1000-Math.max(L.rows,L.cols)*8-(L.rows*L.cols)*0.2;
+    if(!best||val>best.val) best=Object.assign(L,{val});
+  }
+  // Αρίθμηση: κατά γραμμή, μετά κατά στήλη
+  const starts=[...new Set(best.placed.map(p=>K(p.r,p.c)))].map(k=>k.split(',').map(Number)).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const num=new Map(starts.map((s,i)=>[K(s[0],s[1]),i+1]));
+  best.placed.forEach(p=>{p.num=num.get(K(p.r,p.c));p.key=p.dir+p.num;});
+  best.placed.sort((a,b)=>(a.dir<b.dir?-1:a.dir>b.dir?1:0)||a.num-b.num);
+  best.cells=new Map(); best.nums=num;
+  best.placed.forEach(p=>{const[dr,dc]=DIRS[p.dir];for(let k=0;k<p.a.length;k++){const key=K(p.r+dr*k,p.c+dc*k);const cell=best.cells.get(key)||{ch:p.a[k],words:{}};cell.words[p.dir]=p;best.cells.set(key,cell);}});
+  return best;
+}
+const LAYOUTS=DECKS.map(layoutDeck);
+
+/* ═════════════════════════════════════
+   ΑΡΧΙΚΗ ΟΘΟΝΗ
+   ═════════════════════════════════════ */
+document.title=QUIZ.title||'Σταυρόλεξο';
+document.getElementById('sEyebrow').textContent=QUIZ.eyebrow||'';
+document.getElementById('sTitle').innerHTML=fmt(QUIZ.heading||QUIZ.title||'');
+document.getElementById('sSub').innerHTML=fmt(QUIZ.subtitle||'');
+document.getElementById('sCredits').textContent=QUIZ.credits||'';
+(function buildDecks(){
+  const wrap=document.getElementById('deckPick');
+  DECKS.forEach((d,i)=>{
+    const c=document.createElement('div');
+    c.className='deck-card'; c.id='pick'+i;
+    c.onclick=()=>openDeck(i);
+    c.innerHTML=
+      `<div class="dc-num">${String(i+1).padStart(2,'0')}</div>`+
+      (d.label?`<div class="dc-title">${esc(d.label)}</div>`:'')+
+      (d.ktitle?`<div class="dc-ktitle">${fmt(d.ktitle)}</div>`:'')+
+      (d.author?`<div class="dc-author">${esc(d.author)}</div>`:'')+
+      (d.sub?`<div class="dc-sub">${fmt(d.sub)}</div>`:'')+
+      `<div class="dc-count">✎ Σταυρόλεξο · ${LAYOUTS[i].placed.length} λέξεις</div>`;
+    wrap.appendChild(c);
+  });
+  if(!DECKS.length) wrap.innerHTML='<div class="start-sub" style="margin:0">Δεν υπάρχουν ακόμη λέξεις.</div>';
+})();
+
+/* ═════════════════════════════════════
+   ΛΕΒΙΑΘΑΝ — ζωντανά αποτελέσματα (μόνο με #session=XXXX)
+   ═════════════════════════════════════ */
+const LEV_SESSION=(location.hash.match(/session=(\d{4})/)||[])[1]||null;
+const LEV_API=(/vercel\.app$/.test(location.hostname)?location.origin:'https://leviathan-olive.vercel.app')+'/api/quiz-results';
+let levName=null;
+function levAskName(){
+  if(!LEV_SESSION) return;
+  let n=null; try{n=localStorage.getItem('lev_name_'+LEV_SESSION);}catch(e){}
+  while(!n||!n.trim()){ n=prompt('Γράψε το όνομά σου (θα το δει ο/η καθηγητής/τρια):'); if(n===null) n=''; }
+  levName=n.trim().slice(0,40);
+  try{localStorage.setItem('lev_name_'+LEV_SESSION,levName);}catch(e){}
+}
+function levSend(body){
+  if(!LEV_SESSION||!levName) return;
+  try{ fetch(LEV_API,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({code:LEV_SESSION,student:levName},body)),keepalive:true}).catch(()=>{}); }catch(e){}
+}
+
+/* ═════════════════════════════════════
+   ΚΑΤΑΣΤΑΣΗ
+   ═════════════════════════════════════ */
+let curDk=0, L=null, entries=new Map(), revealed=new Set(), cur=null, startedAt=0, finished=false, helped=new Set();
+const kb=document.getElementById('kb');
+
+function goStart(){
+  document.getElementById('startScreen').style.display='flex';
+  document.getElementById('cwScreen').classList.remove('active');
+  kb.blur();
+}
+function openDeck(i){
+  if(LEV_SESSION&&!levName) levAskName();
+  curDk=i; L=LAYOUTS[i];
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('cwScreen').classList.add('active');
+  document.getElementById('cwLabel').textContent=DECKS[i].label||('Ενότητα '+(i+1));
+  document.getElementById('cwTotal').textContent=L.placed.length;
+  restartDeck();
+}
+function restartDeck(){
+  entries=new Map(); revealed=new Set(); helped=new Set(); finished=false; startedAt=Date.now();
+  buildBoard(); buildClues();
+  const first=L.placed[0]; if(first) selectWord(first,false);
+  refresh(); sizeBoard();
+  if(L.unplaced.length && window.LEV_PREVIEW){
+    const w=document.createElement('div'); w.className='cw-warn';
+    w.textContent='Δεν χώρεσαν στο πλέγμα: '+L.unplaced.map(u=>u.w).join(', ')+' — δοκίμασε «Νέα διάταξη» ή άλλαξε τη λέξη.';
+    document.getElementById('boardBox').appendChild(w);
+  }
+}
+
+/* ═════════════════════════════════════
+   ΠΛΕΓΜΑ & ΟΡΙΣΜΟΙ
+   ═════════════════════════════════════ */
+function buildBoard(){
+  const b=document.getElementById('board'); b.innerHTML='';
+  b.style.gridTemplateColumns=`repeat(${L.cols},var(--cs))`;
+  for(let r=0;r<L.rows;r++) for(let c=0;c<L.cols;c++){
+    const key=K(r,c), cell=L.cells.get(key), d=document.createElement('div');
+    if(!cell){ d.className='cw-void'; b.appendChild(d); continue; }
+    d.className='cw-cell'; d.dataset.k=key;
+    const n=L.nums.get(key);
+    d.innerHTML=(n?`<span class="n">${n}</span>`:'')+'<span class="ch"></span>';
+    d.addEventListener('pointerdown',e=>{e.preventDefault();onCellTap(r,c);});
+    b.appendChild(d);
+  }
+}
+function buildClues(){
+  const box=document.getElementById('clues'); let h='';
+  [['A','Οριζόντια'],['D','Κάθετα']].forEach(([dir,title])=>{
+    const ws=L.placed.filter(p=>p.dir===dir); if(!ws.length) return;
+    h+=`<h3>${title}</h3><ol>`+ws.map(p=>`<li data-key="${p.key}"><span class="cn">${p.num}</span><span class="ct">${fmt(p.clue)} <span class="ce">(${p.en})</span></span></li>`).join('')+'</ol>';
+  });
+  box.innerHTML=h;
+  box.querySelectorAll('li').forEach(li=>li.addEventListener('click',()=>{const p=L.placed.find(x=>x.key===li.dataset.key); if(p) selectWord(p,true);}));
+}
+function wordCells(p){const[dr,dc]=DIRS[p.dir];const out=[];for(let k=0;k<p.a.length;k++) out.push([p.r+dr*k,p.c+dc*k]);return out;}
+function wordOf(r,c,dir){const cell=L.cells.get(K(r,c));return cell?cell.words[dir]||null:null;}
+function isSolved(p){return wordCells(p).every(([r,c])=>entries.get(K(r,c))===L.cells.get(K(r,c)).ch);}
+
+function selectWord(p,focus){
+  // πρώτο κενό τετράγωνο της λέξης, αλλιώς το πρώτο
+  const cs=wordCells(p); const empty=cs.find(([r,c])=>!entries.get(K(r,c)))||cs[0];
+  cur={r:empty[0],c:empty[1],dir:p.dir};
+  refresh(); if(focus) focusKb();
+}
+function onCellTap(r,c){
+  const cell=L.cells.get(K(r,c)); if(!cell) return;
+  if(cur&&cur.r===r&&cur.c===c&&cell.words.A&&cell.words.D) cur.dir=cur.dir==='A'?'D':'A';
+  else{ const dir=(cur&&cell.words[cur.dir])?cur.dir:(cell.words.A?'A':'D'); cur={r,c,dir}; }
+  refresh(); focusKb();
+}
+function focusKb(){ kb.value='​'; try{kb.focus({preventScroll:true});}catch(e){kb.focus();} }
+function curWord(){return cur?wordOf(cur.r,cur.c,cur.dir):null;}
+
+function refresh(){
+  const p=curWord(); const inWord=new Set(p?wordCells(p).map(([r,c])=>K(r,c)):[]);
+  const solvedCells=new Set(); L.placed.forEach(w=>{ if(isSolved(w)) wordCells(w).forEach(([r,c])=>solvedCells.add(K(r,c))); });
+  document.querySelectorAll('#board .cw-cell').forEach(el=>{
+    const k=el.dataset.k, v=entries.get(k)||'';
+    el.querySelector('.ch').textContent=v;
+    el.classList.toggle('hl',inWord.has(k));
+    el.classList.toggle('cur',!!cur&&k===K(cur.r,cur.c));
+    el.classList.toggle('rev',revealed.has(k));
+    el.classList.toggle('done',solvedCells.has(k));
+    if(!v) el.classList.remove('bad');
+  });
+  let done=0;
+  document.querySelectorAll('#clues li').forEach(li=>{
+    const w=L.placed.find(x=>x.key===li.dataset.key); const ok=isSolved(w); if(ok) done++;
+    li.classList.toggle('ok',ok); li.classList.toggle('on',!!p&&w.key===p.key);
+  });
+  document.getElementById('cwDone').textContent=done;
+  document.getElementById('progBar').style.width=(L.placed.length?done/L.placed.length*100:0)+'%';
+  const bar=document.getElementById('clueBar');
+  bar.innerHTML=p?`<b>${p.num} ${p.dir==='A'?'Οριζόντια':'Κάθετα'}</b>${fmt(p.clue)} <span style="opacity:.7">(${p.en})</span>`:'';
+  const on=document.querySelector('#clues li.on'); if(on) on.scrollIntoView({block:'nearest'});
+  if(!finished&&done===L.placed.length&&L.placed.length) finish(false);
+}
+
+/* ═════════════════════════════════════
+   ΠΛΗΚΤΡΟΛΟΓΗΣΗ (πραγματικό & οθόνης)
+   ═════════════════════════════════════ */
+function typeChar(ch){
+  if(!cur||finished) return;
+  const k=K(cur.r,cur.c); if(revealed.has(k)){ advance(1); return; }
+  entries.set(k,ch);
+  const el=document.querySelector(`#board .cw-cell[data-k="${k}"]`); if(el) el.classList.remove('bad');
+  advance(1); refresh();
+}
+function advance(step){
+  const[dr,dc]=DIRS[cur.dir]; const r=cur.r+dr*step, c=cur.c+dc*step;
+  if(L.cells.has(K(r,c))){cur.r=r;cur.c=c;}
+}
+function backspace(){
+  if(!cur) return; const k=K(cur.r,cur.c);
+  if(entries.get(k)&&!revealed.has(k)){ entries.delete(k); }
+  else{ advance(-1); const k2=K(cur.r,cur.c); if(!revealed.has(k2)) entries.delete(k2); }
+  refresh();
+}
+function moveArrow(dr,dc){
+  if(!cur) return; const dir=dr?'D':'A';
+  if(cur.dir!==dir&&L.cells.get(K(cur.r,cur.c)).words[dir]){cur.dir=dir;refresh();return;}
+  let r=cur.r+dr, c=cur.c+dc;
+  while(r>=0&&c>=0&&r<L.rows&&c<L.cols){ if(L.cells.has(K(r,c))){cur.r=r;cur.c=c;const cell=L.cells.get(K(r,c));if(!cell.words[cur.dir])cur.dir=dir;break;} r+=dr;c+=dc; }
+  refresh();
+}
+function stepWord(d){
+  const p=curWord(); let i=p?L.placed.indexOf(p):-1; i=(i+d+L.placed.length)%L.placed.length;
+  selectWord(L.placed[i],true);
+}
+kb.addEventListener('keydown',e=>{
+  const map={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+  if(map[e.key]){e.preventDefault();moveArrow(...map[e.key]);return;}
+  if(e.key==='Backspace'){e.preventDefault();backspace();return;}
+  if(e.key==='Tab'||e.key==='Enter'){e.preventDefault();stepWord(e.shiftKey?-1:1);return;}
+});
+kb.addEventListener('input',e=>{
+  if(e.inputType&&e.inputType.startsWith('delete')){ backspace(); }
+  else{ const s=cwNorm(kb.value.replace(/​/g,'')); for(const ch of s) typeChar(ch); }
+  kb.value='​';
+});
+// Φυσικό πληκτρολόγιο χωρίς εστίαση στο πεδίο (π.χ. μετά από κλικ σε ορισμό)
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('cwScreen').classList.contains('active')||document.activeElement===kb) return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key.length===1&&cwNorm(e.key)){ e.preventDefault(); typeChar(cwNorm(e.key)); }
+  else if(e.key==='Backspace'){ e.preventDefault(); backspace(); }
+  else if(e.key.startsWith('Arrow')){ e.preventDefault(); kb.dispatchEvent(new KeyboardEvent('keydown',{key:e.key})); }
+});
+
+/* ═════════════════════════════════════
+   ΕΛΕΓΧΟΣ · ΒΟΗΘΕΙΑ · ΛΥΣΗ
+   ═════════════════════════════════════ */
+let toastT=null;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function checkAll(){
+  let bad=0, empty=0;
+  L.cells.forEach((cell,k)=>{const v=entries.get(k);const el=document.querySelector(`#board .cw-cell[data-k="${k}"]`);
+    if(!v){empty++;return;} const wrong=v!==cell.ch; if(wrong) bad++; if(el) el.classList.toggle('bad',wrong);});
+  toast(bad?`Λάθος γράμματα: ${bad} (σημειώθηκαν με κόκκινο)`:empty?`Όλα σωστά μέχρι στιγμής! Μένουν ${empty} κενά.`:'Όλα σωστά!');
+}
+function markHelp(k){ revealed.add(k); const cell=L.cells.get(k); Object.values(cell.words).forEach(w=>helped.add(w.key)); }
+function revealLetter(){
+  if(!cur) return; const k=K(cur.r,cur.c); const cell=L.cells.get(k);
+  entries.set(k,cell.ch); markHelp(k); advance(1); refresh();
+}
+function revealWord(){
+  const p=curWord(); if(!p) return;
+  wordCells(p).forEach(([r,c])=>{const k=K(r,c); if(entries.get(k)!==L.cells.get(k).ch){ entries.set(k,L.cells.get(k).ch); markHelp(k);} });
+  refresh();
+}
+function askSolution(){
+  if(!confirm('Να εμφανιστεί όλη η λύση;')) return;
+  L.cells.forEach((cell,k)=>{ if(entries.get(k)!==cell.ch){ entries.set(k,cell.ch); markHelp(k);} });
+  finished=true; refresh(); toast('Εμφανίστηκε η λύση.');
+}
+function clearAll(){
+  if(!confirm('Να σβηστούν όλα τα γράμματα;')) return;
+  restartDeck();
+}
+function finish(){
+  finished=true;
+  const secs=Math.round((Date.now()-startedAt)/1000), mm=Math.floor(secs/60), ss=String(secs%60).padStart(2,'0');
+  const clean=L.placed.filter(p=>!helped.has(p.key)).length;
+  document.getElementById('doneTitle').textContent=helped.size?'Ολοκληρώθηκε!':'Συγχαρητήρια!';
+  document.getElementById('doneMsg').innerHTML=`Έλυσες το σταυρόλεξο σε <b>${mm}:${ss}</b>.`+(helped.size?`<br>Χωρίς βοήθεια: <b>${clean} / ${L.placed.length}</b> λέξεις.`:'<br>Όλες οι λέξεις χωρίς βοήθεια!');
+  document.getElementById('doneModal').classList.add('show');
+  levSend({ final:true, score:clean, totalQ:L.placed.length });
+}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+/* ═════════════════════════════════════
+   ΜΕΓΕΘΟΣ ΠΛΕΓΜΑΤΟΣ — χωρά πάντα στο πλαίσιο
+   ═════════════════════════════════════ */
+function sizeBoard(){
+  if(!L) return; const box=document.getElementById('boardBox'); const r=box.getBoundingClientRect();
+  const cs=Math.max(14,Math.floor(Math.min((r.width-22)/L.cols,(r.height-22)/L.rows,52)));
+  document.getElementById('board').style.setProperty('--cs',cs+'px');
+}
+let _rsT=null; window.addEventListener('resize',()=>{clearTimeout(_rsT);_rsT=setTimeout(sizeBoard,100);});
+
+/* ═════════════════════════════════════
+   ΕΚΤΥΠΩΣΗ / PDF
+   ═════════════════════════════════════ */
+function openPrint(){ document.getElementById('printModal').classList.add('show'); }
+function sheetHtml(withLetters,titleSuffix){
+  const d=DECKS[curDk];
+  const cm=Math.min(9,Math.floor(180/L.cols*10)/10, Math.floor(150/L.rows*10)/10); // mm ανά τετράγωνο
+  let g=`<table class="pa-grid">`;
+  for(let r=0;r<L.rows;r++){ g+='<tr>'; for(let c=0;c<L.cols;c++){ const k=K(r,c), cell=L.cells.get(k), st=`width:${cm}mm;height:${cm}mm;`;
+    if(!cell){ g+=`<td style="${st}"></td>`; continue; }
+    const n=L.nums.get(k);
+    g+=`<td class="c" style="${st}">${n?`<span class="n">${n}</span>`:''}${withLetters?`<span class="l" style="font-size:${(cm*1.5).toFixed(1)}pt">${cell.ch}</span>`:''}</td>`; }
+    g+='</tr>'; }
+  g+='</table>';
+  const cl=[['A','Οριζόντια'],['D','Κάθετα']].map(([dir,t])=>{const ws=L.placed.filter(p=>p.dir===dir); if(!ws.length) return '';
+    return `<h4>${t}</h4><ol>`+ws.map(p=>`<li><b>${p.num}.</b> ${fmt(p.clue)} (${p.en})</li>`).join('')+'</ol>';}).join('');
+  return `<div class="pa-page"><div class="pa-head"><div class="pa-eyebrow">${esc(QUIZ.eyebrow||'Σταυρόλεξο')}${titleSuffix?' · '+titleSuffix:''}</div>`+
+    `<div class="pa-title">${fmt(QUIZ.title||'')}</div><div class="pa-meta">${esc(d.label||'')}${d.ktitle?' — '+fmt(d.ktitle):''}</div></div>`+
+    (withLetters?'':'<div class="pa-name">Ονοματεπώνυμο: ____________________________ &nbsp; Τμήμα: ________ &nbsp; Ημερομηνία: ___________</div>')+
+    g+`<div class="pa-clues">${cl}</div>`+(QUIZ.credits?`<div class="pa-foot">© ${esc(QUIZ.credits)}</div>`:'')+'</div>';
+}
+function doPrint(withSolution){
+  closeModal('printModal');
+  document.getElementById('printArea').innerHTML=sheetHtml(false,'')+(withSolution?sheetHtml(true,'Λύσεις'):'');
+  setTimeout(()=>window.print(),80);
+}
+
+/* ═════════════════════════════════════
+   ΠΡΟΕΠΙΣΚΟΠΗΣΗ (μόνο μέσα στον Δημιουργό)
+   ═════════════════════════════════════ */
+if(window.LEV_PREVIEW){
+  try{ parent.postMessage({ type:'lev-cw-info', unplaced:(QUIZ.decks||[]).map(dk=>{ const i=DECKS.indexOf(dk); return i<0?[]:LAYOUTS[i].unplaced.map(u=>u.w); }) },'*'); }catch(e){}
+  if(DECKS.length){ const P=window.LEV_PREVIEW, d=Math.min(Math.max(P.d|0,0),DECKS.length-1); if(P.q>=0) openDeck(d); }
+}
+</script>
+</body>
+</html>
