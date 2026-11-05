@@ -22,7 +22,7 @@ const TEMPLATES = [
     name: 'Κουίζ ενοτήτων',
     file: '/protypa/quiz-deck.html',
     desc: 'Κάρτες-ενότητες στην αρχική οθόνη· ερωτήσεις μία-μία με άμεση ανατροφοδότηση, βαθμολογία και επανάληψη λαθών. Δουλεύει και με τα ζωντανά αποτελέσματα του Live.',
-    types: ['Πολλαπλής επιλογής', 'Σωστό / Λάθος', 'Αντιστοίχιση', 'Συμπλήρωση κενών', 'Επιλογή λέξεων'],
+    types: ['Πολλαπλής επιλογής', 'Σωστό / Λάθος', 'Αντιστοίχιση', 'Συμπλήρωση κενών', 'Επιλογή λέξεων', 'Αναδιάταξη', 'Ταξινόμηση', 'Μικρό σταυρόλεξο'],
   },
   {
     id: 'crossword-deck',
@@ -57,6 +57,9 @@ const TYPES = [
   { t: 'drag', icon: '⇄', label: 'Αντιστοίχιση' },
   { t: 'gap', icon: '▭', label: 'Συμπλήρωση κενών' },
   { t: 'click', icon: '☝', label: 'Επιλογή λέξεων' },
+  { t: 'order', icon: '⇅', label: 'Αναδιάταξη παραγράφου' },
+  { t: 'sort', icon: '▤', label: 'Ταξινόμηση σε κατηγορίες' },
+  { t: 'cw', icon: '✎', label: 'Μικρό σταυρόλεξο' },
 ];
 const typeOf = (t) => TYPES.find((x) => x.t === t) || TYPES[0];
 const LABS = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ'];
@@ -70,6 +73,9 @@ function newQuestion(t, keep = {}) {
   if (t === 'tf') return { ...base, labels: ['Σωστό', 'Λάθος'], ans: 0 };
   if (t === 'drag') return { ...base, q: base.q || 'Αντιστοίχισε.', tgts: ['', '', ''], items: ['', '', ''], ans: [0, 1, 2] };
   if (t === 'gap') return { ...base, q: base.q || 'Συμπλήρωσε τα κενά.', text: '', mode: 'type', distractors: [], strict: false };
+  if (t === 'order') return { ...base, q: base.q || 'Βάλε τις περιόδους στη σωστή σειρά, ώστε να σχηματιστεί συνεκτική παράγραφος.', lines: ['', '', ''], fixFirst: false };
+  if (t === 'sort') return { ...base, q: base.q || 'Ταξινόμησε τα στοιχεία στις σωστές κατηγορίες.', cats: [{ name: '', items: [''] }, { name: '', items: [''] }] };
+  if (t === 'cw') return { ...base, q: base.q || 'Λύσε το σταυρόλεξο.', words: [{ w: '', c: '' }, { w: '', c: '' }, { w: '', c: '' }], seed: 1 };
   return { ...base, q: base.q || 'Επίλεξε…', text: '' };
 }
 function newDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', qs: [newQuestion('mcq')] }; }
@@ -159,6 +165,9 @@ function cleanForExport(d) {
       qs: dk.qs.map((q) => {
         if (q.t === 'drag') return { ...q, ans: q.tgts.map((_, i) => i) };
         if (q.t === 'gap') return { ...q, distractors: (q.distractors || []).map((s) => s.trim()).filter(Boolean) };
+        if (q.t === 'order') return { ...q, lines: (q.lines || []).map((l) => String(l).trim()).filter(Boolean) };
+        if (q.t === 'sort') return { ...q, cats: (q.cats || []).map((c) => ({ name: String(c.name || '').trim(), items: (c.items || []).map((x) => String(x).trim()).filter(Boolean) })).filter((c) => c.name || c.items.length) };
+        if (q.t === 'cw') return { ...q, words: (q.words || []).map((x) => ({ w: String(x.w || '').trim(), c: String(x.c || '').trim() })).filter((x) => x.w || x.c) };
         return q;
       }),
     })),
@@ -180,6 +189,23 @@ function problemsOf(q) {
   if (q.t === 'gap' && !marked(q.text).length) p.push('Δεν υπάρχει κενό: βάλτε τη σωστή λέξη σε [αγκύλες].');
   if (q.t === 'click') {
     if (!marked(q.text).length) p.push('Δεν υπάρχει σωστή λέξη: βάλτε τη σε [αγκύλες].');
+  }
+  if (q.t === 'order') {
+    const n = (q.lines || []).filter((l) => String(l).trim()).length;
+    if (n < 3) p.push(`Χρειάζονται τουλάχιστον 3 περίοδοι (τώρα ${n}).`);
+    if (n > 10) p.push('Πάνω από 10 περίοδοι — μέσα στο κουίζ προτείνονται έως 8.');
+  }
+  if (q.t === 'sort') {
+    const cs = (q.cats || []).filter((c) => String(c.name || '').trim() || (c.items || []).some((x) => String(x).trim()));
+    if (cs.length < 2) p.push('Χρειάζονται τουλάχιστον 2 κατηγορίες.');
+    if (cs.some((c) => !String(c.name || '').trim())) p.push('Υπάρχει κατηγορία χωρίς όνομα.');
+    if (cs.some((c) => !(c.items || []).some((x) => String(x).trim()))) p.push('Υπάρχει κατηγορία χωρίς στοιχεία.');
+  }
+  if (q.t === 'cw') {
+    const ws = (q.words || []).filter((x) => String(x.w || '').trim() || String(x.c || '').trim());
+    if (ws.filter((x) => cwNorm(x.w).length >= 2).length < 3) p.push('Χρειάζονται τουλάχιστον 3 λέξεις.');
+    if (ws.some((x) => String(x.w || '').trim() && !String(x.c || '').trim())) p.push('Υπάρχει λέξη χωρίς ορισμό.');
+    if (ws.some((x) => !String(x.w || '').trim() && String(x.c || '').trim())) p.push('Υπάρχει ορισμός χωρίς λέξη.');
   }
   return p;
 }
@@ -342,7 +368,8 @@ export default function Creator() {
   };
   const changeType = (t) => {
     if (t === q.t) return;
-    const filled = q.t === 'mcq' ? q.opts.some((o) => o.trim()) : q.t === 'drag' ? q.tgts.some((o) => o.trim()) : (q.t === 'gap' || q.t === 'click') ? !!q.text.trim() : false;
+    const filled = q.t === 'mcq' ? q.opts.some((o) => o.trim()) : q.t === 'drag' ? q.tgts.some((o) => o.trim()) : (q.t === 'gap' || q.t === 'click') ? !!q.text.trim()
+      : q.t === 'order' ? (q.lines || []).some((l) => String(l).trim()) : q.t === 'sort' ? (q.cats || []).some((c) => (c.items || []).some((x) => String(x).trim())) : q.t === 'cw' ? (q.words || []).some((x) => String(x.w || '').trim()) : false;
     if (filled && !confirm('Η αλλαγή τύπου θα σβήσει τις απαντήσεις αυτής της ερώτησης (η εκφώνηση μένει). Συνέχεια;')) return;
     upd((n) => { n.decks[sel.d].qs[sel.q] = newQuestion(t, q); });
   };
@@ -786,6 +813,66 @@ function ParaForm({ x, index, total, setP, onUp, onDown, onDup, onDel, onPrev, o
   );
 }
 
+// ── Πεδία των νέων τύπων ερώτησης του κουίζ ──
+function OrderFields({ q, setQ }) {
+  const [whole, setWhole] = useState('');
+  const n = (q.lines || []).filter((l) => String(l).trim()).length;
+  return (
+    <>
+      <div style={{ background: 'rgba(107,63,160,.04)', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>Γρήγορα: επικόλλησε όλη την παράγραφο</div>
+        <textarea style={{ ...S.input, minHeight: 60, fontFamily: 'Literata,serif', fontSize: 14.5 }} value={whole} onChange={(e) => setWhole(e.target.value)} placeholder="Επικόλλησε εδώ την παράγραφο…" />
+        <div><button style={S.btnPrimarySm} disabled={!whole.trim()} onClick={() => { const parts = splitSentences(whole); if (parts.length) { setQ({ lines: parts }); setWhole(''); } }}>✂ Χωρισμός σε περιόδους</button></div>
+      </div>
+      <Field label={`Περίοδοι με τη ΣΩΣΤΗ σειρά — μία ανά γραμμή (${n})`} hint="Ο μαθητής τις βλέπει ανακατεμένες. Μέσα στο κουίζ προτείνονται 3–8 περίοδοι.">
+        <textarea style={{ ...S.input, minHeight: 150, fontFamily: 'Literata,serif', fontSize: 15, lineHeight: 1.6 }} value={(q.lines || []).join('\n')} onChange={(e) => setQ({ lines: e.target.value.split('\n') })} />
+      </Field>
+      <label style={S.check}><input type="checkbox" checked={!!q.fixFirst} onChange={(e) => setQ({ fixFirst: e.target.checked })} /> Η πρώτη περίοδος (θεματική) μένει σταθερή</label>
+    </>
+  );
+}
+function SortFields({ q, setQ }) {
+  const cats = q.cats || [];
+  const setCat = (i, patch) => setQ({ cats: cats.map((c, j) => (j === i ? { ...c, ...patch } : c)) });
+  return (
+    <Field label="Κατηγορίες και τα στοιχεία τους" hint="Ένα στοιχείο ανά γραμμή. Ο μαθητής τα βλέπει όλα ανακατεμένα και τα βάζει στη σωστή κατηγορία. Προτείνονται 2–4 κατηγορίες.">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 10 }}>
+        {cats.map((c, i) => (
+          <div key={i} style={{ border: `1.5px solid ${C.line}`, borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 6, background: '#fff' }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input style={{ ...S.input, fontWeight: 700 }} value={c.name} placeholder={`Κατηγορία ${i + 1}`} onChange={(e) => setCat(i, { name: e.target.value })} />
+              <IconBtn danger title="Διαγραφή κατηγορίας" disabled={cats.length <= 2} onClick={() => setQ({ cats: cats.filter((_, j) => j !== i) })}>✕</IconBtn>
+            </div>
+            <textarea style={{ ...S.input, minHeight: 90 }} value={(c.items || []).join('\n')} placeholder={'στοιχείο 1\nστοιχείο 2'} onChange={(e) => setCat(i, { items: e.target.value.split('\n') })} />
+          </div>
+        ))}
+      </div>
+      {cats.length < 5 && <div><button style={{ ...S.btnGhost, fontSize: 13 }} onClick={() => setQ({ cats: [...cats, { name: '', items: [''] }] })}>＋ Κατηγορία</button></div>}
+    </Field>
+  );
+}
+function MiniCwFields({ q, setQ }) {
+  const words = q.words || [];
+  const setW = (i, k, v) => setQ({ words: words.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
+  return (
+    <Field label={`Λέξεις και ορισμοί (${words.filter((x) => String(x.w || '').trim()).length})`} hint="Το πλέγμα στήνεται αυτόματα. Μέσα στο κουίζ προτείνονται 3–8 λέξεις· για μεγαλύτερα υπάρχει το πρότυπο «Σταυρόλεξα ενοτήτων».">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {words.map((x, i) => (
+          <div key={i} style={{ display: 'flex', gap: 6 }}>
+            <input style={{ ...S.input, width: '34%', minWidth: 0, flexShrink: 0, fontWeight: 600 }} value={x.w} placeholder="λέξη" onChange={(e) => setW(i, 'w', e.target.value)} />
+            <input style={{ ...S.input, flex: 1, minWidth: 0 }} value={x.c} placeholder="ορισμός" onChange={(e) => setW(i, 'c', e.target.value)} />
+            <IconBtn danger title="Διαγραφή" onClick={() => setQ({ words: words.length > 1 ? words.filter((_, j) => j !== i) : [{ w: '', c: '' }] })}>✕</IconBtn>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+        <button style={{ ...S.btnGhost, fontSize: 13 }} onClick={() => setQ({ words: [...words, { w: '', c: '' }] })}>＋ Λέξη</button>
+        <button style={{ ...S.btnGhost, fontSize: 13 }} onClick={() => setQ({ seed: ((q.seed | 0) || 1) + 1 })}>🔀 Νέα διάταξη πλέγματος</button>
+      </div>
+    </Field>
+  );
+}
+
 function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, onDel, onPrev, onNext }) {
   const probs = problemsOf(q);
   const taRef = useRef(null);
@@ -929,6 +1016,13 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
           )}
         </>
       )}
+
+      {/* ── Αναδιάταξη ── */}
+      {q.t === 'order' && <OrderFields q={q} setQ={setQ} />}
+      {/* ── Ταξινόμηση ── */}
+      {q.t === 'sort' && <SortFields q={q} setQ={setQ} />}
+      {/* ── Μικρό σταυρόλεξο ── */}
+      {q.t === 'cw' && <MiniCwFields q={q} setQ={setQ} />}
 
       <details style={{ background: 'rgba(107,63,160,.04)', borderRadius: 10, padding: '10px 14px' }} open={!!(q.fbC || q.fbW || q.ref)}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13.5, color: C.purple }}>Ανατροφοδότηση / διόρθωση (προαιρετικά)</summary>

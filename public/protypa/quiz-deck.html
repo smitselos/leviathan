@@ -496,6 +496,54 @@ select.gap-in{cursor:pointer;}
   .fb-ref{font-size:clamp(15.6px, 2vw, 2.6vh);}
   .btn-submit{font-size:clamp(18px, 2.3vw, 3.1vh);}
 }
+
+/* ═══ ΝΕΟΙ ΤΥΠΟΙ: Αναδιάταξη · Ταξινόμηση · Μικρό σταυρόλεξο ═══ */
+.ord-list{display:flex;flex-direction:column;gap:8px;}
+.ord-tile{display:flex;align-items:stretch;background:#fff;border:2px solid rgba(107,63,160,.18);border-radius:9px;touch-action:none;position:relative;transition:border-color .2s,background .2s;}
+.ord-tile.dragging{z-index:5;box-shadow:0 10px 24px rgba(26,22,16,.2);border-color:var(--purple);transition:none;}
+.ord-tile .og{display:flex;align-items:center;justify-content:center;width:32px;flex-shrink:0;color:var(--purple-light);cursor:grab;background:rgba(107,63,160,.04);border-radius:7px 0 0 7px;}
+.ord-tile .on{display:flex;align-items:center;justify-content:center;width:26px;flex-shrink:0;font-family:'Literata',serif;font-weight:700;color:var(--purple);}
+.ord-tile .ot{flex:1;padding:10px 8px 10px 2px;font-family:'Literata',serif;font-size:clamp(15px,1.8vw,19px);line-height:1.5;cursor:grab;}
+.ord-tile .oa{display:flex;flex-direction:column;flex-shrink:0;border-left:1px solid rgba(107,63,160,.1);}
+.ord-tile .oa button{flex:1;width:34px;border:none;background:none;color:var(--purple);cursor:pointer;font-size:13px;}
+.ord-tile .oa button:disabled{opacity:.25;cursor:default;}
+.ord-tile.fixed{background:#f6f2fb;border-style:dashed;}
+.ord-tile.fixed .og,.ord-tile.fixed .ot,.ord-done .ord-tile .og,.ord-done .ord-tile .ot{cursor:default;}
+.ord-tile.ok{border-color:var(--correct);background:#eef8f1;}
+.ord-tile.ko{border-color:var(--wrong);background:#fdeeec;}
+.ord-sol{margin-top:10px;background:rgba(45,142,78,.07);border-radius:8px;padding:10px 14px;font-family:'Literata',serif;font-size:clamp(14px,1.6vw,17px);line-height:1.55;}
+.ord-sol b{font-family:'Source Sans 3',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--correct);display:block;margin-bottom:4px;}
+.ord-sol ol{margin:0;padding-left:22px;}
+
+.sort-bank{display:flex;flex-wrap:wrap;gap:8px;min-height:46px;padding:10px;border:2px dashed rgba(107,63,160,.2);border-radius:10px;background:rgba(107,63,160,.03);}
+.sort-bank:empty::after{content:'✓ Όλα τοποθετήθηκαν';color:var(--muted);font-size:13px;align-self:center;}
+.sort-chip{padding:8px 13px;background:#fff;border:1.5px solid rgba(107,63,160,.3);border-radius:999px;font-size:clamp(14px,1.7vw,18px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Source Sans 3',sans-serif;line-height:1.3;}
+.sort-chip.sel{background:var(--purple);color:#fff;border-color:var(--purple);}
+.sort-chip.ok{border-color:var(--correct);background:#eef8f1;color:var(--correct);font-weight:700;}
+.sort-chip.ko{border-color:var(--wrong);background:#fdeeec;color:var(--wrong);}
+.sort-chip .fix{font-size:.75em;opacity:.85;margin-left:4px;}
+.sort-ghost{position:fixed;z-index:999;pointer-events:none;box-shadow:0 10px 24px rgba(26,22,16,.25);transform:translate(-50%,-50%) scale(1.05);}
+.sort-bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;}
+.sort-bin{border:2px solid rgba(107,63,160,.2);border-radius:10px;background:#fff;min-height:96px;display:flex;flex-direction:column;cursor:pointer;transition:border-color .15s,background .15s;}
+.sort-bin.over{border-color:var(--purple);background:rgba(107,63,160,.06);}
+.sort-bin h4{font-size:12.5px;letter-spacing:1px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--purple),var(--purple-dark));margin:0;padding:8px 10px;border-radius:7px 7px 0 0;font-family:'Source Sans 3',sans-serif;}
+.sort-bin .sb-items{display:flex;flex-wrap:wrap;gap:6px;padding:8px;flex:1;align-content:flex-start;}
+
+.mcw-wrap{container-type:inline-size;}
+.mcw-board{display:grid;margin:0 auto 10px;--mcwF:22;}
+.mcw-cell{position:relative;aspect-ratio:1;border:1px solid #2a2440;margin:0 -1px -1px 0;background:#fff;}
+.mcw-cell input{position:absolute;inset:0;width:100%;height:100%;border:none;background:transparent;text-align:center;font-weight:700;font-family:'Source Sans 3',sans-serif;text-transform:uppercase;color:var(--ink);padding:8% 0 0;font-size:16px;font-size:calc(var(--mcwF,1) * 1px);caret-color:transparent;outline:none;border-radius:0;}
+.mcw-cell .n{position:absolute;top:1px;left:2px;font-size:9px;font-size:calc(var(--mcwF,30) * .42px);line-height:1;color:#4a4060;pointer-events:none;z-index:1;}
+.mcw-cell.hl{background:#efe8f8;} .mcw-cell.cur{background:#d9c8f0;box-shadow:inset 0 0 0 2px var(--purple);z-index:1;}
+.mcw-cell.ok{background:#e9f6ee;} .mcw-cell.ko{background:#fbe7e4;} .mcw-cell.ko input{color:var(--wrong);}
+.mcw-cell.fixed input{color:var(--purple);}
+.mcw-clues{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-size:clamp(13.5px,1.5vw,16px);line-height:1.4;}
+.mcw-clues h5{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--purple-light);margin:4px 0;}
+.mcw-clues div.c{padding:3px 6px;border-radius:6px;cursor:pointer;}
+.mcw-clues div.c b{color:var(--purple);margin-right:4px;}
+.mcw-clues div.c.on{background:#efe8f8;}
+.mcw-warn{background:#fff7e0;border:1px solid var(--gold);color:#7a5a00;border-radius:8px;padding:6px 10px;font-size:13px;margin-bottom:8px;}
+@media(max-width:640px){ .mcw-clues{grid-template-columns:1fr;} .sort-bins{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));} }
 </style>
 </head>
 <body>
@@ -562,7 +610,7 @@ select.gap-in{cursor:pointer;}
 const QUIZ=/*QUIZ_DATA_START*/{"v":1,"template":"quiz-deck","title":"Κουίζ — Παράδειγμα","eyebrow":"Κουίζ αυτοαξιολόγησης","heading":"Παράδειγμα *προτύπου*","subtitle":"Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.","credits":"ΛΕΒΙΑΘΑΝ","shuffleOpts":false,"shuffleQs":false,"decks":[{"label":"Ενότητα 1","ktitle":"Δείγμα ερωτήσεων","author":"","sub":"Πέντε τύποι ερωτήσεων","qs":[{"t":"mcq","q":"Ποια έγκλιση εκφράζει εντολή;","opts":["Οριστική","Προστακτική","Υποτακτική"],"ans":1,"ref":"Εγκλίσεις","fbC":"","fbW":""},{"t":"tf","q":"Η παθητική σύνταξη αποσιωπά συχνά τον δράστη.","labels":["Σωστό","Λάθος"],"ans":0,"ref":"","fbC":"","fbW":""},{"t":"drag","q":"Αντιστοίχισε.","tgts":["Μεταφορά","Παρομοίωση"],"items":["«μύγα ενοχλητική»","«σαν μύγα»"],"ans":[0,1],"ref":"","fbC":"","fbW":""},{"t":"gap","q":"Συμπλήρωσε το κενό.","text":"Η ονοματοποίηση κάνει τον λόγο πιο [πυκνό|δύσκολο].","mode":"type","distractors":[],"strict":false,"ref":"","fbC":"","fbW":""},{"t":"click","q":"Επίλεξε τα ρήματα.","text":"Ο Θανάσης [έπαιζε] κάθε βράδυ και [ξεχνούσε] τον χρόνο.","ref":"","fbC":"","fbW":""}]}]}/*QUIZ_DATA_END*/;
 
 const LABS=['Α','Β','Γ','Δ','Ε','ΣΤ','Ζ','Η'];
-const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων'};
+const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων',order:'⇅ Αναδιάταξη',sort:'▤ Ταξινόμηση',cw:'✎ Σταυρόλεξο'};
 const DECKS=(QUIZ.decks||[]).filter(d=>d&&Array.isArray(d.qs)&&d.qs.length);
 
 /* ── Βοηθητικά ── */
@@ -710,7 +758,7 @@ function renderCard(){
     <div class="bc-result" id="bcResult"></div>`;
   const right=document.createElement('div');
   right.className='bc-right'; right.id='bcRight';
-  ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick}[q.t]||buildMCQ)(q,right);
+  ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick,order:buildOrder,sort:buildSort,cw:buildCw}[q.t]||buildMCQ)(q,right);
   card.appendChild(left); card.appendChild(right);
   stage.appendChild(card);
   fitCard();
@@ -993,6 +1041,206 @@ function buildClick(q,container){
     });
     box.classList.add('clk-done'); sub.style.display='none';
     finishQuestion(allOk,q,container,allOk?'':'Με διακεκομμένο πλαίσιο όσες έπρεπε να επιλεγούν.');
+  });
+}
+
+/* ═════════════════════════════════════
+   ΑΝΑΔΙΑΤΑΞΗ (order) — περίοδοι με τη σωστή σειρά στο q.lines
+   ═════════════════════════════════════ */
+function buildOrder(q,container){
+  const lines=(q.lines||[]).map(s=>String(s||'').trim()).filter(Boolean), n=lines.length;
+  const instr=document.createElement('div'); instr.className='q-instr';
+  instr.textContent='Σύρε τις περιόδους (ή πάτα τα βελάκια) για να τις βάλεις στη σωστή σειρά.'+(q.fixFirst?' Η πρώτη είναι ήδη στη θέση της.':'');
+  container.appendChild(instr);
+  const idx=[...Array(n).keys()], head=q.fixFirst?[0]:[], rest=q.fixFirst?idx.slice(1):idx;
+  let sh=shuffle(rest), g=0; while(rest.length>1&&sh.every((v,i)=>v===rest[i])&&g++<20) sh=shuffle(rest);
+  let order=head.concat(sh), done=false;
+  const list=document.createElement('div'); list.className='ord-list'; container.appendChild(list);
+  const minIdx=q.fixFirst?1:0;
+  function draw(){
+    list.innerHTML='';
+    order.forEach((li,pos)=>{
+      const fixed=q.fixFirst&&pos===0, t=document.createElement('div');
+      t.className='ord-tile'+(fixed?' fixed':''); t.dataset.li=li;
+      t.innerHTML=`<div class="og">${fixed?'📌':'⠿'}</div><div class="on">${pos+1}</div><div class="ot">${fmt(lines[li])}</div>`+
+        (fixed||done?'':`<div class="oa"><button aria-label="Πάνω" ${pos<=minIdx?'disabled':''}>▲</button><button aria-label="Κάτω" ${pos===n-1?'disabled':''}>▼</button></div>`);
+      if(!fixed&&!done){
+        const [u,d]=t.querySelectorAll('.oa button');
+        u.onclick=e=>{e.stopPropagation();swap(pos,pos-1);}; d.onclick=e=>{e.stopPropagation();swap(pos,pos+1);};
+        drag(t);
+      }
+      list.appendChild(t);
+    });
+  }
+  function swap(a,b){ if(b<minIdx||b>=n) return; [order[a],order[b]]=[order[b],order[a]]; draw(); }
+  function drag(tile){
+    let startY=0,downY=0,on=false,pid=null;
+    tile.addEventListener('pointerdown',e=>{ if(e.target.closest('.oa')) return; pid=e.pointerId; downY=startY=e.clientY; on=false; tile.setPointerCapture(pid); });
+    tile.addEventListener('pointermove',e=>{
+      if(e.pointerId!==pid) return;
+      if(!on){ if(Math.abs(e.clientY-downY)<6) return; on=true; tile.classList.add('dragging'); }
+      e.preventDefault();
+      const z=parseFloat(document.getElementById('bcRight').style.zoom)||1;
+      const nx=tile.nextElementSibling, pv=tile.previousElementSibling;
+      if(nx){const r=nx.getBoundingClientRect(); if(e.clientY>r.top+r.height/2){ list.insertBefore(nx,tile); startY+=r.height+8*z; }}
+      if(pv&&[...list.children].indexOf(pv)>=minIdx){const r=pv.getBoundingClientRect(); if(e.clientY<r.top+r.height/2){ list.insertBefore(tile,pv); startY-=r.height+8*z; }}
+      tile.style.transform=`translateY(${(e.clientY-startY)/z}px)`;
+      const sc=document.getElementById('bcRight'), sr=sc.getBoundingClientRect();
+      if(e.clientY<sr.top+36) sc.scrollTop-=10; else if(e.clientY>sr.bottom-36) sc.scrollTop+=10;
+    });
+    const end=e=>{ if(e.pointerId!==pid) return; pid=null; if(!on) return; on=false; tile.classList.remove('dragging'); tile.style.transform=''; order=[...list.children].map(t=>+t.dataset.li); draw(); };
+    tile.addEventListener('pointerup',end); tile.addEventListener('pointercancel',end);
+  }
+  draw();
+  addFB(container);
+  const sub=document.createElement('button'); sub.className='btn-submit'; sub.textContent='Υποβολή'; container.appendChild(sub);
+  sub.addEventListener('click',()=>{
+    done=true; draw(); list.classList.add('ord-done');
+    let ok=0; [...list.children].forEach((t,pos)=>{ const good=+t.dataset.li===pos; if(good) ok++; t.classList.add(good?'ok':'ko'); });
+    const all=ok===n; sub.style.display='none'; levChoice=`${ok}/${n}`;
+    if(!all){ const s=document.createElement('div'); s.className='ord-sol'; s.innerHTML='<b>Σωστή σειρά</b><ol>'+lines.map(l=>`<li>${fmt(l)}</li>`).join('')+'</ol>'; list.after(s); }
+    finishQuestion(all,q,container,all?'':`${ok} από ${n} περιόδους στη σωστή θέση. Δες τη σωστή σειρά.`);
+  });
+}
+
+/* ═════════════════════════════════════
+   ΤΑΞΙΝΟΜΗΣΗ (sort) — q.cats:[{name, items:[...]}]
+   Πάτημα στοιχείου → πάτημα κατηγορίας, ή σύρσιμο
+   ═════════════════════════════════════ */
+function buildSort(q,container){
+  const cats=(q.cats||[]).map(c=>({name:String(c.name||'').trim(),items:(c.items||[]).map(s=>String(s||'').trim()).filter(Boolean)})).filter(c=>c.name&&c.items.length);
+  const instr=document.createElement('div'); instr.className='q-instr';
+  instr.textContent='Πάτα ένα στοιχείο και μετά την κατηγορία του (ή σύρε το). Πάτα ξανά ένα τοποθετημένο στοιχείο για να το επιστρέψεις.';
+  container.appendChild(instr);
+  const bank=document.createElement('div'); bank.className='sort-bank'; container.appendChild(bank);
+  const binsWrap=document.createElement('div'); binsWrap.className='sort-bins'; container.appendChild(binsWrap);
+  const bins=cats.map((c,ci)=>{ const b=document.createElement('div'); b.className='sort-bin'; b.dataset.ci=ci; b.innerHTML=`<h4>${esc(c.name)}</h4><div class="sb-items"></div>`; binsWrap.appendChild(b); return b; });
+  let sel=null, locked=false;
+  const all=[]; cats.forEach((c,ci)=>c.items.forEach(it=>all.push({it,ci})));
+  const chips=shuffle(all).map(o=>{ const ch=document.createElement('div'); ch.className='sort-chip'; ch.textContent=o.it; ch.dataset.ci=o.ci; bank.appendChild(ch); return ch; });
+  const update=()=>{ sub.disabled=bank.children.length>0; };
+  const place=(ch,bin)=>{ (bin?bin.querySelector('.sb-items'):bank).appendChild(ch); ch.classList.remove('sel'); if(sel===ch) sel=null; update(); fitCard(); };
+  chips.forEach(ch=>{
+    let downX=0,downY=0,ghost=null,pid=null;
+    ch.addEventListener('pointerdown',e=>{ if(locked) return; pid=e.pointerId; downX=e.clientX; downY=e.clientY; ch.setPointerCapture(pid); });
+    ch.addEventListener('pointermove',e=>{
+      if(e.pointerId!==pid||locked) return;
+      if(!ghost){ if(Math.hypot(e.clientX-downX,e.clientY-downY)<7) return; ghost=ch.cloneNode(true); ghost.classList.add('sort-ghost'); ghost.classList.remove('sel'); document.body.appendChild(ghost); ch.style.opacity='.35'; }
+      e.preventDefault(); ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px';
+      const el=document.elementFromPoint(e.clientX,e.clientY), bin=el&&el.closest('.sort-bin');
+      bins.forEach(b=>b.classList.toggle('over',b===bin));
+    });
+    const end=e=>{
+      if(e.pointerId!==pid) return; pid=null;
+      if(ghost){ const el=document.elementFromPoint(e.clientX,e.clientY); ghost.remove(); ghost=null; ch.style.opacity=''; bins.forEach(b=>b.classList.remove('over'));
+        const bin=el&&el.closest('.sort-bin'); if(bin) place(ch,bin); else if(el&&el.closest('.sort-bank')) place(ch,null); return; }
+      if(locked) return;
+      // απλό πάτημα
+      if(ch.parentElement!==bank){ place(ch,null); return; }
+      if(sel===ch){ ch.classList.remove('sel'); sel=null; return; }
+      if(sel) sel.classList.remove('sel'); sel=ch; ch.classList.add('sel');
+    };
+    ch.addEventListener('pointerup',end); ch.addEventListener('pointercancel',e=>{ if(ghost){ghost.remove();ghost=null;ch.style.opacity='';} pid=null; });
+  });
+  bins.forEach(b=>b.addEventListener('click',e=>{ if(locked||!sel||e.target.closest('.sort-chip')) return; place(sel,b); }));
+  addFB(container);
+  const sub=document.createElement('button'); sub.className='btn-submit'; sub.textContent='Υποβολή'; sub.disabled=true; container.appendChild(sub);
+  sub.addEventListener('click',()=>{
+    locked=true; let bad=0;
+    chips.forEach(ch=>{ const bin=ch.closest('.sort-bin'); const good=bin&&bin.dataset.ci===ch.dataset.ci; ch.classList.add(good?'ok':'ko');
+      if(!good){ bad++; const f=document.createElement('span'); f.className='fix'; f.textContent='→ '+cats[+ch.dataset.ci].name; ch.appendChild(f); } });
+    sub.style.display='none'; levChoice=`${chips.length-bad}/${chips.length}`;
+    finishQuestion(bad===0,q,container,bad?`Λάθος θέση: ${bad} από ${chips.length}. Δίπλα σε καθένα φαίνεται η σωστή κατηγορία.`:'');
+  });
+}
+
+/* ═════════════════════════════════════
+   ΜΙΚΡΟ ΣΤΑΥΡΟΛΕΞΟ (cw) — q.words:[{w,c}], q.seed
+   ═════════════════════════════════════ */
+function cwNorm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-ZΑ-Ω0-9]/g,'');}
+function cwEnum(s){return String(s||'').split(/[\s\-–]+/).map(cwNorm).filter(Boolean).map(x=>x.length).join(',');}
+function cwRng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function cwLayout(words,seed){
+  const K=(r,c)=>r+','+c, DIR={A:[0,1],D:[1,0]};
+  const seen=new Set(), items=[];
+  (words||[]).forEach(x=>{const a=cwNorm(x&&x.w); if(a.length<2||seen.has(a)) return; seen.add(a); items.push({a,w:x.w,clue:x.c||'',en:cwEnum(x.w)});});
+  function attempt(order,rnd){
+    const grid=new Map(), placed=[], later=[];
+    const put=(it,r,c,d)=>{const[dr,dc]=DIR[d];for(let k=0;k<it.a.length;k++){const key=K(r+dr*k,c+dc*k);const cl=grid.get(key)||{ch:it.a[k],dirs:{}};cl.dirs[d]=1;grid.set(key,cl);}placed.push(Object.assign({},it,{r,c,dir:d}));};
+    const fits=(a,r,c,d)=>{const[dr,dc]=DIR[d];let x=0;if(grid.has(K(r-dr,c-dc))||grid.has(K(r+dr*a.length,c+dc*a.length)))return -1;
+      for(let k=0;k<a.length;k++){const rr=r+dr*k,cc=c+dc*k,cl=grid.get(K(rr,cc));
+        if(cl){if(cl.ch!==a[k]||cl.dirs[d])return -1;x++;}else{const n1=d==='A'?K(rr-1,cc):K(rr,cc-1),n2=d==='A'?K(rr+1,cc):K(rr,cc+1);if(grid.has(n1)||grid.has(n2))return -1;}}return x;};
+    const bb=()=>{let a=1e9,b=-1e9,c=1e9,d=-1e9;grid.forEach((_,k)=>{const[r,cc]=k.split(',').map(Number);a=Math.min(a,r);b=Math.max(b,r);c=Math.min(c,cc);d=Math.max(d,cc);});return{r0:a,r1:b,c0:c,c1:d};};
+    const tryPut=it=>{let best=null;const B=bb();grid.forEach((cl,key)=>{const[r,c]=key.split(',').map(Number);
+      for(let j=0;j<it.a.length;j++){if(it.a[j]!==cl.ch)continue;for(const d of['A','D']){if(cl.dirs[d])continue;const[dr,dc]=DIR[d],r0=r-dr*j,c0=c-dc*j,x=fits(it.a,r0,c0,d);if(x<1)continue;
+        const r1=r0+dr*(it.a.length-1),c1=c0+dc*(it.a.length-1),h=Math.max(B.r1,r1)-Math.min(B.r0,r0)+1,w=Math.max(B.c1,c1)-Math.min(B.c0,c0)+1;
+        const s=x*12-h*w*.15-Math.abs(h-w)*.6+rnd()*2;if(!best||s>best.s)best={s,r0,c0,d};}}});if(best){put(it,best.r0,best.c0,best.d);return true;}return false;};
+    order.forEach((it,i)=>{if(i===0)put(it,0,0,rnd()<.5?'A':'D');else if(!tryPut(it))later.push(it);});
+    const unplaced=later.filter(it=>!tryPut(it)), B=bb();
+    return{placed:placed.map(p=>Object.assign(p,{r:p.r-B.r0,c:p.c-B.c0})),unplaced,rows:B.r1-B.r0+1,cols:B.c1-B.c0+1};
+  }
+  let best=null; const base=(seed|0)||1;
+  for(let t=0;t<40;t++){const rnd=cwRng(base*7919+t*104729);const order=items.map(it=>({it,k:it.a.length+rnd()*3})).sort((p,q)=>q.k-p.k).map(x=>x.it);
+    const L=attempt(order,rnd),v=L.placed.length*1000-Math.max(L.rows,L.cols)*8-L.rows*L.cols*.2;if(!best||v>best.v)best=Object.assign(L,{v});}
+  const starts=[...new Set(best.placed.map(p=>K(p.r,p.c)))].map(k=>k.split(',').map(Number)).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  best.nums=new Map(starts.map((s,i)=>[K(s[0],s[1]),i+1]));
+  best.placed.forEach(p=>{p.num=best.nums.get(K(p.r,p.c));p.key=p.dir+p.num;});
+  best.placed.sort((a,b)=>(a.dir<b.dir?-1:a.dir>b.dir?1:0)||a.num-b.num);
+  best.cells=new Map(); best.placed.forEach(p=>{const[dr,dc]=DIR[p.dir];for(let k=0;k<p.a.length;k++){const key=K(p.r+dr*k,p.c+dc*k);const cl=best.cells.get(key)||{ch:p.a[k],words:{}};cl.words[p.dir]=p;best.cells.set(key,cl);}});
+  best.K=K; best.DIR=DIR; return best;
+}
+function buildCw(q,container){
+  const L=cwLayout(q.words,q.seed), K=L.K, DIR=L.DIR;
+  const instr=document.createElement('div'); instr.className='q-instr';
+  instr.textContent='Πάτα ένα τετράγωνο και γράψε. Πάτα ξανά για να αλλάξεις κατεύθυνση.';
+  container.appendChild(instr);
+  if(window.LEV_PREVIEW&&L.unplaced.length){ const w=document.createElement('div'); w.className='mcw-warn'; w.textContent='Δεν χώρεσαν: '+L.unplaced.map(u=>u.w).join(', ')+' (Δημιουργός → «Νέα διάταξη»).'; container.appendChild(w); }
+  const wrap=document.createElement('div'); wrap.className='mcw-wrap'; container.appendChild(wrap);
+  const board=document.createElement('div'); board.className='mcw-board';
+  board.style.gridTemplateColumns=`repeat(${L.cols},minmax(0,1fr))`;
+  board.style.maxWidth=Math.min(L.cols*46,100*L.cols)+'px';
+  wrap.appendChild(board);
+  const inputs=new Map(); let cur=null, locked=false;
+  for(let r=0;r<L.rows;r++) for(let c=0;c<L.cols;c++){
+    const key=K(r,c), cl=L.cells.get(key), d=document.createElement('div');
+    if(!cl){ d.style.aspectRatio='1'; board.appendChild(d); continue; }
+    d.className='mcw-cell'; const n=L.nums.get(key);
+    d.innerHTML=(n?`<span class="n">${n}</span>`:'')+'<input maxlength="2" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">';
+    const inp=d.querySelector('input'); inputs.set(key,{inp,cell:d,r,c});
+    inp.addEventListener('focus',()=>{ if(!cur||cur.r!==r||cur.c!==c) setCur(r,c,null); });
+    inp.addEventListener('pointerdown',e=>{ if(locked) return; if(cur&&cur.r===r&&cur.c===c&&cl.words.A&&cl.words.D){ e.preventDefault(); cur.dir=cur.dir==='A'?'D':'A'; paint(); } });
+    inp.addEventListener('input',()=>{ const v=cwNorm(inp.value); inp.value=v.slice(-1); if(v) step(1); check(); });
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Backspace'&&!inp.value){ e.preventDefault(); step(-1); const o=inputs.get(K(cur.r,cur.c)); if(o) o.inp.value=''; check(); }
+      const m={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];
+      if(m){ e.preventDefault(); let rr=r+m[0],cc=c+m[1]; while(rr>=0&&cc>=0&&rr<L.rows&&cc<L.cols){ if(inputs.has(K(rr,cc))){ setCur(rr,cc,m[0]?'D':'A'); break; } rr+=m[0];cc+=m[1]; } }
+    });
+    board.appendChild(d);
+  }
+  const clues=document.createElement('div'); clues.className='mcw-clues';
+  [['A','Οριζόντια'],['D','Κάθετα']].forEach(([dir,t])=>{ const ws=L.placed.filter(p=>p.dir===dir); if(!ws.length) return;
+    const col=document.createElement('div'); col.innerHTML=`<h5>${t}</h5>`+ws.map(p=>`<div class="c" data-k="${p.key}"><b>${p.num}</b>${fmt(p.clue)} <span style="opacity:.6">(${p.en})</span></div>`).join('');
+    clues.appendChild(col); });
+  wrap.appendChild(clues);
+  clues.querySelectorAll('.c').forEach(el=>el.addEventListener('click',()=>{ if(locked) return; const p=L.placed.find(x=>x.key===el.dataset.k); if(p) setCur(p.r,p.c,p.dir,true); }));
+  function setCur(r,c,dir,focus){ const cl=L.cells.get(K(r,c)); dir=dir&&cl.words[dir]?dir:(cur&&cl.words[cur.dir]?cur.dir:(cl.words.A?'A':'D')); cur={r,c,dir}; paint(); const o=inputs.get(K(r,c)); if(o&&document.activeElement!==o.inp) o.inp.focus({preventScroll:true}); }
+  function step(s){ if(!cur) return; const[dr,dc]=DIR[cur.dir], k=K(cur.r+dr*s,cur.c+dc*s); if(inputs.has(k)){ const o=inputs.get(k); cur.r=o.r; cur.c=o.c; paint(); o.inp.focus({preventScroll:true}); } }
+  function paint(){
+    const p=cur?L.cells.get(K(cur.r,cur.c)).words[cur.dir]:null; const inW=new Set();
+    if(p){const[dr,dc]=DIR[p.dir];for(let k=0;k<p.a.length;k++) inW.add(K(p.r+dr*k,p.c+dc*k));}
+    inputs.forEach((o,k)=>{ o.cell.classList.toggle('hl',inW.has(k)); o.cell.classList.toggle('cur',!!cur&&k===K(cur.r,cur.c)); });
+    clues.querySelectorAll('.c').forEach(el=>el.classList.toggle('on',!!p&&el.dataset.k===p.key));
+  }
+  function sizeFont(){ const w=board.getBoundingClientRect().width/(parseFloat(document.getElementById('bcRight')?.style.zoom)||1)/L.cols; board.style.setProperty('--mcwF',Math.max(10,Math.round(w*.58))); }
+  requestAnimationFrame(sizeFont); window.addEventListener('resize',sizeFont);
+  addFB(container);
+  const sub=document.createElement('button'); sub.className='btn-submit'; sub.textContent='Υποβολή'; sub.disabled=true; container.appendChild(sub);
+  function check(){ sub.disabled=[...inputs.values()].some(o=>!o.inp.value); }
+  sub.addEventListener('click',()=>{
+    locked=true; let bad=0;
+    inputs.forEach((o,k)=>{ const want=L.cells.get(k).ch, good=o.inp.value===want; o.inp.disabled=true; o.cell.classList.remove('hl','cur'); o.cell.classList.add(good?'ok':'ko'); if(!good){ bad++; o.inp.value=want; } });
+    sub.style.display='none'; levChoice=bad?`✗ ${bad} γράμματα`:'✓';
+    finishQuestion(bad===0,q,container,bad?`Λάθος γράμματα: ${bad} — με κόκκινο φαίνεται η σωστή λέξη.`:'');
   });
 }
 
