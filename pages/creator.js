@@ -393,9 +393,13 @@ function mitselosRows(all, hi, col, getDeck, warnings) {
       const alts = col(r, 'Σωστή Απάντηση').split(/[|/]/).map((x) => x.trim()).filter(Boolean);
       const m = qt.match(/^(συμπλ[ηή]ρωσε[^.:]*[.:])\s*/i);
       let instr = m ? m[1] : 'Συμπλήρωσε το κενό.', rest = m ? qt.slice(m[0].length) : qt;
-      const blank = '[' + (alts.join('|') || '…') + ']';
-      if (/_{2,}/.test(rest)) rest = rest.replace(/_{2,}/, blank); else { rest = rest + ' ' + blank; warnings.push(`${id}: δεν βρέθηκε «____» στο κείμενο — το κενό μπήκε στο τέλος.`); }
-      q = { ...newQuestion('gap'), q: withExc(instr), text: rest };
+      const blank = '[' + (alts.join('|') || '…') + ']', word = /\p{L}/u.test(alts[0] || '');
+      // «αξιοποι__στε» (κενό μέσα σε λέξη) → όλη η λέξη· «____διαφέρει» → κενό + διάστημα
+      const fill = (x) => { const m = x.match(/\p{L}+_{2,3}\p{L}+/u); if (m) return x.replace(m[0], blank);
+        return x.replace(/(\p{L})?_{2,}(\p{L})?/u, (_, a, c) => (a ? a + (word ? ' ' : '') : '') + blank + (c ? ' ' + c : '')); };
+      if (/_{2,}/.test(rest)) q = { ...newQuestion('gap'), q: withExc(instr), text: fill(rest) };
+      else if (/_{2,}/.test(exc)) q = { ...newQuestion('gap'), q: qt || 'Συμπλήρωσε το κενό.', text: fill(exc) }; // το κενό είναι στο απόσπασμα
+      else { warnings.push(`${id}: δεν βρέθηκε «____» στο κείμενο — το κενό μπήκε στο τέλος.`); q = { ...newQuestion('gap'), q: withExc(instr), text: rest + ' ' + blank }; }
     }
     if (!q) return;
     if (t !== 'mcq' && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
