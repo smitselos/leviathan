@@ -41,6 +41,14 @@ const TEMPLATES = [
     types: ['Πάπυρος · κλασικές γραμμές', 'Όλοι οι τύποι του κουίζ', 'Εκτύπωση / PDF', 'Live'],
   },
   {
+    id: 'quiz-leviathan-deck',
+    look: 'leviathan',
+    name: 'Κουίζ ενοτήτων · ΛΕΒΙΑΘΑΝ',
+    file: '/protypa/quiz-leviathan-deck.html',
+    desc: 'Το απλό κουίζ ενοτήτων με την αισθητική της πλατφόρμας ΛΕΒΙΑΘΑΝ: λογότυπο, κρεμ φόντο, κάρτες ενοτήτων σε κρεμ / ροδακινί / μουσταρδί, στρογγυλεμένα σχήματα, γραμμή στα χρώματα του σήματος. Ίδιοι τύποι ερωτήσεων, εκτύπωση και Live.',
+    types: ['Λογότυπο ΛΕΒΙΑΘΑΝ', 'Χρώματα πλατφόρμας', 'Όλοι οι τύποι του κουίζ', 'Εκτύπωση / PDF'],
+  },
+  {
     id: 'quiz-xlsx-deck',
     badge: 'xlsx',
     name: 'Κουίζ ενοτήτων · xlsx',
@@ -77,7 +85,7 @@ const tplOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 const isCwData = (d) => d && d.template === 'crossword-deck';
 const isParaData = (d) => d && d.template === 'paragraph-deck';
 const isSortData = (d) => d && d.template === 'sort-deck';
-const QUIZ_LIKE = ['quiz-xlsx-deck', 'quiz-paper-deck', 'quiz-archaia-deck'];
+const QUIZ_LIKE = ['quiz-xlsx-deck', 'quiz-paper-deck', 'quiz-archaia-deck', 'quiz-leviathan-deck'];
 const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : d && QUIZ_LIKE.includes(d.template) ? d.template : 'quiz-deck');
 
 const C = {
@@ -1651,6 +1659,25 @@ function Preview({ html, fill, onRestart, startMode, initialMode }) {
 }
 
 function TemplateThumb({ kind, look }) {
+  if (look === 'leviathan') {
+    const tones = [['#F7F3E8', '#E9E0C8'], ['#FAE0CC', '#F0C4A0'], ['#F0E4A8', '#D9BE52']];
+    return (
+      <div style={{ height: 150, background: '#F5F0E1', position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 16, background: '#1a1a1a' }} />
+        <img src="/logo.png" alt="" style={{ position: 'absolute', left: '50%', top: 12, transform: 'translateX(-50%)', height: 40, mixBlendMode: 'multiply' }} />
+        <div style={{ position: 'absolute', left: '50%', top: 58, transform: 'translateX(-50%)', width: 34, height: 3, borderRadius: 3, background: 'linear-gradient(90deg,#00A9C2 0 50%,#F39200 50% 100%)' }} />
+        <div style={{ position: 'absolute', left: '50%', top: 72, transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
+          {tones.map(([bg, bd], i) => (
+            <div key={i} style={{ width: 62, height: 56, background: bg, border: `1px solid ${bd}`, borderRadius: 12, boxShadow: '0 4px 12px rgba(26,26,26,.07)', padding: '6px 8px' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#0F1E33', opacity: .2 }}>0{i + 1}</div>
+              <div style={{ height: 3, width: 34, background: '#5C5330', opacity: .5, marginTop: 4, borderRadius: 2 }} />
+              <div style={{ height: 3, width: 24, background: '#5C5330', opacity: .25, marginTop: 4, borderRadius: 2 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (look === 'paper' || look === 'archaia') {
     const P = look === 'paper'
       ? { bg: '#FAF9F5', card: '#fff', line: '#E8E4DA', acc: '#C15F3C', ink: '#2B2A26', font: 'Georgia,serif', r: 10 }
