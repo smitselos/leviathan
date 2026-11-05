@@ -544,6 +544,46 @@ select.gap-in{cursor:pointer;}
 .mcw-clues div.c.on{background:#efe8f8;}
 .mcw-warn{background:#fff7e0;border:1px solid var(--gold);color:#7a5a00;border-radius:8px;padding:6px 10px;font-size:13px;margin-bottom:8px;}
 @media(max-width:640px){ .mcw-clues{grid-template-columns:1fr;} .sort-bins{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));} }
+/* ═══ ΕΚΤΥΠΩΣΗ / PDF — παράθυρο ρυθμίσεων ═══ */
+.btn-print-open{position:relative;z-index:2;margin:4px 0 46px;padding:10px 20px;border-radius:999px;border:1.5px solid rgba(107,63,160,.3);background:rgba(255,255,255,.85);color:var(--purple);font-weight:700;font-size:14px;font-family:'Source Sans 3',sans-serif;cursor:pointer;box-shadow:0 3px 12px rgba(26,22,16,.08);}
+.btn-print-open:hover{border-color:var(--purple);background:#fff;}
+.print-modal-overlay{position:fixed;inset:0;background:rgba(26,22,16,.5);display:flex;align-items:center;justify-content:center;z-index:2000;opacity:0;pointer-events:none;transition:opacity .3s;padding:10px;}
+.print-modal-overlay.active{opacity:1;pointer-events:auto;}
+.print-modal{background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2);max-width:520px;width:100%;max-height:90vh;max-height:90dvh;overflow-y:auto;text-align:left;font-family:'Source Sans 3',sans-serif;color:var(--ink);}
+.pm-hdr{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid #e6e1d8;position:sticky;top:0;background:#fff;z-index:2;}
+.pm-hdr h2{font-family:'Literata',serif;font-size:1.1rem;font-weight:700;color:var(--navy);margin:0;}
+.pm-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);width:32px;height:32px;}
+.pm-close:hover{color:var(--ink);}
+.pm-section{padding:16px 22px;border-bottom:1px solid #e6e1d8;}
+.pm-section h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:12px;}
+.pm-lbl{display:block;font-size:.75rem;font-weight:700;color:#4a4238;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
+.pm-input,.pm-textarea,.pm-select{width:100%;padding:9px 11px;border:1.5px solid #e0dbd2;border-radius:8px;font-family:inherit;font-size:.92rem;color:var(--ink);background:#fff;}
+.pm-input:focus,.pm-textarea:focus,.pm-select:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 3px rgba(107,63,160,.1);}
+.pm-textarea{min-height:56px;resize:vertical;}
+.pm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+.pm-toggle-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;}
+.pm-toggle-row>label:first-child{font-size:.9rem;font-weight:600;color:#4a4238;}
+.pm-switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;}
+.pm-switch input{opacity:0;width:0;height:0;}
+.pm-slider{position:absolute;cursor:pointer;inset:0;background:#ccc;transition:.3s;border-radius:26px;}
+.pm-slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%;}
+.pm-switch input:checked+.pm-slider{background:var(--purple);}
+.pm-switch input:checked+.pm-slider:before{transform:translateX(20px);}
+.pm-decks{display:flex;flex-direction:column;gap:6px;}
+.pm-deck{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid #e6e1d8;border-radius:8px;cursor:pointer;font-size:.92rem;}
+.pm-deck:has(input:checked){border-color:var(--purple);background:rgba(107,63,160,.05);}
+.pm-deck input{width:18px;height:18px;accent-color:var(--purple);flex-shrink:0;}
+.pm-deck span{flex:1;min-width:0;}
+.pm-deck small{color:var(--muted);white-space:nowrap;}
+.pm-links{display:flex;gap:14px;margin-top:8px;font-size:.85rem;}
+.pm-links a{color:var(--purple);cursor:pointer;text-decoration:underline;}
+.pm-sum{margin-top:8px;font-size:.85rem;color:var(--muted);}
+.pm-footer{padding:14px 22px;display:flex;gap:10px;flex-wrap:wrap;position:sticky;bottom:0;background:#fff;border-top:1px solid #e6e1d8;}
+.pm-btn{flex:1 1 auto;padding:11px 16px;border:none;border-radius:8px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.pm-btn-primary{background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:#fff;}
+.pm-btn-primary:disabled{opacity:.5;cursor:default;}
+.pm-btn-secondary{background:#ece8e1;color:var(--ink);}
+@media(max-width:600px){.pm-section{padding:14px 16px;}.pm-hdr,.pm-footer{padding:14px 16px;}.pm-grid2{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -556,6 +596,7 @@ select.gap-in{cursor:pointer;}
   <div class="start-accent"></div>
   <div class="start-sub" id="sSub"></div>
   <div class="deck-pick" id="deckPick"></div>
+  <button class="btn-print-open" id="btnPrintOpen" type="button">🖨️ Εκτύπωση / PDF — φύλλο εργασίας</button>
   <div class="start-credits">
     <svg class="credits-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -599,6 +640,83 @@ select.gap-in{cursor:pointer;}
 </div>
 
 <div id="dragGhost"></div>
+
+<!-- ══ ΡΥΘΜΙΣΕΙΣ ΕΚΤΥΠΩΣΗΣ ══ -->
+<div class="print-modal-overlay" id="printModalOverlay">
+  <div class="print-modal">
+    <div class="pm-hdr"><h2>🖨️ Ρυθμίσεις εκτύπωσης</h2><button class="pm-close" id="pmClose" aria-label="Κλείσιμο">✕</button></div>
+
+    <div class="pm-section">
+      <h3>📚 Ενότητες</h3>
+      <div class="pm-decks" id="pmDecks"></div>
+      <div class="pm-links"><a id="pmAll">Όλες</a><a id="pmNone">Καμία</a></div>
+      <div class="pm-sum" id="pmSum"></div>
+      <div class="pm-toggle-row" style="margin-top:8px"><label for="pmDeckHead">Τίτλος ενότητας πριν από τις ερωτήσεις της</label><label class="pm-switch"><input type="checkbox" id="pmDeckHead" checked><span class="pm-slider"></span></label></div>
+      <div class="pm-toggle-row"><label for="pmShuffle">Ανακάτεμα σειράς ερωτήσεων</label><label class="pm-switch"><input type="checkbox" id="pmShuffle"><span class="pm-slider"></span></label></div>
+      <div class="pm-toggle-row"><label for="pmKey">Λύσεις σε ξεχωριστή σελίδα στο τέλος</label><label class="pm-switch"><input type="checkbox" id="pmKey"><span class="pm-slider"></span></label></div>
+    </div>
+
+    <div class="pm-section">
+      <h3>📝 Κείμενο άσκησης</h3>
+      <div style="margin-bottom:10px"><label class="pm-lbl">Τίτλος</label><input type="text" class="pm-input" id="pmTitle" value="ΑΣΚΗΣΗ"></div>
+      <div style="margin-bottom:10px"><label class="pm-lbl">Εκφώνηση / Οδηγία</label><textarea class="pm-textarea" id="pmInstructions">Να απαντήσετε στις παρακάτω ερωτήσεις.</textarea></div>
+      <div><label class="pm-lbl">Βαθμολογία (προαιρετικά)</label><input type="text" class="pm-input" id="pmScore" placeholder="π.χ. Μονάδες: 25"></div>
+    </div>
+
+    <div class="pm-section">
+      <h3>🏫 Κεφαλίδα</h3>
+      <div class="pm-grid2" style="margin-bottom:10px">
+        <div><label class="pm-lbl">Σχολείο</label><input type="text" class="pm-input" id="pmSchool" placeholder="π.χ. 1ο ΓΕΛ Ηγουμενίτσας"></div>
+        <div><label class="pm-lbl">Μάθημα</label><input type="text" class="pm-input" id="pmSubject" placeholder="π.χ. Νεοελληνική Γλώσσα"></div>
+        <div><label class="pm-lbl">Τμήμα</label><input type="text" class="pm-input" id="pmClass" placeholder="π.χ. Α1"></div>
+        <div><label class="pm-lbl">Ημερομηνία</label><input type="text" class="pm-input" id="pmDate" placeholder="___ / ___ / ____"></div>
+      </div>
+      <div class="pm-toggle-row"><label for="pmShowName">Πεδίο «Ονοματεπώνυμο»</label><label class="pm-switch"><input type="checkbox" id="pmShowName" checked><span class="pm-slider"></span></label></div>
+      <div class="pm-toggle-row"><label for="pmQr">QR με τον σύνδεσμο της εφαρμογής (αν δεν υπάρχει λογότυπο)</label><label class="pm-switch"><input type="checkbox" id="pmQr" checked><span class="pm-slider"></span></label></div>
+      <div style="margin-top:10px"><label class="pm-lbl">Λογότυπο (URL εικόνας)</label><input type="text" class="pm-input" id="pmLogo" placeholder="https://..."></div>
+      <div class="pm-grid2" style="margin-top:8px">
+        <div><label class="pm-lbl">Πλάτος λογοτύπου</label><select class="pm-select" id="pmLogoW"><option value="40">40px</option><option value="60">60px</option><option value="80" selected>80px</option><option value="100">100px</option><option value="120">120px</option></select></div>
+        <div><label class="pm-lbl">Ύψος λογοτύπου</label><select class="pm-select" id="pmLogoH"><option value="40">40px</option><option value="60" selected>60px</option><option value="80">80px</option><option value="100">100px</option><option value="auto">auto</option></select></div>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>🎨 Μορφοποίηση</h3>
+      <div class="pm-grid2">
+        <div><label class="pm-lbl">Γραμματοσειρά</label><select class="pm-select" id="pmFont"><option value="'Times New Roman', serif" selected>Times New Roman</option><option value="'Arial', sans-serif">Arial</option><option value="'Courier New', monospace">Courier New</option><option value="'Georgia', serif">Georgia</option></select></div>
+        <div><label class="pm-lbl">Μέγεθος γραμμάτων</label><select class="pm-select" id="pmFontSize"><option value="10px">10px (πολύ μικρά)</option><option value="11px">11px</option><option value="12px">12px</option><option value="13px">13px</option><option value="11pt">11pt</option><option value="12pt" selected>12pt</option><option value="13pt">13pt</option><option value="14pt">14pt</option></select></div>
+        <div><label class="pm-lbl">Περιθώριο κάθετο</label><select class="pm-select" id="pmMarginV"><option value="10mm">10mm</option><option value="15mm">15mm</option><option value="20mm" selected>20mm</option><option value="25mm">25mm</option><option value="30mm">30mm</option></select></div>
+        <div><label class="pm-lbl">Περιθώριο οριζόντιο</label><select class="pm-select" id="pmMarginH"><option value="10mm">10mm</option><option value="15mm">15mm</option><option value="20mm" selected>20mm</option><option value="25mm">25mm</option></select></div>
+        <div><label class="pm-lbl">Απόσταση ερωτήσεων</label><select class="pm-select" id="pmQSpacing"><option value="4px">4px</option><option value="8px">8px</option><option value="12px">12px</option><option value="16px" selected>16px</option><option value="20px">20px</option></select></div>
+        <div><label class="pm-lbl">Απόσταση επιλογών</label><select class="pm-select" id="pmOptSpacing"><option value="0px">0px</option><option value="2px">2px</option><option value="4px">4px</option><option value="6px" selected>6px</option><option value="8px">8px</option></select></div>
+        <div><label class="pm-lbl">Ύψος γραμμής</label><select class="pm-select" id="pmLineHeight"><option value="1.0">1.0 (πυκνό)</option><option value="1.1">1.1</option><option value="1.2">1.2</option><option value="1.3">1.3</option><option value="1.4">1.4</option><option value="1.5" selected>1.5</option><option value="1.6">1.6</option><option value="1.8">1.8</option></select></div>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>📏 Γραμμές απάντησης</h3>
+      <div class="pm-toggle-row"><label for="pmShowLines">Γραμμές κάτω από τις ερωτήσεις κειμένου</label><label class="pm-switch"><input type="checkbox" id="pmShowLines"><span class="pm-slider"></span></label></div>
+      <div id="pmLinesCountRow" style="display:none"><label class="pm-lbl">Αριθμός γραμμών</label><input type="number" class="pm-input" id="pmLinesCount" value="3" min="1" max="10"></div>
+    </div>
+
+    <div class="pm-section">
+      <h3>💧 Υδατογραφία</h3>
+      <div class="pm-toggle-row"><label for="pmWatermarkOn">Ενεργοποίηση υδατογραφίας</label><label class="pm-switch"><input type="checkbox" id="pmWatermarkOn"><span class="pm-slider"></span></label></div>
+      <div id="pmWatermarkRow" style="display:none">
+        <div style="margin-bottom:10px"><label class="pm-lbl">Κείμενο υδατογραφίας</label><input type="text" class="pm-input" id="pmWatermarkText" value="ΔΕΙΓΜΑ"></div>
+        <div class="pm-grid2">
+          <div><label class="pm-lbl">Χρώμα</label><input type="color" class="pm-input" id="pmWatermarkColor" value="#cccccc" style="height:40px"></div>
+          <div><label class="pm-lbl">Διαφάνεια</label><input type="range" class="pm-input" id="pmWatermarkOpacity" min="0.1" max="1" step="0.1" value="0.3"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-footer">
+      <button class="pm-btn pm-btn-secondary" id="pmCancel">Ακύρωση</button>
+      <button class="pm-btn pm-btn-primary" id="pmPrint">🖨️ Εκτύπωση</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ═════════════════════════════════════════════════════════════════
@@ -1277,6 +1395,179 @@ function finishQuestion(ok,q,container,autoFix){
       choice:(q.t==='mcq'||q.t==='tf')?levChoice:(ok?'✓ '+q.t:'✗ '+q.t), ok });
   }
   levChoice=null;
+}
+
+/* ═════════════════════════════════════
+   ΕΚΤΥΠΩΣΗ / PDF — φύλλο εργασίας με επιλογή ενοτήτων
+   (ίδιος μηχανισμός με τις εφαρμογές ΜΗΤΣΕΛΟΣ)
+   ═════════════════════════════════════ */
+const PR_LET='ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ';
+const $pm=id=>document.getElementById(id);
+function openPrintModal(){
+  const box=$pm('pmDecks');
+  box.innerHTML=DECKS.map((d,i)=>`<label class="pm-deck"><input type="checkbox" value="${i}" checked><span><b>${String(i+1).padStart(2,'0')}</b> ${esc(d.label||('Ενότητα '+(i+1)))}${d.ktitle?' — <i>'+fmt(d.ktitle)+'</i>':''}</span><small>${d.qs.length} ερ.</small></label>`).join('');
+  if(!$pm('pmTitle').dataset.set){ $pm('pmTitle').value=(QUIZ.title||'ΑΣΚΗΣΗ'); $pm('pmTitle').dataset.set='1'; }
+  prSum();
+  $pm('printModalOverlay').classList.add('active');
+}
+function prPicked(){ return [...$pm('pmDecks').querySelectorAll('input:checked')].map(x=>+x.value); }
+function prSum(){
+  const p=prPicked(), n=p.reduce((s,i)=>s+DECKS[i].qs.length,0);
+  $pm('pmSum').textContent=p.length?`Επιλέχθηκ${p.length===1?'ε 1 ενότητα':'αν '+p.length+' ενότητες'} · ${n} ερωτήσεις`:'Διάλεξε τουλάχιστον μία ενότητα.';
+  $pm('pmPrint').disabled=!p.length;
+}
+function closePrintModal(){ $pm('printModalOverlay').classList.remove('active'); }
+(function initPrintModal(){
+  const ov=$pm('printModalOverlay'); if(!ov) return;
+  $pm('btnPrintOpen').onclick=openPrintModal;
+  if(!DECKS.length) $pm('btnPrintOpen').style.display='none';
+  $pm('pmClose').onclick=closePrintModal; $pm('pmCancel').onclick=closePrintModal;
+  ov.addEventListener('click',e=>{ if(e.target===ov) closePrintModal(); });
+  $pm('pmDecks').addEventListener('change',prSum);
+  $pm('pmAll').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=true); prSum(); };
+  $pm('pmNone').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=false); prSum(); };
+  $pm('pmShowLines').onchange=function(){ $pm('pmLinesCountRow').style.display=this.checked?'block':'none'; };
+  $pm('pmWatermarkOn').onchange=function(){ $pm('pmWatermarkRow').style.display=this.checked?'block':'none'; };
+  $pm('pmPrint').onclick=()=>{ const s=collectPrintSettings(); if(!s.decks.length) return; closePrintModal(); printWorksheet(s); };
+})();
+function collectPrintSettings(){
+  const v=id=>$pm(id).value.trim(), c=id=>$pm(id).checked;
+  return { decks:prPicked(), deckHead:c('pmDeckHead'), shuffle:c('pmShuffle'), key:c('pmKey'),
+    title:v('pmTitle')||'ΑΣΚΗΣΗ', instructions:v('pmInstructions'), score:v('pmScore'),
+    school:v('pmSchool'), subject:v('pmSubject'), className:v('pmClass'), date:v('pmDate'),
+    showName:c('pmShowName'), qr:c('pmQr'), logoUrl:v('pmLogo'), logoW:$pm('pmLogoW').value, logoH:$pm('pmLogoH').value,
+    font:$pm('pmFont').value, fontSize:$pm('pmFontSize').value, marginV:$pm('pmMarginV').value, marginH:$pm('pmMarginH').value,
+    qSpacing:$pm('pmQSpacing').value, optSpacing:$pm('pmOptSpacing').value, lineHeight:$pm('pmLineHeight').value,
+    showLines:c('pmShowLines'), linesCount:Math.max(1,Math.min(10,parseInt($pm('pmLinesCount').value)||3)),
+    watermark:c('pmWatermarkOn'), watermarkText:v('pmWatermarkText')||'ΔΕΙΓΜΑ', watermarkOpacity:$pm('pmWatermarkOpacity').value, watermarkColor:$pm('pmWatermarkColor').value };
+}
+// Μία ερώτηση → { html (φύλλο), key (λύση) }
+function prQuestion(q,num,s){
+  let h=`<div class="pq"><p class="pq-num">Ερώτηση ${num}</p>`, key='';
+  if(q.t!=='gap' && q.t!=='click') h+=`<p class="pq-q">${fmt(q.q)}</p>`;
+  if(q.t==='mcq'){
+    const o=(q.opts||[]).map((t,i)=>({t,i})).filter(x=>String(x.t).trim());
+    h+=`<div class="pq-opts">`+o.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x.t)}</div>`).join('')+`</div>`;
+    const k=o.findIndex(x=>x.i===q.ans); key=k>=0?`${PR_LET[k]}. ${fmt(o[k].t)}`:'';
+  } else if(q.t==='tf'){
+    const L=q.labels&&q.labels.length===2?q.labels:['Σωστό','Λάθος'];
+    h+=`<div class="pq-yn"><span>☐ ${esc(L[0])}</span><span>☐ ${esc(L[1])}</span></div>`; key=esc(L[q.ans|0]);
+  } else if(q.t==='drag'){
+    const T=q.tgts||[], ans=Array.isArray(q.ans)?q.ans:T.map((_,i)=>i);
+    const items=(q.items||[]).map((t,i)=>({t,i})), sh=shuffle(items), rows=Math.max(T.length,sh.length);
+    h+=`<table class="pq-dd"><thead><tr><th>Στήλη Α</th><th>Στήλη Β</th></tr></thead><tbody>`;
+    for(let i=0;i<rows;i++) h+=`<tr><td>${T[i]!=null?(i+1)+'. '+fmt(T[i]):''}</td><td>${sh[i]?PR_LET[i]+'. '+fmt(sh[i].t):''}</td></tr>`;
+    h+=`</tbody></table><p class="pq-dd-ans">Αντιστοιχίσεις: ${T.map((_,i)=>(i+1)+' → ___').join(' &nbsp;&nbsp; ')}</p>`;
+    key=T.map((_,i)=>(i+1)+' → '+PR_LET[sh.findIndex(x=>x.i===ans[i])]).join(', ');
+  } else if(q.t==='gap'){
+    const parts=splitMarked(q.text), ans=[]; let n=0;
+    h+=`<p class="pq-q">${fmt(q.q)}</p><div class="pq-excerpt">`+parts.map((p,i)=>{ if(i%2===0) return fmt(p); const a=p.split('|').map(x=>x.trim()).filter(Boolean); ans.push(a[0]||''); n++;
+      return `<span class="pq-gap">(${n}) ${'_'.repeat(Math.max(8,Math.min(22,(a[0]||'').length+4)))}</span>`; }).join('')+`</div>`;
+    if(q.mode==='select'){ const pool=[...new Set(ans.concat((q.distractors||[]).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'el')); h+=`<p class="pq-bank"><b>Λέξεις:</b> ${pool.map(esc).join(' · ')}</p>`; }
+    key=ans.map((a,i)=>`(${i+1}) ${esc(a)}`).join(' · ');
+  } else if(q.t==='click'){
+    const parts=splitMarked(q.text);
+    h+=`<p class="pq-q">${fmt(q.q)} <i>(Υπογράμμισε.)</i></p><div class="pq-excerpt">${parts.map(fmt).join('')}</div>`;
+    key=parts.filter((_,i)=>i%2).map(esc).join(' · ');
+  } else if(q.t==='order'){
+    const lines=(q.lines||[]).map(x=>String(x).trim()).filter(Boolean).map((t,i)=>({t,i}));
+    const sh=q.fixFirst?[lines[0]].concat(shuffle(lines.slice(1))):shuffle(lines);
+    h+=`<div class="pq-opts">`+sh.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x.t)}${q.fixFirst&&k===0?' <i>(1η)</i>':''}</div>`).join('')+`</div>`;
+    h+=`<p class="pq-dd-ans">Σωστή σειρά: ${sh.map(()=>'___').join(' – ')}</p>`;
+    key=lines.map(x=>PR_LET[sh.indexOf(x)]).join(' – ');
+  } else if(q.t==='sort'){
+    const cats=(q.cats||[]).map(c=>({name:String(c.name||'').trim(),items:(c.items||[]).map(x=>String(x).trim()).filter(Boolean)})).filter(c=>c.name&&c.items.length);
+    const bank=cats.flatMap(c=>c.items).sort((a,b)=>a.localeCompare(b,'el')), rows=Math.max(...cats.map(c=>c.items.length),1);
+    h+=`<p class="pq-bank">${bank.map(esc).join(' · ')}</p><table class="pq-dd"><thead><tr>${cats.map(c=>`<th>${esc(c.name)}</th>`).join('')}</tr></thead><tbody>`;
+    for(let r=0;r<rows;r++) h+=`<tr>${cats.map(()=>'<td>&nbsp;</td>').join('')}</tr>`;
+    h+=`</tbody></table>`;
+    key=cats.map(c=>`<b>${esc(c.name)}:</b> ${c.items.map(esc).join(', ')}`).join(' · ');
+  } else if(q.t==='cw'){
+    const L=cwLayout(q.words,q.seed), K=L.K;
+    let g=`<table class="pq-cw">`;
+    for(let r=0;r<L.rows;r++){ g+='<tr>'; for(let c=0;c<L.cols;c++){ const cl=L.cells.get(K(r,c)), n=L.nums.get(K(r,c)); g+=cl?`<td class="on">${n?`<span>${n}</span>`:''}</td>`:'<td></td>'; } g+='</tr>'; }
+    g+='</table>';
+    const cl=d=>L.placed.filter(p=>p.dir===d).map(p=>`<div><b>${p.num}.</b> ${fmt(p.clue)} <small>(${p.en})</small></div>`).join('');
+    h+=g+`<div class="pq-clues"><div><p><b>Οριζόντια</b></p>${cl('A')}</div><div><p><b>Κάθετα</b></p>${cl('D')}</div></div>`;
+    key=['A','D'].map(d=>`<b>${d==='A'?'Οριζόντια':'Κάθετα'}:</b> `+L.placed.filter(p=>p.dir===d).map(p=>p.num+'. '+p.a).join(', ')).join(' · ');
+  }
+  if(s.showLines && (q.t==='gap'||q.t==='click')){ h+=`<div class="pq-lines">`+'<div class="pq-line"></div>'.repeat(s.linesCount)+`</div>`; }
+  return { html:h+`</div>`, key };
+}
+function printWorksheet(s){
+  // Ερωτήσεις των επιλεγμένων ενοτήτων
+  let blocks=s.decks.map(i=>({d:DECKS[i],i,qs:DECKS[i].qs.slice()}));
+  if(s.shuffle){ const all=shuffle(blocks.flatMap(b=>b.qs)); blocks=[{d:null,qs:all}]; }
+  let num=0; const keys=[]; let body='';
+  blocks.forEach(b=>{
+    if(s.deckHead && b.d && s.decks.length>0) body+=`<div class="pdeck">${esc(b.d.label||('Ενότητα '+(b.i+1)))}${b.d.ktitle?' — <i>'+fmt(b.d.ktitle)+'</i>':''}${b.d.author?' <small>('+esc(b.d.author)+')</small>':''}</div>`;
+    b.qs.forEach(q=>{ num++; const r=prQuestion(q,num,s); body+=r.html; keys.push(`<div class="pkey"><b>${num}.</b> ${r.key||'—'}</div>`); });
+  });
+  const appUrl=/^https?:$/.test(location.protocol)?location.origin+location.pathname:'';
+  const qrSrc=appUrl?'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=4&data='+encodeURIComponent(appUrl):'';
+  const corner=s.logoUrl?`<td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:${s.logoW}px"><img src="${esc(s.logoUrl)}" style="width:${s.logoW}px;height:${s.logoH==='auto'?'auto':s.logoH+'px'};object-fit:contain" onerror="this.style.display='none'"></td>`
+    :(s.qr&&qrSrc?`<td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:96px"><img src="${qrSrc}" alt="QR εφαρμογής" style="width:76px;height:76px;border:1px solid #ddd;border-radius:6px"></td>`:'');
+  let hdr='';
+  if(s.school||s.subject||s.className||s.date||s.showName||corner){
+    hdr=`<table class="hdr-table"><tr>`+(s.school?`<td><strong>Σχολείο:</strong> ${esc(s.school)}</td>`:'<td></td>')+(s.subject?`<td><strong>Μάθημα:</strong> ${esc(s.subject)}</td>`:'<td></td>')+corner+`</tr><tr>`;
+    hdr+=s.showName?`<td><strong>Ονοματεπώνυμο:</strong> ___________________________</td>`:(s.className?`<td><strong>Τμήμα:</strong> ${esc(s.className)}</td>`:'<td></td>');
+    hdr+=s.date?`<td><strong>Ημερομηνία:</strong> ${esc(s.date)}</td>`:(s.className&&s.showName?`<td><strong>Τμήμα:</strong> ${esc(s.className)}</td>`:'<td></td>');
+    hdr+=`</tr></table><hr class="hdr-line">`;
+  }
+  const fs=s.fontSize, lh=s.lineHeight, tight=parseFloat(lh)<1.4;
+  const html=`<!DOCTYPE html><html lang="el"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(s.title)}</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:${s.font};font-size:${fs};color:#000;padding:${s.marginV} ${s.marginH};background:#fff}
+@media print{body{padding:0}.no-print{display:none!important}}
+@page{margin:${s.marginV} ${s.marginH}}
+.hdr-table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:${fs}}
+.hdr-table td{padding:3px 0;width:50%;vertical-align:top}
+.hdr-line{border:none;border-top:1.5px solid #333;margin-bottom:14px}
+.print-title{text-align:center;font-size:calc(${fs} + 3pt);font-weight:bold;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.print-instr{text-align:justify;margin-bottom:5px;line-height:1.7}
+.print-score{font-style:italic;color:#444;margin-bottom:14px}
+.pdeck{font-weight:bold;font-size:calc(${fs} + 1pt);border-bottom:1px solid #999;padding-bottom:2px;margin:14px 0 8px;page-break-after:avoid}
+.pq{margin-bottom:${s.qSpacing};page-break-inside:avoid}
+.pq-num{font-weight:bold;margin-bottom:3px}
+.pq-q{margin-bottom:8px;line-height:${lh}}
+.pq-excerpt{line-height:${lh};text-align:justify;margin-bottom:8px;padding:4px 0}
+.pq-yn{display:flex;gap:32px;margin-top:6px}
+.pq-opts{display:flex;flex-direction:column;gap:${s.optSpacing};margin-top:6px}
+.pq-opt{display:flex;align-items:baseline;gap:6px;line-height:${lh}}
+.pq-k{font-weight:bold}
+.pq-dd{width:100%;border-collapse:collapse;margin-top:6px;font-size:${fs}}
+.pq-dd th,.pq-dd td{border:1px solid #bbb;padding:6px 10px;text-align:left;vertical-align:top}
+.pq-dd th{background:#f0f0f0;font-weight:bold}
+.pq-dd td{height:1.9em}
+.pq-dd-ans{font-size:calc(${fs} - 1pt);color:#444;margin-top:8px}
+.pq-bank{margin:4px 0 6px;line-height:${lh}}
+.pq-gap{white-space:nowrap}
+.pq-cw{border-collapse:collapse;margin:6px 0 8px}
+.pq-cw td{width:7mm;height:7mm;padding:0;position:relative}
+.pq-cw td.on{border:1px solid #000}
+.pq-cw td span{position:absolute;top:0;left:1px;font-size:6.5pt;line-height:1}
+.pq-clues{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;line-height:${lh}}
+.pq-clues small{color:#555}
+.pq-lines{margin-top:10px}
+.pq-line{border-bottom:1px solid #aaa;height:24px;margin-bottom:2px}
+.pkey-page{page-break-before:always}
+.pkey{margin-bottom:5px;line-height:${lh}}
+${tight?`.hdr-table{margin-bottom:4px}.hdr-table td{padding:1px 0}.hdr-line{margin-bottom:6px}.print-title{margin-bottom:3px}.print-instr{line-height:${lh};margin-bottom:3px}.print-score{margin-bottom:6px}.pq-excerpt{margin-bottom:3px;padding:1px 0}.pq-num{margin-bottom:1px}.pq-q{margin-bottom:3px}.pq-yn,.pq-opts,.pq-dd{margin-top:2px}.pq-dd th,.pq-dd td{padding:2px 6px}.pq-dd-ans{margin-top:3px}.pq-lines{margin-top:4px}`:''}
+${s.watermark?`.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:80pt;font-weight:900;color:${s.watermarkColor};opacity:${s.watermarkOpacity};white-space:nowrap;pointer-events:none;z-index:9999;letter-spacing:8px}`:''}
+</style></head><body>
+${s.watermark?`<div class="watermark">${esc(s.watermarkText)}</div>`:''}
+${hdr}
+<div class="print-title">${esc(s.title)}</div>
+${s.instructions?`<p class="print-instr">${esc(s.instructions)}</p>`:''}
+${s.score?`<p class="print-score">${esc(s.score)}</p>`:''}
+${body}
+${s.key?`<div class="pkey-page"><div class="print-title">${esc(s.title)} — Λύσεις</div>${keys.join('')}</div>`:''}
+<button class="no-print" onclick="setTimeout(function(){window.print()},300)" style="position:fixed;top:20px;right:20px;padding:12px 24px;font-size:15px;background:#6B3FA0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:sans-serif">🖨️ Εκτύπωση / PDF</button>
+</body></html>`;
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  const w=window.open(url,'_blank');
+  if(!w){ const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 /* ═════════════════════════════════════
