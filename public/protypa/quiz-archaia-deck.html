@@ -636,6 +636,12 @@ body{background:radial-gradient(ellipse at 20% 0%,rgba(255,252,240,.7),transpare
 .slot-zone,.drag-bank,.sort-bank{border-color:#CDB487;background:rgba(255,251,241,.7);border-radius:3px;}
 .fb-box{border-radius:3px;font-family:'Gentium Book Plus',serif;}
 .btn-print-open{border-color:#C9AE80;color:var(--ink);background:#FBF5E6;border-radius:3px;font-family:'GFS Didot',serif;letter-spacing:1px;}
+/* Αντί για μαιάνδρους: λιτές κλασικές διπλές γραμμές */
+#startScreen::before,#startScreen::after{background:none;height:5px;border-top:1px solid rgba(42,33,27,.45);border-bottom:1px solid rgba(42,33,27,.45);left:24px;right:24px;opacity:1;}
+.start-accent{width:110px;height:5px;background:none;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold);}
+.deck-card{padding-top:24px;}
+.deck-card::before{background:none;width:auto;left:14px;right:14px;top:10px;height:4px;border-top:1px solid #C9AE80;border-bottom:1px solid #C9AE80;opacity:1;}
+.bc-left::before{background:none;left:22px;right:22px;top:14px;height:4px;border-top:1px solid rgba(200,146,59,.65);border-bottom:1px solid rgba(200,146,59,.65);opacity:1;}
 </style>
 </head>
 <body>

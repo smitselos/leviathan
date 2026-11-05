@@ -37,8 +37,8 @@ const TEMPLATES = [
     look: 'archaia',
     name: 'Κουίζ ενοτήτων · Αρχαίο',
     file: '/protypa/quiz-archaia-deck.html',
-    desc: 'Το απλό κουίζ ενοτήτων με αρχαιοελληνική αισθητική: πάπυρος, μαίανδρος, επιγραφικοί τίτλοι (GFS Didot) και χρώματα αγγειογραφίας. Ίδιοι τύποι ερωτήσεων, εκτύπωση και Live.',
-    types: ['Πάπυρος · μαίανδρος', 'Όλοι οι τύποι του κουίζ', 'Εκτύπωση / PDF', 'Live'],
+    desc: 'Το απλό κουίζ ενοτήτων με αρχαιοελληνική αισθητική: πάπυρος, λιτές κλασικές γραμμές, επιγραφικοί τίτλοι (GFS Didot) και χρώματα αγγειογραφίας. Ίδιοι τύποι ερωτήσεων, εκτύπωση και Live.',
+    types: ['Πάπυρος · κλασικές γραμμές', 'Όλοι οι τύποι του κουίζ', 'Εκτύπωση / PDF', 'Live'],
   },
   {
     id: 'quiz-xlsx-deck',
@@ -1655,11 +1655,10 @@ function TemplateThumb({ kind, look }) {
     const P = look === 'paper'
       ? { bg: '#FAF9F5', card: '#fff', line: '#E8E4DA', acc: '#C15F3C', ink: '#2B2A26', font: 'Georgia,serif', r: 10 }
       : { bg: '#F3E9D2', card: '#FBF5E6', line: '#D8C29A', acc: '#9E3B22', ink: '#2A211B', font: 'Georgia,serif', r: 2 };
-    const key = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12'%3E%3Cpath d='M0 10H4V2H12V8H8V6H10V4H6V10H16' fill='none' stroke='%232A211B' stroke-width='1.3'/%3E%3C/svg%3E\")";
     return (
       <div style={{ height: 150, background: P.bg, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.line}` }}>
-        {look === 'archaia' && <><div style={{ position: 'absolute', left: 0, right: 0, top: 8, height: 12, background: key + ' repeat-x', backgroundSize: '16px 12px', opacity: .7 }} />
-          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 8, height: 12, background: key + ' repeat-x', backgroundSize: '16px 12px', opacity: .7 }} /></>}
+        {look === 'archaia' && <><div style={{ position: 'absolute', left: 12, right: 12, top: 12, height: 4, borderTop: '1px solid rgba(42,33,27,.45)', borderBottom: '1px solid rgba(42,33,27,.45)' }} />
+          <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, height: 4, borderTop: '1px solid rgba(42,33,27,.45)', borderBottom: '1px solid rgba(42,33,27,.45)' }} /></>}
         <div style={{ position: 'absolute', left: '50%', top: 30, transform: 'translateX(-50%)', textAlign: 'center', fontFamily: P.font, color: P.ink, fontSize: 15, letterSpacing: look === 'archaia' ? 2 : 0, textTransform: look === 'archaia' ? 'uppercase' : 'none', whiteSpace: 'nowrap' }}>
           {look === 'archaia' ? 'Κουίζ' : <>Κουίζ <i style={{ color: P.acc }}>ενοτήτων</i></>}
           <div style={{ width: 30, height: 2, background: P.acc, margin: '6px auto 0' }} />
