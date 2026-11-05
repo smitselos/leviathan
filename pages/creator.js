@@ -89,13 +89,13 @@ function newQuestion(t, keep = {}) {
 }
 function newDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', qs: [newQuestion('mcq')] }; }
 function newQuiz(credits) {
-  return { v: 1, template: 'quiz-deck', title: '', eyebrow: 'Κουίζ αυτοαξιολόγησης', heading: '', subtitle: 'Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.', credits: credits || '', shuffleOpts: false, shuffleQs: false, decks: [newDeck(1)] };
+  return { v: 1, template: 'quiz-deck', title: '', eyebrow: 'Κουίζ αυτοαξιολόγησης', heading: '', subtitle: 'Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.', credits: credits || '', year: new Date().getFullYear(), shuffleOpts: false, shuffleQs: false, decks: [newDeck(1)] };
 }
 // ── Σταυρόλεξο: ενότητα = { label, ktitle, author, sub, seed, words:[{w,c}] } ──
 const newWord = () => ({ w: '', c: '' });
 function newCwDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', seed: 1, words: [newWord(), newWord(), newWord()] }; }
 function newCw(credits) {
-  return { v: 1, template: 'crossword-deck', title: '', eyebrow: 'Σταυρόλεξο', heading: '', subtitle: 'Διάλεξε ενότητα και λύσε το σταυρόλεξο. Πάτησε ένα τετράγωνο και γράψε.', credits: credits || '', decks: [newCwDeck(1)] };
+  return { v: 1, template: 'crossword-deck', title: '', eyebrow: 'Σταυρόλεξο', heading: '', subtitle: 'Διάλεξε ενότητα και λύσε το σταυρόλεξο. Πάτησε ένα τετράγωνο και γράψε.', credits: credits || '', year: new Date().getFullYear(), decks: [newCwDeck(1)] };
 }
 function normalizeCw(d) {
   const out = { ...newCw(''), ...d };
@@ -121,7 +121,7 @@ function problemsOfCw(dk) {
 const newParaItem = () => ({ title: '', src: '', lines: ['', '', ''], fixFirst: false, fb: '' });
 function newParaDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', ps: [newParaItem()] }; }
 function newPara(credits) {
-  return { v: 1, template: 'paragraph-deck', title: '', eyebrow: 'Αναδιάταξη παραγράφου', heading: '', subtitle: 'Διάλεξε ενότητα. Βάλε τις περιόδους κάθε παραγράφου στη σωστή σειρά και πάτησε «Έλεγχος».', credits: credits || '', decks: [newParaDeck(1)] };
+  return { v: 1, template: 'paragraph-deck', title: '', eyebrow: 'Αναδιάταξη παραγράφου', heading: '', subtitle: 'Διάλεξε ενότητα. Βάλε τις περιόδους κάθε παραγράφου στη σωστή σειρά και πάτησε «Έλεγχος».', credits: credits || '', year: new Date().getFullYear(), decks: [newParaDeck(1)] };
 }
 function normalizePara(d) {
   const out = { ...newPara(''), ...d };
@@ -148,7 +148,7 @@ function splitSentences(text) {
 const newSortItem = () => ({ title: '', src: '', cats: [{ name: '', items: [''] }, { name: '', items: [''] }], fb: '' });
 function newSortDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', ps: [newSortItem()] }; }
 function newSort(credits) {
-  return { v: 1, template: 'sort-deck', title: '', eyebrow: 'Ταξινόμηση σε κατηγορίες', heading: '', subtitle: 'Διάλεξε ενότητα. Βάλε κάθε στοιχείο στη σωστή κατηγορία και πάτησε «Έλεγχος».', credits: credits || '', decks: [newSortDeck(1)] };
+  return { v: 1, template: 'sort-deck', title: '', eyebrow: 'Ταξινόμηση σε κατηγορίες', heading: '', subtitle: 'Διάλεξε ενότητα. Βάλε κάθε στοιχείο στη σωστή κατηγορία και πάτησε «Έλεγχος».', credits: credits || '', year: new Date().getFullYear(), decks: [newSortDeck(1)] };
 }
 function normalizeSort(d) {
   const out = { ...newSort(''), ...d };
@@ -168,7 +168,10 @@ function problemsOfSort(x) {
   if (sortCount(x) > 30) p.push('Πάνω από 30 στοιχεία — χώρισέ τα σε δύο ασκήσεις.');
   return p;
 }
-const normalizeData = (d) => (isCwData(d) ? normalizeCw(d) : isParaData(d) ? normalizePara(d) : isSortData(d) ? normalizeSort(d) : normalizeQuiz(d));
+// Χρονολογία δημιουργίας (για το «© ΛΕΒΙΑΘΑΝ 2026 · όνομα»): αποθηκευμένη ή από την παλιά υπογραφή
+const yearOf = (d) => Number(d.year) || Number((String(d.credits || '').match(/\b(19|20)\d{2}\b/) || [])[0]) || new Date().getFullYear();
+const normalizeData = (d) => ({ ...normalizeAny(d), year: yearOf(d) });
+const normalizeAny = (d) => (isCwData(d) ? normalizeCw(d) : isParaData(d) ? normalizePara(d) : isSortData(d) ? normalizeSort(d) : normalizeQuiz(d));
 
 // Αντιστοίχιση: στον Δημιουργό κρατάμε ζεύγη (tgts[i] ↔ items[i]) → ans = ταυτοτική
 function normalizeQuiz(d) {
@@ -337,7 +340,7 @@ export default function Creator() {
 
   const defaultCredits = () => {
     const n = session?.user?.name || '';
-    return n ? `${n}, ${new Date().getFullYear()}` : '';
+    return n;
   };
   const startNew = (id) => { savedJson.current = null; setTplId(id); setCwInfo(null); setData(tplOf(id).kind === 'cw' ? newCw(defaultCredits()) : tplOf(id).kind === 'para' ? newPara(defaultCredits()) : tplOf(id).kind === 'sort' ? newSort(defaultCredits()) : newQuiz(defaultCredits())); setEditing(null); setSel({ d: 0, q: 0 }); setPanel('general'); setStep('edit'); };
   // fromDrive: άνοιγμα αποθηκευμένης εφαρμογής → δεν είναι πρόχειρο μέχρι να γίνει αλλαγή
@@ -703,8 +706,8 @@ function GeneralForm({ data, upd, isCw, kind }) {
       <Field label="Υπότιτλος / οδηγίες">
         <textarea style={{ ...S.input, minHeight: 70 }} value={data.subtitle} onChange={set('subtitle')} />
       </Field>
-      <Field label="Υπογραφή (κάτω μέρος)">
-        <input style={S.input} value={data.credits} onChange={set('credits')} placeholder="π.χ. Α. & Σ. ΜΗΤΣΕΛΟΣ — ΕΛΛΗΝΟΕΚΔΟΤΙΚΗ, 2026" />
+      <Field label="Όνομα δημιουργού (προαιρετικό)" hint={`Κάτω μέρος της εφαρμογής και της εκτύπωσης: © ΛΕΒΙΑΘΑΝ ${data.year || new Date().getFullYear()}${String(data.credits || '').trim() ? ' · ' + String(data.credits).trim().replace(/[\s,·–—-]*\b(19|20)\d{2}\s*$/, '') : ''}`}>
+        <input style={S.input} value={data.credits} onChange={set('credits')} placeholder="π.χ. Σπύρος Μητσέλος" />
       </Field>
       {!isCw && kind !== 'para' && kind !== 'sort' && <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleQs} onChange={set('shuffleQs')} /> Ανακάτεμα σειράς ερωτήσεων</label>

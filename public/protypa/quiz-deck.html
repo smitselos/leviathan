@@ -727,6 +727,11 @@ select.gap-in{cursor:pointer;}
    ═════════════════════════════════════════════════════════════════ */
 const QUIZ=/*QUIZ_DATA_START*/{"v":1,"template":"quiz-deck","title":"Κουίζ — Παράδειγμα","eyebrow":"Κουίζ αυτοαξιολόγησης","heading":"Παράδειγμα *προτύπου*","subtitle":"Διάλεξε ενότητα και ξεκίνα. Κάθε ερώτηση εμφανίζεται ξεχωριστά.","credits":"ΛΕΒΙΑΘΑΝ","shuffleOpts":false,"shuffleQs":false,"decks":[{"label":"Ενότητα 1","ktitle":"Δείγμα ερωτήσεων","author":"","sub":"Πέντε τύποι ερωτήσεων","qs":[{"t":"mcq","q":"Ποια έγκλιση εκφράζει εντολή;","opts":["Οριστική","Προστακτική","Υποτακτική"],"ans":1,"ref":"Εγκλίσεις","fbC":"","fbW":""},{"t":"tf","q":"Η παθητική σύνταξη αποσιωπά συχνά τον δράστη.","labels":["Σωστό","Λάθος"],"ans":0,"ref":"","fbC":"","fbW":""},{"t":"drag","q":"Αντιστοίχισε.","tgts":["Μεταφορά","Παρομοίωση"],"items":["«μύγα ενοχλητική»","«σαν μύγα»"],"ans":[0,1],"ref":"","fbC":"","fbW":""},{"t":"gap","q":"Συμπλήρωσε το κενό.","text":"Η ονοματοποίηση κάνει τον λόγο πιο [πυκνό|δύσκολο].","mode":"type","distractors":[],"strict":false,"ref":"","fbC":"","fbW":""},{"t":"click","q":"Επίλεξε τα ρήματα.","text":"Ο Θανάσης [έπαιζε] κάθε βράδυ και [ξεχνούσε] τον χρόνο.","ref":"","fbC":"","fbW":""}]}]}/*QUIZ_DATA_END*/;
 
+/* © ΛΕΒΙΑΘΑΝ · χρονολογία δημιουργίας · όνομα δημιουργού (αν έχει δηλωθεί) */
+const LEV_YEAR=QUIZ.year||((String(QUIZ.credits||'').match(/\b(19|20)\d{2}\b/)||[])[0])||new Date().getFullYear();
+const LEV_AUTHOR=String(QUIZ.credits||'').replace(/[\s,·–—-]*\b(19|20)\d{2}\s*$/,'').trim().replace(/^(ΛΕΒΙΑΘΑΝ|leviathan)$/i,'');
+const LEV_COPY='ΛΕΒΙΑΘΑΝ '+LEV_YEAR+(LEV_AUTHOR?' · '+LEV_AUTHOR:'');
+
 const LABS=['Α','Β','Γ','Δ','Ε','ΣΤ','Ζ','Η'];
 const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων',order:'⇅ Αναδιάταξη',sort:'▤ Ταξινόμηση',cw:'✎ Σταυρόλεξο'};
 const DECKS=(QUIZ.decks||[]).filter(d=>d&&Array.isArray(d.qs)&&d.qs.length);
@@ -753,7 +758,7 @@ document.title=QUIZ.title||'Κουίζ';
 document.getElementById('sEyebrow').textContent=QUIZ.eyebrow||'';
 document.getElementById('sTitle').innerHTML=fmt(QUIZ.heading||QUIZ.title||'');
 document.getElementById('sSub').innerHTML=fmt(QUIZ.subtitle||'');
-document.getElementById('sCredits').textContent=QUIZ.credits||'';
+document.getElementById('sCredits').textContent=LEV_COPY;
 (function buildDecks(){
   const wrap=document.getElementById('deckPick');
   DECKS.forEach((d,i)=>{
@@ -856,7 +861,7 @@ function updateScoreBar(){
   document.getElementById('qsw').textContent=score.w;
   document.getElementById('qsn').textContent=`${curQi+1} / ${total}`;
   document.getElementById('progBar').style.width=((curQi/total)*100)+'%';
-  document.getElementById('qbInfo').textContent=QUIZ.credits?('© '+QUIZ.credits):'';
+  document.getElementById('qbInfo').textContent='© '+LEV_COPY;
 }
 
 function renderCard(){

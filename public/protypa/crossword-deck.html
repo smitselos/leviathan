@@ -359,6 +359,11 @@ body{
    ═════════════════════════════════════════════════════════════════ */
 const QUIZ=/*QUIZ_DATA_START*/{"v":1,"template":"crossword-deck","title":"Σταυρόλεξο — Παράδειγμα","eyebrow":"Σταυρόλεξο","heading":"Παράδειγμα *σταυρόλεξου*","subtitle":"Διάλεξε ενότητα και λύσε το σταυρόλεξο. Πάτησε ένα τετράγωνο και γράψε.","credits":"ΛΕΒΙΑΘΑΝ","decks":[{"label":"Ενότητα 1","ktitle":"Σχήματα λόγου","author":"","sub":"Βασικοί όροι","seed":1,"words":[{"w":"μεταφορά","c":"Σχήμα λόγου που μεταφέρει μια ιδιότητα από ένα πράγμα σε άλλο"},{"w":"παρομοίωση","c":"Σύγκριση με το «σαν» ή το «όπως»"},{"w":"προσωποποίηση","c":"Άψυχο παρουσιάζεται να ενεργεί σαν άνθρωπος"},{"w":"αντίθεση","c":"Παράθεση εννοιών με αντίθετο νόημα"},{"w":"ειρωνεία","c":"Λέμε το αντίθετο από αυτό που εννοούμε"},{"w":"υπερβολή","c":"Μεγαλοποίηση της πραγματικότητας"},{"w":"ασύνδετο","c":"Σχήμα χωρίς συνδέσμους ανάμεσα στους όρους"},{"w":"επανάληψη","c":"Επαναφορά της ίδιας λέξης για έμφαση"}]}]}/*QUIZ_DATA_END*/;
 
+/* © ΛΕΒΙΑΘΑΝ · χρονολογία δημιουργίας · όνομα δημιουργού (αν έχει δηλωθεί) */
+const LEV_YEAR=QUIZ.year||((String(QUIZ.credits||'').match(/\b(19|20)\d{2}\b/)||[])[0])||new Date().getFullYear();
+const LEV_AUTHOR=String(QUIZ.credits||'').replace(/[\s,·–—-]*\b(19|20)\d{2}\s*$/,'').trim().replace(/^(ΛΕΒΙΑΘΑΝ|leviathan)$/i,'');
+const LEV_COPY='ΛΕΒΙΑΘΑΝ '+LEV_YEAR+(LEV_AUTHOR?' · '+LEV_AUTHOR:'');
+
 /* ── Βοηθητικά ── */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmt(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');}
@@ -439,7 +444,7 @@ document.title=QUIZ.title||'Σταυρόλεξο';
 document.getElementById('sEyebrow').textContent=QUIZ.eyebrow||'';
 document.getElementById('sTitle').innerHTML=fmt(QUIZ.heading||QUIZ.title||'');
 document.getElementById('sSub').innerHTML=fmt(QUIZ.subtitle||'');
-document.getElementById('sCredits').textContent=QUIZ.credits||'';
+document.getElementById('sCredits').textContent=LEV_COPY;
 (function buildDecks(){
   const wrap=document.getElementById('deckPick');
   DECKS.forEach((d,i)=>{
@@ -699,7 +704,7 @@ function sheetHtml(withLetters,titleSuffix){
   return `<div class="pa-page"><div class="pa-head"><div class="pa-eyebrow">${esc(QUIZ.eyebrow||'Σταυρόλεξο')}${titleSuffix?' · '+titleSuffix:''}</div>`+
     `<div class="pa-title">${fmt(QUIZ.title||'')}</div><div class="pa-meta">${esc(d.label||'')}${d.ktitle?' — '+fmt(d.ktitle):''}</div></div>`+
     (withLetters?'':'<div class="pa-name">Ονοματεπώνυμο: ____________________________ &nbsp; Τμήμα: ________ &nbsp; Ημερομηνία: ___________</div>')+
-    g+`<div class="pa-clues">${cl}</div>`+(QUIZ.credits?`<div class="pa-foot">© ${esc(QUIZ.credits)}</div>`:'')+'</div>';
+    g+`<div class="pa-clues">${cl}</div>`+`<div class="pa-foot">© ${esc(LEV_COPY)}</div>`+'</div>';
 }
 function doPrint(withSolution){
   closeModal('printModal');

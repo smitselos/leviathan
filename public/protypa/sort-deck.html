@@ -387,6 +387,11 @@ body{
    ═════════════════════════════════════════════════════════════════ */
 const QUIZ=/*QUIZ_DATA_START*/{"v":1,"template":"sort-deck","title":"Ταξινόμηση — Παράδειγμα","eyebrow":"Ταξινόμηση σε κατηγορίες","heading":"Ταξινόμηση σε *κατηγορίες*","subtitle":"Διάλεξε ενότητα. Βάλε κάθε στοιχείο στη σωστή κατηγορία και πάτησε «Έλεγχος».","credits":"ΛΕΒΙΑΘΑΝ","decks":[{"label":"Ενότητα 1","ktitle":"Δευτερεύουσες επιρρηματικές προτάσεις","author":"","sub":"Αιτιολογικές · Τελικές · Χρονικές","ps":[{"title":"Είδη επιρρηματικών προτάσεων","src":"","cats":[{"name":"Αιτιολογικές","items":["επειδή έβρεχε","αφού το ήθελες","γιατί ήταν κουρασμένος"]},{"name":"Τελικές","items":["για να μάθει","να τον δει από κοντά"]},{"name":"Χρονικές","items":["όταν ήρθε το καλοκαίρι","μόλις τελείωσε το μάθημα"]}],"fb":"Αιτιολογικές: επειδή, αφού, γιατί · Τελικές: για να, να · Χρονικές: όταν, μόλις."}]}]}/*QUIZ_DATA_END*/;
 
+/* © ΛΕΒΙΑΘΑΝ · χρονολογία δημιουργίας · όνομα δημιουργού (αν έχει δηλωθεί) */
+const LEV_YEAR=QUIZ.year||((String(QUIZ.credits||'').match(/\b(19|20)\d{2}\b/)||[])[0])||new Date().getFullYear();
+const LEV_AUTHOR=String(QUIZ.credits||'').replace(/[\s,·–—-]*\b(19|20)\d{2}\s*$/,'').trim().replace(/^(ΛΕΒΙΑΘΑΝ|leviathan)$/i,'');
+const LEV_COPY='ΛΕΒΙΑΘΑΝ '+LEV_YEAR+(LEV_AUTHOR?' · '+LEV_AUTHOR:'');
+
 /* ── Βοηθητικά ── */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmt(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');}
@@ -401,7 +406,7 @@ document.title=QUIZ.title||'Ταξινόμηση σε κατηγορίες';
 document.getElementById('sEyebrow').textContent=QUIZ.eyebrow||'';
 document.getElementById('sTitle').innerHTML=fmt(QUIZ.heading||QUIZ.title||'');
 document.getElementById('sSub').innerHTML=fmt(QUIZ.subtitle||'');
-document.getElementById('sCredits').textContent=QUIZ.credits||'';
+document.getElementById('sCredits').textContent=LEV_COPY;
 (function buildDecks(){
   const wrap=document.getElementById('deckPick');
   DECKS.forEach((d,i)=>{
@@ -455,7 +460,7 @@ function startDeck(i){
   $('resultsScreen').classList.remove('active');
   $('exScreen').classList.add('active');
   $('exLabel').textContent=DECKS[i].label||('Ενότητα '+(i+1));
-  $('exInfo').textContent=QUIZ.credits?('© '+QUIZ.credits):'';
+  $('exInfo').textContent='© '+LEV_COPY;
   render();
 }
 function next(){ curPi++; if(curPi>=DECKS[curDk].ps.length) showResults(); else render(); }
@@ -591,7 +596,7 @@ function sheet(withSol){
     for(let r=0;r<rows;r++) h+='<tr>'+cats.map(c=>`<td>${withSol&&c.items[r]?esc(c.items[r]):''}</td>`).join('')+'</tr>';
     h+='</table>'+(withSol&&p.fb?`<div class="src" style="margin-top:3px">${fmt(p.fb)}</div>`:'')+'</div>';
   });
-  return h+(QUIZ.credits?`<div class="pa-foot">© ${esc(QUIZ.credits)}</div>`:'')+'</div>';
+  return h+`<div class="pa-foot">© ${esc(LEV_COPY)}</div>`+'</div>';
 }
 function doPrint(withSol){
   closeModal('printModal');
