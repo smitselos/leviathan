@@ -545,6 +545,13 @@ select.gap-in{cursor:pointer;}
 .mcw-warn{background:#fff7e0;border:1px solid var(--gold);color:#7a5a00;border-radius:8px;padding:6px 10px;font-size:13px;margin-bottom:8px;}
 @media(max-width:640px){ .mcw-clues{grid-template-columns:1fr;} .sort-bins{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));} }
 /* ═══ ΕΚΤΥΠΩΣΗ / PDF — παράθυρο ρυθμίσεων ═══ */
+.diff-pick{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:-6px 0 18px;max-width:640px;}
+.diff-pick .dp-lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--purple-light);font-weight:700;margin-right:4px;}
+.diff-chip{padding:5px 11px;border-radius:999px;border:1.5px solid rgba(107,63,160,.25);background:rgba(255,255,255,.85);color:var(--purple);font-size:12.5px;font-weight:700;font-family:'Source Sans 3',sans-serif;cursor:pointer;white-space:nowrap;}
+.diff-chip.on{background:var(--purple);color:#fff;border-color:var(--purple);}
+.diff-chip small{opacity:.7;font-weight:600;}
+.deck-card.empty{opacity:.45;pointer-events:none;}
+.bc-diff{letter-spacing:1px;}
 .btn-print-open{position:relative;z-index:2;margin:4px 0 46px;padding:10px 20px;border-radius:999px;border:1.5px solid rgba(107,63,160,.3);background:rgba(255,255,255,.85);color:var(--purple);font-weight:700;font-size:14px;font-family:'Source Sans 3',sans-serif;cursor:pointer;box-shadow:0 3px 12px rgba(26,22,16,.08);}
 .btn-print-open:hover{border-color:var(--purple);background:#fff;}
 .print-modal-overlay{position:fixed;inset:0;background:rgba(26,22,16,.5);display:flex;align-items:center;justify-content:center;z-index:2000;opacity:0;pointer-events:none;transition:opacity .3s;padding:10px;}
@@ -595,6 +602,7 @@ select.gap-in{cursor:pointer;}
   <div class="start-title" id="sTitle"></div>
   <div class="start-accent"></div>
   <div class="start-sub" id="sSub"></div>
+  <div class="diff-pick" id="diffPick" hidden></div>
   <div class="deck-pick" id="deckPick"></div>
   <button class="btn-print-open" id="btnPrintOpen" type="button">🖨️ Εκτύπωση / PDF — φύλλο εργασίας</button>
   <div class="start-credits">
@@ -651,6 +659,7 @@ select.gap-in{cursor:pointer;}
       <div class="pm-decks" id="pmDecks"></div>
       <div class="pm-links"><a id="pmAll">Όλες</a><a id="pmNone">Καμία</a></div>
       <div class="pm-sum" id="pmSum"></div>
+      <div class="diff-pick" id="pmDiff" style="justify-content:flex-start;margin:10px 0 2px"></div>
       <div class="pm-toggle-row" style="margin-top:8px"><label for="pmDeckHead">Τίτλος ενότητας πριν από τις ερωτήσεις της</label><label class="pm-switch"><input type="checkbox" id="pmDeckHead" checked><span class="pm-slider"></span></label></div>
       <div class="pm-toggle-row"><label for="pmShuffle">Ανακάτεμα σειράς ερωτήσεων</label><label class="pm-switch"><input type="checkbox" id="pmShuffle"><span class="pm-slider"></span></label></div>
       <div class="pm-toggle-row"><label for="pmKey">Λύσεις σε ξεχωριστή σελίδα στο τέλος</label><label class="pm-switch"><input type="checkbox" id="pmKey"><span class="pm-slider"></span></label></div>
@@ -743,7 +752,7 @@ function fmt(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').
 function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
 function dkCls(i){return 'dk'+((i%3)+1);}
 function norm(s,strict){
-  let x=String(s||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/[.,;:!·…]+$/,'');
+  let x=String(s||'').toLowerCase().replace(/\s+/g,' ').trim(); x=x.replace(/[.,;:!·…]+$/,'')||x;
   if(!strict) x=x.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ς/g,'σ');
   return x;
 }
@@ -759,6 +768,33 @@ document.getElementById('sEyebrow').textContent=QUIZ.eyebrow||'';
 document.getElementById('sTitle').innerHTML=fmt(QUIZ.heading||QUIZ.title||'');
 document.getElementById('sSub').innerHTML=fmt(QUIZ.subtitle||'');
 document.getElementById('sCredits').textContent=LEV_COPY;
+/* ── Βαθμός δυσκολίας (προαιρετικός, q.diff = 1…5) ── */
+const DIFFS=[...new Set(DECKS.flatMap(d=>d.qs.map(q=>+q.diff||0)).filter(Boolean))].sort((a,b)=>a-b);
+const DIFF_MAX=Math.max(3,...DIFFS);
+let DIFF_SEL=[]; // κενό = όλοι οι βαθμοί
+const diffDots=d=>'●'.repeat(d)+'○'.repeat(Math.max(0,DIFF_MAX-d));
+const qsOf=d=>DIFF_SEL.length?d.qs.filter(q=>DIFF_SEL.includes(+q.diff||0)):d.qs;
+function diffChipsHtml(){
+  const all=DECKS.reduce((s,d)=>s+d.qs.length,0);
+  const cnt=v=>DECKS.reduce((s,d)=>s+d.qs.filter(q=>(+q.diff||0)===v).length,0);
+  return `<span class="dp-lbl">Δυσκολία</span><button type="button" class="diff-chip ${DIFF_SEL.length?'':'on'}" data-diff="all">Όλες <small>(${all})</small></button>`+
+    DIFFS.map(v=>`<button type="button" class="diff-chip ${DIFF_SEL.includes(v)?'on':''}" data-diff="${v}" title="Βαθμός ${v}">${v} ${diffDots(v)} <small>(${cnt(v)})</small></button>`).join('');
+}
+function bindDiffChips(box,after){
+  box.innerHTML=diffChipsHtml();
+  box.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{
+    const v=b.dataset.diff;
+    if(v==='all') DIFF_SEL=[]; else { const n=+v; DIFF_SEL=DIFF_SEL.includes(n)?DIFF_SEL.filter(x=>x!==n):DIFF_SEL.concat(n).sort((a,b)=>a-b); }
+    refreshDiffUI(); if(after) after();
+  });
+}
+function refreshDiffUI(){
+  const dp=document.getElementById('diffPick');
+  if(DIFFS.length){ dp.hidden=false; bindDiffChips(dp); }
+  DECKS.forEach((d,i)=>{ const c=document.getElementById('pick'+i); if(!c) return; const n=qsOf(d).length;
+    c.querySelector('.dc-count').textContent=n+' ερωτήσεις'+(DIFF_SEL.length&&n!==d.qs.length?' (από '+d.qs.length+')':''); c.classList.toggle('empty',!n); });
+  const pm=document.getElementById('pmDiff'); if(pm&&DIFFS.length) bindDiffChips(pm,()=>{ openPrintModal(true); });
+}
 (function buildDecks(){
   const wrap=document.getElementById('deckPick');
   DECKS.forEach((d,i)=>{
@@ -776,6 +812,7 @@ document.getElementById('sCredits').textContent=LEV_COPY;
     wrap.appendChild(c);
   });
 })();
+setTimeout(refreshDiffUI,0);
 
 /* ═════════════════════════════════════
    STATE
@@ -788,7 +825,7 @@ let curDk=DECKS.length?0:null, curQi=0, score={c:0,w:0}, wrongQs=[], retryMode=f
    ═════════════════════════════════════ */
 const LEV_SESSION=(location.hash.match(/session=(\d{4})/)||[])[1]||null;
 const LEV_API=(/vercel\.app$/.test(location.hostname)?location.origin:'https://leviathan-olive.vercel.app')+'/api/quiz-results';
-let levName=null, levChoice=null;
+let levName=null, levChoice=null, levOptFb='';
 function levAskName(){
   if(!LEV_SESSION) return;
   let n=null; try{n=localStorage.getItem('lev_name_'+LEV_SESSION);}catch(e){}
@@ -824,7 +861,8 @@ function enterQuiz(label){
 function startQuiz(){
   if(LEV_SESSION&&!levName) levAskName();
   curQi=0; score={c:0,w:0}; wrongQs=[]; retryMode=false;
-  const qs=DECKS[curDk].qs;
+  const qs=qsOf(DECKS[curDk]);
+  if(!qs.length){ alert('Δεν υπάρχουν ερωτήσεις αυτού του βαθμού δυσκολίας στην ενότητα.'); return; }
   runList=QUIZ.shuffleQs?shuffle(qs):[...qs];
   enterQuiz(DECKS[curDk].label||('Ενότητα '+(curDk+1)));
 }
@@ -877,7 +915,7 @@ function renderCard(){
   left.innerHTML=`
     <div class="bc-qnum">Ερώτηση ${curQi+1} / ${runList.length}</div>
     <div class="bc-qtext">${fmt(q.q)}</div>
-    <div class="bc-qtype">${TYPE_LBL[q.t]||''}</div>
+    <div class="bc-qtype">${TYPE_LBL[q.t]||''}${+q.diff?` · <span class="bc-diff" title="Βαθμός δυσκολίας ${+q.diff}">Δυσκολία ${diffDots(+q.diff)}</span>`:''}</div>
     <div class="bc-result" id="bcResult"></div>`;
   const right=document.createElement('div');
   right.className='bc-right'; right.id='bcRight';
@@ -929,6 +967,7 @@ function optButtons(q,opts,ans,container,withLetters){
     btn.addEventListener('click',()=>{
       const ok=oi===ans;
       levChoice=withLetters?LABS[pos]:opts[oi];
+      levOptFb=(q.t==='mcq'&&Array.isArray(q.fbs)&&String(q.fbs[oi]||'').trim())||'';
       btns.forEach(b=>b.classList.add('disabled'));
       btn.classList.add('chosen',ok?'correct':'wrong');
       if(!ok) btns.forEach(b=>{if(+b.dataset.oi===ans) b.classList.add('reveal');});
@@ -1384,8 +1423,8 @@ function finishQuestion(ok,q,container,autoFix){
   const fb=document.getElementById('currentFB');
   fb.className='fb-box show '+(ok?'ok':'ko');
   // Αν ο συντάκτης δεν έγραψε σχόλιο, δίνεται αυτόματο
-  const msg=ok?(q.fbC||'Σωστά!'):(q.fbW||(autoFix?esc(autoFix):'Δεν είναι σωστό.'));
-  const msgHtml=(ok?q.fbC:q.fbW)?fmt(msg):msg;
+  const own=levOptFb||(ok?q.fbC:q.fbW);
+  const msgHtml=own?fmt(own):(ok?'Σωστά!':(autoFix?esc(autoFix):'Δεν είναι σωστό.'));
   fb.innerHTML=`<strong>${ok?'✓':'✗'}</strong> ${msgHtml}`+(q.ref?`<span class="fb-ref">→ ${esc(q.ref)}</span>`:'');
   const done=curQi+1, total=runList.length;
   document.getElementById('progBar').style.width=((done/total)*100)+'%';
@@ -1399,7 +1438,7 @@ function finishQuestion(ok,q,container,autoFix){
     levSend({ qid:'K'+(curDk+1)+'-'+(qi+1), qtext:q.q, cat:q.ref||TYPE_LBL[q.t],
       choice:(q.t==='mcq'||q.t==='tf')?levChoice:(ok?'✓ '+q.t:'✗ '+q.t), ok });
   }
-  levChoice=null;
+  levChoice=null; levOptFb='';
 }
 
 /* ═════════════════════════════════════
@@ -1408,18 +1447,20 @@ function finishQuestion(ok,q,container,autoFix){
    ═════════════════════════════════════ */
 const PR_LET='ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ';
 const $pm=id=>document.getElementById(id);
-function openPrintModal(){
+function openPrintModal(keep){
   const box=$pm('pmDecks');
-  box.innerHTML=DECKS.map((d,i)=>`<label class="pm-deck"><input type="checkbox" value="${i}" checked><span><b>${String(i+1).padStart(2,'0')}</b> ${esc(d.label||('Ενότητα '+(i+1)))}${d.ktitle?' — <i>'+fmt(d.ktitle)+'</i>':''}</span><small>${d.qs.length} ερ.</small></label>`).join('');
+  if(keep===true){ box.querySelectorAll('.pm-deck').forEach((l,i)=>{ l.querySelector('small').textContent=qsOf(DECKS[i]).length+' ερ.'; }); prSum(); return; }
+  if(DIFFS.length) bindDiffChips($pm('pmDiff'),()=>{ openPrintModal(true); }); else $pm('pmDiff').hidden=true;
+  box.innerHTML=DECKS.map((d,i)=>`<label class="pm-deck"><input type="checkbox" value="${i}" checked><span><b>${String(i+1).padStart(2,'0')}</b> ${esc(d.label||('Ενότητα '+(i+1)))}${d.ktitle?' — <i>'+fmt(d.ktitle)+'</i>':''}</span><small>${qsOf(d).length} ερ.</small></label>`).join('');
   if(!$pm('pmTitle').dataset.set){ $pm('pmTitle').value=(QUIZ.title||'ΑΣΚΗΣΗ'); $pm('pmTitle').dataset.set='1'; }
   prSum();
   $pm('printModalOverlay').classList.add('active');
 }
 function prPicked(){ return [...$pm('pmDecks').querySelectorAll('input:checked')].map(x=>+x.value); }
 function prSum(){
-  const p=prPicked(), n=p.reduce((s,i)=>s+DECKS[i].qs.length,0);
-  $pm('pmSum').textContent=p.length?`Επιλέχθηκ${p.length===1?'ε 1 ενότητα':'αν '+p.length+' ενότητες'} · ${n} ερωτήσεις`:'Διάλεξε τουλάχιστον μία ενότητα.';
-  $pm('pmPrint').disabled=!p.length;
+  const p=prPicked(), n=p.reduce((s,i)=>s+qsOf(DECKS[i]).length,0);
+  $pm('pmSum').textContent=p.length?`Επιλέχθηκ${p.length===1?'ε 1 ενότητα':'αν '+p.length+' ενότητες'} · ${n} ερωτήσεις`+(DIFF_SEL.length?` · δυσκολία ${DIFF_SEL.join(', ')}`:''):'Διάλεξε τουλάχιστον μία ενότητα.';
+  $pm('pmPrint').disabled=!p.length||!n;
 }
 function closePrintModal(){ $pm('printModalOverlay').classList.remove('active'); }
 (function initPrintModal(){
@@ -1433,7 +1474,7 @@ function closePrintModal(){ $pm('printModalOverlay').classList.remove('active');
   $pm('pmNone').onclick=()=>{ $pm('pmDecks').querySelectorAll('input').forEach(x=>x.checked=false); prSum(); };
   $pm('pmShowLines').onchange=function(){ $pm('pmLinesCountRow').style.display=this.checked?'block':'none'; };
   $pm('pmWatermarkOn').onchange=function(){ $pm('pmWatermarkRow').style.display=this.checked?'block':'none'; };
-  $pm('pmPrint').onclick=()=>{ const s=collectPrintSettings(); if(!s.decks.length) return; closePrintModal(); printWorksheet(s); };
+  $pm('pmPrint').onclick=()=>{ const s=collectPrintSettings(); if(!s.decks.length) return; s.decks=s.decks.filter(i=>qsOf(DECKS[i]).length); closePrintModal(); printWorksheet(s); };
 })();
 function collectPrintSettings(){
   const v=id=>$pm(id).value.trim(), c=id=>$pm(id).checked;
@@ -1501,7 +1542,7 @@ function prQuestion(q,num,s){
 }
 function printWorksheet(s){
   // Ερωτήσεις των επιλεγμένων ενοτήτων
-  let blocks=s.decks.map(i=>({d:DECKS[i],i,qs:DECKS[i].qs.slice()}));
+  let blocks=s.decks.map(i=>({d:DECKS[i],i,qs:qsOf(DECKS[i]).slice()}));
   if(s.shuffle){ const all=shuffle(blocks.flatMap(b=>b.qs)); blocks=[{d:null,qs:all}]; }
   let num=0; const keys=[]; let body='';
   blocks.forEach(b=>{

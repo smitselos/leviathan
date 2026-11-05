@@ -201,6 +201,7 @@ function cleanForExport(d) {
       ...dk,
       qs: dk.qs.map((q) => {
         if (q.t === 'drag') return { ...q, ans: q.tgts.map((_, i) => i) };
+        if (q.t === 'mcq' && Array.isArray(q.fbs)) { const fbs = q.opts.map((_, k) => String(q.fbs[k] || '').trim()); const { fbs: _f, ...rest } = q; return fbs.some(Boolean) ? { ...rest, fbs } : rest; }
         if (q.t === 'gap') return { ...q, distractors: (q.distractors || []).map((s) => s.trim()).filter(Boolean) };
         if (q.t === 'order') return { ...q, lines: (q.lines || []).map((l) => String(l).trim()).filter(Boolean) };
         if (q.t === 'sort') return { ...q, cats: (q.cats || []).map((c) => ({ name: String(c.name || '').trim(), items: (c.items || []).map((x) => String(x).trim()).filter(Boolean) })).filter((c) => c.name || c.items.length) };
@@ -261,7 +262,7 @@ const loadXlsx = () => xlsxP || (xlsxP = new Promise((res, rej) => {
   s.onerror = () => { xlsxP = null; rej(new Error('Δεν φορτώθηκε η βιβλιοθήκη Excel (ελέγξτε τη σύνδεση).')); };
   document.head.appendChild(s);
 }));
-const XL_COLS = ['Ενότητα', 'Α/Α', 'Τύπος', 'Εκφώνηση', 'Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ', 'Σωστή', 'Κείμενο', 'Ρύθμιση', 'Σχόλιο σωστού', 'Σχόλιο λάθους', 'Παραπομπή'];
+const XL_COLS = ['Ενότητα', 'Α/Α', 'Τύπος', 'Εκφώνηση', 'Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ', 'Σωστή', 'Κείμενο', 'Ρύθμιση', 'Σχόλιο σωστού', 'Σχόλιο λάθους', 'Παραπομπή', 'Δυσκολία', 'Σχόλιο Α', 'Σχόλιο Β', 'Σχόλιο Γ', 'Σχόλιο Δ', 'Σχόλιο Ε', 'Σχόλιο ΣΤ'];
 const XL_OPT = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ'];
 const XL_TYPE = { mcq: 'Πολλαπλής επιλογής', tf: 'Σωστό/Λάθος', drag: 'Αντιστοίχιση', gap: 'Συμπλήρωση κενών', click: 'Επιλογή λέξεων', order: 'Αναδιάταξη', sort: 'Ταξινόμηση', cw: 'Σταυρόλεξο' };
 const XL_MULTI = ['drag', 'order', 'sort', 'cw'];
@@ -276,11 +277,11 @@ const xlSettings = (s) => xlN(s).split(/[,;·]/).map((x) => x.trim()).filter(Boo
 
 function quizToSheets(data) {
   const rows = [XL_COLS];
-  const base = (dk, n, q) => ({ 'Ενότητα': dk.label || '', 'Α/Α': n, 'Τύπος': XL_TYPE[q.t] || q.t, 'Εκφώνηση': q.q || '', 'Σχόλιο σωστού': q.fbC || '', 'Σχόλιο λάθους': q.fbW || '', 'Παραπομπή': q.ref || '' });
+  const base = (dk, n, q) => ({ 'Ενότητα': dk.label || '', 'Α/Α': n, 'Τύπος': XL_TYPE[q.t] || q.t, 'Εκφώνηση': q.q || '', 'Σχόλιο σωστού': q.fbC || '', 'Σχόλιο λάθους': q.fbW || '', 'Παραπομπή': q.ref || '', 'Δυσκολία': +q.diff || '' });
   const push = (o) => rows.push(XL_COLS.map((c) => (o[c] == null ? '' : o[c])));
   data.decks.forEach((dk) => (dk.qs || []).forEach((q, i) => {
     const n = i + 1, b = base(dk, n, q), cont = { 'Ενότητα': dk.label || '', 'Α/Α': n };
-    if (q.t === 'mcq') { const o = { ...b, 'Σωστή': LABS[q.ans] || '' }; (q.opts || []).slice(0, 6).forEach((t, k) => { o[XL_OPT[k]] = t; }); push(o); }
+    if (q.t === 'mcq') { const o = { ...b, 'Σωστή': LABS[q.ans] || '' }; (q.opts || []).slice(0, 6).forEach((t, k) => { o[XL_OPT[k]] = t; o['Σχόλιο ' + XL_OPT[k]] = (q.fbs || [])[k] || ''; }); push(o); }
     else if (q.t === 'tf') { const L = q.labels || ['Σωστό', 'Λάθος']; push({ ...b, 'Α': L[0], 'Β': L[1], 'Σωστή': L[q.ans | 0] }); }
     else if (q.t === 'gap') { const o = { ...b, 'Κείμενο': q.text || '', 'Ρύθμιση': [q.mode === 'select' ? 'λίστα' : '', q.strict ? 'αυστηρά' : ''].filter(Boolean).join(', ') }; (q.distractors || []).filter((x) => String(x).trim()).slice(0, 6).forEach((t, k) => { o[XL_OPT[k]] = t; }); push(o); }
     else if (q.t === 'click') push({ ...b, 'Κείμενο': q.text || '' });
@@ -304,7 +305,9 @@ function quizToSheets(data) {
     ['   Αναδιάταξη: Α = περίοδος, με τη ΣΩΣΤΗ σειρά. «Ρύθμιση» = σταθερή 1η → η 1η μένει στη θέση της.'],
     ['   Ταξινόμηση: Α = κατηγορία, Β = στοιχείο της (μία γραμμή για κάθε στοιχείο).'],
     ['   Σταυρόλεξο: Α = λέξη, Β = ορισμός. Το πλέγμα στήνεται αυτόματα. «Ρύθμιση» = διάταξη 2, 3… για άλλη τοποθέτηση.'],
-    ['Προαιρετικά: Σχόλιο σωστού, Σχόλιο λάθους, Παραπομπή (π.χ. θεωρία).'],
+    ['Προαιρετικά: Σχόλιο σωστού, Σχόλιο λάθους, Παραπομπή (π.χ. θεωρία), Δυσκολία (1–5).'],
+    ['Πολλαπλής επιλογής: «Σχόλιο Α»–«Σχόλιο ΣΤ» = σχόλιο που εμφανίζεται όταν ο μαθητής διαλέξει τη συγκεκριμένη επιλογή.'],
+    ['Δέχεται επίσης αρχεία με τη μορφή των εφαρμογών ΜΗΤΣΕΛΟΣ (στήλες ID, Κατηγορία, Δυσκολία, Τύπος YN/MC/DD/CLK/GAP, Απόσπασμα, Κείμενο Ερώτησης…).'],
     ['Φύλλο «Ενότητες»: τίτλος, συγγραφέας, άξονες κάθε κάρτας. Φύλλο «Γενικά»: η αρχική οθόνη.']];
   return { rows, decks, gen, help };
 }
@@ -313,7 +316,7 @@ async function exportQuizXlsx(data, fileName) {
   const { rows, decks, gen, help } = quizToSheets(data);
   const wb = X.utils.book_new();
   const ws = X.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [14, 5, 18, 40, 22, 22, 22, 22, 18, 18, 10, 50, 14, 24, 24, 16].map((w) => ({ wch: w }));
+  ws['!cols'] = [14, 5, 18, 40, 22, 22, 22, 22, 18, 18, 10, 50, 14, 24, 24, 16, 9, 24, 24, 24, 24, 20, 20].map((w) => ({ wch: w }));
   ws['!freeze'] = { xSplit: 0, ySplit: 1 };
   X.utils.book_append_sheet(wb, ws, 'Ερωτήσεις');
   const wd = X.utils.aoa_to_sheet(decks); wd['!cols'] = [16, 34, 22, 34].map((w) => ({ wch: w })); X.utils.book_append_sheet(wb, wd, 'Ενότητες');
@@ -338,6 +341,59 @@ function sampleQuizData(credits) {
     { ...newQuestion('cw'), words: [{ w: 'μεταφορά', c: 'Σχήμα λόγου με μεταφορά σημασίας' }, { w: 'παρομοίωση', c: 'Σύγκριση με το «σαν»' }, { w: 'ασύνδετο', c: 'Παράθεση χωρίς συνδέσμους' }, { w: 'αντίθεση', c: 'Αντιπαράθεση εννοιών' }] },
   ] }];
   return d;
+}
+// Μορφή εφαρμογών ΜΗΤΣΕΛΟΣ: ID | Ενεργό | Κατηγορία | Δυσκολία | Τύπος (YN/MC/DD/CLK/GAP) | Απόσπασμα |
+// Κείμενο Ερώτησης | Επιλογή Α–Δ | Σωστή Απάντηση | Αριστερά 1–4 | Δεξιά 1–4 | Λέξη-Στόχος | Διόρθωση 1–4 | Θεωρία
+const stripTags = (s) => String(s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/[ \t]+/g, ' ').trim();
+function mitselosRows(all, hi, col, getDeck, warnings) {
+  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap' };
+  all.slice(hi + 1).forEach((r, ri) => {
+    if (!r.some((c) => c)) return;
+    const line = hi + ri + 2, id = col(r, 'ID') || ('γρ. ' + line);
+    if (/^(false|0|οχι|ψευδεσ|no)$/.test(xlN(col(r, 'Ενεργό')))) return;
+    const raw = col(r, 'Τύπος'), t = T[xlN(raw)] || xlType(raw);
+    if (!t || t === '?') { warnings.push(`${id}: άγνωστος τύπος «${raw || '—'}» — παραλείφθηκε.`); return; }
+    const cat = col(r, 'Κατηγορία'), deck = getDeck(cat ? (/^[\d.]+$/.test(cat) ? 'Ενότητα ' + cat : cat) : '');
+    const exc = stripTags(col(r, 'Απόσπασμα')), qt = stripTags(col(r, 'Κείμενο Ερώτησης'));
+    const withExc = (x) => (exc ? `*${exc.replace(/\*/g, '')}*\n\n` : '') + x;
+    const fixes = [1, 2, 3, 4].map((i) => stripTags(col(r, 'Διόρθωση ' + i)));
+    const L = (s) => ['α', 'β', 'γ', 'δ', 'ε', 'στ'].indexOf(xlN(s));
+    let q = null;
+    if (t === 'tf') {
+      q = { ...newQuestion('tf'), q: withExc(qt), labels: [col(r, 'Επιλογή Α') || 'Ναι', col(r, 'Επιλογή Β') || 'Όχι'], ans: L(col(r, 'Σωστή Απάντηση')) === 1 ? 1 : 0 };
+    } else if (t === 'mcq') {
+      const o = ['Α', 'Β', 'Γ', 'Δ'].map((k) => stripTags(col(r, 'Επιλογή ' + k))); while (o.length > 2 && !o[o.length - 1]) o.pop();
+      let ans = L(col(r, 'Σωστή Απάντηση')); if (ans < 0 || ans >= o.length) { warnings.push(`${id}: δεν βρέθηκε σωστή απάντηση — ορίστηκε η Α.`); ans = 0; }
+      q = { ...newQuestion('mcq'), q: withExc(qt), opts: o, ans };
+      const nf = fixes.filter(Boolean).length;
+      if (nf > 1) q.fbs = o.map((_, k) => fixes[k] || ''); else if (nf === 1) { q.fbC = fixes.find(Boolean); q.fbW = q.fbC; }
+    } else if (t === 'drag') {
+      const lefts = [1, 2, 3, 4].map((i) => stripTags(col(r, 'Αριστερά ' + i))).filter(Boolean);
+      const rights = [1, 2, 3, 4].map((i) => stripTags(col(r, 'Δεξιά ' + i))).filter(Boolean);
+      const ans = lefts.map((_, i) => i);
+      [...col(r, 'Σωστή Απάντηση').matchAll(/Αριστερά\s*(\d+)\s*(?:→|->|=)\s*Δεξιά\s*(\d+)/gi)].forEach((m) => { const a = +m[1] - 1, b = +m[2] - 1; if (a >= 0 && a < lefts.length && b >= 0 && b < rights.length) ans[a] = b; });
+      q = { ...newQuestion('drag'), q: withExc(qt), tgts: lefts, items: rights, ans };
+    } else if (t === 'click') {
+      let text = exc; const miss = [];
+      col(r, 'Λέξη-Στόχος').split('|').map((x) => x.trim()).filter(Boolean).forEach((w) => {
+        const tryMark = (x) => { const i = text.indexOf(x); if (i < 0 || !x) return false; text = text.slice(0, i) + '[' + x + ']' + text.slice(i + x.length); return true; };
+        if (!tryMark(w)) { const parts = w.split('/').map((x) => x.trim()).filter(Boolean); if (!(parts.length > 1 && parts.every(tryMark))) miss.push(w); }
+      });
+      if (miss.length) warnings.push(`${id}: η λέξη-στόχος «${miss.join(', ')}» δεν βρέθηκε στο απόσπασμα.`);
+      q = { ...newQuestion('click'), q: qt || 'Επίλεξε τις λέξεις που ζητούνται.', text };
+    } else if (t === 'gap') {
+      const alts = col(r, 'Σωστή Απάντηση').split(/[|/]/).map((x) => x.trim()).filter(Boolean);
+      const m = qt.match(/^(συμπλ[ηή]ρωσε[^.:]*[.:])\s*/i);
+      let instr = m ? m[1] : 'Συμπλήρωσε το κενό.', rest = m ? qt.slice(m[0].length) : qt;
+      const blank = '[' + (alts.join('|') || '…') + ']';
+      if (/_{2,}/.test(rest)) rest = rest.replace(/_{2,}/, blank); else { rest = rest + ' ' + blank; warnings.push(`${id}: δεν βρέθηκε «____» στο κείμενο — το κενό μπήκε στο τέλος.`); }
+      q = { ...newQuestion('gap'), q: withExc(instr), text: rest };
+    }
+    if (!q) return;
+    if (t !== 'mcq' && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
+    const df = parseInt(col(r, 'Δυσκολία')); if (df >= 1 && df <= 5) q.diff = df;
+    deck.qs.push(q);
+  });
 }
 // Ανάγνωση xlsx/csv → δεδομένα κουίζ  { data, n, warnings }
 async function importQuizXlsx(file, credits) {
@@ -366,10 +422,17 @@ async function importQuizXlsx(file, credits) {
     else if (t === 'order') { q = { ...newQuestion('order'), lines: rows.map((r) => col(r, 'Α')).filter(Boolean), fixFirst: xlSettings(col(r0, 'Ρύθμιση')).some((x) => /^σταθερ|^fix/.test(x)) }; }
     else if (t === 'sort') { const cats = []; rows.forEach((r) => { const c = col(r, 'Α'), it = col(r, 'Β'); if (!c && !it) return; let cc = cats.find((x) => xlN(x.name) === xlN(c)); if (!cc) { cc = { name: c, items: [] }; cats.push(cc); } if (it) cc.items.push(it); }); q = { ...newQuestion('sort'), cats: cats.length ? cats : newQuestion('sort').cats }; }
     else if (t === 'cw') { const m = col(r0, 'Ρύθμιση').match(/\d+/); q = { ...newQuestion('cw'), words: rows.map((r) => ({ w: col(r, 'Α'), c: col(r, 'Β') })).filter((x) => x.w || x.c), seed: m ? Math.max(1, +m[0]) : 1 }; }
-    if (q) { if (b.q) q.q = b.q; q.fbC = b.fbC; q.fbW = b.fbW; q.ref = b.ref; deck.qs.push(q); }
+    if (q) {
+      if (b.q) q.q = b.q; q.fbC = b.fbC; q.fbW = b.fbW; q.ref = b.ref;
+      const df = parseInt(col(r0, 'Δυσκολία')); if (df >= 1 && df <= 5) q.diff = df;
+      if (t === 'mcq') { const fb = q.opts.map((_, k) => col(r0, 'Σχόλιο ' + XL_OPT[k])); if (fb.some(Boolean)) q.fbs = fb; }
+      deck.qs.push(q);
+    }
     cur = null;
   };
-  all.slice(hi + 1).forEach((r, ri) => {
+  const isMit = H[xlN('Κείμενο Ερώτησης')] != null && H[xlN('Κατηγορία')] != null;
+  if (isMit) mitselosRows(all, hi, col, getDeck, warnings);
+  else all.slice(hi + 1).forEach((r, ri) => {
     if (!r.some((c) => c)) return;
     const label = col(r, 'Ενότητα') || lastDeck || 'Ενότητα 1'; lastDeck = label;
     const n = col(r, 'Α/Α'), tRaw = col(r, 'Τύπος'), t = xlType(tRaw);
@@ -1213,7 +1276,7 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
                   onChange={(e) => { const a = [...q.opts]; a[i] = e.target.value; setQ({ opts: a }); }} placeholder={'Επιλογή ' + LABS[i]} />
                 <IconBtn title="Αφαίρεση" disabled={q.opts.length <= 2} onClick={() => {
                   const a = q.opts.filter((_, k) => k !== i);
-                  setQ({ opts: a, ans: q.ans === i ? 0 : q.ans > i ? q.ans - 1 : q.ans });
+                  setQ({ opts: a, ans: q.ans === i ? 0 : q.ans > i ? q.ans - 1 : q.ans, ...(Array.isArray(q.fbs) ? { fbs: q.fbs.filter((_, k) => k !== i) } : {}) });
                 }}>✕</IconBtn>
               </div>
             ))}
@@ -1312,7 +1375,16 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
       {/* ── Μικρό σταυρόλεξο ── */}
       {q.t === 'cw' && <MiniCwFields q={q} setQ={setQ} />}
 
-      <details style={{ background: 'rgba(107,63,160,.04)', borderRadius: 10, padding: '10px 14px' }} open={!!(q.fbC || q.fbW || q.ref)}>
+      <Field label="Βαθμός δυσκολίας (προαιρετικός)" hint="Ο μαθητής μπορεί να διαλέξει δυσκολία στην αρχική οθόνη· το ίδιο φίλτρο υπάρχει και στην εκτύπωση.">
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[0, 1, 2, 3, 4, 5].map((v) => (
+            <button key={v} onClick={() => setQ({ diff: v || undefined })} title={v ? 'Βαθμός ' + v : 'Χωρίς βαθμό'}
+              style={{ ...S.typeChip, ...((+q.diff || 0) === v ? S.typeChipOn : {}) }}>{v ? `${v} ${'●'.repeat(v)}` : '—'}</button>
+          ))}
+        </div>
+      </Field>
+
+      <details style={{ background: 'rgba(107,63,160,.04)', borderRadius: 10, padding: '10px 14px' }} open={!!(q.fbC || q.fbW || q.ref || (Array.isArray(q.fbs) && q.fbs.some((x) => String(x || '').trim())))}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13.5, color: C.purple }}>Ανατροφοδότηση / διόρθωση (προαιρετικά)</summary>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
           <Field label="✓ Σχόλιο όταν απαντά σωστά" hint="Κενό → «Σωστά!»">
@@ -1321,6 +1393,19 @@ function QuestionForm({ q, index, total, setQ, changeType, onUp, onDown, onDup, 
           <Field label="✗ Σχόλιο / διόρθωση όταν απαντά λάθος" hint="Κενό → εμφανίζεται αυτόματα η σωστή απάντηση.">
             <textarea style={{ ...S.input, minHeight: 50 }} value={q.fbW} onChange={(e) => setQ({ fbW: e.target.value })} />
           </Field>
+          {q.t === 'mcq' && (
+            <Field label="Σχόλιο για κάθε επιλογή (προαιρετικό)" hint="Εμφανίζεται όταν ο μαθητής διαλέξει τη συγκεκριμένη επιλογή· όπου είναι κενό, ισχύουν τα παραπάνω σχόλια.">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {q.opts.map((o, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ width: 22, paddingTop: 9, fontWeight: 700, color: q.ans === i ? C.ok : C.purple }}>{LABS[i]}</span>
+                    <textarea style={{ ...S.input, minHeight: 40 }} value={(q.fbs || [])[i] || ''} placeholder={o ? 'Αν διαλέξει: ' + o : ''}
+                      onChange={(e) => { const a = q.opts.map((_, k) => (q.fbs || [])[k] || ''); a[i] = e.target.value; setQ({ fbs: a }); }} />
+                  </div>
+                ))}
+              </div>
+            </Field>
+          )}
           <Field label="Παραπομπή (μικρά πλάγια, κάτω από το σχόλιο)">
             <input style={S.input} value={q.ref} onChange={(e) => setQ({ ref: e.target.value })} placeholder="π.χ. Κείμενο 1 · Ερ. 3 · Κριτήριο εθισμού" />
           </Field>
