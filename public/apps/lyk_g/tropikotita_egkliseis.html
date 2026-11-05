@@ -200,7 +200,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .fb-card-2-title.ok{color:var(--ok)}
 .fb-card-2-title.ko{color:var(--ko)}
 .fb-card-2-text{color:var(--ink);font-size:1rem;line-height:1.7}
-.btn-fb-reveal{display:inline-block;margin-top:4px;padding:11px 20px;border:2px solid var(--accent);background:var(--white);color:var(--accent-d);border-radius:var(--r-sm);font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn-fb-reveal{display:block;width:100%;margin-top:10px;padding:14px;border:2px solid var(--accent);background:var(--white);color:var(--accent-d);border-radius:var(--r-sm);font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
 .btn-fb-reveal:hover{background:var(--accent-l)}
 .btn-theory-2{display:inline-block;margin-top:14px;padding:11px 20px;border:2px solid var(--peach-deep);background:var(--peach-soft);color:var(--peach-text);border-radius:var(--r-sm);font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
 .btn-theory-2:hover{background:var(--peach)}
@@ -1272,13 +1272,25 @@ function renderAdaptive() {
     html += `<div class="fb-box ${isOk?'ok':'ko'}" style="margin-top:14px">
       <p class="fb-title" style="margin-bottom:0">${isOk?'✅ Σωστά!':'❌ Λάθος'}</p>
     </div>`;
+    if (isOk) {
+      // Σωστό → αμέσως: κουμπί «Ανατροφοδότηση» (προαιρετικό) και από κάτω «Επόμενο»
+      if (adp.showFbText) {
+        const fbTextOk = getFeedback(q, adp.answer) || '';
+        const tKeyOk = getTheoryForQuestion(q);
+        if (fbTextOk) html += `<p class="fb-card-2-text" style="margin-top:14px">${fbTextOk}</p>`;
+        if (tKeyOk && THEORY_CARDS[tKeyOk]) html += `<button class="btn-theory-2" id="btnTheory">📖 Οδηγίες θεωρίας →</button>`;
+      } else {
+        html += `<button class="btn-fb-reveal" id="btnFbReveal">💡 Ανατροφοδότηση</button>`;
+      }
+      html += `<button class="btn-next quiz-btn-full" id="btnNext">Επόμενο →</button>`;
+    }
   } else if (!isAutoCheckType(q)) {
     html += `<button class="btn-check quiz-btn-full" id="btnCheck" ${canCheckAdp(q)?'':'disabled'}>Έλεγξε</button>`;
   }
   html += '</div>';
 
-  // ΔΕΥΤΕΡΗ ΚΑΡΤΑ — ανατροφοδότηση (εμφανίζεται 2 δευτ. μετά την απάντηση)
-  if (adp.answered && adp.showFbCard) {
+  // ΔΕΥΤΕΡΗ ΚΑΡΤΑ — μόνο στο λάθος (εμφανίζεται 1 δευτ. μετά την απάντηση)
+  if (adp.answered && !isOk && adp.showFbCard) {
     const fbText = getFeedback(q, adp.answer) || '';
     const tKey = getTheoryForQuestion(q);
     const hasTheory = !!(tKey && THEORY_CARDS[tKey]);
@@ -1302,7 +1314,7 @@ function renderAdaptive() {
     html += `</div>`;
   }
   // FAB action button (mobile only) — outside the answers-card
-  if (adp.answered && adp.showFbCard) {
+  if (adp.answered && (isOk || adp.showFbCard)) {
     html += `<div class="fab-action"><button class="fab-btn next" id="btnNextFab" title="Επόμενο">→</button></div>`;
   } else if (!adp.answered && !isAutoCheckType(q)) {
     html += `<div class="fab-action"><button class="fab-btn check" id="btnCheckFab" ${canCheckAdp(q)?'':'disabled'} title="Έλεγχος">✓</button></div>`;
@@ -2008,12 +2020,15 @@ function doCheck() {
   adp.totalAnswered++; if (ok) adp.totalCorrect++;
   playSound(ok ? 'correct' : 'wrong');
   render();
-  // Μετά από 2 δευτερόλεπτα εμφανίζεται η δεύτερη κάρτα (ανατροφοδότηση + «Επόμενο»).
+  // Λάθος: μετά από 1 δευτερόλεπτο εμφανίζεται η δεύτερη κάρτα (ανατροφοδότηση + «Επόμενο»).
+  // Σωστό: τα κουμπιά εμφανίζονται αμέσως (χωρίς δεύτερη κάρτα).
   if (adp._fbTimer) { clearTimeout(adp._fbTimer); adp._fbTimer=null; }
-  adp._fbTimer = setTimeout(()=>{
-    adp._fbTimer = null;
-    if (screen==='adaptive' && adp.answered) { adp.showFbCard = true; render(); }
-  }, 2000);
+  if (!ok) {
+    adp._fbTimer = setTimeout(()=>{
+      adp._fbTimer = null;
+      if (screen==='adaptive' && adp.answered) { adp.showFbCard = true; render(); }
+    }, 1000);
+  }
   // Βήμα-Βήμα: πάντα χειροκίνητα «Επόμενο» (χωρίς auto-advance)
 }
 
