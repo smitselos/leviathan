@@ -182,7 +182,7 @@ body{
 .progress-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .4s ease;}
 
 .ex-stage{flex:1;min-height:0;display:flex;padding:12px;}
-.ex-card{width:100%;min-height:0;background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid rgba(107,63,160,.12);display:grid;grid-template-columns:minmax(230px,30%) minmax(0,1fr);overflow:hidden;animation:cardIn .3s ease both;}
+.ex-card{width:100%;min-height:0;background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid rgba(107,63,160,.12);display:grid;grid-template-columns:minmax(207px,27%) minmax(0,1fr);overflow:hidden;animation:cardIn .3s ease both;}
 @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 .ex-left{padding:28px 24px;display:flex;flex-direction:column;gap:12px;color:#fff;background:linear-gradient(160deg,var(--purple),var(--purple-dark));transition:background .3s;}
 .ex-left.ok{background:linear-gradient(160deg,var(--correct),#1E6B3A);}
@@ -227,9 +227,10 @@ body{
 
 @media(max-width:768px){
   .ex-card{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
-  .ex-left{padding:14px 16px;gap:6px;}
-  .ex-title{font-size:17px;}
-  .ex-instr{font-size:13px;padding-top:6px;}
+  .ex-left{padding:12.5px 15px;gap:5.5px;}
+  .ex-title{font-size:16px;}
+  .ex-instr{font-size:12.5px;padding-top:5.5px;line-height:1.5;}
+  .ex-result{font-size:13.5px;}
   .ex-num{display:none;}
   .ex-stage{padding:8px;}
   .ex-list{padding:10px;gap:8px;}
