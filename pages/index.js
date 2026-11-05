@@ -4428,7 +4428,7 @@ const S = {
   userAvatar:{ width:30, height:30, borderRadius:'50%', background:'#c5b4e3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:500, color:'#1a1a1a', flexShrink:0 },
   userInfo:{ flex:1, minWidth:0 },
   userName:{ fontSize:12, color:'#ececec', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' },
-  main:{ flex:1, transition:'margin-left 0.2s ease' },
+  main:{ flex:1, minWidth:0, transition:'margin-left 0.2s ease' }, // minWidth:0 → δεν ξεχειλίζει στο κινητό από μεγάλα κείμενα μίας γραμμής
   container:{ maxWidth:1280, margin:'0 auto', padding:'24px 16px' },
   welcomeTitle:{ fontSize:26, fontWeight:600, color:'#1a1a1a', margin:'0 0 6px 0', letterSpacing:'-0.01em' },
   welcomeSub:{ fontSize:14, color:'#6b6b80', lineHeight:1.5 },
