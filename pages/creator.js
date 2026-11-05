@@ -25,6 +25,22 @@ const TEMPLATES = [
     types: ['Πολλαπλής επιλογής', 'Σωστό / Λάθος', 'Αντιστοίχιση', 'Συμπλήρωση κενών', 'Επιλογή λέξεων', 'Αναδιάταξη', 'Ταξινόμηση', 'Μικρό σταυρόλεξο'],
   },
   {
+    id: 'quiz-paper-deck',
+    look: 'paper',
+    name: 'Κουίζ ενοτήτων · Χάρτινο',
+    file: '/protypa/quiz-paper-deck.html',
+    desc: 'Το απλό κουίζ ενοτήτων με λιτή, «χάρτινη» αισθητική: κρεμ φόντο, κλασική serif γραμματοσειρά, τερακότα τόνοι. Ίδιοι τύποι ερωτήσεων, εκτύπωση και Live.',
+    types: ['Λιτό · κρεμ · serif', 'Όλοι οι τύποι του κουίζ', 'Εκτύπωση / PDF', 'Live'],
+  },
+  {
+    id: 'quiz-archaia-deck',
+    look: 'archaia',
+    name: 'Κουίζ ενοτήτων · Αρχαίο',
+    file: '/protypa/quiz-archaia-deck.html',
+    desc: 'Το απλό κουίζ ενοτήτων με αρχαιοελληνική αισθητική: πάπυρος, μαίανδρος, επιγραφικοί τίτλοι (GFS Didot) και χρώματα αγγειογραφίας. Ίδιοι τύποι ερωτήσεων, εκτύπωση και Live.',
+    types: ['Πάπυρος · μαίανδρος', 'Όλοι οι τύποι του κουίζ', 'Εκτύπωση / PDF', 'Live'],
+  },
+  {
     id: 'quiz-xlsx-deck',
     badge: 'xlsx',
     name: 'Κουίζ ενοτήτων · xlsx',
@@ -61,7 +77,8 @@ const tplOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 const isCwData = (d) => d && d.template === 'crossword-deck';
 const isParaData = (d) => d && d.template === 'paragraph-deck';
 const isSortData = (d) => d && d.template === 'sort-deck';
-const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : d && d.template === 'quiz-xlsx-deck' ? 'quiz-xlsx-deck' : 'quiz-deck');
+const QUIZ_LIKE = ['quiz-xlsx-deck', 'quiz-paper-deck', 'quiz-archaia-deck'];
+const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : d && QUIZ_LIKE.includes(d.template) ? d.template : 'quiz-deck');
 
 const C = {
   purple: '#6B3FA0', purpleDark: '#4A2D6F', purpleLight: '#8B6BB5', navy: '#1B2A4A', cyan: '#4AAFC7',
@@ -753,7 +770,7 @@ export default function Creator() {
             {TEMPLATES.map((t) => (
               <div key={t.id} style={{ ...S.card, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ position: 'relative' }}>
-                  <TemplateThumb kind={t.kind} />
+                  <TemplateThumb kind={t.kind} look={t.look} />
                   {t.badge && <span style={{ position: 'absolute', top: 10, right: 10, background: '#1D6F42', color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: 1, padding: '4px 9px', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,.18)' }}>{t.badge}</span>}
                 </div>
                 <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
@@ -1633,7 +1650,33 @@ function Preview({ html, fill, onRestart, startMode, initialMode }) {
   );
 }
 
-function TemplateThumb({ kind }) {
+function TemplateThumb({ kind, look }) {
+  if (look === 'paper' || look === 'archaia') {
+    const P = look === 'paper'
+      ? { bg: '#FAF9F5', card: '#fff', line: '#E8E4DA', acc: '#C15F3C', ink: '#2B2A26', font: 'Georgia,serif', r: 10 }
+      : { bg: '#F3E9D2', card: '#FBF5E6', line: '#D8C29A', acc: '#9E3B22', ink: '#2A211B', font: 'Georgia,serif', r: 2 };
+    const key = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12'%3E%3Cpath d='M0 10H4V2H12V8H8V6H10V4H6V10H16' fill='none' stroke='%232A211B' stroke-width='1.3'/%3E%3C/svg%3E\")";
+    return (
+      <div style={{ height: 150, background: P.bg, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.line}` }}>
+        {look === 'archaia' && <><div style={{ position: 'absolute', left: 0, right: 0, top: 8, height: 12, background: key + ' repeat-x', backgroundSize: '16px 12px', opacity: .7 }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 8, height: 12, background: key + ' repeat-x', backgroundSize: '16px 12px', opacity: .7 }} /></>}
+        <div style={{ position: 'absolute', left: '50%', top: 30, transform: 'translateX(-50%)', textAlign: 'center', fontFamily: P.font, color: P.ink, fontSize: 15, letterSpacing: look === 'archaia' ? 2 : 0, textTransform: look === 'archaia' ? 'uppercase' : 'none', whiteSpace: 'nowrap' }}>
+          {look === 'archaia' ? 'Κουίζ' : <>Κουίζ <i style={{ color: P.acc }}>ενοτήτων</i></>}
+          <div style={{ width: 30, height: 2, background: P.acc, margin: '6px auto 0' }} />
+        </div>
+        <div style={{ position: 'absolute', left: '50%', top: 72, transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
+          {['01', '02', '03'].map((n, i) => (
+            <div key={n} style={{ width: 62, height: 52, background: P.card, border: `1px solid ${i === 0 ? P.acc : P.line}`, borderRadius: P.r, boxShadow: '0 4px 12px rgba(26,22,16,.08)', padding: '6px 8px', position: 'relative', overflow: 'hidden' }}>
+              {look === 'paper' && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: P.acc }} />}
+              <div style={{ fontFamily: P.font, fontSize: 15, color: P.ink, opacity: .25 }}>{n}</div>
+              <div style={{ height: 3, width: 34, background: P.acc, opacity: .6, marginTop: 4 }} />
+              <div style={{ height: 3, width: 24, background: P.line, marginTop: 4 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (kind === 'sort') {
     const bins = [['Α', ['▬▬', '▬▬▬']], ['Β', ['▬▬▬', '▬']], ['Γ', ['▬▬']]];
     return (
