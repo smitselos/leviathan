@@ -562,6 +562,10 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
   body{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
 }
 
+/* Μικρό λογότυπο στο κάτω μέρος της αρχικής (αντί για «ΛΕΒΙΑΘΑΝ 2026») */
+.lev-foot-logo{display:block;height:38px;width:auto;margin:30px auto 0;opacity:.8}
+.lev-home{padding-top:12px}
+
 /* ═══════════ ΠΛΗΡΗΣ ΑΙΣΘΗΤΙΚΗ ΛΕΒΙΑΘΑΝ (δοκιμαστική) ═══════════ */
 :root{
   --ink:#1a1a1a; --ink2:#3d3a2e; --muted:#6b6b80; --border:#ebebeb; --bg:#f9f9f8; --white:#fff;
@@ -1744,7 +1748,6 @@ function renderHome() {
   return `
   <div class="lv-home">
     <div class="lv-hello">
-      <img src="${LEV_LOGO_COLOR}" alt="LEVIATHAN">
       <div><p class="lv-eye">Κουίζ αυτοαξιολόγησης</p><h1 class="lv-h1">${CONFIG.title}</h1><p class="lv-sub">${CONFIG.subtitle}</p></div>
     </div>
     <div class="lev-cards lv-modes">
@@ -1772,7 +1775,7 @@ function renderHome() {
     </div>
     <h2 class="lv-sec">Τα βήματα <small>${catOrder.length} φάκελοι</small></h2>
     <div class="lv-folders">${folders}</div>
-    <p class="lv-credits">ΛΕΒΙΑΘΑΝ ${new Date().getFullYear()}</p>
+    <img class="lev-foot-logo" src="${LEV_LOGO_COLOR}" alt="LEVIATHAN">
   </div>`;
 }
 document.addEventListener('click', e => {

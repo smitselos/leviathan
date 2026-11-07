@@ -561,6 +561,10 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
   .close-app-btn,.sound-toggle{display:none!important}
   body{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
 }
+
+/* Μικρό λογότυπο στο κάτω μέρος της αρχικής (αντί για «ΛΕΒΙΑΘΑΝ 2026») */
+.lev-foot-logo{display:block;height:38px;width:auto;margin:30px auto 0;opacity:.8}
+.lev-home{padding-top:12px}
 </style>
 </head>
 <body>
@@ -1558,7 +1562,6 @@ function renderHome() {
   const totalTheory = Object.keys(THEORY_CARDS).length;
   return `
   <div class="card lev-home-card"><div class="lev-home">
-    <img class="lev-logo" src="${LEV_LOGO_COLOR}" alt="LEVIATHAN">
     <p class="lev-eyebrow">Κουίζ αυτοαξιολόγησης</p>
     <h1 class="lev-title">${levTitleHTML(CONFIG.title)}</h1>
     <div class="lev-accent"></div>
@@ -1586,7 +1589,7 @@ function renderHome() {
         <p class="lc-count">${totalTheory} κάρτες θεωρίας →</p>
       </button>
     </div>
-    <p class="lev-credits">ΛΕΒΙΑΘΑΝ ${new Date().getFullYear()}</p>
+    <img class="lev-foot-logo" src="${LEV_LOGO_COLOR}" alt="LEVIATHAN">
   </div></div>`;
 }
 
