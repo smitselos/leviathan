@@ -565,6 +565,10 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
 /* Μικρό λογότυπο στο κάτω μέρος της αρχικής (αντί για «ΛΕΒΙΑΘΑΝ 2026») */
 .lev-foot-logo{display:block;height:38px;width:auto;margin:30px auto 0;opacity:.8}
 .lev-home{padding-top:12px}
+/* Πλαίσιο εκτύπωσης: χωράει πάντα στην οθόνη (και σε κινητό) · κουμπιά πάντα ορατά */
+.lev-pp{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px)}
+.lev-pp-foot{position:sticky;bottom:-22px;background:#FBF8F0;margin:18px -24px -22px;padding:12px 24px 18px;border-top:1px solid #efe7d2}
+@media(max-width:600px){ .lev-pp{padding:18px 18px} .lev-pp-foot{margin:14px -18px -18px;padding:12px 18px 16px;bottom:-18px} .lev-pp-cats{max-height:38vh} }
 </style>
 </head>
 <body>
