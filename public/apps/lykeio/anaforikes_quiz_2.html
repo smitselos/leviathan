@@ -569,8 +569,8 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
   --peach:#fae0cc; --peach-soft:#fdf0e4; --peach-accent:#f0c4a0; --peach-text:#5c3826; --peach-deep:#c97b5a;
   --mustard:#f0e4a8; --mustard-soft:#f8f0c8; --mustard-accent:#d9be52; --mustard-text:#4a3f1a; --mustard-deep:#a68a2e;
   --accent:#8a7d4a; --accent-l:#f7f3e8; --accent-d:#1a1a1a;
-  --ok:#16a34a; --ok-l:#dcfce7; --ok-bg:#f0fdf4;
-  --ko:#dc2626; --ko-l:#fee2e2; --ko-bg:#fef2f2;
+  --ok:#5c7a3a; --ok-l:#e3ebd3; --ok-bg:#f1f5e9;
+  --ko:#b5523a; --ko-l:#f6dfd5; --ko-bg:#fbf0eb;
   --warn:#c97b5a; --warn-l:#fdf0e4;
   --r:22px; --r-sm:12px;
   --sh:0 1px 2px rgba(0,0,0,.03); --sh-h:0 4px 12px rgba(0,0,0,.06);
@@ -585,8 +585,8 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 /* Κάρτες: λευκές, στρογγυλεμένες 22px, λεπτό περίγραμμα */
 .card,.answers-card,.fb-card-2{border-radius:22px;border:1px solid #ebebeb;box-shadow:var(--sh)}
 .answers-card{border-top:1px solid #ebebeb}
-.answers-card.answered-ok,.fb-card-2.ok{border-color:#86efac;background:linear-gradient(to bottom,#f0fdf4,#fff 70%)}
-.answers-card.answered-ko,.fb-card-2.ko{border-color:#fca5a5;background:linear-gradient(to bottom,#fef2f2,#fff 70%)}
+.answers-card.answered-ok,.fb-card-2.ok{border-color:#c5d6a8;background:linear-gradient(to bottom,#f1f5e9,#fff 70%)}
+.answers-card.answered-ko,.fb-card-2.ko{border-color:#e6b9a7;background:linear-gradient(to bottom,#fbf0eb,#fff 70%)}
 .fb-card-2-title{font-weight:700;letter-spacing:-.015em}
 .q-txt{font-weight:600;letter-spacing:-.01em}
 .q-lbl,.exc-lbl,.adp-steps-lbl,.drll-setup-section h3,.gap-panel-lbl{color:#8a7d4a;letter-spacing:.08em}
@@ -602,9 +602,9 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 .opt{border:1.5px solid #ebebeb;border-radius:14px;padding:18px 18px}
 @media(hover:hover) and (pointer:fine){ .opt:hover:not(:disabled){border-color:#8a7d4a;background:#fcf9f0;transform:none} }
 .opt.sel{border-color:#1a1a1a;background:#f7f3e8}
-.opt.ok{background:#16a34a;border-color:#16a34a}
-.opt.ko{background:#dc2626;border-color:#dc2626}
-.opt.neutral-ok{background:#f0fdf4;border-color:#16a34a;color:#15803d}
+.opt.ok{background:#5c7a3a;border-color:#5c7a3a}
+.opt.ko{background:#b5523a;border-color:#b5523a}
+.opt.neutral-ok{background:#f1f5e9;border-color:#5c7a3a;color:#4a6430}
 .opt-k{background:#efe9d5;color:#8a7d4a}
 .tok:hover{background:#f0e4a8}
 .tok.sel{background:#1a1a1a;color:#fff}
@@ -621,8 +621,8 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 .btn-check,.btn-go,.btn-adp-from-start,.tn-btn.skip{background:#1a1a1a;border-radius:12px;letter-spacing:-.005em}
 .btn-check:hover,.btn-go:hover,.btn-adp-from-start:hover,.tn-btn.skip:hover{background:#000}
 .btn-check:disabled,.btn-go:disabled{background:#ebebeb;color:#aeaeb8}
-.btn-next{background:#16a34a;border-radius:12px}
-.btn-next:hover{background:#15803d}
+.btn-next{background:#5c7a3a;border-radius:12px}
+.btn-next:hover{background:#4a6430}
 .btn-sec,.btn-fb-reveal{border:1px solid #ebebeb;border-radius:12px;background:#fff;color:#3d3a2e}
 .btn-sec:hover,.btn-fb-reveal:hover{border-color:#8a7d4a;background:#fcf9f0}
 .btn-theory-2{border:1.5px solid #f0c4a0;background:#fdf0e4;color:#5c3826;border-radius:12px}
@@ -643,8 +643,8 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 .sc{border-radius:16px}
 .sc.a{background:#f7f3e8}
 .cat-summary-row{border-radius:14px}
-.cat-summary-row.pass{background:#f0fdf4;border:1px solid #bbf7d0}
-.cat-summary-row.pass .cs-name{color:#15803d} .cat-summary-row.pass .cs-badge{background:#dcfce7;color:#15803d}
+.cat-summary-row.pass{background:#f1f5e9;border:1px solid #d4e1bf}
+.cat-summary-row.pass .cs-name{color:#4a6430} .cat-summary-row.pass .cs-badge{background:#e3ebd3;color:#4a6430}
 .cat-summary-row.skip{background:#fdf0e4;border:1px solid #f0c4a0}
 .info{background:#f7f3e8;color:#3d3a2e;border-radius:14px}
 .drll-score-bar{border-radius:16px;border:1px solid #ebebeb}
@@ -677,7 +677,7 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 .lv-folder .f-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
 .lv-folder .lv-ic{width:48px;height:48px}
 .lv-folder .f-num{font-size:12px;font-weight:700;opacity:.55;letter-spacing:.06em}
-.lv-folder .f-done{font-size:11px;font-weight:700;color:#15803d;background:#dcfce7;border-radius:999px;padding:3px 9px}
+.lv-folder .f-done{font-size:11px;font-weight:700;color:#4a6430;background:#e3ebd3;border-radius:999px;padding:3px 9px}
 .lv-folder h3{font-size:17px;font-weight:700;margin-bottom:6px;letter-spacing:-.015em;line-height:1.3}
 .lv-folder p{font-size:13px;line-height:1.55;margin-bottom:16px;flex:1;opacity:.65}
 .lv-folder .f-foot{display:flex;justify-content:flex-end;padding-top:14px;border-top:1px solid}
@@ -691,6 +691,12 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
   .lv-stats{gap:10px;margin-bottom:28px} .lv-stat{min-height:0;padding:18px 20px} .lv-stat .s-val{font-size:34px}
   .lv-folders{gap:12px} .lv-folder{min-height:0;padding:18px 20px}
 }
+
+/* Σωστό/λάθος σε ήπιους τόνους της παλέτας (λαδί / τερακότα) */
+.ls-item.done .ls-num{background:#5c7a3a!important}
+.prog-dot.ok,.drll-pd.ok{background:#5c7a3a;border-color:#5c7a3a}
+.prog-dot.ko,.drll-pd.ko{background:#b5523a;border-color:#b5523a}
+.tok.hit{background:#5c7a3a} .tok.miss{background:#b5523a}
 </style>
 </head>
 <body>
@@ -2122,7 +2128,6 @@ function renderSelSetup() {
         ${canStart ? `✅ Βρέθηκαν <strong>${pool.length}</strong> ερωτήσεις (θα εμφανιστούν <strong>${actualCount}</strong>)` : '⚠️ Δεν βρέθηκαν ερωτήσεις με αυτά τα φίλτρα'}
       </div>
       <button class="btn-go" id="btnSelStart" ${canStart?'':'disabled'} style="margin-top:6px">Ξεκινήστε →</button>
-      <button class="btn-sec" id="btnSelPrint" ${canStart?'':'disabled'} style="margin-top:6px">🖨️ Εκτύπωση</button>
     </div>
   </div>
   </div>`;
@@ -3124,7 +3129,6 @@ function renderPresSetup() {
         ${canStart ? `✅ Βρέθηκαν <strong>${pool.length}</strong> παραδείγματα (θα εμφανιστούν <strong>${actualCount}</strong>)` : '⚠️ Δεν βρέθηκαν ερωτήσεις με αυτά τα φίλτρα'}
       </div>
       <button class="btn-go" id="btnPresStart" ${canStart?'':'disabled'} style="margin-top:6px">Ξεκινήστε →</button>
-      <button class="btn-sec" id="btnPresPrint" ${canStart?'':'disabled'} style="margin-top:6px">🖨️ Εκτύπωση</button>
     </div>
   </div>
   </div>`;
