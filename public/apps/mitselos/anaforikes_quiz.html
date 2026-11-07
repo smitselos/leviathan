@@ -215,7 +215,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .fb-card-2-text{color:var(--ink);font-size:1rem;line-height:1.7}
 .btn-fb-reveal{display:block;width:100%;margin-top:10px;padding:14px;border:2px solid var(--accent);background:var(--white);color:var(--accent-d);border-radius:var(--r-sm);font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
 .btn-fb-reveal:hover{background:var(--accent-l)}
-.btn-theory-2{display:inline-block;margin-top:14px;padding:11px 20px;border:2px solid var(--peach-deep);background:var(--peach-soft);color:var(--peach-text);border-radius:var(--r-sm);font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn-theory-2{display:block;width:100%;box-sizing:border-box;text-align:center;margin-top:14px;padding:14px;border:2px solid var(--peach-deep);background:var(--peach-soft);color:var(--peach-text);border-radius:var(--r-sm);font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
 .btn-theory-2:hover{background:var(--peach)}
 .dd-correct-row .dl{padding:6px 10px;background:var(--mustard-soft);border-radius:8px;color:var(--ok)}
 .dd-correct-row .dr{padding:6px 10px;background:var(--mustard-soft);border-radius:8px;color:var(--ok)}
@@ -1546,11 +1546,11 @@ function renderAdaptive() {
   const tKeyQ = getTheoryForQuestion(q);
   const hasTheory = !!(tKeyQ && THEORY_CARDS[tKeyQ]);
   if (adp.answered) {
-    // Κάτω από τις ερωτήσεις: μόνο η ένδειξη σωστό/λάθος
-    html += `<div class="fb-box ${isOk?'ok':'ko'}" style="margin-top:14px">
-      <p class="fb-title" style="margin-bottom:0">${isOk?'✅ Σωστά!':'❌ Λάθος'}</p>
-    </div>`;
+    // Κάτω από τις ερωτήσεις: μόνο η ένδειξη «Σωστά» (το «Λάθος» εμφανίζεται στην κάρτα διόρθωσης)
     if (isOk) {
+      html += `<div class="fb-box ok" style="margin-top:14px">
+        <p class="fb-title" style="margin-bottom:0">✅ Σωστά!</p>
+      </div>`;
       // Σωστό → αμέσως: κουμπί «Ανατροφοδότηση» (προαιρετικό) και από κάτω «Επόμενο»
       if (adp.showFbText) {
         const fbTextOk = getFeedback(q, adp.answer) || '';
