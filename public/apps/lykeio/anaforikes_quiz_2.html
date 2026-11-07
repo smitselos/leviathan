@@ -6,7 +6,7 @@
 <title>Quiz - Αναφορικές προτάσεις 2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   /* Ink & neutrals */
@@ -697,6 +697,45 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 .prog-dot.ok,.drll-pd.ok{background:#5c7a3a;border-color:#5c7a3a}
 .prog-dot.ko,.drll-pd.ko{background:#b5523a;border-color:#b5523a}
 .tok.hit{background:#5c7a3a} .tok.miss{background:#b5523a}
+
+/* Αρχική: κάρτες τρόπων όπως στην 1η έκδοση · μικρότεροι φάκελοι με ελαφριούς τίτλους */
+.lv-modes{margin-bottom:40px}
+.lv-folders{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.lv-folder{min-height:0;padding:16px 18px;border-radius:18px}
+.lv-folder .f-top{margin-bottom:10px}
+.lv-folder .lv-ic{width:36px;height:36px;border-radius:11px}
+.lv-folder .lv-ic svg{width:17px;height:17px}
+.lv-folder .f-num{font-size:10.5px}
+.lv-folder .f-done{font-size:10px;padding:2px 8px}
+.lv-folder h3{font-size:14.5px;font-weight:500;letter-spacing:-.005em;line-height:1.35;margin-bottom:4px}
+.lv-folder p{font-size:12px;margin-bottom:10px}
+.lv-folder .f-foot{padding-top:9px}
+.lv-folder .f-go{font-size:12px}
+@media(max-width:600px){ .lv-folders{grid-template-columns:1fr 1fr;gap:10px} .lv-folder{padding:14px} .lv-folder .lv-ic{width:32px;height:32px} }
+
+/* ═══ Φάκελοι: εκδοχή Α (λευκοί) ═══ */
+/* Α: φάκελοι λευκοί, χρώμα μόνο στο εικονίδιο και σε λεπτή γραμμή πάνω */
+.lv-folder.tone-cream,.lv-folder.tone-peach,.lv-folder.tone-mustard{background:#fff;color:#1a1a1a;border:1px solid #ebebeb;position:relative;overflow:hidden}
+.lv-folder::before{content:'';position:absolute;left:0;right:0;top:0;height:4px}
+.lv-folder.tone-cream::before{background:#e9e0c8} .lv-folder.tone-peach::before{background:#f0c4a0} .lv-folder.tone-mustard::before{background:#d9be52}
+.lv-folder .f-foot{border-top-color:#f0f0f0!important}
+.lv-folder p{color:#6b6b80;opacity:1}
+
+/* Ολοκληρωμένο βήμα: σκούρος φάκελος, όπως η πλευρική μπάρα */
+.lv-folder.done.tone-cream,.lv-folder.done.tone-peach,.lv-folder.done.tone-mustard{background:#1a1a1a;border-color:#1a1a1a;color:#fff;box-shadow:0 12px 28px -16px rgba(0,0,0,.45)}
+.lv-folder.done h3{color:#fff}
+.lv-folder.done p{color:#a9a9b6}
+.lv-folder.done .lv-ic{background:rgba(255,255,255,.08)!important}
+.lv-folder.done.tone-cream .lv-ic{color:#e9d9a8} .lv-folder.done.tone-peach .lv-ic{color:#f0c4a0} .lv-folder.done.tone-mustard .lv-ic{color:#d9be52}
+.lv-folder.done .f-foot{border-top-color:rgba(255,255,255,.1)!important}
+.lv-folder.done.tone-cream .f-go{color:#e9d9a8} .lv-folder.done.tone-peach .f-go{color:#f0c4a0} .lv-folder.done.tone-mustard .f-go{color:#d9be52}
+.lv-folder.done .f-done{background:rgba(147,181,104,.18);color:#b9d398}
+/* Σκούροι φάκελοι (ολοκληρωμένα βήματα): λεπτά και αχνά γράμματα (Inter 200) */
+.lv-folder.done h3,.lv-folder.done p,.lv-folder.done .f-go{font-family:'Inter',var(--lv-font)!important;font-weight:200}
+.lv-folder.done h3{color:rgba(255,255,255,.55);letter-spacing:.005em}
+.lv-folder.done p{color:#6f6f7c}
+.lv-folder.done .f-go,.lv-folder.done .lv-ic{opacity:.55}
+.lv-folder.done .f-done{opacity:.7}
 </style>
 </head>
 <body>
@@ -1695,11 +1734,11 @@ function renderHome() {
   const passed = catOrder.filter(k => adp.catLog && adp.catLog[k] === 'pass').length;
   const folders = catOrder.map((k, i) => {
     const t = LV_TONES[i % 3], n = (catsByKey[k] || []).length, done = adp.catLog && adp.catLog[k] === 'pass';
-    return `<button type="button" class="lv-folder tone-${t}" data-lvcat="${i}">
+    return `<button type="button" class="lv-folder tone-${t}${done ? ' done' : ''}" data-lvcat="${i}">
       <div class="f-top"><div class="lv-ic">${LV_FOLDER_SVG}</div>${done ? '<span class="f-done">✓ Ολοκληρώθηκε</span>' : `<span class="f-num">ΒΗΜΑ ${String(i+1).padStart(2,'0')}</span>`}</div>
       <h3>${lsEsc(getCatDisplayName(k))}</h3>
       <p>${n} ερωτήσεις</p>
-      <div class="f-foot"><span class="f-go">Άνοιγμα →</span></div>
+      <div class="f-foot"><span class="f-go">${done ? 'Επανάληψη ↻' : 'Άνοιγμα →'}</span></div>
     </button>`;
   }).join('');
   return `
@@ -1708,10 +1747,28 @@ function renderHome() {
       <img src="${LEV_LOGO_COLOR}" alt="LEVIATHAN">
       <div><p class="lv-eye">Κουίζ αυτοαξιολόγησης</p><h1 class="lv-h1">${CONFIG.title}</h1><p class="lv-sub">${CONFIG.subtitle}</p></div>
     </div>
-    <div class="lv-stats">
-      <button type="button" class="lv-stat tone-mustard" id="btnStartAdp"><div><div class="s-lbl">🎯 Βήμα-Βήμα</div><div class="s-val">${catOrder.length}</div><div class="s-sub">βήματα · ${passed} ολοκληρωμένα<br>Προσαρμοστική μάθηση</div></div><div class="lv-ic">→</div></button>
-      <button type="button" class="lv-stat tone-peach" id="btnStartSel"><div><div class="s-lbl">⚡ Εξάσκηση</div><div class="s-val">${totalQ}</div><div class="s-sub">ερωτήσεις<br>Με φίλτρα τύπου, βήματος, δυσκολίας</div></div><div class="lv-ic">→</div></button>
-      <button type="button" class="lv-stat tone-cream" id="btnStartPres"><div><div class="s-lbl">📋 Παρουσίαση</div><div class="s-val">${totalTheory}</div><div class="s-sub">κάρτες θεωρίας<br>Θεωρία &amp; παραδείγματα</div></div><div class="lv-ic">→</div></button>
+    <div class="lev-cards lv-modes">
+      <button class="lev-card t1" id="btnStartAdp">
+        <div class="lc-num">01</div>
+        <p class="lc-eyebrow">🎯 Βήμα-Βήμα</p>
+        <p class="lc-title">Προσαρμοστική μάθηση</p>
+        <p class="lc-desc">${CONFIG.adpDesc}</p>
+        <p class="lc-count">${catOrder.length} βήματα${passed ? ' · ' + passed + ' ✓' : ''} →</p>
+      </button>
+      <button class="lev-card t2" id="btnStartSel">
+        <div class="lc-num">02</div>
+        <p class="lc-eyebrow">⚡ Εξάσκηση</p>
+        <p class="lc-title">Ελεύθερη εξάσκηση</p>
+        <p class="lc-desc">Με φίλτρα τύπου, κατηγορίας και δυσκολίας. Χωρίς ανατροφοδότηση βήμα-βήμα.</p>
+        <p class="lc-count">${totalQ} ερωτήσεις →</p>
+      </button>
+      <button class="lev-card t3" id="btnStartPres">
+        <div class="lc-num">03</div>
+        <p class="lc-eyebrow">📋 Παρουσίαση</p>
+        <p class="lc-title">Θεωρία &amp; παραδείγματα</p>
+        <p class="lc-desc">Θεωρία και παραδείγματα ανά κεφάλαιο — εργαλείο εκπαιδευτικού.</p>
+        <p class="lc-count">${totalTheory} κάρτες θεωρίας →</p>
+      </button>
     </div>
     <h2 class="lv-sec">Τα βήματα <small>${catOrder.length} φάκελοι</small></h2>
     <div class="lv-folders">${folders}</div>
