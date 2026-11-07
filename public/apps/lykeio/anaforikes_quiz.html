@@ -544,6 +544,23 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
 .lev-pp-btn{padding:10px 18px;border-radius:10px;border:none;background:#0F1E33;color:#fff;font-weight:700;cursor:pointer;font-family:inherit}
 .lev-pp-btn.sec{background:transparent;border:1px solid #E0D8C2;color:#3d3a2e}
 .lev-pp-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ═══ Λεπτή σκούρα κάτω μπάρα για κινητά/tablet (όπως στο ΛΕΒΙΑΘΑΝ) ═══ */
+.lev-bot{display:none}
+@media(max-width:899px){
+  .lev-bot{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:900;background:#1a1a1a;border-top:1px solid rgba(255,255,255,.08);
+    padding:4px 6px calc(4px + env(safe-area-inset-bottom));justify-content:space-around;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif}
+  .lb-item{flex:1;max-width:110px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0;background:transparent;border:none;border-radius:8px;color:#8e8ea0;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+  .lb-ic{font-size:17px;line-height:22px;height:22px}
+  .lb-tx{font-size:10.5px;letter-spacing:.2px}
+  .lb-item.on{color:#ececec;background:rgba(255,255,255,.08)}
+  .lb-item.muted .lb-ic{opacity:.55}
+  .lb-item:active{background:rgba(255,255,255,.1)}
+  .lb-item.exit:active{color:#fca5a5}
+  /* ήχος και έξοδος μεταφέρονται στην κάτω μπάρα */
+  .close-app-btn,.sound-toggle{display:none!important}
+  body{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+}
 </style>
 </head>
 <body>
@@ -553,6 +570,7 @@ input[type="text"],input[type="search"],input[type="email"],input[type="number"]
   <div class="ls-tools" id="lsTools"></div>
   <div class="ls-foot" id="lsFoot">© Α. &amp; Σ. Μητσέλος</div>
 </aside>
+<nav class="lev-bot" id="levBot" aria-label="Βασικές επιλογές"></nav>
 <div id="zoomControls" class="zoom-controls">
   <button id="zoomMinus" class="zoom-btn" title="Σμίκρυνση" onclick="zoomOut()">−</button>
   <button id="zoomPlus" class="zoom-btn" title="Μεγέθυνση" onclick="zoomIn()">+</button>
@@ -1601,6 +1619,7 @@ function levSideUpdate() {
     });
   }
   nav.innerHTML = h;
+  levToolsUpdate();
 }
 (function initLevSide(){
   const side = document.getElementById('levSide'); if (!side) return;
@@ -1632,6 +1651,12 @@ function levToolsUpdate() {
     + `<button class="ls-zbtn" type="button" data-tool="zin" title="Μεγέθυνση" ${currentZoom>=300?'disabled':''}>+</button></div>`
     + `<button class="ls-item" type="button" data-tool="print" title="Εκτύπωση φύλλου εργασίας"><span class="ls-ic">🖨️</span><span class="ls-tx">Εκτύπωση</span></button>`
     + `<button class="ls-item exit" type="button" data-tool="exit" title="Κλείσιμο εφαρμογής"><span class="ls-ic">⏻</span><span class="ls-tx">Έξοδος</span></button>`;
+  const bt = document.getElementById('levBot');
+  if (bt) bt.innerHTML =
+      `<button type="button" class="lb-item${screen==='home'?' on':''}" data-tool="home"><span class="lb-ic">⌂</span><span class="lb-tx">Αρχική</span></button>`
+    + `<button type="button" class="lb-item${soundEnabled?'':' muted'}" data-tool="sound"><span class="lb-ic">${soundEnabled?'🔊':'🔇'}</span><span class="lb-tx">Ήχος</span></button>`
+    + `<button type="button" class="lb-item" data-tool="print"><span class="lb-ic">🖨️</span><span class="lb-tx">Εκτύπωση</span></button>`
+    + `<button type="button" class="lb-item exit" data-tool="exit"><span class="lb-ic">⏻</span><span class="lb-tx">Έξοδος</span></button>`;
 }
 // Πλαίσιο εκτύπωσης: επιλογή βημάτων και πλήθους → «Ρυθμίσεις Εκτύπωσης»
 function levOpenPrint() {
@@ -1678,16 +1703,19 @@ function levOpenPrint() {
 (function initLevTools(){
   const t = document.getElementById('lsTools'); if (!t) return;
   setTimeout(levToolsUpdate, 0);   // μετά τη δήλωση currentZoom/soundEnabled
-  t.addEventListener('click', e => {
+  const onTool = e => {
     const b = e.target.closest('[data-tool]'); if (!b || b.disabled) return;
     const a = b.dataset.tool;
-    if (a === 'sound') toggleSound();
+    if (a === 'home') { if (screen !== 'loading') { screen = 'home'; render(); } }
+    else if (a === 'sound') toggleSound();
     else if (a === 'zin') zoomIn();
     else if (a === 'zout') zoomOut();
     else if (a === 'zreset') setZoom(100);
     else if (a === 'print') levOpenPrint();
     else if (a === 'exit') closeApp();
-  });
+  };
+  t.addEventListener('click', onTool);
+  const bt = document.getElementById('levBot'); if (bt) bt.addEventListener('click', onTool);
 })();
 // ══════════════════════════════════════════════
 // ADAPTIVE QUIZ SCREEN
@@ -3181,7 +3209,7 @@ function setZoom(percent) {
   currentZoom = Math.max(50, Math.min(300, percent));
   document.body.style.zoom = String(currentZoom / 100);
   document.body.style.setProperty('--z', String(currentZoom / 100));
-  const _ls = document.getElementById('levSide'); if (_ls) _ls.style.zoom = String(100 / currentZoom);
+  ['levSide','levBot'].forEach(function(i){ const el = document.getElementById(i); if (el) el.style.zoom = String(100 / currentZoom); });
   // Τα fixed buttons (ήχος, zoom) πρέπει να αντισταθμίσουν το zoom
   const inv = 1 / (currentZoom / 100);
   document.querySelectorAll('.sound-toggle, .close-app-btn, .zoom-controls').forEach(el => {
