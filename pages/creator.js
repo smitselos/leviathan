@@ -499,7 +499,7 @@ function mitselosRows(all, hi, col, getDeck, warnings, mx) {
     if (!q) { keep(ri, r); warnings.push(`${id}: ο τύπος «${raw}» δεν υποστηρίζεται σε αυτή τη μορφή` + (mx ? ' — μένει αυτούσιος στην εξαγωγή xlsx.' : ' — παραλείφθηκε.')); return; }
     if (t !== 'mcq' && !(t === 'clkmc' && q.fbs) && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
     const df = parseInt(col(r, 'Δυσκολία')); if (df >= 1 && df <= 5) q.diff = df;
-    if (mx) q.mx = { pos: ri, row: r.slice() };
+    if (mx) { q.mx = { pos: ri, row: r.slice() }; q.th = String(col(r, 'Θεωρία') || '').trim(); }
     deck.qs.push(q);
   });
 }
@@ -633,6 +633,7 @@ async function importQuizXlsx(file, credits) {
     if (cr.length) { const h = cr[0].map(xlN); const ik = h.indexOf('κατηγορια'), iv = h.indexOf('περιγραφη');
       if (ik >= 0 && iv >= 0) cr.slice(1).forEach((r) => { const d = deckOf['Ενότητα ' + String(r[ik] || '').trim()]; if (d && !d.ktitle) d.ktitle = String(r[iv] || '').trim(); }); }
     data.mx = mx;
+    data.theory = theoryFromRows(mx.sheets[Object.keys(mx.sheets).find((n) => /^θεωρ/.test(xlN(n)))] || []);
   }
   if (!data.title) data.title = String(file.name || '').replace(/\.(xlsx|xls|csv|ods)$/i, '');
   if (mx) data.mxName = String(file.name || '').replace(/\.(xlsx|xls|csv|ods)$/i, '');
@@ -647,7 +648,59 @@ async function importQuizXlsx(file, credits) {
 // Αμετάβλητες ερωτήσεις → η αρχική γραμμή αυτούσια (με τις ετικέτες <b><i>…).
 // Διορθωμένες → ξαναγράφονται μόνο τα πεδία που άλλαξαν· νέες → νέο ID. Οι διαγραμμένες φεύγουν.
 // ═════════════════════════════════════════════════════════════════
-const mxSig = (q) => JSON.stringify([q.t, q.q, q.opts, q.ans, q.labels, q.tgts, q.items, q.text, q.lines, q.cats, q.fbC, q.fbW, q.fbs, q.diff, q.mode, q.distractors, q.fixFirst, q.strict, q.q2, q.gapAns]);
+// ── Κάρτες θεωρίας (φύλλο «Θεωρία»: στήλες Θεωρία, Τίτλος, Σύνοψη ή Σημείο 1, Σημείο 2…) ──
+const thSig = (c) => JSON.stringify([String(c.k || '').trim(), c.title || '', (c.points || []).map((x) => String(x))]);
+function theoryFromRows(rows) {
+  if (!rows || !rows.length) return [];
+  const h = rows[0].map((x) => String(x == null ? '' : x).trim()); const ik = h.indexOf('Θεωρία'), it = h.indexOf('Τίτλος'), is = h.indexOf('Σύνοψη');
+  const ip = h.map((x, i) => (/^Σημείο\s*\d+$/.test(x) ? i : -1)).filter((i) => i >= 0);
+  if (ik < 0) return [];
+  const out = [];
+  rows.slice(1).forEach((r, ri) => {
+    const k = String(r[ik] == null ? '' : r[ik]).trim(); if (!k) return;
+    let points = ip.map((i) => String(r[i] || '').replace(/\r/g, '').trim()).filter(Boolean);
+    if (!points.length && is >= 0) points = String(r[is] || '').replace(/\r/g, '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
+    const c = { k, title: it >= 0 ? String(r[it] || '').trim() : '', points: points.length ? points : [''], _r: ri + 1 };
+    c._sig = thSig(c); out.push(c);
+  });
+  return out;
+}
+// Ξαναγράφει το φύλλο «Θεωρία» από τις κάρτες· όσες δεν άλλαξαν μένουν αυτούσιες
+function theoryToRows(cards, orig) {
+  const rows0 = orig && orig.length ? orig.map((r) => r.slice()) : [['Θεωρία', 'Τίτλος', 'Σύνοψη']];
+  const h = rows0[0].map((x) => String(x == null ? '' : x).trim());
+  let ik = h.indexOf('Θεωρία'), it = h.indexOf('Τίτλος'), is = h.indexOf('Σύνοψη');
+  if (ik < 0) { h.push('Θεωρία'); ik = h.length - 1; } if (it < 0) { h.push('Τίτλος'); it = h.length - 1; }
+  const ip = h.map((x, i) => (/^Σημείο\s*\d+$/.test(x) ? i : -1)).filter((i) => i >= 0);
+  if (!ip.length && is < 0) { h.push('Σύνοψη'); is = h.length - 1; }
+  const need = Math.max(0, ...cards.map((c) => (c.points || []).filter((x) => String(x).trim()).length));
+  if (ip.length) while (ip.length < need) { h.push('Σημείο ' + (ip.length + 1)); ip.push(h.length - 1); }
+  const out = [h];
+  cards.forEach((c) => {
+    if (c._r && c._sig === thSig(c) && rows0[c._r]) { const r = rows0[c._r].slice(); while (r.length < h.length) r.push(''); out.push(r); return; }
+    const r = h.map(() => ''); const k = String(c.k || '').trim();
+    r[ik] = /^\d+$/.test(k) ? Number(k) : k; r[it] = c.title || '';
+    const pts = (c.points || []).map((x) => String(x).trim()).filter(Boolean);
+    if (ip.length) pts.forEach((x, i) => { r[ip[i]] = x; }); else r[is] = pts.join('\n\n');
+    out.push(r);
+  });
+  return out;
+}
+// Ίδια μορφοποίηση με τις εφαρμογές (για την προεπισκόπηση της κάρτας)
+const RICH_ICONS = { 'π': '📌', '!': '⚠️', 'ι': '💡', 'ν': '✅', 'ο': '❌', 'β': '➡️' };
+function fmtRichPreview(s) {
+  const esc = String(s == null ? '' : s).replace(/\r/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/&lt;(\/?)(b|i|u|br)\s*\/?&gt;/gi, '<$1$2>');
+  let t = esc.replace(/\*\*\*(?=\S)([^*\n]*?\S)\*\*\*/g, '<b><i>$1</i></b>')
+    .replace(/\*\*(?=\S)([^*\n]*?\S)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[^*])\*(?=\S)([^*\n]*?\S)\*(?!\*)/g, '$1<i>$2</i>')
+    .replace(/(^|[^_])__(?=[^_\s])([^_\n]*?[^_\s])__(?!_)/g, '$1<u>$2</u>');
+  return t.split('\n').map((l) => {
+    l = l.replace(/^(\s*)\{([πι!νοβ])\}\s*/, (m, sp, k) => sp + RICH_ICONS[k] + ' ').replace(/^(\s*)\\\{/, '$1{');
+    return /^\s*[-•]\s+/.test(l) ? '• ' + l.replace(/^\s*[-•]\s+/, '') : l;
+  }).join('<br>');
+}
+const mxSig = (q) => JSON.stringify([q.t, q.q, q.opts, q.ans, q.labels, q.tgts, q.items, q.text, q.lines, q.cats, q.fbC, q.fbW, q.fbs, q.diff, q.mode, q.distractors, q.fixFirst, q.strict, q.q2, q.gapAns, q.th]);
 // Νέο αρχείο (χωρίς αρχικό xlsx): οι στήλες και τα φύλλα της μορφής ΜΗΤΣΕΛΟΣ (όπως στις Αναφορικές)
 const MX_HEADER = ['ID', 'Ενεργό', 'Κατηγορία', 'Δυσκολία', 'Τύπος', 'Απόσπασμα', 'Κείμενο Ερώτησης', 'Επιλογή Α', 'Επιλογή Β', 'Επιλογή Γ', 'Επιλογή Δ', 'Σωστή Απάντηση', 'Αριστερά 1', 'Αριστερά 2', 'Αριστερά 3', 'Αριστερά 4', 'Δεξιά 1', 'Δεξιά 2', 'Δεξιά 3', 'Δεξιά 4', 'Λέξη-Στόχος', 'Διόρθωση 1', 'Διόρθωση 2', 'Διόρθωση 3', 'Διόρθωση 4', 'Θεωρία'];
 const mxEmpty = () => ({ v: 1, fresh: true, sheet: 'Ερωτήσεις', header: MX_HEADER.slice(), pre: [], raw: [], order: ['Ερωτήσεις', 'Κατηγορίες', 'Θεωρία'], sheets: { 'Κατηγορίες': [['Κατηγορία', 'Περιγραφή']], 'Θεωρία': [['Θεωρία', 'Τίτλος', 'Σύνοψη']] } });
@@ -679,7 +732,8 @@ function mitselosSheets(data0, warnings) {
       const id0 = o ? String(o[iID] || '') : '';
       const sameCell = (a, b) => { const n = (x) => stripTags(x).replace(/\s*\|\|\s*/g, '||').replace(/\s*\|\s*/g, '|'); return n(a) === n(b); };
       const set = (name, v) => { const i = ci(name); if (i < 0) return; const val = v == null ? '' : String(v); row[i] = o && sameCell(o[i], val) ? o[i] : val; };
-      if (!o) { set('Ενεργό', 'TRUE'); set('Θεωρία', thDef); }
+      if (!o) { set('Ενεργό', 'TRUE'); set('Θεωρία', q.th || thDef); }
+      else if (q.th != null) set('Θεωρία', q.th);
       if (!o || q.mx.sig !== mxSig(q)) {
         const m = String(q.q || '').match(/^\*([\s\S]*?)\*\n\n([\s\S]*)$/); const exc = m ? m[1] : '', qt = m ? m[2] : String(q.q || '');
         const oT = o ? xlLat(xlN(o[ci('Τύπος')])) : '';
@@ -718,7 +772,7 @@ function mitselosSheets(data0, warnings) {
             const fbs = Array.isArray(q.fbs) && q.fbs.some(Boolean) ? q.fbs : null; fix(fbs || [q.fbC || q.fbW || '']);
           } else {
             if (q.t === 'clkgap') LET.forEach((L) => set('Επιλογή ' + L, ''));
-            else { set('Επιλογή Α', yl[0] || 'Ναι'); set('Επιλογή Β', yl[1] || 'Όχι'); set('Επιλογή Γ', ''); set('Επιλογή Δ', ''); }
+            else { const dflt = (L, v, d) => (o && !String(o[ci('Επιλογή ' + L)] || '').trim() && (v || d) === d ? '' : v || d); set('Επιλογή Α', dflt('Α', yl[0], 'Ναι')); set('Επιλογή Β', dflt('Β', yl[1], 'Όχι')); set('Επιλογή Γ', ''); set('Επιλογή Δ', ''); }
             const g = String(q.gapAns || '').trim();
             set('Σωστή Απάντηση', q.t === 'clkyn' ? (q.ans ? 'Β' : 'Α') : q.t === 'clkgap' ? g : (q.ans ? 'Β' : 'Α') + ' || ' + g);
             fix([q.fbC || q.fbW || '']);
@@ -769,6 +823,11 @@ function mitselosSheets(data0, warnings) {
       else { const nr = cr[0].map(() => ''); nr[ik] = key; nr[iv] = dk.ktitle || (mx.fresh ? dk.label || '' : ''); cr.push(nr); }
     });
     sheets[cName] = cr;
+  }
+  if (Array.isArray(data0.theory)) {
+    let tName = Object.keys(sheets).find((n) => /^θεωρ/.test(xlN(n)));
+    if (!tName) { tName = 'Θεωρία'; if (mx.order && !mx.order.includes(tName)) mx.order = [...mx.order, tName]; }
+    sheets[tName] = theoryToRows(data0.theory, sheets[tName]);
   }
   mxCatIdx = null;
   return { qRows, sheets, mx };
@@ -1148,6 +1207,9 @@ export default function Creator() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, position: narrow ? 'static' : 'sticky', top: 70 }}>
           <button onClick={() => setPanel('general')} style={{ ...S.navBtn, ...(panel === 'general' ? S.navBtnOn : {}) }}>⚙︎ Γενικά στοιχεία εφαρμογής</button>
           {tpl.id === 'quiz-xlsx-deck' && (
+            <button onClick={() => setPanel('theory')} style={{ ...S.navBtn, ...(panel === 'theory' ? S.navBtnOn : {}) }}>📘 Κάρτες θεωρίας ({(data.theory || []).length})</button>
+          )}
+          {tpl.id === 'quiz-xlsx-deck' && (
             <div style={{ ...S.card, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ ...S.miniTitle, margin: 0, flex: 1 }}>📊 Excel</span>
               <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Αντικατάσταση των ερωτήσεων από αρχείο xlsx (μορφή Αναφορικών)" onClick={() => xlRef.current?.click()}>⬆ Άνοιγμα xlsx</button>
@@ -1245,6 +1307,7 @@ export default function Creator() {
         {/* ── Κέντρο: φόρμα ── */}
         <div style={{ ...S.card, padding: narrow ? 16 : 22, minWidth: 0 }}>
           {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} kind={tpl.kind} />}
+          {panel === 'theory' && <TheoryForm cards={data.theory || []} upd={upd} />}
           {panel === 'deck' && <DeckForm deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} onDelete={() => delDeck(sel.d)} onOpenQs={() => setPanel('question')} isCw={isCw} kind={tpl.kind} count={deckCount(deck)} />}
           {panel === 'question' && isSort && pItem && (
             <SortItemForm key={sel.d + ':' + sel.q} x={pItem} index={sel.q} total={deck.ps.length} setP={setP}
@@ -1262,7 +1325,7 @@ export default function Creator() {
             <CwWordsForm key={sel.d} deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} unplaced={(cwInfo?.unplaced || [])[sel.d] || []} />
           )}
           {panel === 'question' && q && (
-            <QuestionForm key={sel.d + ':' + sel.q} adv={tpl.id === 'quiz-xlsx-deck'} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
+            <QuestionForm key={sel.d + ':' + sel.q} adv={tpl.id === 'quiz-xlsx-deck'} theory={data.theory || []} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
               onUp={() => moveQ(sel.q, -1)} onDown={() => moveQ(sel.q, 1)} onDup={() => dupQ(sel.q)} onDel={() => delQ(sel.q)}
               onPrev={() => setSel((s) => ({ ...s, q: Math.max(0, s.q - 1) }))}
               onNext={() => sel.q < deck.qs.length - 1 ? setSel((s) => ({ ...s, q: s.q + 1 })) : addQuestion(q.t)} />
@@ -1299,6 +1362,105 @@ export default function Creator() {
 // ═════════════════════════════════════════════════════════════════
 // Φόρμες
 // ═════════════════════════════════════════════════════════════════
+// ── Κάρτες θεωρίας (Δημιουργός & Επεξεργαστής xlsx τύπου Α) ──
+const TH_TOOLS = [
+  { k: 'b', label: 'Β', title: 'Έντονα (**…**)', st: { fontWeight: 800 } },
+  { k: 'i', label: 'Π', title: 'Πλάγια (*…*)', st: { fontStyle: 'italic', fontFamily: 'Literata,serif' } },
+  { k: 'u', label: 'U', title: 'Υπογράμμιση (__…__)', st: { textDecoration: 'underline' } },
+  { k: 'li', label: '•', title: 'Κουκκίδα στην αρχή της γραμμής' },
+];
+const TH_ICONS = [['π', '📌', 'Σημείο / ορισμός'], ['!', '⚠️', 'Προσοχή'], ['ι', '💡', 'Κριτήριο / ιδέα'], ['ν', '✅', 'Σωστό'], ['ο', '❌', 'Λάθος'], ['β', '➡️', 'Συμπέρασμα']];
+function ThPoint({ value, onChange, onDel, canDel, n }) {
+  const ref = useRef(null);
+  const apply = (fn) => {
+    const ta = ref.current; if (!ta) return;
+    const a = ta.selectionStart, b = ta.selectionEnd, v = value || '';
+    const r = fn(v, a, b); onChange(r.v);
+    requestAnimationFrame(() => { try { ta.focus(); ta.setSelectionRange(r.a, r.b); } catch (e) {} });
+  };
+  const wrap = (m) => apply((v, a, b) => {
+    let x = a, y = b; while (x < y && /\s/.test(v[x])) x++; while (y > x && /\s/.test(v[y - 1])) y--;
+    if (x === y) return { v: v.slice(0, a) + m + m + v.slice(a), a: a + m.length, b: a + m.length };
+    return { v: v.slice(0, x) + m + v.slice(x, y) + m + v.slice(y), a: x + m.length, b: y + m.length };
+  });
+  const atLine = (pre) => apply((v, a, b) => {
+    const ls = v.lastIndexOf('\n', a - 1) + 1; const line = v.slice(ls);
+    const cur = line.match(/^(\{[πι!νοβ]\}\s*|[-•]\s+)/); const cut = cur ? cur[0].length : 0;
+    const nv = v.slice(0, ls) + pre + v.slice(ls + cut); const d = pre.length - cut;
+    return { v: nv, a: a + d, b: b + d };
+  });
+  const tool = (t) => (t.k === 'li' ? atLine('- ') : wrap(t.k === 'b' ? '**' : t.k === 'i' ? '*' : '__'));
+  const btn = { border: '1px solid ' + C.line, background: '#fff', borderRadius: 6, minWidth: 30, height: 28, cursor: 'pointer', fontSize: 14, color: C.ink, padding: '0 6px' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 11.5, color: C.muted, marginRight: 4 }}>Σημείο {n}</span>
+        {TH_TOOLS.map((t) => <button key={t.k} type="button" title={t.title} style={{ ...btn, ...(t.st || {}) }} onMouseDown={(e) => e.preventDefault()} onClick={() => tool(t)}>{t.label}</button>)}
+        <span style={{ width: 8 }} />
+        {TH_ICONS.map(([k, ic, tt]) => <button key={k} type="button" title={tt + ' — {' + k + '} στην αρχή της γραμμής'} style={btn} onMouseDown={(e) => e.preventDefault()} onClick={() => atLine('{' + k + '} ')}>{ic}</button>)}
+        <span style={{ flex: 1 }} />
+        <IconBtn title="Αφαίρεση σημείου" disabled={!canDel} onClick={onDel}>✕</IconBtn>
+      </div>
+      <textarea ref={ref} style={{ ...S.input, minHeight: 74, fontSize: 14.5, lineHeight: 1.55 }} value={value || ''} onChange={(e) => onChange(e.target.value)}
+        placeholder={'{π} **Ορισμός:** Αναφορικές ονομάζονται οι προτάσεις που…\n- κουκκίδα με *παράδειγμα*'} />
+    </div>
+  );
+}
+function ThPreview({ c }) {
+  const pts = (c.points || []).filter((x) => String(x).trim());
+  return (
+    <div style={{ background: '#fbfaf6', border: '1px solid ' + C.line, borderRadius: 10, padding: '12px 14px' }}>
+      <div style={{ fontSize: 10.5, letterSpacing: 1.6, color: C.purpleLight, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Προεπισκόπηση · Θεωρία {c.k || '—'}</div>
+      <div style={{ fontFamily: 'Literata,serif', fontSize: 17, fontWeight: 700, color: C.ink, marginBottom: 8 }} dangerouslySetInnerHTML={{ __html: fmtRichPreview(c.title || 'Τίτλος κάρτας') }} />
+      {pts.length ? pts.map((x, i) => <p key={i} style={{ margin: '0 0 8px', fontSize: 14.5, lineHeight: 1.6, color: C.ink }} dangerouslySetInnerHTML={{ __html: fmtRichPreview(x) }} />)
+        : <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Γράψτε τα σημεία της κάρτας.</p>}
+    </div>
+  );
+}
+function TheoryForm({ cards, upd }) {
+  const setC = (i, patch) => upd((n) => { n.theory = (n.theory || []).slice(); n.theory[i] = { ...n.theory[i], ...patch }; });
+  const add = () => upd((n) => { const t = (n.theory || []).slice(); const nums = t.map((c) => parseInt(c.k)).filter((x) => !isNaN(x)); t.push({ k: String((nums.length ? Math.max(...nums) : 0) + 1), title: '', points: [''] }); n.theory = t; });
+  const del = (i) => { if (!confirm('Διαγραφή της κάρτας θεωρίας;')) return; upd((n) => { n.theory = (n.theory || []).filter((_, k) => k !== i); }); };
+  const move = (i, d) => upd((n) => { const t = (n.theory || []).slice(); const j = i + d; if (j < 0 || j >= t.length) return; [t[i], t[j]] = [t[j], t[i]]; n.theory = t; });
+  const dupK = {}; cards.forEach((c) => { const k = String(c.k || '').trim(); dupK[k] = (dupK[k] || 0) + 1; });
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div>
+        <div style={S.miniTitle}>📘 Κάρτες θεωρίας</div>
+        <p style={{ margin: 0, fontSize: 13, color: C.muted, lineHeight: 1.55 }}>
+          Εξάγονται στο φύλλο «Θεωρία» του xlsx. Ο <b>αριθμός</b> της κάρτας είναι αυτός που γράφει κάθε ερώτηση στη στήλη «Θεωρία».
+          Μορφοποίηση με τα κουμπιά (ή με το χέρι): <b>**έντονα**</b>, <i>*πλάγια*</i>, <u>__υπογράμμιση__</u>, «- » κουκκίδα,
+          εικονίδια στην αρχή γραμμής ({'{π}'} 📌 · {'{!}'} ⚠️ · {'{ι}'} 💡 · {'{ν}'} ✅ · {'{ο}'} ❌ · {'{β}'} ➡️).
+        </p>
+      </div>
+      {cards.map((c, i) => {
+        const k = String(c.k || '').trim();
+        return (
+          <div key={i} style={{ ...S.card, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12.5, color: C.muted }}>Αριθμός</span>
+              <input style={{ ...S.input, width: 70, ...(k && dupK[k] > 1 ? { borderColor: C.bad } : {}) }} value={c.k || ''} onChange={(e) => setC(i, { k: e.target.value })} />
+              <input style={{ ...S.input, flex: 1, minWidth: 200, fontWeight: 600 }} value={c.title || ''} onChange={(e) => setC(i, { title: e.target.value })} placeholder="Τίτλος κάρτας (π.χ. Αναφορικές αντωνυμίες και επιρρήματα)" />
+              <IconBtn title="Πάνω" disabled={i === 0} onClick={() => move(i, -1)}>↑</IconBtn>
+              <IconBtn title="Κάτω" disabled={i === cards.length - 1} onClick={() => move(i, 1)}>↓</IconBtn>
+              <IconBtn title="Διαγραφή κάρτας" danger onClick={() => del(i)}>🗑</IconBtn>
+            </div>
+            {k && dupK[k] > 1 && <div style={{ fontSize: 12, color: C.bad }}>Ο αριθμός {k} υπάρχει και σε άλλη κάρτα.</div>}
+            {(c.points || ['']).map((x, j) => (
+              <ThPoint key={j} n={j + 1} value={x} canDel={(c.points || []).length > 1}
+                onChange={(v) => { const pts = (c.points || ['']).slice(); pts[j] = v; setC(i, { points: pts }); }}
+                onDel={() => setC(i, { points: (c.points || []).filter((_, m) => m !== j) })} />
+            ))}
+            <button style={{ ...S.btnGhost, alignSelf: 'flex-start', fontSize: 13 }} onClick={() => setC(i, { points: [...(c.points || []), ''] })}>＋ Σημείο</button>
+            <ThPreview c={c} />
+          </div>
+        );
+      })}
+      <button style={{ ...S.btnPrimarySm, alignSelf: 'flex-start' }} onClick={add}>＋ Νέα κάρτα θεωρίας</button>
+    </div>
+  );
+}
+
 function GeneralForm({ data, upd, isCw, kind }) {
   const set = (k) => (e) => { const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value; upd((n) => { n[k] = v; }); };
   return (
@@ -1622,7 +1784,7 @@ function ComboFields({ q, setQ }) {
   );
 }
 
-function QuestionForm({ adv, q, index, total, setQ, changeType, onUp, onDown, onDup, onDel, onPrev, onNext }) {
+function QuestionForm({ adv, theory, q, index, total, setQ, changeType, onUp, onDown, onDup, onDel, onPrev, onNext }) {
   const probs = problemsOf(q);
   const taRef = useRef(null);
   const wrapSel = () => {
@@ -1781,6 +1943,15 @@ function QuestionForm({ adv, q, index, total, setQ, changeType, onUp, onDown, on
             <button key={v} onClick={() => setQ({ diff: v || undefined })} title={v ? 'Βαθμός ' + v : 'Χωρίς βαθμό'}
               style={{ ...S.typeChip, ...((+q.diff || 0) === v ? S.typeChipOn : {}) }}>{v ? `${v} ${'●'.repeat(v)}` : '—'}</button>
           ))}
+        </div>
+      </Field>}
+      {adv && <Field label="Κάρτα θεωρίας" hint="Η κάρτα που ανοίγει ο μαθητής από αυτή την ερώτηση (στήλη «Θεωρία» του xlsx). Οι κάρτες γράφονται στο «📘 Κάρτες θεωρίας».">
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[{ k: '', title: 'Καμία' }, ...theory.filter((c) => String(c.k || '').trim())].map((c) => (
+            <button key={c.k || '-'} onClick={() => setQ({ th: c.k })} title={c.title || ''}
+              style={{ ...S.typeChip, ...(String(q.th || '') === String(c.k) ? S.typeChipOn : {}) }}>{c.k ? c.k + ' · ' + (String(c.title || '').replace(/[*_]/g, '').slice(0, 28) || 'χωρίς τίτλο') : '—'}</button>
+          ))}
+          {q.th && !theory.some((c) => String(c.k) === String(q.th)) && <span style={{ ...S.typeChip, ...S.typeChipOn }}>{q.th} (δεν υπάρχει κάρτα)</span>}
         </div>
       </Field>}
 
