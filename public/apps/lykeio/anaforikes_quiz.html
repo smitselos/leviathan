@@ -202,6 +202,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .ord-slot.ok{border-style:solid;border-color:var(--ok);background:var(--ok-bg);color:var(--ink)}
 .ord-slot.ko{border-style:solid;border-color:var(--ko);background:var(--ko-bg);color:var(--ink)}
 .ord-n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--cream-accent);color:var(--cream-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem}
+.ord-row{color:var(--ink);cursor:default;font-size:1.02rem;line-height:1.45}
+.ord-row .ord-t{flex:1}
+.ord-mv{display:flex;gap:4px;flex:none}
+.ord-mv button{width:40px;height:40px;border:none;border-radius:10px;background:#1a1a1a;color:#fff;font-size:1.25rem;font-weight:700;cursor:pointer;font-family:inherit;line-height:1}
+.ord-mv button:hover:not(:disabled){background:#444}
+.ord-mv button:disabled{opacity:.18;cursor:default}
 .ord-correct{margin-top:12px;padding:14px;background:var(--ok-bg);border-radius:var(--r-sm);border:1px solid var(--ok)}
 .ord-correct p{font-size:.8rem;color:var(--ok);font-weight:700;margin-bottom:6px}
 .ord-correct ol{margin:0;padding-left:22px;line-height:1.7}
@@ -1302,7 +1308,8 @@ function prepAnswer(q, st) {
   } else if (q.type === 'CAT') {
     if (!st.answer || st.answer.__cat !== tag) st.answer = { __cat: tag, a: new Array(q.catItems.length).fill(null), pick: null };
   } else if (q.type === 'ORD') {
-    if (!st.answer || st.answer.__ord !== tag) st.answer = { __ord: tag, seq: [] };
+    // Η λίστα ξεκινά ανακατεμένη· ο μαθητής μετακινεί τις περιόδους με ↑ ↓
+    if (!st.answer || st.answer.__ord !== tag) st.answer = { __ord: tag, seq: ordShuffle(q).slice() };
   }
 }
 // «Όψη» της κατάστασης για το 2ο σκέλος ενός συνδυασμένου τύπου (MC/YN/GAP renderers)
@@ -2329,29 +2336,31 @@ function renderCAT(q, mode) {
 }
 
 // Βάλε σε σειρά (ORD): πάτα τα στοιχεία με τη σωστή σειρά
-function renderORD(q, mode) {
-  const st = mode==='adp' ? adp : sel;
-  const A = st.answer;
-  const n = q.ordItems.length;
+function ordShuffle(q) {
   if (!q._ordShuffle) {
     let sh; let tries = 0;
     do { sh = shuffle(q.ordItems.map((_,i)=>i)); tries++; } while (tries < 10 && sh.every((v,i)=>q.ordItems[v]===q.ordItems[i]));
     q._ordShuffle = sh;
   }
+  return q._ordShuffle;
+}
+function renderORD(q, mode) {
+  const st = mode==='adp' ? adp : sel;
+  const A = st.answer;
+  const n = q.ordItems.length;
+  if (!A.seq || A.seq.length !== n) A.seq = ordShuffle(q).slice();
   let html = '';
-  if (!st.answered) html += `<p class="dd-hint">👆 Πάτα τα στοιχεία με τη σωστή σειρά. Πάτα ένα στοιχείο της σειράς σου για να το αφαιρέσεις.</p>`;
+  if (!st.answered) html += `<p class="dd-hint">↕ Μετακίνησε τις περιόδους με τα βέλη ↑ ↓, ώστε να μπουν στη σωστή σειρά.</p>`;
   html += '<ol class="ord-seq">';
   for (let pos = 0; pos < n; pos++) {
     const idx = A.seq[pos];
-    if (idx === undefined) { html += `<li class="ord-slot"><span class="ord-n">${pos+1}</span></li>`; continue; }
-    let cls = 'ord-slot filled';
-    if (st.answered) cls = 'ord-slot ' + (q.ordItems[idx]===q.ordItems[pos] ? 'ok' : 'ko');
-    html += `<li class="${cls}" ${st.answered?'':`data-ord-rm="${pos}" data-mode="${mode}"`}><span class="ord-n">${pos+1}</span><span>${q.ordItems[idx]}</span></li>`;
+    let cls = 'ord-slot filled ord-row';
+    if (st.answered) cls = 'ord-slot ord-row ' + (q.ordItems[idx]===q.ordItems[pos] ? 'ok' : 'ko');
+    const mv = st.answered ? '' : `<span class="ord-mv"><button type="button" aria-label="Πάνω" data-ord-mv="${pos}" data-dir="-1" data-mode="${mode}" ${pos===0?'disabled':''}>↑</button><button type="button" aria-label="Κάτω" data-ord-mv="${pos}" data-dir="1" data-mode="${mode}" ${pos===n-1?'disabled':''}>↓</button></span>`;
+    html += `<li class="${cls}"><span class="ord-n">${pos+1}</span><span class="ord-t">${q.ordItems[idx]}</span>${mv}</li>`;
   }
   html += '</ol>';
-  if (!st.answered) {
-    html += `<div class="ord-pool">${q._ordShuffle.filter(i => !A.seq.includes(i)).map(i => `<button type="button" class="chip" data-ord-add="${i}" data-mode="${mode}">${q.ordItems[i]}</button>`).join('')}</div>`;
-  } else if (!checkAnswer(q, A)) {
+  if (st.answered && !checkAnswer(q, A)) {
     html += `<div class="ord-correct"><p>✅ Σωστή σειρά:</p><ol>${q.ordItems.map(t=>`<li>${t}</li>`).join('')}</ol></div>`;
   }
   return html;
@@ -2451,15 +2460,12 @@ function attachEvents() {
     render();
   }));
   // Βάλε σε σειρά (ORD)
-  document.querySelectorAll('[data-ord-add]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-ord-mv]').forEach(b => b.addEventListener('click', () => {
     const st = b.dataset.mode==='adp' ? adp : sel;
     if (st.answered || !st.answer || !st.answer.__ord) return;
-    st.answer.seq.push(parseInt(b.dataset.ordAdd)); render();
-  }));
-  document.querySelectorAll('[data-ord-rm]').forEach(b => b.addEventListener('click', () => {
-    const st = b.dataset.mode==='adp' ? adp : sel;
-    if (st.answered || !st.answer || !st.answer.__ord) return;
-    st.answer.seq.splice(parseInt(b.dataset.ordRm), 1); render();
+    const s = st.answer.seq, i = parseInt(b.dataset.ordMv), j = i + parseInt(b.dataset.dir);
+    if (j < 0 || j >= s.length) return;
+    [s[i], s[j]] = [s[j], s[i]]; render();
   }));
 
   // CLK tokens
