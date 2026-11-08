@@ -646,6 +646,14 @@ body,#startScreen,.quiz-topbar,.quiz-bottom{background:var(--cream);}
   .fb-box{font-size:calc(clamp(16.2px, 4.68vw, 19.44px) * var(--fit, 1));padding:calc(clamp(10px, 3vw, 14px) * var(--fit, 1));}
   .fb-ref{font-size:calc(clamp(12.96px, 3.69vw, 15.12px) * var(--fit, 1));}
 }
+
+/* ═══ Αντιστοίχιση (υπολογιστής): η αριστερή στήλη παίρνει το πλάτος του μεγαλύτερου όρου (έως 45%) — όλοι οι όροι ίδιο πλάτος· η δεξιά θέση παίρνει τον υπόλοιπο χώρο και ψηλώνει μόνο όταν η φράση δεν χωρά ═══ */
+@media(min-width:641px){
+  .drag-slots{display:grid;grid-template-columns:fit-content(45%) minmax(0,1fr);column-gap:clamp(12px, 1.6vw, 2.2vh);row-gap:clamp(8px, 1.2vw, 1.5vh);align-items:center;}
+  .drag-slots .slot-row{display:contents;}
+  .slot-lbl{width:auto;min-width:0;overflow-wrap:anywhere;line-height:1.35;}
+  .slot-zone{min-height:clamp(44px, 5.5vw, 6.5vh);white-space:normal;overflow-wrap:anywhere;line-height:1.4;}
+}
 </style>
 </head>
 <body>
