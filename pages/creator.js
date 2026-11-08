@@ -687,7 +687,7 @@ function theoryToRows(cards, orig) {
   return out;
 }
 // Ίδια μορφοποίηση με τις εφαρμογές (για την προεπισκόπηση της κάρτας)
-const RICH_ICONS = { 'π': '📌', '!': '⚠️', 'ι': '💡', 'ν': '✅', 'ο': '❌', 'β': '➡️' };
+const RICH_ICONS = { 'π': '📌', '!': '⚠️', 'ι': '💡', 'ν': '✅', 'ο': '❌', 'β': '➡️', 'χ': '🖋️' };
 function fmtRichPreview(s) {
   const esc = String(s == null ? '' : s).replace(/\r/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/&lt;(\/?)(b|i|u|br)\s*\/?&gt;/gi, '<$1$2>');
@@ -696,7 +696,7 @@ function fmtRichPreview(s) {
     .replace(/(^|[^*])\*(?=\S)([^*\n]*?\S)\*(?!\*)/g, '$1<i>$2</i>')
     .replace(/(^|[^_])__(?=[^_\s])([^_\n]*?[^_\s])__(?!_)/g, '$1<u>$2</u>');
   return t.split('\n').map((l) => {
-    l = l.replace(/^(\s*)\{([πι!νοβ])\}\s*/, (m, sp, k) => sp + RICH_ICONS[k] + ' ').replace(/^(\s*)\\\{/, '$1{');
+    l = l.replace(/^(\s*)\{([πι!νοβχ])\}\s*/, (m, sp, k) => sp + RICH_ICONS[k] + ' ').replace(/^(\s*)\\\{/, '$1{');
     return /^\s*[-•]\s+/.test(l) ? '• ' + l.replace(/^\s*[-•]\s+/, '') : l;
   }).join('<br>');
 }
@@ -1369,7 +1369,7 @@ const TH_TOOLS = [
   { k: 'u', label: 'U', title: 'Υπογράμμιση (__…__)', st: { textDecoration: 'underline' } },
   { k: 'li', label: '•', title: 'Κουκκίδα στην αρχή της γραμμής' },
 ];
-const TH_ICONS = [['π', '📌', 'Σημείο / ορισμός'], ['!', '⚠️', 'Προσοχή'], ['ι', '💡', 'Κριτήριο / ιδέα'], ['ν', '✅', 'Σωστό'], ['ο', '❌', 'Λάθος'], ['β', '➡️', 'Συμπέρασμα']];
+const TH_ICONS = [['π', '📌', 'Σημείο / ορισμός'], ['!', '⚠️', 'Προσοχή'], ['ι', '💡', 'Κριτήριο / ιδέα'], ['ν', '✅', 'Σωστό'], ['ο', '❌', 'Λάθος'], ['β', '➡️', 'Συμπέρασμα'], ['χ', '🖋️', 'Παράδειγμα']];
 function ThPoint({ value, onChange, onDel, canDel, n }) {
   const ref = useRef(null);
   const apply = (fn) => {
@@ -1385,7 +1385,7 @@ function ThPoint({ value, onChange, onDel, canDel, n }) {
   });
   const atLine = (pre) => apply((v, a, b) => {
     const ls = v.lastIndexOf('\n', a - 1) + 1; const line = v.slice(ls);
-    const cur = line.match(/^(\{[πι!νοβ]\}\s*|[-•]\s+)/); const cut = cur ? cur[0].length : 0;
+    const cur = line.match(/^(\{[πι!νοβχ]\}\s*|[-•]\s+)/); const cut = cur ? cur[0].length : 0;
     const nv = v.slice(0, ls) + pre + v.slice(ls + cut); const d = pre.length - cut;
     return { v: nv, a: a + d, b: b + d };
   });
@@ -1430,7 +1430,7 @@ function TheoryForm({ cards, upd }) {
         <p style={{ margin: 0, fontSize: 13, color: C.muted, lineHeight: 1.55 }}>
           Εξάγονται στο φύλλο «Θεωρία» του xlsx. Ο <b>αριθμός</b> της κάρτας είναι αυτός που γράφει κάθε ερώτηση στη στήλη «Θεωρία».
           Μορφοποίηση με τα κουμπιά (ή με το χέρι): <b>**έντονα**</b>, <i>*πλάγια*</i>, <u>__υπογράμμιση__</u>, «- » κουκκίδα,
-          εικονίδια στην αρχή γραμμής ({'{π}'} 📌 · {'{!}'} ⚠️ · {'{ι}'} 💡 · {'{ν}'} ✅ · {'{ο}'} ❌ · {'{β}'} ➡️).
+          εικονίδια στην αρχή γραμμής ({'{π}'} 📌 · {'{!}'} ⚠️ · {'{ι}'} 💡 · {'{ν}'} ✅ · {'{ο}'} ❌ · {'{β}'} ➡️ · {'{χ}'} 🖋️ παράδειγμα).
         </p>
       </div>
       {cards.map((c, i) => {
