@@ -716,6 +716,8 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 
 /* Αρχική: κάρτες τρόπων όπως στην 1η έκδοση · μικρότεροι φάκελοι με ελαφριούς τίτλους */
 .lv-modes{margin-bottom:40px}
+@media(min-width:761px){ .lv-modes{grid-template-columns:2fr 1fr 1fr} }
+.lv-modes .lev-card.t1{border:1.5px solid #D9CCA6;box-shadow:0 6px 0 #D9CCA6,0 16px 28px rgba(26,26,26,.16);transform:translateY(-3px);transition:transform .12s,box-shadow .12s} .lv-modes .lev-card.t1:hover{transform:translateY(-5px);box-shadow:0 8px 0 #D9CCA6,0 20px 34px rgba(26,26,26,.18)} .lv-modes .lev-card.t1:active{transform:translateY(2px);box-shadow:0 1px 0 #D9CCA6,0 6px 12px rgba(26,26,26,.12)} /* Βήμα-Βήμα: σκίαση σαν κουμπί που προεξέχει (πατιέται στο κλικ) */
 .lv-folders{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .lv-folder{min-height:0;padding:16px 18px;border-radius:18px}
 .lv-folder .f-top{margin-bottom:10px}
@@ -752,6 +754,22 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 .lv-folder.done p{color:#6f6f7c}
 .lv-folder.done .f-go,.lv-folder.done .lv-ic{opacity:.55}
 .lv-folder.done .f-done{opacity:.7}
+
+/* Η αρχική είναι η σελίδα του Βήμα-Βήμα: τα βήματα σε πλαίσιο στο χρώμα της κάρτας 01· τα 02/03 σημειώνονται ως συμπληρωματικά */
+.lv-steps-panel{background:#F7F3E8;border:1.5px solid #D9CCA6;border-radius:18px;padding:22px 22px 6px;margin-bottom:34px;box-shadow:0 6px 0 #D9CCA6,0 16px 28px rgba(26,26,26,.08)}
+.lv-steps-panel .lv-folders{margin-bottom:16px}
+.lev-card .lc-extra{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.8px;text-transform:uppercase;font-weight:700;color:#5C5330;background:rgba(255,255,255,.55);border:1px solid rgba(92,83,48,.18);border-radius:999px;padding:3px 8px}
+@media(max-width:600px){ .lv-steps-panel{padding:16px 12px 4px;border-radius:14px} .lv-steps-panel .lv-sec{flex-wrap:wrap} }
+/* Κινητό: 01 σε όλο το πλάτος, 02 και 03 δίπλα-δίπλα από κάτω (μισή στήλη το καθένα) */
+@media(max-width:760px){
+  .lv-modes{grid-template-columns:1fr 1fr;max-width:none;gap:10px}
+  .lv-modes .lev-card.t1{grid-column:1/-1}
+  .lv-modes .lev-card.t2,.lv-modes .lev-card.t3{padding:14px 12px 12px}
+  .lv-modes .lev-card.t2 .lc-num,.lv-modes .lev-card.t3 .lc-num{font-size:1.8rem;margin-bottom:6px}
+  .lv-modes .lev-card.t2 .lc-title,.lv-modes .lev-card.t3 .lc-title{font-size:.95rem}
+  .lv-modes .lev-card.t2 .lc-desc,.lv-modes .lev-card.t3 .lc-desc{font-size:.76rem}
+  .lev-card .lc-extra{position:static;display:inline-block;align-self:flex-start;margin-bottom:6px;font-size:9px;padding:2px 7px}
+}
 </style>
 </head>
 <body>
@@ -1784,17 +1802,19 @@ function renderHome() {
         <div class="lc-num">01</div>
         <p class="lc-eyebrow">🎯 Βήμα-Βήμα</p>
         <p class="lc-title">Προσαρμοστική μάθηση</p>
-        <p class="lc-desc">${CONFIG.adpDesc}</p>
+        <p class="lc-desc">${CONFIG.adpDesc} <b>Με ανατροφοδότηση και κάρτες θεωρίας.</b></p>
         <p class="lc-count">${catOrder.length} βήματα${passed ? ' · ' + passed + ' ✓' : ''} →</p>
       </button>
       <button class="lev-card t2" id="btnStartSel">
+        <span class="lc-extra">Συμπληρωματικό</span>
         <div class="lc-num">02</div>
         <p class="lc-eyebrow">⚡ Εξάσκηση</p>
         <p class="lc-title">Ελεύθερη εξάσκηση</p>
-        <p class="lc-desc">Με φίλτρα τύπου, κατηγορίας και δυσκολίας. Χωρίς ανατροφοδότηση βήμα-βήμα.</p>
+        <p class="lc-desc">Τυχαία επιλογή ερωτήσεων, με φίλτρα τύπου, κατηγορίας και δυσκολίας. <b>Χωρίς ανατροφοδότηση και θεωρία.</b></p>
         <p class="lc-count">${totalQ} ερωτήσεις →</p>
       </button>
       <button class="lev-card t3" id="btnStartPres">
+        <span class="lc-extra">Συμπληρωματικό</span>
         <div class="lc-num">03</div>
         <p class="lc-eyebrow">📋 Παρουσίαση</p>
         <p class="lc-title">Θεωρία &amp; παραδείγματα</p>
@@ -1802,8 +1822,10 @@ function renderHome() {
         <p class="lc-count">${totalTheory} κάρτες θεωρίας →</p>
       </button>
     </div>
-    <h2 class="lv-sec">Τα βήματα <small>${catOrder.length} φάκελοι</small></h2>
-    <div class="lv-folders">${folders}</div>
+    <section class="lv-steps-panel">
+      <h2 class="lv-sec">🎯 Βήμα-Βήμα · τα βήματα <small>${catOrder.length} φάκελοι · με ανατροφοδότηση και κάρτες θεωρίας</small></h2>
+      <div class="lv-folders">${folders}</div>
+    </section>
     <img class="lev-foot-logo" src="${LEV_LOGO_COLOR}" alt="LEVIATHAN">
   </div>`;
 }
