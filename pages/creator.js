@@ -128,7 +128,7 @@ function newQuestion(t, keep = {}) {
   if (t === 'clkmc') return { ...base, text: keep.text || '', q2: keep.q2 || '', opts: ['', '', '', ''], ans: 0 };
   if (t === 'clkyn') return { ...base, text: keep.text || '', q2: keep.q2 || '', labels: ['Ναι', 'Όχι'], ans: 0 };
   if (t === 'clkgap') return { ...base, text: keep.text || '', q2: keep.q2 || '', gapAns: '' };
-  if (t === 'yngap') return { ...base, text: String(keep.text || '').replace(/\[([^\]|]+)(\|[^\]]*)?\]/g, '$1'), q2: keep.q2 || '', labels: ['Ναι', 'Όχι'], ans: 0, gapAns: '' };
+  if (t === 'yngap') return { ...base, text: String(keep.text || '').replace(/\[([^\]|]+)(\|[^\]]*)?\]/g, '$1'), q2: keep.q2 || '', labels: ['Ναι', 'Όχι'], ans: 0, gapAns: '', gate: true };
   return { ...base, q: base.q || 'Επίλεξε…', text: '' };
 }
 function newDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', qs: [newQuestion('mcq')] }; }
@@ -277,7 +277,7 @@ function problemsOf(q) {
     if ((q.opts || []).filter((o) => String(o).trim()).length < 2) p.push('Χρειάζονται τουλάχιστον 2 επιλογές.');
     if ((q.opts || []).some((o) => !String(o).trim())) p.push('Υπάρχει κενή επιλογή.');
   }
-  if ((q.t === 'clkgap' || q.t === 'yngap') && !String(q.gapAns || '').trim()) p.push('Λείπει η σωστή απάντηση του κενού.');
+  if ((q.t === 'clkgap' || (q.t === 'yngap' && !q.gate)) && !String(q.gapAns || '').trim()) p.push('Λείπει η σωστή απάντηση του κενού.');
   if (q.t === 'order') {
     const n = (q.lines || []).filter((l) => String(l).trim()).length;
     if (n < 3) p.push(`Χρειάζονται τουλάχιστον 3 περίοδοι (τώρα ${n}).`);
@@ -454,8 +454,10 @@ function mitselosRows(all, hi, col, getDeck, warnings, mx) {
       } else if (t === 'clkgap') {
         q.gapAns = sw;
       } else {
-        const sp = sw.split('||'); q.labels = [col(r, 'Επιλογή Α') || 'Ναι', col(r, 'Επιλογή Β') || 'Όχι']; q.ans = L(sp[0].trim()) === 1 ? 1 : 0; q.gapAns = sp.slice(1).join('||').trim();
-        if (!q.gapAns) warnings.push(`${id}: YNGAP — η «Σωστή Απάντηση» θέλει τη μορφή «Α || απάντηση κενού».`);
+        q.labels = [col(r, 'Επιλογή Α') || 'Ναι', col(r, 'Επιλογή Β') || 'Όχι'];
+        if (sw.includes('||')) { const sp = sw.split('||'); q.ans = L(sp[0].trim()) === 1 ? 1 : 0; q.gapAns = sp.slice(1).join('||').trim(); q.gate = false;
+          if (!q.gapAns) warnings.push(`${id}: YNGAP — η «Σωστή Απάντηση» θέλει τη μορφή «Α || απάντηση κενού».`); }
+        else { const sp = sw.split(/→|->/); q.ans = L(sp[0].trim()) === 1 ? 1 : 0; q.gapAns = (sp[1] || '').trim(); q.gate = true; }
       }
     } else if (t === 'click') {
       let text = exc; const miss = [];
@@ -700,7 +702,7 @@ function fmtRichPreview(s) {
     return /^\s*[-•]\s+/.test(l) ? '• ' + l.replace(/^\s*[-•]\s+/, '') : l;
   }).join('<br>');
 }
-const mxSig = (q) => JSON.stringify([q.t, q.q, q.opts, q.ans, q.labels, q.tgts, q.items, q.text, q.lines, q.cats, q.fbC, q.fbW, q.fbs, q.diff, q.mode, q.distractors, q.fixFirst, q.strict, q.q2, q.gapAns, q.th]);
+const mxSig = (q) => JSON.stringify([q.t, q.q, q.opts, q.ans, q.labels, q.tgts, q.items, q.text, q.lines, q.cats, q.fbC, q.fbW, q.fbs, q.diff, q.mode, q.distractors, q.fixFirst, q.strict, q.q2, q.gapAns, q.th, q.gate]);
 // Νέο αρχείο (χωρίς αρχικό xlsx): οι στήλες και τα φύλλα της μορφής ΜΗΤΣΕΛΟΣ (όπως στις Αναφορικές)
 const MX_HEADER = ['ID', 'Ενεργό', 'Κατηγορία', 'Δυσκολία', 'Τύπος', 'Απόσπασμα', 'Κείμενο Ερώτησης', 'Επιλογή Α', 'Επιλογή Β', 'Επιλογή Γ', 'Επιλογή Δ', 'Σωστή Απάντηση', 'Αριστερά 1', 'Αριστερά 2', 'Αριστερά 3', 'Αριστερά 4', 'Δεξιά 1', 'Δεξιά 2', 'Δεξιά 3', 'Δεξιά 4', 'Λέξη-Στόχος', 'Διόρθωση 1', 'Διόρθωση 2', 'Διόρθωση 3', 'Διόρθωση 4', 'Θεωρία'];
 const mxEmpty = () => ({ v: 1, fresh: true, sheet: 'Ερωτήσεις', header: MX_HEADER.slice(), pre: [], raw: [], order: ['Ερωτήσεις', 'Κατηγορίες', 'Θεωρία'], sheets: { 'Κατηγορίες': [['Κατηγορία', 'Περιγραφή']], 'Θεωρία': [['Θεωρία', 'Τίτλος', 'Σύνοψη']] } });
@@ -774,7 +776,7 @@ function mitselosSheets(data0, warnings) {
             if (q.t === 'clkgap') LET.forEach((L) => set('Επιλογή ' + L, ''));
             else { const dflt = (L, v, d) => (o && !String(o[ci('Επιλογή ' + L)] || '').trim() && (v || d) === d ? '' : v || d); set('Επιλογή Α', dflt('Α', yl[0], 'Ναι')); set('Επιλογή Β', dflt('Β', yl[1], 'Όχι')); set('Επιλογή Γ', ''); set('Επιλογή Δ', ''); }
             const g = String(q.gapAns || '').trim();
-            set('Σωστή Απάντηση', q.t === 'clkyn' ? (q.ans ? 'Β' : 'Α') : q.t === 'clkgap' ? g : (q.ans ? 'Β' : 'Α') + ' || ' + g);
+            set('Σωστή Απάντηση', q.t === 'clkyn' ? (q.ans ? 'Β' : 'Α') : q.t === 'clkgap' ? g : q.gate ? (q.ans ? 'Β' : 'Α') + (g ? ' → ' + g : '') : (q.ans ? 'Β' : 'Α') + ' || ' + g);
             fix([q.fbC || q.fbW || '']);
           }
         } else if (q.t === 'click') {
@@ -1755,6 +1757,17 @@ function ComboFields({ q, setQ }) {
         </Field>
       )}
       {q.t === 'yngap' && yesNo('Σωστή απάντηση του 1ου σκέλους')}
+      {q.t === 'yngap' && (
+        <Field label="Πότε εμφανίζεται το κενό">
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button onClick={() => setQ({ gate: true })} style={{ ...S.typeChip, ...(q.gate ? S.typeChipOn : {}) }}>Μόνο αφού πατήσει τη σωστή απάντηση</button>
+            <button onClick={() => setQ({ gate: false })} style={{ ...S.typeChip, ...(!q.gate ? S.typeChipOn : {}) }}>Πάντα, από την αρχή</button>
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>{q.gate
+            ? 'Η επιλογή Ναι/Όχι κλειδώνει. Στη σωστή ανοίγει η 2η ερώτηση με το κενό· στη λάθος η ερώτηση ελέγχεται αμέσως. Αν αφήσετε κενή τη σωστή απάντηση του κενού, η ερώτηση μένει απλό Ναι/Όχι.'
+            : 'Ο μαθητής βλέπει από την αρχή και τα δύο σκέλη και τα ελέγχει μαζί.'}</div>
+        </Field>
+      )}
       <Field label="2ο σκέλος — οδηγία" hint={isGap ? 'Για κενό μέσα στην πρόταση γράψτε __________ (10 κάτω παύλες)· αλλιώς ο μαθητής γράφει σε πλαίσιο κάτω από την οδηγία.' : 'π.χ. «Ποιο είναι το είδος της;»'}>
         <textarea style={{ ...S.input, minHeight: 56, fontFamily: 'Literata,serif', fontSize: 15 }} value={q.q2 || ''} onChange={(e) => setQ({ q2: e.target.value })}
           placeholder={isGap ? 'Γράψε την αναφορική αντωνυμία: το βιβλίο __________ μου έδωσες.' : 'Ποια είναι η συντακτική λειτουργία της;'} />
