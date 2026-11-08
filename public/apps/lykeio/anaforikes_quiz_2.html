@@ -798,6 +798,7 @@ body{background:#f9f9f8;font-family:var(--lv-font);color:#1a1a1a}
 //   CLKMC  Εντοπισμός + Πολλαπλή  Λέξη-Στόχος + Επιλογή Α–Δ · Σωστή: Α/Β/Γ/Δ
 //   CLKYN  Εντοπισμός + Ναι/Όχι   Λέξη-Στόχος + Επιλογή Α, Β · Σωστή: Α/Β
 //   CLKGAP Εντοπισμός + Κενό      Λέξη-Στόχος · Σωστή: απάντηση κενού (όπως GAP)
+//   YNGAP  Ναι/Όχι + Κενό         Επιλογή Α, Β (κενές = Ναι, Όχι) · Σωστή: Α/Β || απάντηση κενού (π.χ. «Α || που»)
 //   CAT    Ταξινόμηση             Επιλογή Α–Δ = ονόματα κατηγοριών · Σωστή: στοιχείο→Α|στοιχείο→Β|…
 //   ORD    Βάλε σε σειρά          Σωστή: 1ο|2ο|3ο|… (η εφαρμογή τα ανακατεύει)
 // Στους συνδυασμένους τύπους, η οδηγία του 2ου σκέλους γράφεται στο «Κείμενο Ερώτησης» μετά από ||
@@ -1143,8 +1144,10 @@ function normType(raw) {
   return TYPE_ALIASES[t] || t;
 }
 // Συνδυασμένοι τύποι: εντοπισμός (CLK) + δεύτερο σκέλος
-const COMBO_SUB = {CLKMC:'MC', CLKYN:'YN', CLKGAP:'GAP'};
-const KNOWN_TYPES = ['MC','YN','GAP','CLK','DD','CLKMC','CLKYN','CLKGAP','CAT','ORD'];
+const COMBO_SUB = {CLKMC:'MC', CLKYN:'YN', CLKGAP:'GAP', YNGAP:'GAP'};
+const KNOWN_TYPES = ['MC','YN','GAP','CLK','DD','CLKMC','CLKYN','CLKGAP','YNGAP','CAT','ORD'];
+// YNGAP: 1ο σκέλος Ναι/Όχι (όχι εντοπισμός), 2ο σκέλος κενό
+const isYnFirst = (q) => !!(q && q.type === 'YNGAP');
 const OPT_KEYS = ['Α','Β','Γ','Δ'];
 
 // Μετατροπή γραμμών πίνακα (κεφαλίδες + γραμμές) σε ερωτήσεις
@@ -1184,13 +1187,19 @@ function buildQuestion(obj) {
   obj.optB = obj['Επιλογή Β'] || null;
   obj.optC = obj['Επιλογή Γ'] || null;
   obj.optD = obj['Επιλογή Δ'] || null;
-  if (obj.type === 'YN' || obj.type === 'CLKYN') { obj.optA = obj.optA || 'Ναι'; obj.optB = obj.optB || 'Όχι'; }
+  if (obj.type === 'YN' || obj.type === 'CLKYN' || obj.type === 'YNGAP') { obj.optA = obj.optA || 'Ναι'; obj.optB = obj.optB || 'Όχι'; }
   obj.leftItems  = [obj['Αριστερά 1'],obj['Αριστερά 2'],obj['Αριστερά 3'],obj['Αριστερά 4']].filter(Boolean);
   obj.rightItems = [obj['Δεξιά 1'],obj['Δεξιά 2'],obj['Δεξιά 3'],obj['Δεξιά 4']].filter(Boolean);
   obj.targets = obj['Λέξη-Στόχος'] ? obj['Λέξη-Στόχος'].split('|').map(t=>t.trim()).filter(Boolean) : [];
-  if ((obj.type === 'CLK' || obj.sub) && (!obj.excerpt || !obj.targets.length)) { console.warn('Εντοπισμός χωρίς Απόσπασμα ή Λέξη-Στόχο', obj.id); return null; }
+  if ((obj.type === 'CLK' || (obj.sub && obj.type !== 'YNGAP')) && (!obj.excerpt || !obj.targets.length)) { console.warn('Εντοπισμός χωρίς Απόσπασμα ή Λέξη-Στόχο', obj.id); return null; }
   obj.correct = (obj['Σωστή Απάντηση']||'').trim();
   if (['MC','YN','CLKMC','CLKYN'].includes(obj.type)) obj.correct = normLetter(obj.correct);
+  if (obj.type === 'YNGAP') {
+    // Σωστή: «Α || απάντηση κενού» → ynCorrect = Α, correct = απάντηση κενού (όπως GAP)
+    const cp = obj.correct.split('||');
+    if (cp.length < 2 || !cp[1].trim()) { console.warn('YNGAP: η Σωστή Απάντηση θέλει «Α/Β || απάντηση κενού»', obj['ID']); return null; }
+    obj.ynCorrect = normLetter(cp[0].trim()); obj.correct = cp.slice(1).join('||').trim();
+  }
   obj.fb = [obj['Διόρθωση 1'],obj['Διόρθωση 2'],obj['Διόρθωση 3'],obj['Διόρθωση 4']].map(fmtRich);
   if (obj.type === 'CAT') {
     // Κατηγορίες = Επιλογή Α–Δ · Σωστή: στοιχείο→Α|στοιχείο→Β (δεκτό και το όνομα της κατηγορίας)
@@ -1462,7 +1471,7 @@ function prepAnswer(q, st) {
   if (!q) return;
   const tag = q.id + '|' + q.type;
   if (isCombo(q)) {
-    if (!st.answer || st.answer.__combo !== tag) st.answer = { __combo: tag, sub: null, clk: [] };
+    if (!st.answer || st.answer.__combo !== tag) st.answer = { __combo: tag, sub: null, clk: [], yn: null };
   } else if (q.type === 'CAT') {
     if (!st.answer || st.answer.__cat !== tag) st.answer = { __cat: tag, a: new Array(q.catItems.length).fill(null), pick: null };
   } else if (q.type === 'ORD') {
@@ -1491,7 +1500,7 @@ function checkAnswer(q, answer) {
   if (isCombo(q)) {
     // Έλεγχος στο τέλος: σωστή μόνο αν είναι σωστά ΚΑΙ τα δύο σκέλη
     if (!answer || !answer.__combo) return false;
-    const clkOk = checkClkAnswer(q, answer.clk);
+    const clkOk = isYnFirst(q) ? String(answer.yn||'').toUpperCase() === q.ynCorrect : checkClkAnswer(q, answer.clk);
     const subOk = q.sub === 'GAP' ? checkGapAnswer(q, answer.sub)
       : q.correct.trim().toUpperCase() === String(answer.sub||'').trim().toUpperCase();
     return clkOk && subOk;
@@ -1558,7 +1567,7 @@ function canCheckState(q, st) {
     if (Array.isArray(st.answer)) return st.answer.every(a=>a&&a.trim());
     return !!(st.answer && String(st.answer).trim());
   }
-  if (isCombo(q)) return st.clkSelected.length>0 && !!st.answer && !!st.answer.__combo && subFilled(q, st.answer.sub);
+  if (isCombo(q)) return (isYnFirst(q) ? !!(st.answer && st.answer.yn) : st.clkSelected.length>0) && !!st.answer && !!st.answer.__combo && subFilled(q, st.answer.sub);
   if (q.type==='CAT') return !!(st.answer && st.answer.a && st.answer.a.every(c=>c!==null));
   if (q.type==='ORD') return !!(st.answer && st.answer.seq && st.answer.seq.length===q.ordItems.length);
   return false;
@@ -1590,11 +1599,11 @@ function scheduleAutoCheck() {
 
 const TYPE_LABELS = {
   MC:'Πολλαπλή επιλογή', YN:'Ναι / Όχι', GAP:'Συμπλήρωση κενού', CLK:'Εντοπισμός', DD:'Αντιστοίχιση',
-  CLKMC:'Εντοπισμός + Πολλαπλή επιλογή', CLKYN:'Εντοπισμός + Ναι / Όχι', CLKGAP:'Εντοπισμός + Συμπλήρωση',
+  CLKMC:'Εντοπισμός + Πολλαπλή επιλογή', CLKYN:'Εντοπισμός + Ναι / Όχι', CLKGAP:'Εντοπισμός + Συμπλήρωση', YNGAP:'Ναι / Όχι + Συμπλήρωση',
   CAT:'Ταξινόμηση σε κατηγορίες', ORD:'Βάλε σε σειρά'
 };
 const TYPE_SHORT = { MC:'Πολλ. Επιλογής', YN:'Ναι/Όχι', DD:'Αντιστοίχιση', GAP:'Συμπλήρωση', CLK:'Εντοπισμός',
-  CLKMC:'Εντοπ.+Πολλαπλή', CLKYN:'Εντοπ.+Ναι/Όχι', CLKGAP:'Εντοπ.+Κενό', CAT:'Ταξινόμηση', ORD:'Σειρά' };
+  CLKMC:'Εντοπ.+Πολλαπλή', CLKYN:'Εντοπ.+Ναι/Όχι', CLKGAP:'Εντοπ.+Κενό', YNGAP:'Ναι/Όχι+Κενό', CAT:'Ταξινόμηση', ORD:'Σειρά' };
 // Φίλτρα τύπων: μόνο οι τύποι που υπάρχουν στις ερωτήσεις
 function typeChipList() {
   const present = KNOWN_TYPES.filter(t => allQ.some(q => q.type === t));
@@ -2271,7 +2280,7 @@ function renderSelResults() {
 // ══════════════════════════════════════════════
 function renderExcerpt(q, mode) {
   if (q.type==='GAP') return renderExcerptGAP(q, mode);
-  if (q.type==='CLK' || isCombo(q)) return renderExcerptCLK(q, mode);
+  if (q.type==='CLK' || (isCombo(q) && !isYnFirst(q))) return renderExcerptCLK(q, mode);
   return `<div class="exc">${q.excerpt}</div>`;
 }
 
@@ -2456,13 +2465,20 @@ function renderQuestionBody(q, mode) {
   if (q.type==='MC'||q.type==='YN') return renderMC(q, mode);
   if (q.type==='DD') return renderDD(q, mode);
   if (q.type==='GAP') return renderGAPInput(q, mode);
+  if (isYnFirst(q)) return renderYnFirst(q, mode) + renderComboSub(q, mode);
   if (isCombo(q)) return renderComboSub(q, mode);
   if (q.type==='CAT') return renderCAT(q, mode);
   if (q.type==='ORD') return renderORD(q, mode);
   return '';
 }
 
-// 2ο σκέλος συνδυασμένων τύπων (CLKMC / CLKYN / CLKGAP) — ο εντοπισμός γίνεται στο απόσπασμα από πάνω
+// 1ο σκέλος του YNGAP: κουμπιά Ναι/Όχι (η απάντηση γράφεται στο st.answer.yn)
+function renderYnFirst(q, mode) {
+  const st = mode==='adp' ? adp : sel;
+  const v = { get answer() { return st.answer && st.answer.__combo ? st.answer.yn : null; }, get answered() { return st.answered; } };
+  return renderMC({ ...q, correct: q.ynCorrect || '' }, mode, v).replace(/data-opt="/g, 'data-yn-opt="');
+}
+// 2ο σκέλος συνδυασμένων τύπων (CLKMC / CLKYN / CLKGAP / YNGAP) — ο εντοπισμός γίνεται στο απόσπασμα από πάνω
 function renderComboSub(q, mode) {
   const st = mode==='adp' ? adp : sel;
   const v = subView(st);
@@ -2596,6 +2612,13 @@ function attachEvents() {
     if (st.answered) return;
     if (st.answer && st.answer.__combo) st.answer.sub = b.dataset.opt; else st.answer = b.dataset.opt;
     render();
+  }));
+
+  // YNGAP: 1ο σκέλος Ναι/Όχι
+  document.querySelectorAll('[data-yn-opt]').forEach(b => b.addEventListener('click', ()=>{
+    const st = b.dataset.mode==='adp' ? adp : sel;
+    if (st.answered || !st.answer || !st.answer.__combo) return;
+    st.answer.yn = b.dataset.ynOpt; render();
   }));
 
   // Ταξινόμηση σε κατηγορίες (CAT)
@@ -3295,7 +3318,7 @@ function renderPresQuestionBody(q) {
   }
   if (q.type==='CLK') return presClkHtml(q, pres.showAnswer);
   if (isCombo(q)) {
-    let html = presClkHtml(q, pres.showAnswer);
+    let html = isYnFirst(q) ? presOptsHtml({ ...q, correct: q.ynCorrect || '' }) : presClkHtml(q, pres.showAnswer);
     html += `<p class="q-step2"><span class="q-step-n">2</span>${q.q2 || (q.sub==='GAP' ? 'Συμπλήρωσε.' : 'Διάλεξε τη σωστή απάντηση.')}</p>`;
     if (q.sub==='GAP') {
       const ans = q.correct.split('|').map(x=>x.trim().split('/')[0]).filter(Boolean).join(' · ');
@@ -3558,6 +3581,7 @@ function renderQuestionForPrint(q, idx, s) {
 
   html += `<p class="pq-q">${q.q}</p>`;
 
+  if (q.type === 'YNGAP') html += `<div class="pq-yn"><span>☐ ${q.optA||'Ναι'}</span><span>☐ ${q.optB||'Όχι'}</span></div>`;
   // Συνδυασμένοι τύποι: οδηγία 2ου σκέλους
   if (isCombo(q)) html += `<p class="pq-q">2. ${q.q2 || (q.sub==='GAP' ? 'Συμπλήρωσε.' : 'Διάλεξε τη σωστή απάντηση.')}</p>`;
 
@@ -3606,7 +3630,7 @@ function renderQuestionForPrint(q, idx, s) {
     }
   }
 
-  if (s.showLines && ['CLK','GAP','CLKGAP'].includes(q.type)) {
+  if (s.showLines && ['CLK','GAP','CLKGAP','YNGAP'].includes(q.type)) {
     html += `<div class="pq-lines">`;
     for (let i = 0; i < s.linesCount; i++) {
       html += `<div class="pq-line"></div>`;

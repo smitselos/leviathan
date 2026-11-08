@@ -470,6 +470,11 @@ select.gap-in{cursor:pointer;}
 .clk-tok.bad{background:var(--wrong)!important;color:#fff!important;text-decoration:line-through;}
 .clk-tok.miss{outline:2px dashed var(--correct);outline-offset:1px;}
 .q-instr{font-size:12px;color:var(--muted);line-height:1.4;padding:2px 0;}
+/* Σύνθετοι τύποι: δύο σκέλη */
+.cmb-step{display:flex;gap:8px;align-items:flex-start;font-weight:700;font-size:clamp(13px,1.6vw,17px);line-height:1.4;color:var(--ink);margin-top:4px;}
+.cmb-step2{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(107,63,160,.25);}
+.cmb-n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;}
+.opt-btn.picked{border-color:var(--purple);background:rgba(107,63,160,.12);}
 @media(min-width:641px){.q-instr{font-size:clamp(12px,1.5vw,2vh);}}
 .dc-count{font-size:10.5px;font-weight:700;color:var(--purple-light);margin-top:6px;letter-spacing:.5px;}
 
@@ -744,7 +749,7 @@ const LEV_AUTHOR=String(QUIZ.credits||'').replace(/[\s,·–—-]*\b(19|20)\d{2}
 const LEV_COPY='ΛΕΒΙΑΘΑΝ '+LEV_YEAR+(LEV_AUTHOR?' · '+LEV_AUTHOR:'');
 
 const LABS=['Α','Β','Γ','Δ','Ε','ΣΤ','Ζ','Η'];
-const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων',order:'⇅ Αναδιάταξη',sort:'▤ Ταξινόμηση',cw:'✎ Σταυρόλεξο'};
+const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων',clkmc:'☝● Εντοπισμός + Πολλαπλή',clkyn:'☝◐ Εντοπισμός + Ναι/Όχι',clkgap:'☝▭ Εντοπισμός + Κενό',yngap:'◐▭ Ναι/Όχι + Κενό',order:'⇅ Αναδιάταξη',sort:'▤ Ταξινόμηση',cw:'✎ Σταυρόλεξο'};
 const DECKS=(QUIZ.decks||[]).filter(d=>d&&Array.isArray(d.qs)&&d.qs.length);
 
 /* ── Βοηθητικά ── */
@@ -921,7 +926,7 @@ function renderCard(){
     <div class="bc-result" id="bcResult"></div>`;
   const right=document.createElement('div');
   right.className='bc-right'; right.id='bcRight';
-  ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick,order:buildOrder,sort:buildSort,cw:buildCw}[q.t]||buildMCQ)(q,right);
+  ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick,clkmc:buildCombo,clkyn:buildCombo,clkgap:buildCombo,yngap:buildCombo,order:buildOrder,sort:buildSort,cw:buildCw}[q.t]||buildMCQ)(q,right);
   card.appendChild(left); card.appendChild(right);
   stage.appendChild(card);
   fitCard();
@@ -1215,6 +1220,90 @@ function buildClick(q,container){
 }
 
 /* ═════════════════════════════════════
+   ΣΥΝΘΕΤΟΙ ΤΥΠΟΙ — clkmc / clkyn / clkgap (εντοπισμός + 2ο σκέλος), yngap (Ναι/Όχι + κενό)
+   Έλεγχος στο τέλος· η ερώτηση μετρά σωστή μόνο αν είναι σωστά ΚΑΙ τα δύο σκέλη.
+   ═════════════════════════════════════ */
+const CMB_GAP=/_{5,}/;
+function cmbGapAns(q){ return String(q.gapAns||'').split('|').map(b=>b.split('/').map(x=>x.trim()).filter(Boolean)).filter(a=>a.length); }
+function buildCombo(q,container){
+  const ynFirst=q.t==='yngap', sub=q.t==='clkmc'?'mc':q.t==='clkyn'?'yn':'gap';
+  const step=(n,html,cls)=>{ const d=document.createElement('div'); d.className='cmb-step'+(cls?' '+cls:''); d.innerHTML=`<span class="cmb-n">${n}</span><span>${html}</span>`; container.appendChild(d); return d; };
+  const toks=[]; let yn=null, pick=null; const inputs=[];
+  // Κουμπιά επιλογής χωρίς άμεσο έλεγχο
+  const choiceBtns=(opts,letters,onPick,wrapCls)=>{
+    const wrap=document.createElement('div'); if(wrapCls) wrap.className=wrapCls;
+    const bs=opts.map((o,i)=>{ const b=document.createElement('button'); b.className='opt-btn'; b.dataset.oi=i;
+      b.innerHTML=letters?`<span class="opt-lbl">${LABS[i]}.</span><span>${fmt(o)}</span>`:`<span>${fmt(o)}</span>`;
+      b.addEventListener('click',()=>{ if(done) return; bs.forEach(x=>x.classList.remove('picked')); b.classList.add('picked'); onPick(i); upd(); });
+      wrap.appendChild(b); return b; });
+    container.appendChild(wrap); return bs;
+  };
+  const mark=(bs,chosen,ans)=>{ bs.forEach(b=>{ b.classList.add('disabled'); b.classList.remove('picked'); });
+    if(bs[chosen]) bs[chosen].classList.add('chosen',chosen===ans?'correct':'wrong'); if(chosen!==ans&&bs[ans]) bs[ans].classList.add('reveal'); };
+  const labels=(q.labels&&q.labels.length===2)?q.labels:['Ναι','Όχι'];
+  let done=false, b1=null, b2=null, box=null;
+  // ── 1ο σκέλος ──
+  if(ynFirst){
+    if(String(q.text||'').trim()){ const ex=document.createElement('div'); ex.className='clk-text'; ex.innerHTML=fmt(q.text); container.appendChild(ex); }
+    step(1,'Διάλεξε.');
+    b1=choiceBtns(labels,false,i=>{yn=i;},'tf-row');
+  } else {
+    step(1,'Πάτησε πάνω στις λέξεις που ζητούνται· ξαναπάτα για να αναιρέσεις.');
+    box=document.createElement('div'); box.className='clk-text';
+    const mk=(text,good)=>{ const t=document.createElement('span'); t.className='clk-tok'; t.innerHTML=fmt(text); t.dataset.good=good?'1':'';
+      t.addEventListener('click',()=>{ if(done) return; t.classList.toggle('sel'); upd(); }); toks.push(t); return t; };
+    splitMarked(q.text).forEach((p,i)=>{
+      if(i%2===1){ box.appendChild(mk(p,true)); return; }
+      p.split(/(\s+)/).forEach(w=>{ if(!w) return;
+        const m=w.match(/^([«"'(\[“‘—–-]*)(.*?)([.,;:!?·»"')\]”’…—–-]*)$/);
+        if(!m||!/[\p{L}\p{N}]/u.test(m[2])){ box.appendChild(document.createTextNode(w)); return; }
+        if(m[1]) box.appendChild(document.createTextNode(m[1])); box.appendChild(mk(m[2],false)); if(m[3]) box.appendChild(document.createTextNode(m[3])); });
+    });
+    container.appendChild(box);
+  }
+  // ── 2ο σκέλος ──
+  const q2=String(q.q2||'').trim(), ga=sub==='gap'?cmbGapAns(q):[];
+  if(sub==='gap' && CMB_GAP.test(q2)){
+    step(2,'Συμπλήρωσε το κενό.','cmb-step2');
+    const gt=document.createElement('div'); gt.className='gap-text';
+    q2.split(CMB_GAP).forEach((part,i,arr)=>{ const sp=document.createElement('span'); sp.innerHTML=fmt(part); gt.appendChild(sp);
+      if(i<arr.length-1){ const el=document.createElement('input'); el.type='text'; el.className='gap-in'; el.autocomplete='off'; el.spellcheck=false; el.setAttribute('autocapitalize','off');
+        el.size=Math.max(6,Math.min(22,((ga[inputs.length]||[''])[0]).length+2)); el.addEventListener('input',upd); inputs.push(el); gt.appendChild(el); } });
+    container.appendChild(gt);
+  } else {
+    step(2,fmt(q2||(sub==='gap'?'Συμπλήρωσε.':'Διάλεξε τη σωστή απάντηση.')),'cmb-step2');
+    if(sub==='mc') b2=choiceBtns((q.opts||[]).filter(o=>String(o).trim()),true,i=>{pick=i;});
+    else if(sub==='yn') b2=choiceBtns(labels,false,i=>{pick=i;},'tf-row');
+    else { const gt=document.createElement('div'); gt.className='gap-text';
+      (ga.length?ga:[['']]).forEach((a,k)=>{ const el=document.createElement('input'); el.type='text'; el.className='gap-in'; el.autocomplete='off'; el.spellcheck=false; el.setAttribute('autocapitalize','off');
+        el.size=Math.max(8,Math.min(26,(a[0]||'').length+3)); el.addEventListener('input',upd); inputs.push(el); if(k) gt.appendChild(document.createTextNode(' · ')); gt.appendChild(el); });
+      container.appendChild(gt); }
+  }
+  addFB(container);
+  const sub_=document.createElement('button'); sub_.className='btn-submit'; sub_.textContent='Υποβολή'; sub_.disabled=true; container.appendChild(sub_);
+  inputs.forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!sub_.disabled) sub_.click(); }));
+  function upd(){
+    const ok1=ynFirst?yn!==null:toks.some(t=>t.classList.contains('sel'));
+    const ok2=sub==='gap'?inputs.length&&inputs.every(x=>x.value.trim()):pick!==null;
+    sub_.disabled=!(ok1&&ok2);
+  }
+  sub_.addEventListener('click',()=>{
+    done=true; let ok1=true, ok2=true; const fix=[];
+    if(ynFirst){ ok1=yn===(q.ans|0); mark(b1,yn,q.ans|0); if(!ok1) fix.push('1ο σκέλος: '+labels[q.ans|0]); }
+    else { toks.forEach(t=>{ const sel=t.classList.contains('sel'), good=!!t.dataset.good; t.classList.remove('sel');
+        if(sel&&good) t.classList.add('hit'); else if(sel&&!good){t.classList.add('bad');ok1=false;} else if(!sel&&good){t.classList.add('miss');ok1=false;} });
+      box.classList.add('clk-done'); if(!ok1) fix.push('1ο σκέλος: με διακεκομμένο πλαίσιο όσες έπρεπε να επιλεγούν'); }
+    if(sub==='gap'){ inputs.forEach((el,k)=>{ const a=ga[k]||[]; const ok=a.some(x=>norm(x)===norm(el.value)); el.disabled=true; el.classList.add(ok?'ok':'ko');
+        if(!ok){ ok2=false; const f=document.createElement('span'); f.className='gap-fix'; f.textContent=a[0]||''; el.after(f); } });
+      if(!ok2) fix.push('2ο σκέλος: '+ga.map(a=>a[0]).join(' · ')); }
+    else { const ans=q.ans|0; ok2=pick===ans; mark(b2,pick,ans);
+      if(!ok2) fix.push('2ο σκέλος: '+(sub==='mc'?(q.opts||[])[ans]:labels[ans])); }
+    sub_.style.display='none';
+    finishQuestion(ok1&&ok2,q,container,fix.length?'Σωστή απάντηση — '+fix.join(' · '):'');
+  });
+}
+
+/* ═════════════════════════════════════
    ΑΝΑΔΙΑΤΑΞΗ (order) — περίοδοι με τη σωστή σειρά στο q.lines
    ═════════════════════════════════════ */
 function buildOrder(q,container){
@@ -1498,7 +1587,7 @@ function collectPrintSettings(){
 // Μία ερώτηση → { html (φύλλο), key (λύση) }
 function prQuestion(q,num,s){
   let h=`<div class="pq"><p class="pq-num">Ερώτηση ${num}</p>`, key='';
-  if(q.t!=='gap' && q.t!=='click') h+=`<p class="pq-q">${fmt(q.q)}</p>`;
+  if(q.t!=='gap' && q.t!=='click' && !/^(clkmc|clkyn|clkgap|yngap)$/.test(q.t)) h+=`<p class="pq-q">${fmt(q.q)}</p>`;
   if(q.t==='mcq'){
     const o=(q.opts||[]).map((t,i)=>({t,i})).filter(x=>String(x.t).trim());
     h+=`<div class="pq-opts">`+o.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x.t)}</div>`).join('')+`</div>`;
@@ -1523,6 +1612,18 @@ function prQuestion(q,num,s){
     const parts=splitMarked(q.text);
     h+=`<p class="pq-q">${fmt(q.q)} <i>(Υπογράμμισε.)</i></p><div class="pq-excerpt">${parts.map(fmt).join('')}</div>`;
     key=parts.filter((_,i)=>i%2).map(esc).join(' · ');
+  } else if(/^(clkmc|clkyn|clkgap|yngap)$/.test(q.t)){
+    const L=q.labels&&q.labels.length===2?q.labels:['Ναι','Όχι'], q2=String(q.q2||'').trim();
+    const yn=`<div class="pq-yn"><span>☐ ${esc(L[0])}</span><span>☐ ${esc(L[1])}</span></div>`;
+    let k1;
+    if(q.t==='yngap'){ if(String(q.text||'').trim()) h+=`<div class="pq-excerpt">${fmt(q.text)}</div>`; h+=`<p class="pq-q">1. ${fmt(q.q)}</p>`+yn; k1=esc(L[q.ans|0]); }
+    else { const parts=splitMarked(q.text); h+=`<p class="pq-q">1. ${fmt(q.q)} <i>(Υπογράμμισε.)</i></p><div class="pq-excerpt">${parts.map(fmt).join('')}</div>`; k1=parts.filter((_,i)=>i%2).map(esc).join(' · '); }
+    h+=`<p class="pq-q">2. ${q2?fmt(q2).replace(/_{5,}/g,'<span class="pq-gap">______________</span>'):(q.t==='clkgap'||q.t==='yngap'?'Συμπλήρωσε.':'Διάλεξε τη σωστή απάντηση.')}</p>`;
+    let k2;
+    if(q.t==='clkmc'){ const o=(q.opts||[]).filter(x=>String(x).trim()); h+=`<div class="pq-opts">`+o.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x)}</div>`).join('')+`</div>`; k2=`${PR_LET[q.ans|0]}. ${fmt(o[q.ans|0]||'')}`; }
+    else if(q.t==='clkyn'){ h+=yn; k2=esc(L[q.ans|0]); }
+    else { if(!/_{5,}/.test(q2)) h+=`<p class="pq-excerpt"><span class="pq-gap">______________________</span></p>`; k2=cmbGapAns(q).map(a=>esc(a[0])).join(' · '); }
+    key=`1: ${k1} — 2: ${k2}`;
   } else if(q.t==='order'){
     const lines=(q.lines||[]).map(x=>String(x).trim()).filter(Boolean).map((t,i)=>({t,i}));
     const sh=q.fixFirst?[lines[0]].concat(shuffle(lines.slice(1))):shuffle(lines);
