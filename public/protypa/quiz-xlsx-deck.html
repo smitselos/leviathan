@@ -599,6 +599,21 @@ select.gap-in{cursor:pointer;}
 .pm-btn-primary:disabled{opacity:.5;cursor:default;}
 .pm-btn-secondary{background:#ece8e1;color:var(--ink);}
 @media(max-width:600px){.pm-section{padding:14px 16px;}.pm-hdr,.pm-footer{padding:14px 16px;}.pm-grid2{grid-template-columns:1fr;}}
+
+/* ═══ Πολλαπλή επιλογή, Σωστό/Λάθος και διορθώσεις: σε μεγάλες οθόνες μεγαλώνουν λίγο (έως +25% από το μέγεθος σε 1366×768)· με πολλές/μεγάλες επιλογές μικραίνουν αυτόματα (--fit) ώστε το σύνολο να μην ξεπερνά ~80% της δεξιάς στήλης ═══ */
+.fit-now,.fit-now *{transition:none!important;}
+@media(min-width:641px){
+  .opt-btn{font-size:calc(min(clamp(20.4px, 2.9vw, 4.1vh), 39.4px) * var(--fit, 1));padding:calc(min(clamp(14px, 2vw, 2.5vh), 23.8px) * var(--fit, 1)) calc(min(clamp(18px, 2.5vw, 3vh), 28.8px) * var(--fit, 1));gap:min(clamp(10px, 1.5vw, 2vh), 18.8px);}
+  .opt-lbl{font-size:calc(min(clamp(18px, 2.6vw, 3.6vh), 34.5px) * var(--fit, 1));}
+  .fb-box{font-size:calc(min(clamp(19.2px, 2.6vw, 3.6vh), 34.5px) * var(--fit, 1));padding:calc(min(clamp(14px, 2vw, 2.5vh), 23.8px) * var(--fit, 1));margin-top:min(clamp(8px, 1.2vw, 1.5vh), 15.0px);}
+  .fb-ref{font-size:calc(min(clamp(15.6px, 2vw, 2.6vh), 25.0px) * var(--fit, 1));}
+}
+@media(max-width:640px){
+  .opt-btn{font-size:calc(clamp(19.2px, 5.5vw, 22.8px) * var(--fit, 1));padding:calc(clamp(10px, 3vw, 14px) * var(--fit, 1)) calc(clamp(12px, 3.5vw, 16px) * var(--fit, 1));}
+  .opt-lbl{font-size:calc(clamp(18px, 4.8vw, 21.6px) * var(--fit, 1));}
+  .fb-box{font-size:calc(clamp(18px, 5.2vw, 21.6px) * var(--fit, 1));padding:calc(clamp(10px, 3vw, 14px) * var(--fit, 1));}
+  .fb-ref{font-size:calc(clamp(14.4px, 4.1vw, 16.8px) * var(--fit, 1));}
+}
 </style>
 </head>
 <body>
@@ -1740,6 +1755,30 @@ if(window.LEV_PREVIEW && DECKS.length){
 if(!DECKS.length){
   document.getElementById('deckPick').innerHTML='<div class="start-sub" style="margin:0">Δεν υπάρχουν ακόμη ερωτήσεις.</div>';
 }
+</script>
+
+<script>
+/* Αυτόματη προσαρμογή στην πολλαπλή επιλογή / Σωστό-Λάθος: αν επιλογές + διόρθωση ξεπερνούν το ~80% της δεξιάς στήλης, μικραίνουν αναλογικά (έως −40%)· αλλιώς μένουν στο κανονικό τους μέγεθος. */
+(function(){
+  let busy=false;
+  function fit(){
+    busy=false;
+    document.querySelectorAll('.bc-right').forEach(function(r){
+      if(!r.querySelector('.opt-btn')){ r.style.removeProperty('--fit'); return; }
+      const kids=[].filter.call(r.children,function(k){ return k.offsetParent!==null; });
+      if(!kids.length) return;
+      const cs=getComputedStyle(r), avail=(r.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom))*0.85;
+      const used=function(){ const a=kids[0].getBoundingClientRect().top, b=kids[kids.length-1].getBoundingClientRect().bottom; return b-a; };
+      r.classList.add('fit-now'); /* χωρίς transition, για σωστή μέτρηση */
+      let f=1; r.style.setProperty('--fit','1');
+      while(f>0.6 && used()>avail){ f=Math.round((f-0.05)*100)/100; r.style.setProperty('--fit',String(f)); }
+      r.offsetHeight; r.classList.remove('fit-now');
+    });
+  }
+  function later(){ if(busy) return; busy=true; requestAnimationFrame(function(){ requestAnimationFrame(fit); }); }
+  new MutationObserver(function(ms){ if(ms.every(function(m){ return m.type==='attributes' && m.target.classList && m.target.classList.contains('bc-right'); })) return; later(); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  addEventListener('resize',later);
+})();
 </script>
 </body>
 </html>
