@@ -54,7 +54,7 @@ const TEMPLATES = [
     name: 'Κουίζ ενοτήτων · xlsx',
     file: '/protypa/quiz-xlsx-deck.html',
     desc: 'Το κουίζ ενοτήτων με εισαγωγή / εξαγωγή Excel: ανεβάζετε ένα xlsx και οι ερωτήσεις μπαίνουν αυτόματα στις ενότητες (δέχεται και τη μορφή των εφαρμογών ΜΗΤΣΕΛΟΣ). Επιπλέον: βαθμός δυσκολίας με φίλτρο για τον μαθητή και στην εκτύπωση, σχόλιο για κάθε επιλογή.',
-    types: ['Εισαγωγή / εξαγωγή xlsx', 'Βαθμός δυσκολίας', 'Σχόλιο ανά επιλογή', 'Όλοι οι τύποι του κουίζ'],
+    types: ['Εισαγωγή / εξαγωγή xlsx', 'Μορφή ΜΗΤΣΕΛΟΣ ⇄ ίδια μορφή', 'Βαθμός δυσκολίας', 'Σχόλιο ανά επιλογή', 'Όλοι οι τύποι του κουίζ'],
   },
   {
     id: 'crossword-deck',
@@ -380,14 +380,18 @@ function sampleQuizData(credits) {
 // Μορφή εφαρμογών ΜΗΤΣΕΛΟΣ: ID | Ενεργό | Κατηγορία | Δυσκολία | Τύπος (YN/MC/DD/CLK/GAP) | Απόσπασμα |
 // Κείμενο Ερώτησης | Επιλογή Α–Δ | Σωστή Απάντηση | Αριστερά 1–4 | Δεξιά 1–4 | Λέξη-Στόχος | Διόρθωση 1–4 | Θεωρία
 const stripTags = (s) => String(s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/[ \t]+/g, ' ').trim();
-function mitselosRows(all, hi, col, getDeck, warnings) {
-  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap', ord: 'order', sort: 'sort' };
+// mx (προαιρετικό): συλλέγει την αρχική γραμμή κάθε ερώτησης, ώστε η εξαγωγή να γράφει ξανά την ΙΔΙΑ μορφή.
+// Ανενεργές γραμμές και τύποι που δεν επεξεργάζονται εδώ (CLKMC, CLKYN, CLKGAP…) δεν χάνονται: μένουν αυτούσιες στο mx.raw.
+const xlLat = (s) => s.replace(/[αβεζηικμνορτυχ]/g, (ch) => ({ α: 'a', β: 'b', ε: 'e', ζ: 'z', η: 'h', ι: 'i', κ: 'k', μ: 'm', ν: 'n', ο: 'o', ρ: 'p', τ: 't', υ: 'y', χ: 'x' }[ch]));
+function mitselosRows(all, hi, col, getDeck, warnings, mx) {
+  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap', ord: 'order', sort: 'sort', cat: 'sort' };
+  const keep = (pos, r) => { if (mx) mx.raw.push({ pos, row: r.slice() }); };
   all.slice(hi + 1).forEach((r, ri) => {
     if (!r.some((c) => c)) return;
     const line = hi + ri + 2, id = col(r, 'ID') || ('γρ. ' + line);
-    if (/^(false|0|οχι|ψευδεσ|no)$/.test(xlN(col(r, 'Ενεργό')))) return;
-    const raw = col(r, 'Τύπος'), t = T[xlN(raw)] || xlType(raw);
-    if (!t || t === '?') { warnings.push(`${id}: άγνωστος τύπος «${raw || '—'}» — παραλείφθηκε.`); return; }
+    if (/^(false|0|οχι|ψευδεσ|no)$/.test(xlN(col(r, 'Ενεργό')))) { keep(ri, r); return; }
+    const raw = col(r, 'Τύπος'), tk = xlLat(xlN(raw)), t = T[tk] || T[xlN(raw)] || xlType(raw);
+    if (!t || t === '?') { keep(ri, r); warnings.push(`${id}: ο τύπος «${raw || '—'}» δεν επεξεργάζεται εδώ` + (mx ? ' — μένει αυτούσιος στην εξαγωγή xlsx.' : ' — παραλείφθηκε.')); return; }
     const cat = col(r, 'Κατηγορία'), deck = getDeck(cat ? (/^[\d.]+$/.test(cat) ? 'Ενότητα ' + cat : cat) : '');
     const exc = stripTags(col(r, 'Απόσπασμα')), qt = stripTags(col(r, 'Κείμενο Ερώτησης'));
     const withExc = (x) => (exc ? `*${exc.replace(/\*/g, '')}*\n\n` : '') + x;
@@ -430,27 +434,95 @@ function mitselosRows(all, hi, col, getDeck, warnings) {
     } else if (t === 'order') {
       // ORD: οι περίοδοι με τη ΣΩΣΤΗ σειρά στο «Απόσπασμα», χωρισμένες με «|» (ή στις Επιλογές Α–Δ)
       let lines = exc.split('|').map((x) => x.trim()).filter(Boolean);
+      if (lines.length < 2) lines = stripTags(col(r, 'Σωστή Απάντηση')).split('|').map((x) => x.trim()).filter(Boolean);
       if (lines.length < 2) lines = ['Α', 'Β', 'Γ', 'Δ'].map((k) => stripTags(col(r, 'Επιλογή ' + k))).filter(Boolean);
-      if (lines.length < 2) { warnings.push(`${id}: ORD χωρίς περιόδους (γράψτε τες στο «Απόσπασμα» χωρισμένες με «|») — παραλείφθηκε.`); return; }
+      if (lines.length < 2) { keep(ri, r); warnings.push(`${id}: ORD χωρίς περιόδους (γράψτε τες στο «Απόσπασμα» χωρισμένες με «|») — παραλείφθηκε.`); return; }
       q = { ...newQuestion('order'), q: qt || 'Βάλε τις περιόδους στη σωστή σειρά.', lines, fixFirst: /σταθερ|fix/.test(xlN(col(r, 'Σωστή Απάντηση'))) };
+    } else if (t === 'sort' && tk === 'cat') {
+      const names = ['Α', 'Β', 'Γ', 'Δ'].map((k) => stripTags(col(r, 'Επιλογή ' + k)));
+      const cats = names.map((name) => ({ name, items: [] }));
+      col(r, 'Σωστή Απάντηση').split('|').forEach((pair) => { const m = pair.split(/→|->|=/); if (m.length < 2) return; const k = L(m[m.length - 1].trim()); const it = stripTags(m.slice(0, -1).join('→')).trim(); if (k >= 0 && k < cats.length && it) cats[k].items.push(it); });
+      const cs = cats.filter((c) => c.name || c.items.length);
+      if (cs.length < 2) { keep(ri, r); warnings.push(`${id}: CAT με λιγότερες από 2 κατηγορίες — παραλείφθηκε.`); return; }
+      q = { ...newQuestion('sort'), q: withExc(qt || 'Ταξινόμησε τα στοιχεία στις σωστές κατηγορίες.'), cats: cs };
     } else if (t === 'sort') {
       // SORT: Αριστερά 1–4 = κατηγορίες· Δεξιά 1–4 = τα στοιχεία της καθεμιάς, χωρισμένα με «|»
       const cats = [1, 2, 3, 4].map((i) => ({ name: stripTags(col(r, 'Αριστερά ' + i)), items: stripTags(col(r, 'Δεξιά ' + i)).split('|').map((x) => x.trim()).filter(Boolean) })).filter((c) => c.name || c.items.length);
-      if (cats.length < 2) { warnings.push(`${id}: SORT με λιγότερες από 2 κατηγορίες (Αριστερά 1–4 / Δεξιά 1–4) — παραλείφθηκε.`); return; }
+      if (cats.length < 2) { keep(ri, r); warnings.push(`${id}: SORT με λιγότερες από 2 κατηγορίες (Αριστερά 1–4 / Δεξιά 1–4) — παραλείφθηκε.`); return; }
       q = { ...newQuestion('sort'), q: withExc(qt || 'Ταξινόμησε τα στοιχεία στις σωστές κατηγορίες.'), cats };
     }
-    if (!q) { warnings.push(`${id}: ο τύπος «${raw}» δεν υποστηρίζεται σε αυτή τη μορφή — παραλείφθηκε.`); return; }
+    if (!q) { keep(ri, r); warnings.push(`${id}: ο τύπος «${raw}» δεν υποστηρίζεται σε αυτή τη μορφή` + (mx ? ' — μένει αυτούσιος στην εξαγωγή xlsx.' : ' — παραλείφθηκε.')); return; }
     if (t !== 'mcq' && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
     const df = parseInt(col(r, 'Δυσκολία')); if (df >= 1 && df <= 5) q.diff = df;
+    if (mx) q.mx = { pos: ri, row: r.slice() };
     deck.qs.push(q);
   });
 }
+// ── Εγγενής ανάγνωση xlsx (zip + XML) → { SheetNames, sheets: { όνομα: [[κελιά]] } } ──
+function unzipIdx(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let e = u8.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('Δεν είναι αρχείο xlsx');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const out = {}; const td = new TextDecoder();
+  for (let i = 0; i < n; i++) {
+    const m = dv.getUint16(p + 10, true), cs = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    out[td.decode(u8.subarray(p + 46, p + 46 + nl))] = { m, cs, lo }; p += 46 + nl + xl + cl;
+  }
+  return { u8, dv, out };
+}
+async function unzipTxt(z, name) {
+  const f = z.out[name]; if (!f) return null;
+  const { u8, dv } = z; const h = f.lo; const s = h + 30 + dv.getUint16(h + 26, true) + dv.getUint16(h + 28, true);
+  const data = u8.subarray(s, s + f.cs);
+  if (f.m === 0) return new TextDecoder().decode(data);
+  const ds = new DecompressionStream('deflate-raw');
+  const buf = await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer();
+  return new TextDecoder().decode(buf);
+}
+const xDoc = (t) => new DOMParser().parseFromString(t, 'application/xml');
+const xAll = (n, tag) => Array.from(n.getElementsByTagNameNS('*', tag));
+const xTxt = (n) => xAll(n, 't').filter((t) => !(t.parentNode && t.parentNode.localName === 'rPh')).map((t) => t.textContent).join('');
+const xCol = (ref) => { let k = 0; for (const ch of String(ref).replace(/\d+/g, '')) k = k * 26 + (ch.charCodeAt(0) - 64); return k - 1; };
+async function readXlsxNative(buf) {
+  if (typeof DecompressionStream === 'undefined') throw new Error('no DecompressionStream');
+  const z = unzipIdx(new Uint8Array(buf));
+  const wbX = await unzipTxt(z, 'xl/workbook.xml'); if (!wbX) throw new Error('Λείπει το workbook.xml');
+  const relX = await unzipTxt(z, 'xl/_rels/workbook.xml.rels'); const rels = {};
+  if (relX) xAll(xDoc(relX), 'Relationship').forEach((r) => { let t = r.getAttribute('Target') || ''; t = t.startsWith('/') ? t.slice(1) : 'xl/' + t; rels[r.getAttribute('Id')] = t.replace(/\/\.\//g, '/'); });
+  const ssX = await unzipTxt(z, 'xl/sharedStrings.xml'); const shared = ssX ? xAll(xDoc(ssX), 'si').map(xTxt) : [];
+  const SheetNames = []; const sheets = {};
+  for (const sh of xAll(xDoc(wbX), 'sheet')) {
+    const name = sh.getAttribute('name');
+    const rid = sh.getAttribute('r:id') || (Array.from(sh.attributes).find((a) => a.localName === 'id' && a.name !== 'sheetId') || {}).value;
+    const sx = rels[rid] ? await unzipTxt(z, rels[rid]) : null; if (sx == null) continue;
+    const rows = [];
+    xAll(xDoc(sx), 'row').forEach((rowEl) => {
+      const row = [];
+      xAll(rowEl, 'c').forEach((c, i) => {
+        const ci = c.getAttribute('r') ? xCol(c.getAttribute('r')) : i; const t = c.getAttribute('t'); const vEl = xAll(c, 'v')[0]; const v = vEl ? vEl.textContent : '';
+        row[ci] = t === 's' ? (shared[parseInt(v, 10)] ?? '') : t === 'inlineStr' ? xTxt(c) : t === 'b' ? (v === '1' ? 'TRUE' : 'FALSE') : v;
+      });
+      for (let i = 0; i < row.length; i++) if (row[i] === undefined) row[i] = '';
+      if (row.some((x) => String(x).trim() !== '')) rows.push(row);
+    });
+    SheetNames.push(name); sheets[name] = rows;
+  }
+  if (!SheetNames.length) throw new Error('Δεν βρέθηκαν φύλλα');
+  return { SheetNames, sheets };
+}
+
 // Ανάγνωση xlsx/csv → δεδομένα κουίζ  { data, n, warnings }
 async function importQuizXlsx(file, credits) {
-  const X = await loadXlsx();
-  const wb = X.read(await file.arrayBuffer(), { type: 'array' });
+  const buf = await file.arrayBuffer();
+  let wb = null;
+  if (/\.xlsx$/i.test(file.name || '')) { try { wb = await readXlsxNative(buf); } catch { wb = null; } }
+  if (!wb) {
+    const X = await loadXlsx(); const w = X.read(buf, { type: 'array' }); const sheets = {};
+    w.SheetNames.forEach((n) => { sheets[n] = X.utils.sheet_to_json(w.Sheets[n], { header: 1, defval: '', raw: false, blankrows: false }); });
+    wb = { SheetNames: w.SheetNames, sheets };
+  }
   const findSheet = (re) => wb.SheetNames.find((n) => re.test(xlN(n)));
-  const aoa = (name) => (name ? X.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: false, blankrows: false }) : []);
+  const aoa = (name) => (name ? (wb.sheets[name] || []).map((r) => r.map((c) => String(c == null ? '' : c))) : []);
   const qName = findSheet(/ερωτησ/) || wb.SheetNames[0];
   const all = aoa(qName).map((r) => r.map((c) => String(c == null ? '' : c).trim()));
   const hi = all.findIndex((r) => r.some((c) => xlN(c) === 'τυποσ'));
@@ -481,7 +553,10 @@ async function importQuizXlsx(file, credits) {
     cur = null;
   };
   const isMit = H[xlN('Κείμενο Ερώτησης')] != null && H[xlN('Κατηγορία')] != null;
-  if (isMit) mitselosRows(all, hi, col, getDeck, warnings);
+  // Μορφή ΜΗΤΣΕΛΟΣ: κρατάμε ολόκληρο το βιβλίο (επικεφαλίδες, φύλλα «Κατηγορίες», «Θεωρία» κ.ά.) για την εξαγωγή στην ίδια μορφή
+  const mx = isMit ? { v: 1, sheet: qName, header: all[hi].slice(), pre: all.slice(0, hi), raw: [], order: wb.SheetNames.slice(), sheets: {} } : null;
+  if (mx) wb.SheetNames.forEach((n) => { if (n !== qName) mx.sheets[n] = aoa(n); });
+  if (isMit) mitselosRows(all, hi, col, getDeck, warnings, mx);
   else all.slice(hi + 1).forEach((r, ri) => {
     if (!r.some((c) => c)) return;
     const label = col(r, 'Ενότητα') || lastDeck || 'Ενότητα 1'; lastDeck = label;
@@ -507,10 +582,147 @@ async function importQuizXlsx(file, credits) {
     if (/^τιτλοσ εφαρμ/.test(k)) data.title = v; else if (/^μικρη/.test(k)) data.eyebrow = v; else if (/^μεγαλ/.test(k)) data.heading = v; else if (/^υποτιτλ/.test(k)) data.subtitle = v;
     else if (/^ονομα|^υπογραφ|^δημιουργ/.test(k)) data.credits = v; else if (/^χρονολογ|^ετοσ/.test(k)) { if (+v) data.year = +v; } else if (/^ανακατεμα ερωτ/.test(k)) data.shuffleQs = yes(v); else if (/^ανακατεμα επιλ/.test(k)) data.shuffleOpts = yes(v); });
   data.decks = decks.filter((d) => d.qs.length);
+  if (mx) {
+    // Ονόματα βημάτων από το φύλλο «Κατηγορίες» → τίτλος κάθε κάρτας-ενότητας
+    const cr = mx.sheets[Object.keys(mx.sheets).find((n) => /^κατηγορ/.test(xlN(n)))] || [];
+    if (cr.length) { const h = cr[0].map(xlN); const ik = h.indexOf('κατηγορια'), iv = h.indexOf('περιγραφη');
+      if (ik >= 0 && iv >= 0) cr.slice(1).forEach((r) => { const d = deckOf['Ενότητα ' + String(r[ik] || '').trim()]; if (d && !d.ktitle) d.ktitle = String(r[iv] || '').trim(); }); }
+    data.mx = mx;
+  }
   if (!data.title) data.title = String(file.name || '').replace(/\.(xlsx|xls|csv|ods)$/i, '');
+  if (mx) data.mxName = String(file.name || '').replace(/\.(xlsx|xls|csv|ods)$/i, '');
   const n = data.decks.reduce((s, d) => s + d.qs.length, 0);
   if (!n) throw new Error('Δεν βρέθηκαν ερωτήσεις στο αρχείο.' + (warnings.length ? '\n' + warnings.slice(0, 5).join('\n') : ''));
+  if (mx) { const nd = normalizeQuiz(data); nd.decks.forEach((d) => d.qs.forEach((q) => { if (q.mx) q.mx.sig = mxSig(q); })); return { data: nd, n, warnings, hasGen: gRows.length > 1, mx: true }; }
   return { data, n, warnings, hasGen: gRows.length > 1 };
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Εξαγωγή στη ΜΟΡΦΗ ΜΗΤΣΕΛΟΣ (ίδιες στήλες και φύλλα με το αρχικό xlsx)
+// Αμετάβλητες ερωτήσεις → η αρχική γραμμή αυτούσια (με τις ετικέτες <b><i>…).
+// Διορθωμένες → ξαναγράφονται μόνο τα πεδία που άλλαξαν· νέες → νέο ID. Οι διαγραμμένες φεύγουν.
+// ═════════════════════════════════════════════════════════════════
+const mxSig = (q) => JSON.stringify([q.t, q.q, q.opts, q.ans, q.labels, q.tgts, q.items, q.text, q.lines, q.cats, q.fbC, q.fbW, q.fbs, q.diff, q.mode, q.distractors, q.fixFirst, q.strict]);
+const mxCat = (dk) => String(dk.label || '').replace(/^ενότητα\s+/i, '').trim();
+function mitselosSheets(data, warnings) {
+  const mx = data.mx; const H = mx.header; const hk = H.map(xlN);
+  const ci = (name) => hk.indexOf(xlN(name));
+  const iID = ci('ID');
+  const used = new Set(); let maxN = 0, pref = 'Q', width = 3;
+  const allRows = [...mx.raw.map((x) => x.row)]; data.decks.forEach((d) => d.qs.forEach((q) => { if (q.mx) allRows.push(q.mx.row); }));
+  allRows.forEach((r) => { const m = String(r[iID] || '').match(/^(.*?)(\d+)$/); if (m) { if (+m[2] >= maxN) { maxN = +m[2]; pref = m[1]; width = m[2].length; } } });
+  const newId = () => { let id; do { maxN += 1; id = pref + String(maxN).padStart(width, '0'); } while (used.has(id)); return id; };
+  const out = mx.raw.map((x) => ({ pos: x.pos, row: x.row.slice() }));
+  out.forEach((x) => used.add(String(x.row[iID] || '')));
+  const LET = ['Α', 'Β', 'Γ', 'Δ'];
+  data.decks.forEach((dk) => {
+    let lastPos = -1, k = 0;
+    // Πιο συχνή θεωρία της ενότητας → για τις νέες ερωτήσεις
+    const thCnt = {}; dk.qs.forEach((q) => { if (q.mx) { const v = q.mx.row[ci('Θεωρία')]; if (v) thCnt[v] = (thCnt[v] || 0) + 1; } });
+    const thDef = Object.keys(thCnt).sort((a, b) => thCnt[b] - thCnt[a])[0] || '';
+    dk.qs.forEach((q) => {
+      const o = q.mx ? q.mx.row : null;
+      const row = o ? o.slice() : H.map(() => '');
+      while (row.length < H.length) row.push('');
+      const id0 = o ? String(o[iID] || '') : '';
+      const set = (name, v) => { const i = ci(name); if (i < 0) return; const val = v == null ? '' : String(v); row[i] = o && stripTags(o[i]) === val.trim() ? o[i] : val; };
+      if (!o) { set('Ενεργό', 'TRUE'); set('Θεωρία', thDef); }
+      if (!o || q.mx.sig !== mxSig(q)) {
+        const m = String(q.q || '').match(/^\*([\s\S]*?)\*\n\n([\s\S]*)$/); const exc = m ? m[1] : '', qt = m ? m[2] : String(q.q || '');
+        const oT = o ? xlLat(xlN(o[ci('Τύπος')])) : '';
+        // Άλλαξε ο τύπος → καθαρίζουν οι στήλες του παλιού τύπου
+        const FAM = { tf: ['yn'], mcq: ['mc'], drag: ['dd'], click: ['clk'], gap: ['gap'], order: ['ord'], sort: ['cat', 'sort'] };
+        if (o && !(FAM[q.t] || []).includes(oT)) ['Απόσπασμα', 'Επιλογή Α', 'Επιλογή Β', 'Επιλογή Γ', 'Επιλογή Δ', 'Σωστή Απάντηση', 'Αριστερά 1', 'Αριστερά 2', 'Αριστερά 3', 'Αριστερά 4', 'Δεξιά 1', 'Δεξιά 2', 'Δεξιά 3', 'Δεξιά 4', 'Λέξη-Στόχος', 'Διόρθωση 2', 'Διόρθωση 3', 'Διόρθωση 4'].forEach((c) => { const i = ci(c); if (i >= 0) row[i] = ''; });
+        const typ = (code, alts) => set('Τύπος', o && alts.includes(oT) ? o[ci('Τύπος')] : code);
+        const fix = (arr) => [0, 1, 2, 3].forEach((i) => set('Διόρθωση ' + (i + 1), arr[i] || ''));
+        if (q.t === 'tf') {
+          typ('YN', ['yn']); set('Απόσπασμα', exc); set('Κείμενο Ερώτησης', qt);
+          set('Επιλογή Α', (q.labels || [])[0] || 'Ναι'); set('Επιλογή Β', (q.labels || [])[1] || 'Όχι'); set('Επιλογή Γ', ''); set('Επιλογή Δ', '');
+          set('Σωστή Απάντηση', q.ans ? 'Β' : 'Α'); fix([q.fbC || q.fbW || '']);
+        } else if (q.t === 'mcq') {
+          typ('MC', ['mc']); set('Απόσπασμα', exc); set('Κείμενο Ερώτησης', qt);
+          const ops = (q.opts || []).slice(0, 4); if ((q.opts || []).length > 4) warnings.push(`${id0 || 'νέα ερώτηση'}: πάνω από 4 επιλογές — γράφτηκαν οι 4 πρώτες.`);
+          LET.forEach((L, i) => set('Επιλογή ' + L, ops[i] || '')); set('Σωστή Απάντηση', LET[q.ans] || 'Α');
+          const fbs = Array.isArray(q.fbs) && q.fbs.some(Boolean) ? q.fbs : null; fix(fbs || [q.fbC || q.fbW || '']);
+        } else if (q.t === 'drag') {
+          typ('DD', ['dd']); set('Απόσπασμα', exc); set('Κείμενο Ερώτησης', qt);
+          const n = Math.min(4, (q.tgts || []).length); if ((q.tgts || []).length > 4) warnings.push(`${id0 || 'νέα ερώτηση'}: πάνω από 4 ζεύγη — γράφτηκαν τα 4 πρώτα.`);
+          const its = [...Array(n).keys()].map((i) => String((q.items || [])[i] || '').trim());
+          // Ίδια δεξιά στοιχεία με το αρχικό → μένει η αρχική σειρά της δεξιάς στήλης· αλλιώς ανακατεύονται (κυκλικά)
+          const oR = o ? [1, 2, 3, 4].map((i) => stripTags(o[ci('Δεξιά ' + i)])).filter(Boolean) : [];
+          const R = oR.length === n && [...oR].sort().join('\u0001') === [...its].sort().join('\u0001') ? oR : [...Array(n).keys()].map((i) => its[(i + 1) % n]);
+          const taken = new Set(); const rightOf = its.map((it) => { const j = R.findIndex((x, k) => x === it && !taken.has(k)); taken.add(j); return j; });
+          [0, 1, 2, 3].forEach((i) => { set('Αριστερά ' + (i + 1), i < n ? q.tgts[i] : ''); set('Δεξιά ' + (i + 1), i < n ? R[i] : ''); });
+          set('Σωστή Απάντηση', [...Array(n).keys()].map((i) => `Αριστερά ${i + 1}→Δεξιά ${rightOf[i] + 1}`).join('| ') + '|');
+          fix([q.fbC || q.fbW || '']);
+        } else if (q.t === 'click') {
+          typ('CLK', ['clk']); set('Απόσπασμα', String(q.text || '').replace(/\[([^\]]+)\]/g, '$1')); set('Κείμενο Ερώτησης', q.q || '');
+          set('Λέξη-Στόχος', marked(q.text).join('|')); fix([q.fbC || q.fbW || '']);
+        } else if (q.t === 'gap') {
+          typ('GAP', ['gap']);
+          const filled = String(q.text || '').replace(/\[[^\]]+\]/g, '__________');
+          set('Σωστή Απάντηση', marked(q.text).map((b) => b.split('|').map((x) => x.trim()).join('/')).join('|'));
+          const oExc = o ? stripTags(o[ci('Απόσπασμα')]) : '';
+          if (!o || /_{2,}/.test(oExc) || !exc) { set('Απόσπασμα', filled); set('Κείμενο Ερώτησης', qt); }
+          else { set('Απόσπασμα', exc); set('Κείμενο Ερώτησης', (qt ? qt + ' ' : '') + filled); }
+          fix([q.fbC || q.fbW || '']);
+        } else if (q.t === 'order') {
+          typ('ORD', ['ord']); set('Κείμενο Ερώτησης', q.q || '');
+          const lines = (q.lines || []).map((l) => String(l).trim()).filter(Boolean);
+          if (o && stripTags(o[ci('Απόσπασμα')]).includes('|')) set('Απόσπασμα', lines.join('|')); else set('Σωστή Απάντηση', lines.join('|'));
+          fix([q.fbC || q.fbW || '']);
+        } else if (q.t === 'sort') {
+          typ('CAT', ['cat']); set('Απόσπασμα', exc); set('Κείμενο Ερώτησης', qt);
+          const cs = (q.cats || []).map((c) => ({ name: String(c.name || '').trim(), items: (c.items || []).map((x) => String(x).trim()).filter(Boolean) })).filter((c) => c.name || c.items.length).slice(0, 4);
+          LET.forEach((L, i) => set('Επιλογή ' + L, cs[i] ? cs[i].name : ''));
+          set('Σωστή Απάντηση', cs.flatMap((c, i) => c.items.map((it) => it + '→' + LET[i])).join('|'));
+          fix([q.fbC || q.fbW || '']);
+        } else { warnings.push(`${id0 || 'νέα ερώτηση'}: ο τύπος «${q.t}» δεν υπάρχει στη μορφή xlsx — παραλείφθηκε.`); return; }
+        set('Δυσκολία', q.diff || (o ? o[ci('Δυσκολία')] : '') || 1);
+      }
+      const cat = mxCat(dk); if (cat && ci('Κατηγορία') >= 0 && stripTags(row[ci('Κατηγορία')]) !== cat) row[ci('Κατηγορία')] = cat;
+      let id = String(row[iID] || '');
+      if (!id || used.has(id)) { id = newId(); row[iID] = id; }
+      used.add(id);
+      const pos = o ? q.mx.pos : lastPos + 0.001 * ++k; if (o) { lastPos = q.mx.pos; k = 0; }
+      out.push({ pos, row });
+    });
+  });
+  out.sort((a, b) => a.pos - b.pos);
+  const qRows = [...mx.pre, H, ...out.map((x) => x.row)];
+  // Φύλλο «Κατηγορίες»: τίτλοι από τις κάρτες-ενότητες (και νέες ενότητες)
+  const sheets = { ...mx.sheets };
+  const cName = Object.keys(sheets).find((n) => /^κατηγορ/.test(xlN(n)));
+  if (cName && sheets[cName].length) {
+    const cr = sheets[cName].map((r) => r.slice()); const h = cr[0].map(xlN); const ik = h.indexOf('κατηγορια'), iv = h.indexOf('περιγραφη');
+    if (ik >= 0 && iv >= 0) data.decks.forEach((dk) => {
+      const key = mxCat(dk); if (!key) return; const r = cr.find((x, i) => i > 0 && String(x[ik] || '').trim() === key);
+      if (r) { if (dk.ktitle && String(r[iv] || '').trim() !== dk.ktitle.trim()) r[iv] = dk.ktitle; }
+      else { const nr = cr[0].map(() => ''); nr[ik] = key; nr[iv] = dk.ktitle || ''; cr.push(nr); }
+    });
+    sheets[cName] = cr;
+  }
+  return { qRows, sheets };
+}
+async function exportMitselosXlsx(data, fileName) {
+  const X = await loadXlsx(); const warnings = [];
+  const { qRows, sheets } = mitselosSheets(data, warnings);
+  const wb = X.utils.book_new();
+  const order = data.mx.order && data.mx.order.length ? data.mx.order : [data.mx.sheet, ...Object.keys(sheets)];
+  order.forEach((n) => {
+    const rows0 = n === data.mx.sheet ? qRows : sheets[n]; if (!rows0) return;
+    // Ακέραιοι («1», «1.0») ξαναγράφονται ως αριθμοί, όπως στο αρχικό — εκτός από ID και Κατηγορία (π.χ. «1.10»)
+    const hdr = (rows0.find((r) => r.some((c) => String(c).trim())) || []).map(xlN);
+    const rows = rows0.map((r, ri) => (r === rows0[0] && ri === 0 ? r : r.map((c, j) => { const v = String(c == null ? '' : c); if (/^(TRUE|FALSE)$/.test(v)) return v === 'TRUE'; return /^(id|κατηγορια)$/.test(hdr[j] || '') || !/^-?\d+(\.0+)?$/.test(v) ? v : Number(v); })));
+    const ws = X.utils.aoa_to_sheet(rows);
+    if (n === data.mx.sheet) ws['!cols'] = data.mx.header.map((h) => ({ wch: /Απόσπασμα|Κείμενο|Διόρθωση/.test(h) ? 48 : /Επιλογή|Αριστερά|Δεξιά|Λέξη|Σωστή/.test(h) ? 22 : 9 }));
+    X.utils.book_append_sheet(wb, ws, n.slice(0, 31));
+  });
+  const name = (String(fileName || 'quiz_data').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'quiz_data') + '.xlsx';
+  const blob = new Blob([X.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return { warnings, n: qRows.length - 1 - data.mx.pre.length };
 }
 
 function buildHtml(tpl, data) {
@@ -681,7 +893,7 @@ export default function Creator() {
     const filled = q.t === 'mcq' ? q.opts.some((o) => o.trim()) : q.t === 'drag' ? q.tgts.some((o) => o.trim()) : (q.t === 'gap' || q.t === 'click') ? !!q.text.trim()
       : q.t === 'order' ? (q.lines || []).some((l) => String(l).trim()) : q.t === 'sort' ? (q.cats || []).some((c) => (c.items || []).some((x) => String(x).trim())) : q.t === 'cw' ? (q.words || []).some((x) => String(x.w || '').trim()) : false;
     if (filled && !confirm('Η αλλαγή τύπου θα σβήσει τις απαντήσεις αυτής της ερώτησης (η εκφώνηση μένει). Συνέχεια;')) return;
-    upd((n) => { n.decks[sel.d].qs[sel.q] = newQuestion(t, q); });
+    upd((n) => { n.decks[sel.d].qs[sel.q] = { ...newQuestion(t, q), ...(q.mx ? { mx: q.mx } : {}) }; }); // η γραμμή του xlsx (ID κ.λπ.) μένει
   };
 
   // ── Έλεγχος ──
@@ -738,13 +950,21 @@ export default function Creator() {
       if (step === 'edit' && data && tpl.id === 'quiz-xlsx-deck') {
         if (!confirm(msg + '\n\nΝα αντικαταστήσουν τις ενότητες και τις ερωτήσεις της εφαρμογής που επεξεργάζεστε;')) { setXlBusy(false); return; }
         const nq = normalizeData(r.data);
-        upd((n) => { if (r.hasGen) ['title', 'eyebrow', 'heading', 'subtitle', 'credits', 'shuffleQs', 'shuffleOpts'].forEach((k) => { n[k] = nq[k]; }); n.decks = nq.decks; });
+        upd((n) => { if (r.hasGen) ['title', 'eyebrow', 'heading', 'subtitle', 'credits', 'shuffleQs', 'shuffleOpts'].forEach((k) => { n[k] = nq[k]; }); n.decks = nq.decks; if (nq.mx) n.mx = nq.mx; else delete n.mx; });
         setSel({ d: 0, q: 0 }); setPanel('question');
       } else {
         openData(r.data, null);
         alert(msg);
       }
     } catch (err) { alert('Το αρχείο Excel δεν διαβάστηκε: ' + (err.message || err)); }
+    setXlBusy(false);
+  };
+  const doExportMx = async () => {
+    setXlBusy(true);
+    try {
+      const r = await exportMitselosXlsx(data, data.mxName || data.title || 'quiz_data');
+      if (r.warnings.length) alert('Η εξαγωγή έγινε (' + r.n + ' γραμμές ερωτήσεων).\n\nΠροσοχή:\n• ' + r.warnings.slice(0, 10).join('\n• '));
+    } catch (e) { alert('Η εξαγωγή δεν έγινε: ' + (e.message || e)); }
     setXlBusy(false);
   };
   const finalHtml = () => buildHtml(tplHtml, data);
@@ -822,7 +1042,7 @@ export default function Creator() {
           </div>
           <div style={{ ...S.card, marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={S.miniTitle}>📊 Κουίζ από Excel (xlsx) — πρότυπο «Κουίζ ενοτήτων · xlsx»</div>
-            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>Γράψτε τις ερωτήσεις σε φύλλο Excel ή Google Sheets — μία γραμμή ανά ερώτηση — και φορτώστε το. Κατεβάστε πρώτα το υπόδειγμα: έχει ένα παράδειγμα από κάθε τύπο και οδηγίες.</div>
+            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>Γράψτε τις ερωτήσεις σε φύλλο Excel ή Google Sheets — μία γραμμή ανά ερώτηση — και φορτώστε το. Κατεβάστε πρώτα το υπόδειγμα: έχει ένα παράδειγμα από κάθε τύπο και οδηγίες. Αρχεία με τη μορφή ΜΗΤΣΕΛΟΣ (π.χ. Αναφορικές: ID, Κατηγορία, Τύπος… και φύλλα «Κατηγορίες», «Θεωρία») διορθώνονται εδώ και εξάγονται ξανά στην ίδια ακριβώς μορφή με το «⬇ xlsx ίδιας μορφής».</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button style={S.btnGhost} disabled={xlBusy} onClick={() => doExportXlsx(sampleQuizData(defaultCredits()), 'Υπόδειγμα κουίζ')}>⬇ Υπόδειγμα Excel</button>
               <button style={S.btnGhost} disabled={xlBusy} onClick={() => xlRef.current?.click()}>⬆ Νέο κουίζ από Excel</button>
@@ -863,6 +1083,12 @@ export default function Creator() {
               <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Όλες οι ερωτήσεις σε αρχείο xlsx" onClick={() => doExportXlsx(data, data.title || 'kouiz')}>⬇ Εξαγωγή</button>
               <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Αντικατάσταση των ερωτήσεων από αρχείο xlsx" onClick={() => xlRef.current?.click()}>⬆ Εισαγωγή</button>
               <input ref={xlRef} type="file" accept=".xlsx,.xls,.ods,.csv" style={{ display: 'none' }} onChange={doImportXlsx} />
+              {data.mx && (
+                <div style={{ flexBasis: '100%', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4, paddingTop: 8, borderTop: '1px solid ' + C.line }}>
+                  <button style={{ ...S.btnPrimarySm }} disabled={xlBusy} title="Το xlsx στην ΙΔΙΑ μορφή με το αρχικό (ίδιες στήλες, φύλλα «Κατηγορίες», «Θεωρία»), για τη μεγάλη εφαρμογή ή το Google Sheet" onClick={doExportMx}>⬇ xlsx ίδιας μορφής</button>
+                  <span style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.45 }}>Μορφή ΜΗΤΣΕΛΟΣ · {data.mx.raw.length ? data.mx.raw.length + ' γραμμές (ανενεργές ή τύποι CLKMC/CLKYN/CLKGAP) μένουν αυτούσιες.' : 'όλες οι ερωτήσεις επεξεργάζονται εδώ.'}</span>
+                </div>
+              )}
             </div>
           )}
 
