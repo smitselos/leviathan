@@ -51,10 +51,10 @@ const TEMPLATES = [
   {
     id: 'quiz-xlsx-deck',
     badge: 'xlsx',
-    name: 'Κουίζ ενοτήτων · xlsx',
+    name: 'Δημιουργός & Επεξεργαστής xlsx τύπου Α',
     file: '/protypa/quiz-xlsx-deck.html',
-    desc: 'Το κουίζ ενοτήτων με εισαγωγή / εξαγωγή Excel: ανεβάζετε ένα xlsx και οι ερωτήσεις μπαίνουν αυτόματα στις ενότητες (δέχεται και τη μορφή των εφαρμογών ΜΗΤΣΕΛΟΣ). Επιπλέον: βαθμός δυσκολίας με φίλτρο για τον μαθητή και στην εκτύπωση, σχόλιο για κάθε επιλογή.',
-    types: ['Εισαγωγή / εξαγωγή xlsx', 'Μορφή ΜΗΤΣΕΛΟΣ ⇄ ίδια μορφή', 'Βαθμός δυσκολίας', 'Σχόλιο ανά επιλογή', 'Όλοι οι τύποι του κουίζ'],
+    desc: 'Επεξεργαστής xlsx στη μορφή των Αναφορικών (ID, Κατηγορία, Τύπος… και φύλλα «Κατηγορίες», «Θεωρία»): ανεβάζετε, διορθώνετε, προσθέτετε ή αφαιρείτε ερωτήσεις και εξάγετε στην ίδια μορφή — ή φτιάχνετε νέο αρχείο από την αρχή. Επιπλέον: βαθμός δυσκολίας, σχόλιο για κάθε επιλογή.',
+    types: ['Άνοιγμα / εξαγωγή xlsx', 'Μορφή Αναφορικών', 'Νέο xlsx από την αρχή', 'Βαθμός δυσκολίας', 'Σχόλιο ανά επιλογή'],
   },
   {
     id: 'crossword-deck',
@@ -603,8 +603,15 @@ async function importQuizXlsx(file, credits) {
 // Διορθωμένες → ξαναγράφονται μόνο τα πεδία που άλλαξαν· νέες → νέο ID. Οι διαγραμμένες φεύγουν.
 // ═════════════════════════════════════════════════════════════════
 const mxSig = (q) => JSON.stringify([q.t, q.q, q.opts, q.ans, q.labels, q.tgts, q.items, q.text, q.lines, q.cats, q.fbC, q.fbW, q.fbs, q.diff, q.mode, q.distractors, q.fixFirst, q.strict]);
-const mxCat = (dk) => String(dk.label || '').replace(/^ενότητα\s+/i, '').trim();
-function mitselosSheets(data, warnings) {
+// Νέο αρχείο (χωρίς αρχικό xlsx): οι στήλες και τα φύλλα της μορφής ΜΗΤΣΕΛΟΣ (όπως στις Αναφορικές)
+const MX_HEADER = ['ID', 'Ενεργό', 'Κατηγορία', 'Δυσκολία', 'Τύπος', 'Απόσπασμα', 'Κείμενο Ερώτησης', 'Επιλογή Α', 'Επιλογή Β', 'Επιλογή Γ', 'Επιλογή Δ', 'Σωστή Απάντηση', 'Αριστερά 1', 'Αριστερά 2', 'Αριστερά 3', 'Αριστερά 4', 'Δεξιά 1', 'Δεξιά 2', 'Δεξιά 3', 'Δεξιά 4', 'Λέξη-Στόχος', 'Διόρθωση 1', 'Διόρθωση 2', 'Διόρθωση 3', 'Διόρθωση 4', 'Θεωρία'];
+const mxEmpty = () => ({ v: 1, fresh: true, sheet: 'Ερωτήσεις', header: MX_HEADER.slice(), pre: [], raw: [], order: ['Ερωτήσεις', 'Κατηγορίες', 'Θεωρία'], sheets: { 'Κατηγορίες': [['Κατηγορία', 'Περιγραφή']], 'Θεωρία': [['Θεωρία', 'Τίτλος', 'Σύνοψη']] } });
+// Κατηγορία της ενότητας: «Ενότητα 2.1» → 2.1 · σε νέο αρχείο, ενότητες χωρίς τέτοιο αριθμό → 1.1, 2.1, 3.1…
+let mxCatIdx = null;
+const mxCat = (dk) => { const k = String(dk.label || '').replace(/^ενότητα\s+/i, '').trim(); if (mxCatIdx && !/^\d+(\.\d+)?$/.test(k)) return mxCatIdx.get(dk) || k; return /^\d+$/.test(k) && mxCatIdx ? k + '.1' : k; };
+function mitselosSheets(data0, warnings) {
+  const data = data0.mx ? data0 : { ...data0, mx: mxEmpty() };
+  mxCatIdx = data.mx.fresh ? new Map(data.decks.map((dk, i) => [dk, (i + 1) + '.1'])) : null;
   const mx = data.mx; const H = mx.header; const hk = H.map(xlN);
   const ci = (name) => hk.indexOf(xlN(name));
   const iID = ci('ID');
@@ -698,31 +705,32 @@ function mitselosSheets(data, warnings) {
     if (ik >= 0 && iv >= 0) data.decks.forEach((dk) => {
       const key = mxCat(dk); if (!key) return; const r = cr.find((x, i) => i > 0 && String(x[ik] || '').trim() === key);
       if (r) { if (dk.ktitle && String(r[iv] || '').trim() !== dk.ktitle.trim()) r[iv] = dk.ktitle; }
-      else { const nr = cr[0].map(() => ''); nr[ik] = key; nr[iv] = dk.ktitle || ''; cr.push(nr); }
+      else { const nr = cr[0].map(() => ''); nr[ik] = key; nr[iv] = dk.ktitle || (mx.fresh ? dk.label || '' : ''); cr.push(nr); }
     });
     sheets[cName] = cr;
   }
-  return { qRows, sheets };
+  mxCatIdx = null;
+  return { qRows, sheets, mx };
 }
 async function exportMitselosXlsx(data, fileName) {
   const X = await loadXlsx(); const warnings = [];
-  const { qRows, sheets } = mitselosSheets(data, warnings);
+  const { qRows, sheets, mx } = mitselosSheets(data, warnings);
   const wb = X.utils.book_new();
-  const order = data.mx.order && data.mx.order.length ? data.mx.order : [data.mx.sheet, ...Object.keys(sheets)];
+  const order = mx.order && mx.order.length ? mx.order : [mx.sheet, ...Object.keys(sheets)];
   order.forEach((n) => {
-    const rows0 = n === data.mx.sheet ? qRows : sheets[n]; if (!rows0) return;
+    const rows0 = n === mx.sheet ? qRows : sheets[n]; if (!rows0) return;
     // Ακέραιοι («1», «1.0») ξαναγράφονται ως αριθμοί, όπως στο αρχικό — εκτός από ID και Κατηγορία (π.χ. «1.10»)
     const hdr = (rows0.find((r) => r.some((c) => String(c).trim())) || []).map(xlN);
     const rows = rows0.map((r, ri) => (r === rows0[0] && ri === 0 ? r : r.map((c, j) => { const v = String(c == null ? '' : c); if (/^(TRUE|FALSE)$/.test(v)) return v === 'TRUE'; return /^(id|κατηγορια)$/.test(hdr[j] || '') || !/^-?\d+(\.0+)?$/.test(v) ? v : Number(v); })));
     const ws = X.utils.aoa_to_sheet(rows);
-    if (n === data.mx.sheet) ws['!cols'] = data.mx.header.map((h) => ({ wch: /Απόσπασμα|Κείμενο|Διόρθωση/.test(h) ? 48 : /Επιλογή|Αριστερά|Δεξιά|Λέξη|Σωστή/.test(h) ? 22 : 9 }));
+    if (n === mx.sheet) ws['!cols'] = mx.header.map((h) => ({ wch: /Απόσπασμα|Κείμενο|Διόρθωση/.test(h) ? 48 : /Επιλογή|Αριστερά|Δεξιά|Λέξη|Σωστή/.test(h) ? 22 : 9 }));
     X.utils.book_append_sheet(wb, ws, n.slice(0, 31));
   });
   const name = (String(fileName || 'quiz_data').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'quiz_data') + '.xlsx';
   const blob = new Blob([X.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
-  return { warnings, n: qRows.length - 1 - data.mx.pre.length };
+  return { warnings, n: qRows.length - 1 - mx.pre.length };
 }
 
 function buildHtml(tpl, data) {
@@ -959,10 +967,11 @@ export default function Creator() {
     } catch (err) { alert('Το αρχείο Excel δεν διαβάστηκε: ' + (err.message || err)); }
     setXlBusy(false);
   };
-  const doExportMx = async () => {
+  const doExportMx = async (d0, name0) => {
+    const d = d0 && d0.decks ? d0 : data;
     setXlBusy(true);
     try {
-      const r = await exportMitselosXlsx(data, data.mxName || data.title || 'quiz_data');
+      const r = await exportMitselosXlsx(d, name0 || d.mxName || d.title || 'quiz_data');
       if (r.warnings.length) alert('Η εξαγωγή έγινε (' + r.n + ' γραμμές ερωτήσεων).\n\nΠροσοχή:\n• ' + r.warnings.slice(0, 10).join('\n• '));
     } catch (e) { alert('Η εξαγωγή δεν έγινε: ' + (e.message || e)); }
     setXlBusy(false);
@@ -1041,11 +1050,11 @@ export default function Creator() {
             <input ref={fileRef} type="file" accept=".html,.htm,text/html" style={{ display: 'none' }} onChange={openLocalFile} />
           </div>
           <div style={{ ...S.card, marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={S.miniTitle}>📊 Κουίζ από Excel (xlsx) — πρότυπο «Κουίζ ενοτήτων · xlsx»</div>
-            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>Γράψτε τις ερωτήσεις σε φύλλο Excel ή Google Sheets — μία γραμμή ανά ερώτηση — και φορτώστε το. Κατεβάστε πρώτα το υπόδειγμα: έχει ένα παράδειγμα από κάθε τύπο και οδηγίες. Αρχεία με τη μορφή ΜΗΤΣΕΛΟΣ (π.χ. Αναφορικές: ID, Κατηγορία, Τύπος… και φύλλα «Κατηγορίες», «Θεωρία») διορθώνονται εδώ και εξάγονται ξανά στην ίδια ακριβώς μορφή με το «⬇ xlsx ίδιας μορφής».</div>
+            <div style={S.miniTitle}>📊 Δημιουργός & Επεξεργαστής xlsx τύπου Α</div>
+            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>Επεξεργαστής xlsx στη μορφή των Αναφορικών (στήλες ID, Κατηγορία, Τύπος… και φύλλα «Κατηγορίες», «Θεωρία»): ανεβάστε ένα τέτοιο xlsx, διορθώστε / προσθέστε / αφαιρέστε ερωτήσεις και εξαγάγετέ το ξανά στην ίδια μορφή. Για νέο αρχείο: «Νέα εφαρμογή» στην κάρτα «Δημιουργός & Επεξεργαστής xlsx τύπου Α» ή ξεκινήστε από το υπόδειγμα.</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button style={S.btnGhost} disabled={xlBusy} onClick={() => doExportXlsx(sampleQuizData(defaultCredits()), 'Υπόδειγμα κουίζ')}>⬇ Υπόδειγμα Excel</button>
-              <button style={S.btnGhost} disabled={xlBusy} onClick={() => xlRef.current?.click()}>⬆ Νέο κουίζ από Excel</button>
+              <button style={S.btnGhost} disabled={xlBusy} onClick={() => { const d = sampleQuizData(defaultCredits()); d.decks.forEach((dk) => { dk.qs = dk.qs.filter((q) => q.t !== 'cw'); }); doExportMx(d, 'Υπόδειγμα_quiz_data'); }}>⬇ Υπόδειγμα xlsx</button>
+              <button style={S.btnGhost} disabled={xlBusy} onClick={() => xlRef.current?.click()}>⬆ Άνοιγμα xlsx</button>
               {xlBusy && <span style={{ alignSelf: 'center', color: C.muted, fontSize: 13 }}>…</span>}
             </div>
             <input ref={xlRef} type="file" accept=".xlsx,.xls,.ods,.csv" style={{ display: 'none' }} onChange={doImportXlsx} />
@@ -1080,13 +1089,12 @@ export default function Creator() {
           {tpl.id === 'quiz-xlsx-deck' && (
             <div style={{ ...S.card, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ ...S.miniTitle, margin: 0, flex: 1 }}>📊 Excel</span>
-              <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Όλες οι ερωτήσεις σε αρχείο xlsx" onClick={() => doExportXlsx(data, data.title || 'kouiz')}>⬇ Εξαγωγή</button>
-              <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Αντικατάσταση των ερωτήσεων από αρχείο xlsx" onClick={() => xlRef.current?.click()}>⬆ Εισαγωγή</button>
+              <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Αντικατάσταση των ερωτήσεων από αρχείο xlsx (μορφή Αναφορικών)" onClick={() => xlRef.current?.click()}>⬆ Άνοιγμα xlsx</button>
               <input ref={xlRef} type="file" accept=".xlsx,.xls,.ods,.csv" style={{ display: 'none' }} onChange={doImportXlsx} />
-              {data.mx && (
+              {(
                 <div style={{ flexBasis: '100%', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4, paddingTop: 8, borderTop: '1px solid ' + C.line }}>
-                  <button style={{ ...S.btnPrimarySm }} disabled={xlBusy} title="Το xlsx στην ΙΔΙΑ μορφή με το αρχικό (ίδιες στήλες, φύλλα «Κατηγορίες», «Θεωρία»), για τη μεγάλη εφαρμογή ή το Google Sheet" onClick={doExportMx}>⬇ xlsx ίδιας μορφής</button>
-                  <span style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.45 }}>Μορφή ΜΗΤΣΕΛΟΣ · {data.mx.raw.length ? data.mx.raw.length + ' γραμμές (ανενεργές ή τύποι CLKMC/CLKYN/CLKGAP) μένουν αυτούσιες.' : 'όλες οι ερωτήσεις επεξεργάζονται εδώ.'}</span>
+                  <button style={{ ...S.btnPrimarySm }} disabled={xlBusy} title="Το xlsx στην ΙΔΙΑ μορφή με το αρχικό (ίδιες στήλες, φύλλα «Κατηγορίες», «Θεωρία»), για τη μεγάλη εφαρμογή ή το Google Sheet" onClick={() => doExportMx()}>⬇ Εξαγωγή xlsx</button>
+                  <span style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.45 }}>Μορφή ΜΗΤΣΕΛΟΣ (στήλες ID, Κατηγορία, Τύπος… και φύλλα «Κατηγορίες», «Θεωρία») · {!data.mx ? 'νέο αρχείο από τις ερωτήσεις του κουίζ.' : data.mx.raw.length ? data.mx.raw.length + ' γραμμές (ανενεργές ή τύποι CLKMC/CLKYN/CLKGAP) μένουν αυτούσιες.' : 'όλες οι ερωτήσεις επεξεργάζονται εδώ.'}</span>
                 </div>
               )}
             </div>
@@ -1165,7 +1173,7 @@ export default function Creator() {
             </div>
             <div style={{ ...S.miniTitle, marginTop: 12 }}>＋ Προσθήκη ερώτησης</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              {TYPES.map((t) => (
+              {(tpl.id === 'quiz-xlsx-deck' ? TYPES.filter((t) => t.t !== 'cw') : TYPES).map((t) => (
                 <button key={t.t} onClick={() => addQuestion(t.t)} style={S.addBtn}><span style={{ color: C.purple }}>{t.icon}</span> {t.label}</button>
               ))}
             </div>
@@ -1533,7 +1541,7 @@ function QuestionForm({ adv, q, index, total, setQ, changeType, onUp, onDown, on
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {TYPES.map((t) => (
+        {(adv ? TYPES.filter((t) => t.t !== 'cw') : TYPES).map((t) => (
           <button key={t.t} onClick={() => changeType(t.t)} style={{ ...S.typeChip, ...(q.t === t.t ? S.typeChipOn : {}) }}>{t.icon} {t.label}</button>
         ))}
       </div>
