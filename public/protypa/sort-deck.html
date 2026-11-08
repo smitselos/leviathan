@@ -272,7 +272,7 @@ body{
 /* ═══ ΤΑΞΙΝΟΜΗΣΗ ═══ */
 .sort-bank{display:flex;flex-wrap:wrap;gap:8px;min-height:50px;padding:10px;border:2px dashed rgba(107,63,160,.22);border-radius:10px;background:rgba(107,63,160,.03);}
 .sort-bank:empty::after{content:'✓ Όλα τοποθετήθηκαν — πάτησε «Έλεγχος»';color:var(--muted);font-size:13.5px;align-self:center;}
-.sort-chip{padding:9px 15px;background:#fff;border:1.5px solid rgba(107,63,160,.3);border-radius:999px;font-size:clamp(16px,2vw,21px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1.3;font-family:'Source Sans 3',sans-serif;}
+.sort-chip{padding:9px 15px;background:#fff;border:1.5px solid rgba(107,63,160,.3);border-radius:1.25em;max-width:100%;overflow-wrap:anywhere;font-size:clamp(16px,2vw,21px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1.3;font-family:'Source Sans 3',sans-serif;}
 .sort-chip.sel{background:var(--purple);color:#fff;border-color:var(--purple);}
 .sort-chip.ok{border-color:var(--correct);background:#eef8f1;color:var(--correct);font-weight:700;}
 .sort-chip.ko{border-color:var(--wrong);background:#fdeeec;color:var(--wrong);}
