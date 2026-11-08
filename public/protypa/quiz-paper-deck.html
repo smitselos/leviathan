@@ -519,17 +519,18 @@ select.gap-in{cursor:pointer;}
 
 .sort-bank{display:flex;flex-wrap:wrap;gap:8px;min-height:46px;padding:10px;border:2px dashed rgba(193,95,60,.2);border-radius:10px;background:rgba(193,95,60,.03);}
 .sort-bank:empty::after{content:'✓ Όλα τοποθετήθηκαν';color:var(--muted);font-size:13px;align-self:center;}
-.sort-chip{padding:8px 13px;background:#fff;border:1.5px solid rgba(193,95,60,.3);border-radius:999px;font-size:clamp(14px,1.7vw,18px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Inter',system-ui,sans-serif;line-height:1.3;}
+.sort-chip{padding:9px 15px;background:#fff;border:1.5px solid rgba(193,95,60,.3);border-radius:999px;font-size:clamp(16px,2vw,21px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Inter',system-ui,sans-serif;line-height:1.3;}
 .sort-chip.sel{background:var(--purple);color:#fff;border-color:var(--purple);}
 .sort-chip.ok{border-color:var(--correct);background:#eef8f1;color:var(--correct);font-weight:700;}
 .sort-chip.ko{border-color:var(--wrong);background:#fdeeec;color:var(--wrong);}
 .sort-chip .fix{font-size:.75em;opacity:.85;margin-left:4px;}
 .sort-ghost{position:fixed;z-index:999;pointer-events:none;box-shadow:0 10px 24px rgba(26,22,16,.25);transform:translate(-50%,-50%) scale(1.05);}
-.sort-bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;}
-.sort-bin{border:2px solid rgba(193,95,60,.2);border-radius:10px;background:#fff;min-height:96px;display:flex;flex-direction:column;cursor:pointer;transition:border-color .15s,background .15s;}
+.sort-bins{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+.sort-bins>.sort-bin:last-child:nth-child(odd){grid-column:1/-1;} /* 2 ανά σειρά· η μόνη της τελευταίας σειράς πιάνει όλο το πλάτος */
+.sort-bin{border:2px solid rgba(193,95,60,.2);border-radius:10px;background:#fff;min-height:130px;display:flex;flex-direction:column;cursor:pointer;transition:border-color .15s,background .15s;}
 .sort-bin.over{border-color:var(--purple);background:rgba(193,95,60,.06);}
-.sort-bin h4{font-size:12.5px;letter-spacing:1px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--purple),var(--purple-dark));margin:0;padding:8px 10px;border-radius:7px 7px 0 0;font-family:'Inter',system-ui,sans-serif;}
-.sort-bin .sb-items{display:flex;flex-wrap:wrap;gap:6px;padding:8px;flex:1;align-content:flex-start;}
+.sort-bin h4{font-size:15px;letter-spacing:1px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--purple),var(--purple-dark));margin:0;padding:10px 14px;border-radius:7px 7px 0 0;font-family:'Inter',system-ui,sans-serif;}
+.sort-bin .sb-items{display:flex;flex-wrap:wrap;gap:6px;padding:10px;flex:1;align-content:flex-start;}
 
 .mcw-wrap{container-type:inline-size;}
 .mcw-board{display:grid;margin:0 auto 10px;--mcwF:22;}
@@ -545,7 +546,7 @@ select.gap-in{cursor:pointer;}
 .mcw-clues div.c b{color:var(--purple);margin-right:4px;}
 .mcw-clues div.c.on{background:#F6EEE8;}
 .mcw-warn{background:#fff7e0;border:1px solid var(--gold);color:#7a5a00;border-radius:8px;padding:6px 10px;font-size:13px;margin-bottom:8px;}
-@media(max-width:640px){ .mcw-clues{grid-template-columns:1fr;} .sort-bins{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));} }
+@media(max-width:640px){ .mcw-clues{grid-template-columns:1fr;} .sort-bins{gap:8px;} }
 /* ═══ ΕΚΤΥΠΩΣΗ / PDF — παράθυρο ρυθμίσεων ═══ */
 .btn-print-open{position:relative;z-index:2;margin:4px 0 46px;padding:10px 20px;border-radius:999px;border:1.5px solid rgba(193,95,60,.3);background:rgba(255,255,255,.85);color:var(--purple);font-weight:700;font-size:14px;font-family:'Inter',system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 12px rgba(26,22,16,.08);}
 .btn-print-open:hover{border-color:var(--purple);background:#fff;}
