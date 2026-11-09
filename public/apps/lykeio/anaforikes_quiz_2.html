@@ -3927,7 +3927,7 @@ updateZoomUI();
         <label class="pm-switch"><input type="checkbox" id="pmShowName" checked><span class="pm-slider"></span></label>
       </div>
       <div style="margin-top:10px">
-        <label class="pm-lbl">Λογότυπο (URL εικόνας)</label>
+        <label class="pm-lbl">Λογότυπο (URL εικόνας ή από αρχείο)</label>
         <input type="text" class="pm-input" id="pmLogo" placeholder="https://...">
       </div>
       <div class="pm-grid2" style="margin-top:8px">
@@ -4065,5 +4065,44 @@ updateZoomUI();
   </div>
 </div>
 
+<script>
+/* Λογότυπο εκτύπωσης από τη συσκευή: «📁 Από αρχείο» δίπλα στο πεδίο URL· η εικόνα (ή το URL) μένει αποθηκευμένη στη συσκευή για τις επόμενες εκτυπώσεις */
+(function(){
+  var KEY='lev_print_logo';
+  function init(){
+    var inp=document.getElementById('pmLogo'); if(!inp||inp.dataset.levLogo) return; inp.dataset.levLogo='1';
+    var box=document.createElement('div'); box.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px';
+    var file=document.createElement('input'); file.type='file'; file.accept='image/*'; file.style.display='none';
+    var btn=document.createElement('button'); btn.type='button'; btn.textContent='📁 Από αρχείο'; btn.className='pm-btn-logo';
+    btn.style.cssText='padding:7px 12px;border-radius:8px;border:1px solid rgba(0,0,0,.18);background:#fff;font:inherit;font-size:13px;cursor:pointer';
+    var chip=document.createElement('span'); chip.style.cssText='display:none;align-items:center;gap:8px;font-size:12.5px;color:#555';
+    var img=document.createElement('img'); img.style.cssText='height:30px;max-width:90px;object-fit:contain;border:1px solid rgba(0,0,0,.1);border-radius:4px;background:#fff';
+    var nm=document.createElement('span'); var rm=document.createElement('button'); rm.type='button'; rm.textContent='✕'; rm.title='Αφαίρεση λογοτύπου';
+    rm.style.cssText='border:none;background:none;cursor:pointer;font-size:14px;color:#a33';
+    chip.appendChild(img); chip.appendChild(nm); chip.appendChild(rm);
+    box.appendChild(btn); box.appendChild(chip); box.appendChild(file); inp.parentNode.insertBefore(box, inp.nextSibling);
+    function save(o){ try{ if(o) localStorage.setItem(KEY, JSON.stringify(o)); else localStorage.removeItem(KEY); }catch(e){} }
+    function show(src,name){
+      if(src && src.indexOf('data:')===0){ inp.value=src; inp.style.display='none'; img.src=src; nm.textContent=name||'λογότυπο από τη συσκευή'; chip.style.display='inline-flex'; btn.textContent='📁 Αλλαγή'; }
+      else { chip.style.display='none'; inp.style.display=''; btn.textContent='📁 Από αρχείο'; if(src!=null) inp.value=src; }
+    }
+    btn.addEventListener('click',function(){ file.click(); });
+    file.addEventListener('change',function(){
+      var f=file.files&&file.files[0]; if(!f) return; var rd=new FileReader();
+      rd.onload=function(){ var im=new Image(); im.onload=function(){
+        var M=360, k=Math.min(1, M/Math.max(im.width,im.height)), c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(im.width*k)); c.height=Math.max(1,Math.round(im.height*k));
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height); var src=c.toDataURL('image/png');
+        show(src,f.name); save({src:src,name:f.name}); file.value=''; }; im.src=rd.result; };
+      rd.readAsDataURL(f);
+    });
+    rm.addEventListener('click',function(){ inp.value=''; show('',''); save(null); });
+    inp.addEventListener('change',function(){ var v=inp.value.trim(); save(v?{src:v}:null); });
+    try{ var o=JSON.parse(localStorage.getItem(KEY)||'null'); if(o&&o.src) show(o.src,o.name); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  setTimeout(init,800);
+})();
+</script>
 </body>
 </html>
