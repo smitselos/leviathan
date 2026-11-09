@@ -1122,6 +1122,7 @@
       <button class="mode-btn" id="mode-syntactic" onclick="setMode('syntactic')">Συντακτικά</button>
       <button class="mode-btn" id="mode-translation" onclick="setMode('translation')">Μετάφραση</button>
       <button class="mode-btn" id="mode-interpretive" onclick="setMode('interpretive')">Ερμηνευτικά</button>
+      <button class="mode-btn" onclick="openPrintModal('translation')" title="Εκτύπωση κειμένου και μετάφρασης" style="margin-left:auto">🖨️ Εκτύπωση μετάφρασης</button>
     </div>
 
     <div class="mode-note" id="mode-note" style="display:none"></div>
@@ -1138,6 +1139,7 @@
     </table>
 
     <div class="exercises-bar">
+      <button class="ex-btn" onclick="openPrintModal('translation')" style="background:var(--bg3);color:var(--parchment-dim);border:1px solid var(--border);margin-right:0.6rem">🖨️ Εκτύπωση μετάφρασης</button>
       <button class="ex-btn" id="ex-btn" onclick="showPage('exercises')">Ασκήσεις →</button>
     </div>
   </div>
@@ -2607,13 +2609,19 @@ loadParagraph(71);
     </div>
 
     <div class="pm-section">
-      <h3>📚 Ασκήσεις</h3>
-      <label class="pm-lbl">Περιεχόμενο φύλλου</label>
+      <h3>📚 Περιεχόμενο</h3>
+      <label class="pm-lbl">Τι θα τυπωθεί</label>
+      <select class="pm-select" id="pmWhat" style="margin-bottom:10px">
+        <option value="exercises" selected>Ασκήσεις</option>
+        <option value="translation">Αρχαίο κείμενο & μετάφραση</option>
+        <option value="translationOnly">Μόνο μετάφραση</option>
+      </select>
+      <label class="pm-lbl">Κεφάλαια</label>
       <select class="pm-select" id="pmScope">
         <option value="current" selected>Τρέχον κεφάλαιο</option>
         <option value="all">Όλα τα κεφάλαια (70–74)</option>
       </select>
-      <div class="pm-toggle-row">
+      <div class="pm-toggle-row" id="pmAnswerKeyRow">
         <label for="pmAnswerKey">Φύλλο απαντήσεων (για τον εκπαιδευτικό)</label>
         <label class="pm-switch"><input type="checkbox" id="pmAnswerKey"><span class="pm-slider"></span></label>
       </div>
@@ -2783,15 +2791,29 @@ let _pmListenersAttached = false;
 const GR_KEYS = ['Α','Β','Γ','Δ','Ε','ΣΤ','Ζ','Η'];
 const GR_LOW  = ['α','β','γ','δ','ε','στ','ζ','η'];
 
-function openPrintModal() {
-  document.getElementById('pmTitle').value = 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ ' + currentPara + ' — ΑΣΚΗΣΕΙΣ';
+function pmDefaultTitle() {
+  const what = document.getElementById('pmWhat').value;
+  const all = document.getElementById('pmScope').value === 'all';
+  return 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ ' + (all ? '70–74' : currentPara) + ' — ' + (what === 'exercises' ? 'ΑΣΚΗΣΕΙΣ' : 'ΜΕΤΑΦΡΑΣΗ');
+}
+function pmUpdateWhat() {
+  const ex = document.getElementById('pmWhat').value === 'exercises';
+  document.getElementById('pmAnswerKeyRow').style.display = ex ? '' : 'none';
+  document.getElementById('pmInstructions').value = ex ? 'Να απαντήσετε στις παρακάτω ερωτήσεις.' : '';
+  document.getElementById('pmShowName').checked = ex;
+  document.getElementById('pmTitle').value = pmDefaultTitle();
+}
+function openPrintModal(what) {
+  document.getElementById('pmWhat').value = what || 'exercises';
+  pmUpdateWhat();
   document.getElementById('printModalOverlay').classList.add('active');
   attachPrintModalListeners();
 }
 function closePrintModal() { document.getElementById('printModalOverlay').classList.remove('active'); }
 
-function chapterLink(para) {
-  return location.origin + location.pathname + '#ex=' + para;
+function chapterLink(para, what) {
+  const w = what || (document.getElementById('pmWhat') ? document.getElementById('pmWhat').value : 'exercises');
+  return location.origin + location.pathname + (w === 'exercises' ? '#ex=' : '#ch=') + para;
 }
 
 function attachPrintModalListeners() {
@@ -2809,10 +2831,9 @@ function attachPrintModalListeners() {
     document.getElementById('pmWatermarkRow').style.display = this.checked ? 'block' : 'none';
   });
   document.getElementById('pmScope').addEventListener('change', function() {
-    document.getElementById('pmTitle').value = this.value === 'all'
-      ? 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ 70–74 — ΑΣΚΗΣΕΙΣ'
-      : 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ ' + currentPara + ' — ΑΣΚΗΣΕΙΣ';
+    document.getElementById('pmTitle').value = pmDefaultTitle();
   });
+  document.getElementById('pmWhat').addEventListener('change', pmUpdateWhat);
   document.getElementById('pmPrint').addEventListener('click', () => {
     const s = collectPrintSettings();
     closePrintModal();
@@ -2853,6 +2874,7 @@ function attachPrintModalListeners() {
 
 function collectPrintSettings() {
   return {
+    what:     document.getElementById('pmWhat').value,
     scope:    document.getElementById('pmScope').value,
     answerKey:document.getElementById('pmAnswerKey').checked,
     title:    document.getElementById('pmTitle').value.trim() || 'ΑΣΚΗΣΕΙΣ',
@@ -2945,13 +2967,13 @@ function renderAnswerForPrint(ex, num) {
 function printWorksheet(s) {
   const paras = s.scope === 'all' ? PARA_LIST : [currentPara];
   const linkPara = paras.length === 1 ? paras[0] : currentPara;
-  const setUrl = chapterLink(linkPara);
+  const setUrl = chapterLink(linkPara, s.what);
   const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=4&data=' + encodeURIComponent(setUrl);
 
   const qrCornerInner = `
       <a href="${setUrl}" style="display:inline-block;text-align:center;text-decoration:none;color:#000">
-        <img src="${qrSrc}" alt="QR ασκήσεων" style="width:76px;height:76px;border:1px solid #ddd;border-radius:6px" loading="eager">
-        <div style="font-size:7pt;color:#666;margin-top:2px;line-height:1.2;max-width:92px">Σκανάρετε για τις ασκήσεις</div>
+        <img src="${qrSrc}" alt="QR" style="width:76px;height:76px;border:1px solid #ddd;border-radius:6px" loading="eager">
+        <div style="font-size:7pt;color:#666;margin-top:2px;line-height:1.2;max-width:92px">Σκανάρετε για ${s.what === 'exercises' ? 'τις ασκήσεις' : 'το κείμενο'}</div>
       </a>`;
 
   // 3η στήλη: αν υπάρχει λογότυπο → λογότυπο (χωρίς QR)· αλλιώς → QR
@@ -2975,6 +2997,20 @@ function printWorksheet(s) {
   headerHTML += `</tr></table><hr class="hdr-line">`;
 
   let body = '', answers = '', n = 0;
+  if (s.what !== 'exercises') {
+    const plain = h => h.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    paras.forEach(p => {
+      const d = paragraphs[p];
+      body += '<h2 class="ch-title">' + d.title + '</h2>';
+      if (s.what === 'translationOnly') {
+        body += '<p class="tr-only">' + d.rows.map(r => plain(r.translation)).join(' ') + '</p>';
+      } else {
+        body += '<table class="tr-tbl"><thead><tr><th>Αρχαίο κείμενο</th><th>Μετάφραση</th></tr></thead><tbody>' +
+          d.rows.map(r => '<tr><td class="tr-gr">' + plain(r.greek) + '</td><td>' + plain(r.translation) + '</td></tr>').join('') +
+          '</tbody></table>';
+      }
+    });
+  } else
   paras.forEach(p => {
     const exs = exercisesData[p] || [];
     if (paras.length > 1) {
@@ -3020,6 +3056,12 @@ function printWorksheet(s) {
   .pq-gap{border-bottom:1px solid #333;display:inline-block;min-width:120px;margin:0 3px}
   .pq-lines{margin-top:10px}
   .pq-line{border-bottom:1px solid #aaa;height:24px;margin-bottom:2px}
+  .tr-tbl{width:100%;border-collapse:collapse;font-size:${s.fontSize};margin-bottom:${s.qSpacing}}
+  .tr-tbl th{background:#f0f0f0;border:1px solid #ccc;padding:6px 10px;text-align:left}
+  .tr-tbl td{border:1px solid #ccc;padding:6px 10px;vertical-align:top;line-height:${s.lineHeight};width:50%}
+  .tr-tbl tr{page-break-inside:avoid}
+  .tr-gr{font-style:italic}
+  .tr-only{font-size:${s.fontSize};line-height:${s.lineHeight};text-align:justify;text-indent:1.5em;margin-bottom:${s.qSpacing}}
   .answers{page-break-before:always}
   .answers h2{text-align:center;font-size:calc(${s.fontSize} + 2pt);letter-spacing:2px;margin-bottom:12px}
   .pq-ans{font-size:calc(${s.fontSize} - 1pt);line-height:1.5;margin-bottom:8px;text-align:justify}
@@ -3035,7 +3077,7 @@ function printWorksheet(s) {
   ${s.instructions ? `<p class="print-instr">${s.instructions}</p>` : ''}
   ${s.score ? `<p class="print-score">${s.score}</p>` : ''}
   ${body}
-  ${s.answerKey ? `<div class="answers"><h2>ΑΠΑΝΤΗΣΕΙΣ</h2>${answers}</div>` : ''}
+  ${s.answerKey && s.what === 'exercises' ? `<div class="answers"><h2>ΑΠΑΝΤΗΣΕΙΣ</h2>${answers}</div>` : ''}
   <button class="no-print" onclick="setTimeout(()=>window.print(),300)" style="position:fixed;top:20px;right:20px;padding:12px 24px;font-size:15px;background:#a68a2e;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Εκτύπωση</button>
 </body></html>`;
 
@@ -3049,6 +3091,8 @@ function printWorksheet(s) {
 (function () {
   const m = (location.hash || '').match(/ex=(\d+)/);
   if (m && paragraphs[+m[1]]) { loadParagraph(+m[1]); showPage('exercises'); }
+  const c = (location.hash || '').match(/ch=(\d+)/);
+  if (c && paragraphs[+c[1]]) { loadParagraph(+c[1]); setMode('translation'); showPage('text'); }
 })();
 </script>
 
