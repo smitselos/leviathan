@@ -1,0 +1,3095 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Θουκυδίδου Ἱστορίαι — Γ΄ 70–74 · Η στάση της Κέρκυρας</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  /* ── DAY THEME (Claude.ai style) ── */
+  :root {
+    --bg: #f9f7f4;
+    --bg2: #ffffff;
+    --bg3: #f0ece6;
+    --border: #ddd8d0;
+    --gold: #9a6a1a;
+    --gold-light: #7a5010;
+    --gold-dim: #b8903a;
+    --parchment: #2d2520;
+    --parchment-dim: #5a4a38;
+    --text: #1a1510;
+    --text-dim: #7a6a58;
+    --red: #8b2a1a;
+    --red-light: #c84030;
+    --accent: #2a4a6a;
+    --accent-light: #4a7aaa;
+    --shadow: rgba(0,0,0,0.08);
+  }
+
+  /* ── NIGHT THEME ── */
+  [data-theme="night"] {
+    --bg: #0f0e0b;
+    --bg2: #1a1812;
+    --bg3: #242018;
+    --border: #3a3420;
+    --gold: #c8952a;
+    --gold-light: #e8c870;
+    --gold-dim: #7a5a18;
+    --parchment: #f0e8d0;
+    --parchment-dim: #c8b890;
+    --text: #e8dfc8;
+    --text-dim: #9a8f78;
+    --red: #8b2a1a;
+    --red-light: #c84030;
+    --accent: #2a4a6a;
+    --accent-light: #4a7aaa;
+    --shadow: rgba(0,0,0,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--bg2);
+    box-shadow: 0 1px 4px var(--shadow);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.75rem, 1.2vw, 1rem);
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+
+  .header-title span {
+    color: var(--text-dim);
+    font-size: clamp(0.7rem, 1vw, 0.85rem);
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 0.2rem;
+  }
+
+  .home-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .home-btn:hover {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+    background: rgba(154,106,26,0.06);
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── HOME PAGE ── */
+  .home-hero {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: radial-gradient(ellipse at 50% 0%, rgba(154,106,26,0.06) 0%, transparent 70%);
+  }
+
+  .home-hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+  }
+
+  .home-hero h2 {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: clamp(1rem, 2vw, 1.4rem);
+    color: var(--parchment-dim);
+    margin-bottom: 3rem;
+  }
+
+  .home-divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 1.5rem auto;
+  }
+
+  .para-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    max-width: 600px;
+    margin: 0 auto 3rem;
+  }
+
+  .para-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    padding: 0.7rem 1.4rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.25s;
+    letter-spacing: 0.05em;
+    position: relative;
+  }
+
+  .para-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(200,149,42,0.06);
+    transform: translateY(-2px);
+  }
+
+  .para-btn.available {
+    border-color: var(--gold-dim);
+    color: var(--parchment-dim);
+  }
+
+  .para-btn.available:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .para-btn .badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--gold);
+    color: var(--bg);
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    font-family: 'Source Sans 3', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .para-btn .badge.trans {
+    background: var(--accent-light);
+  }
+
+  .home-info {
+    font-family: 'EB Garamond', serif;
+    font-size: 1rem;
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  /* ── TEXT PAGE ── */
+  .text-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .text-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .para-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+  }
+
+  .para-nav {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .nav-arrow {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+
+  .nav-arrow:hover:not(:disabled) {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* ── MODE SELECTOR ── */
+  .mode-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.1rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--gold-dim);
+    color: var(--parchment-dim);
+  }
+
+  .mode-btn.active {
+    background: rgba(200,149,42,0.12);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .mode-note {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    background: var(--bg3);
+    border-left: 2px solid var(--gold-dim);
+    padding: 0.6rem 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  /* ── TWO-COLUMN TABLE ── */
+  .bilingual-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'EB Garamond', serif;
+    font-size: 1.08rem;
+  }
+
+  .bilingual-table thead tr {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--gold-dim);
+  }
+
+  .bilingual-table thead th {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    padding: 0.8rem 1.2rem;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  .bilingual-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .bilingual-table tbody tr:hover {
+    background: rgba(200,149,42,0.04);
+  }
+
+  .bilingual-table td {
+    padding: 1.1rem 1.4rem;
+    vertical-align: top;
+    line-height: 1.85;
+  }
+
+  .td-greek {
+    width: 45%;
+    color: var(--parchment);
+    font-style: italic;
+    border-right: 1px solid var(--border);
+    font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+    line-height: 1.9;
+  }
+
+  .td-greek strong {
+    font-style: normal;
+    color: var(--gold-light);
+  }
+
+  .td-right {
+    width: 55%;
+    color: var(--text);
+    font-style: normal;
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    line-height: 1.85;
+    font-family: 'EB Garamond', serif;
+  }
+
+  .td-right .label {
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+    font-weight: 500;
+    font-style: italic;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--gold-dim);
+    display: inline-block;
+    margin-right: 0.3rem;
+  }
+
+  .td-right strong {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--parchment-dim);
+  }
+
+  .td-right em {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+  }
+
+  .td-right .arrow {
+    color: var(--gold-dim);
+    margin: 0 0.2rem;
+  }
+
+  /* ── EXERCISES BTN ── */
+  .exercises-bar {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .ex-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    color: var(--bg);
+    background: var(--gold);
+    border: none;
+    padding: 0.7rem 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ex-btn:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+  }
+
+  .ex-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── FLASHCARD SHELL ── */
+  .card-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .card-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .card-counter {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+  }
+
+  .card-progress-wrap {
+    height: 3px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .card-progress-bar {
+    height: 100%;
+    background: var(--gold);
+    transition: width 0.35s ease;
+  }
+
+  .card-area {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .card-inner {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--gold-dim);
+    max-width: 1100px;
+    width: 100%;
+    padding: 3.5rem 4rem 3rem;
+    animation: cardIn 0.25s ease;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .card-nav-btn {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .card-nav-btn:hover:not(:disabled) {
+    border-color: var(--gold-dim);
+    color: var(--parchment-dim);
+  }
+
+  .card-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .card-dots {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 60%;
+  }
+
+  .card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .card-dot.active { background: var(--gold); }
+  .card-dot.done   { background: var(--gold-dim); }
+
+  .print-btn {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0.45rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .print-btn:hover {
+    border-color: var(--gold-dim);
+    color: var(--parchment-dim);
+  }
+
+  .exercise-block {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-bottom: 0;
+  }
+
+  .ex-num {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  .ex-question {
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+    color: var(--parchment);
+    margin-bottom: 1.8rem;
+    line-height: 1.75;
+  }
+
+  .ex-question em {
+    color: var(--gold-light);
+    font-style: italic;
+  }
+
+  /* Multiple choice */
+  .mc-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .mc-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.4rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.3rem, 2vw, 1.6rem);
+    color: var(--text);
+    text-align: left;
+    width: 100%;
+  }
+
+  .mc-opt:hover {
+    border-color: var(--gold-dim);
+    background: rgba(200,149,42,0.06);
+  }
+
+  .mc-opt.correct {
+    border-color: #4a8a4a;
+    background: rgba(74,138,74,0.12);
+    color: #90d090;
+  }
+
+  .mc-opt.wrong {
+    border-color: var(--red-light);
+    background: rgba(139,42,26,0.15);
+    color: #d07070;
+  }
+
+  .mc-letter {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold-dim);
+    min-width: 1.2rem;
+    margin-top: 0.1rem;
+  }
+
+  /* True/False */
+  .tf-options {
+    display: flex;
+    gap: 0.8rem;
+    flex-direction: column;
+  }
+
+  .tf-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.25rem, 1.9vw, 1.5rem);
+    color: var(--text);
+  }
+
+  .tf-row:last-child { border-bottom: none; }
+
+  .tf-btns { display: flex; gap: 0.4rem; }
+
+  .tf-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    padding: 0.45rem 1rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+
+  .tf-btn:hover { border-color: var(--gold-dim); color: var(--parchment-dim); }
+  .tf-btn.correct { border-color: #4a8a4a; color: #90d090; background: rgba(74,138,74,0.12); }
+  .tf-btn.wrong { border-color: var(--red-light); color: #d07070; background: rgba(139,42,26,0.15); }
+
+  /* Match */
+  .match-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .match-col { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .match-item {
+    padding: 0.85rem 1.2rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .match-item:hover { border-color: var(--gold-dim); }
+  .match-item.selected { border-color: var(--gold); color: var(--gold); background: rgba(200,149,42,0.1); }
+  .match-item.matched { border-color: #4a8a4a; color: #90d090; background: rgba(74,138,74,0.1); cursor: default; }
+  .match-item.wrong-match { border-color: var(--red-light); color: #d07070; background: rgba(139,42,26,0.1); }
+
+  /* Fill blanks */
+  .fill-text {
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.35rem, 2vw, 1.65rem);
+    color: var(--parchment);
+    line-height: 2.2;
+    margin-bottom: 0.8rem;
+  }
+
+  .blank-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--gold-dim);
+    color: var(--gold-light);
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: clamp(1.35rem, 2vw, 1.65rem);
+    padding: 0 0.4rem;
+    width: 210px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .blank-input::placeholder { color: transparent; }
+  .blank-input:focus { border-color: var(--gold); }
+  .blank-input:focus::placeholder { color: var(--text-dim); font-size: 0.85rem; }
+  .blank-input.correct { border-color: #4a8a4a; color: #90d090; }
+  .blank-input.wrong { border-color: var(--red-light); color: #d07070; }
+
+  /* Check button */
+  .check-btn {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--gold-dim);
+    border: none;
+    padding: 0.65rem 1.8rem;
+    cursor: pointer;
+    margin-top: 1.2rem;
+    transition: all 0.2s;
+  }
+
+  .check-btn:hover { background: var(--gold); }
+
+  /* Open question */
+  .open-textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.3rem, 1.9vw, 1.5rem);
+    padding: 1rem 1.2rem;
+    resize: vertical;
+    min-height: 150px;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.7;
+  }
+
+  .open-textarea:focus { border-color: var(--gold-dim); }
+
+  /* Feedback */
+  .feedback {
+    margin-top: 0.6rem;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 1rem;
+    padding: 0.6rem 1rem;
+    display: none;
+  }
+
+  .feedback.show { display: block; }
+  .feedback.ok { background: rgba(74,138,74,0.1); color: #90d090; border-left: 2px solid #4a8a4a; }
+  .feedback.err { background: rgba(139,42,26,0.1); color: #d07070; border-left: 2px solid var(--red-light); }
+
+  /* Vocabulary exercise */
+  .vocab-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(1.25rem, 1.9vw, 1.5rem);
+  }
+
+  .vocab-table td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  .vocab-table td:first-child {
+    color: var(--gold-light);
+    font-style: italic;
+    width: 35%;
+  }
+
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 1rem;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  .focus-link {
+    display: inline-block;
+    font-family: 'Source Sans 3', sans-serif;
+    font-style: normal;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    padding: 0.1rem 0.5rem;
+    cursor: pointer;
+    margin-left: 0.4rem;
+    transition: all 0.2s;
+    vertical-align: middle;
+  }
+
+  .focus-link:hover {
+    background: rgba(154,106,26,0.1);
+    border-color: var(--gold);
+  }
+
+  /* ── POPUP ── */
+  .popup-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .popup-overlay.open { display: flex; }
+
+  .popup-box {
+    background: var(--bg2);
+    border: 1px solid var(--gold-dim);
+    max-width: 560px;
+    width: 92%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    animation: popIn 0.2s ease;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.94); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+
+  .popup-label {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.3rem;
+  }
+
+  .popup-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: var(--text);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .popup-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 1.8rem;
+    height: 1.8rem;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .popup-close:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  .popup-section { margin-bottom: 1.2rem; }
+
+  .popup-section-title {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--gold-dim);
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3rem;
+  }
+
+  .popup-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'EB Garamond', serif;
+    font-size: 1rem;
+  }
+
+  .popup-table td {
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .popup-table td:first-child {
+    font-style: italic;
+    color: var(--gold-light);
+    width: 38%;
+  }
+
+  .popup-note {
+    font-family: 'EB Garamond', serif;
+    font-size: 0.98rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    font-style: italic;
+    border-left: 2px solid var(--gold-dim);
+    padding-left: 0.8rem;
+    margin-top: 0.5rem;
+  }
+
+  .popup-deriv {
+    font-family: 'EB Garamond', serif;
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  .popup-deriv span {
+    color: var(--gold-light);
+    font-style: italic;
+    margin-right: 0.3rem;
+  }
+
+  /* ── CLICKABLE WORDS ── */
+  .w-click {
+    cursor: pointer;
+    border-bottom: 1px dashed var(--gold-dim);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .w-click:hover { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* ── MORPH POPUP ── */
+  .morph-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; align-items: center; justify-content: center; }
+  .morph-overlay.open { display: flex; }
+  .morph-box { background: var(--bg2); border: 1px solid var(--gold-dim); max-width: 480px; width: 92%; max-height: 80vh; overflow-y: auto; padding: 1.8rem 2rem; position: relative; box-shadow: 0 8px 40px rgba(0,0,0,0.3); animation: popIn 0.2s ease; }
+  .morph-close { position: absolute; top: 0.8rem; right: 0.8rem; background: none; border: 1px solid var(--border); color: var(--text-dim); width: 1.8rem; height: 1.8rem; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .morph-close:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .morph-lemma { font-family: 'EB Garamond', serif; font-style: italic; font-size: 1.5rem; color: var(--gold-light); margin-bottom: 0.2rem; }
+  .morph-info { font-family: 'Source Sans 3', sans-serif; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1.2rem; letter-spacing: 0.04em; }
+  .morph-table { width: 100%; border-collapse: collapse; font-family: 'EB Garamond', serif; font-size: 1rem; }
+  .morph-table th { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.1em; color: var(--gold-dim); padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--gold-dim); text-align: left; font-weight: 400; text-transform: uppercase; }
+  .morph-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+  .morph-table td:first-child { color: var(--text-dim); font-size: 0.85rem; font-family: 'Source Sans 3', sans-serif; width: 28%; }
+  .morph-table td.hi { color: var(--gold-light); font-style: italic; font-weight: 500; }
+  .morph-note { font-family: 'EB Garamond', serif; font-style: italic; font-size: 0.95rem; color: var(--text-dim); margin-top: 1rem; border-left: 2px solid var(--gold-dim); padding-left: 0.7rem; }
+
+  @media print {
+    body { background: white; color: black; }
+    header, .mode-bar, .exercises-bar, .nav-arrow, .para-nav, .home-btn, .check-btn, .mode-note { display: none !important; }
+    .exercise-block {
+      background: white;
+      border: 1px solid #ccc;
+      border-left: 3px solid #888;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .ex-num { color: #555; }
+    .ex-question { color: #111; }
+    .mc-opt { background: white; border-color: #ccc; color: #111; }
+    .blank-input { color: #111; border-bottom-color: #888; }
+    .open-textarea { background: white; border-color: #ccc; color: #111; min-height: 60px; }
+    .tf-row { color: #111; }
+    .match-item { background: white; border-color: #ccc; color: #111; }
+    .feedback { display: none !important; }
+  }
+
+  /* ── ORNAMENT ── */
+  .ornament {
+    text-align: center;
+    color: var(--gold-dim);
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+    letter-spacing: 0.3em;
+  }
+  /* ══ PRINT MODAL (μηχανισμός ΛΕΒΙΑΘΑΝ) ══ */
+  .print-modal-overlay{--white:var(--bg2);--ink:var(--text);--ink2:var(--parchment-dim);--muted:var(--text-dim);--accent:var(--gold);--accent-d:var(--gold-light);--r:12px;--r-sm:8px;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:2000;opacity:0;pointer-events:none;transition:opacity .3s;font-family:'Source Sans 3',sans-serif}
+  .print-modal-overlay.active{opacity:1;pointer-events:auto}
+  .print-modal{background:var(--white);border-radius:var(--r);box-shadow:0 10px 40px rgba(0,0,0,.2);max-width:500px;width:90%;max-height:85vh;overflow-y:auto;padding:0;color:var(--ink)}
+  .pm-hdr{display:flex;justify-content:space-between;align-items:center;padding:20px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);z-index:1}
+  .pm-hdr h2{font-family:'EB Garamond',serif;font-size:1.3rem;font-weight:500;color:var(--ink);margin:0}
+  .pm-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted);padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+  .pm-close:hover{color:var(--ink)}
+  .pm-section{padding:18px 22px;border-bottom:1px solid var(--border)}
+  .pm-section h3{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:12px}
+  .pm-lbl{display:block;font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+  .pm-input,.pm-textarea,.pm-select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:inherit;font-size:.9rem;color:var(--ink);background:var(--white);transition:border-color .2s}
+  .pm-input:focus,.pm-textarea:focus,.pm-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(166,138,46,.1)}
+  .pm-textarea{min-height:60px;resize:vertical}
+  .pm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pm-toggle-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:10px 0}
+  .pm-toggle-row label:first-child{font-size:.88rem;font-weight:600;color:var(--ink2)}
+  .pm-switch{position:relative;display:inline-block;width:48px;height:26px}
+  .pm-switch input{opacity:0;width:0;height:0}
+  .pm-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.4s;border-radius:26px}
+  .pm-slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background-color:#fff;transition:.4s;border-radius:50%}
+  .pm-switch input:checked+.pm-slider{background-color:var(--accent)}
+  .pm-switch input:checked+.pm-slider:before{transform:translateX(22px)}
+  .pm-footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap}
+  .pm-btn{flex:1 1 auto;min-width:0;padding:12px 16px;border:none;border-radius:var(--r-sm);font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+  @media (max-width:600px){.pm-footer{gap:8px;padding:14px 16px}.pm-btn{flex:1 1 calc(50% - 4px);padding:11px 10px;font-size:.82rem}}
+  .pm-btn-primary{background:var(--accent);color:#fff}
+  .pm-btn-primary:hover{background:var(--accent-d);transform:translateY(-1px)}
+  .pm-btn-secondary{background:var(--border);color:var(--ink)}
+  .pm-btn-secondary:hover{filter:brightness(.95)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-title">
+    Θουκυδίδου Ἱστορίαι
+    <span>Βιβλίο Γ΄ · Κεφάλαια 70–74 · Η στάση της Κέρκυρας</span>
+  </div>
+  <button class="home-btn" onclick="showPage('home')">⌂ Αρχική</button>
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Εναλλαγή ημέρας/νύχτας">☀</button>
+</header>
+
+<!-- HOME PAGE -->
+<div id="page-home" class="page active">
+  <div class="home-hero">
+    <h1>Θουκυδίδου Ἱστορίαι</h1>
+    <h2>Βιβλίο Γ΄ · Η έναρξη του εμφυλίου στην Κέρκυρα (κεφ. 70–74)</h2>
+    <div class="home-divider"></div>
+
+    <div class="para-grid">
+      <button class="para-btn available" onclick="loadParagraph(70); showPage('text')">
+        § 70
+        <span class="badge trans">μτφρ.</span>
+      </button>
+      <button class="para-btn available" onclick="loadParagraph(71); showPage('text')">
+        § 71
+        <span class="badge">✓</span>
+      </button>
+      <button class="para-btn available" onclick="loadParagraph(72); showPage('text')">
+        § 72
+        <span class="badge">✓</span>
+      </button>
+      <button class="para-btn available" onclick="loadParagraph(73); showPage('text')">
+        § 73
+        <span class="badge">✓</span>
+      </button>
+      <button class="para-btn available" onclick="loadParagraph(74); showPage('text')">
+        § 74
+        <span class="badge">✓</span>
+      </button>
+    </div>
+
+    <p class="home-info">
+      Επιλέξτε κεφάλαιο για να δείτε το αρχαίο κείμενο με λεξιλογικά,
+      γραμματικά, συντακτικά και ερμηνευτικά σχόλια, καθώς και τη μετάφραση και ασκήσεις.
+      <br><span style="font-size:0.85rem">Το κεφ. 70 διδάσκεται μόνο από μετάφραση· τα κεφ. 71–74 και από το πρωτότυπο.</span>
+    </p>
+  </div>
+</div>
+
+<!-- TEXT PAGE -->
+<div id="page-text" class="page">
+  <div class="text-page">
+    <div class="text-page-header">
+      <div class="para-title" id="para-title">§ 71</div>
+      <div class="para-nav">
+        <button class="nav-arrow" id="btn-prev" onclick="navigatePara(-1)">← Προηγ.</button>
+        <button class="nav-arrow" id="btn-next" onclick="navigatePara(1)">Επόμ. →</button>
+      </div>
+    </div>
+
+    <!-- MODE SELECTOR -->
+    <div class="mode-bar">
+      <button class="mode-btn active" id="mode-lexical" onclick="setMode('lexical')">Λεξιλογικά · Γραμματικά</button>
+      <button class="mode-btn" id="mode-syntactic" onclick="setMode('syntactic')">Συντακτικά</button>
+      <button class="mode-btn" id="mode-translation" onclick="setMode('translation')">Μετάφραση</button>
+      <button class="mode-btn" id="mode-interpretive" onclick="setMode('interpretive')">Ερμηνευτικά</button>
+    </div>
+
+    <div class="mode-note" id="mode-note" style="display:none"></div>
+
+    <!-- TABLE -->
+    <table class="bilingual-table" id="main-table">
+      <thead>
+        <tr>
+          <th id="col-left-header">Αρχαίο Κείμενο</th>
+          <th id="col-header">Λεξιλογικά · Γραμματικά</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+
+    <div class="exercises-bar">
+      <button class="ex-btn" id="ex-btn" onclick="showPage('exercises')">Ασκήσεις →</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXERCISES PAGE -->
+<div id="page-exercises" class="page">
+  <div class="card-shell">
+    <div class="card-topbar">
+      <button class="home-btn" onclick="showPage('text')">← Κείμενο</button>
+      <div style="text-align:center">
+        <div class="card-counter"><span id="card-current">1</span> / <span id="card-total">1</span></div>
+        <div style="font-family:'EB Garamond',serif;font-style:italic;font-size:0.85rem;color:var(--text-dim);margin-top:0.15rem" id="card-para-label">Θουκυδίδου Ἱστορίαι Γ΄ 71</div>
+      </div>
+      <button class="print-btn" onclick="openPrintModal()" title="Εκτύπωση φύλλου ασκήσεων">🖨️ Εκτύπωση</button>
+    </div>
+    <div class="card-progress-wrap"><div class="card-progress-bar" id="card-progress"></div></div>
+    <div class="card-area" id="card-area"></div>
+    <div class="card-nav">
+      <button class="card-nav-btn" id="card-prev" onclick="cardNav(-1)">← Προηγ.</button>
+      <div class="card-dots" id="card-dots"></div>
+      <button class="card-nav-btn" id="card-next" onclick="cardNav(1)">Επόμ. →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function L(word) { return '<span class="label">' + word + '</span>'; }
+function F(key, text) { return '<span class="focus-link" onclick="openFocus(\'' + key + '\')">⊕ ' + (text || 'Εστίαση') + '</span>'; }
+var AR = '<span class="arrow">→</span>';
+
+// ══════════════════════════════════════════════
+// DATA — ΚΕΙΜΕΝΟ & ΣΧΟΛΙΑ
+// ══════════════════════════════════════════════
+const paragraphs = {
+
+  70: {
+    title: '§ 70 · Το πραξικόπημα των ολιγαρχικών',
+    translationOnly: true,
+    rows: [
+      {
+        greek: 'Οἱ γὰρ Κερκυραῖοι <strong>ἐστασίαζον</strong>, ἐπειδὴ οἱ αἰχμάλωτοι ἦλθον αὐτοῖς οἱ ἐκ τῶν περὶ Ἐπίδαμνον ναυμαχιῶν ὑπὸ Κορινθίων <strong>ἀφεθέντες</strong>,',
+        lexical: L('ἐστασίαζον· στασιάζω') + '= βρίσκομαι σε εμφύλια διαμάχη ' + AR + ' στάση, στασιαστής<br>' + L('ἐπειδή') + '= από τότε που<br>' + L('ἀφεθέντες· ἀφίεμαι') + '= αφού ελευθερώθηκαν ' + AR + ' άφεση',
+        translation: 'Οι ταραχές στην Κέρκυρα είχαν αρχίσει από τότε που είχαν γυρίσει οι Κερκυραίοι που είχαν αιχμαλωτιστεί από τους Κορινθίους στις ναυτικές επιχειρήσεις γύρω από την Επίδαμνο.',
+        interpretive: 'Ο Θουκυδίδης εντοπίζει την αφετηρία της στάσης στην επιστροφή των αιχμαλώτων ολιγαρχικών (από τις ναυμαχίες του 435–433 π.Χ.). Οι Αθηναίοι πρέπει να ανησύχησαν από την επιστροφή τους και τη συνωμοτική τους δραστηριότητα· σημαντικό ρόλο έπαιζε και η νευραλγική θέση της Κέρκυρας για την επικοινωνία και το εμπόριο με τη Δύση.'
+      },
+      {
+        greek: '<strong>τῷ μὲν λόγῳ</strong> ὀκτακοσίων ταλάντων τοῖς προξένοις <strong>διηγγυημένοι</strong>, <strong>ἔργῳ δὲ</strong> πεπεισμένοι Κορινθίοις Κέρκυραν <strong>προσποιῆσαι</strong>.',
+        lexical: L('τῷ μὲν λόγῳ... ἔργῳ δὲ') + '= φαινομενικά..., στην πραγματικότητα<br>' + L('διηγγυημένοι· διεγγυάομαι') + '= (ως παθ.) τελώ υπό εγγύηση, γίνεται κάποιος εγγυητής μου ' + AR + ' εγγύηση, εχέγγυο<br>' + L('προσποιῆσαι· προσποιέω') + '= φέρνω με το μέρος μου',
+        translation: 'Τυπικά τους είχαν απελευθερώσει επειδή οι πρόξενοι είχαν δώσει εγγυήσεις οκτακόσια τάλαντα, στην πραγματικότητα όμως επειδή τους είχαν πείσει οι Κορίνθιοι να επιχειρήσουν να κάνουν την Κέρκυρα σύμμαχο της Κορίνθου.',
+        interpretive: 'Η αντίθεση <em>λόγῳ – ἔργῳ</em> (φαινομενικό – πραγματικό) είναι χαρακτηριστική της θουκυδίδειας σκέψης: πίσω από την επίσημη αιτία (εγγύηση 800 ταλάντων) κρύβεται η πραγματική — οι αιχμάλωτοι είχαν γίνει όργανα της κορινθιακής πολιτικής.'
+      },
+      {
+        greek: 'Καὶ ἔπρασσον οὗτοι, ἕκαστον τῶν πολιτῶν <strong>μετιόντες</strong>, ὅπως <strong>ἀποστήσωσιν</strong> Ἀθηναίων τὴν πόλιν.',
+        lexical: L('ἕκαστον τῶν πολιτῶν μετιόντες') + '= πλησιάζοντας τον κάθε πολίτη χωριστά<br>' + L('ἀποστήσωσιν· ἀφίστημι') + '= απομακρύνω, κάνω να αποστατήσει ' + AR + ' αποστασία',
+        translation: 'Άρχισαν αυτοί να ενεργούν πλησιάζοντας τους πολίτες έναν έναν και προσπαθώντας να τους πείσουν ότι έπρεπε η Κέρκυρα να αποσπαστεί από την αθηναϊκή συμμαχία.',
+        interpretive: 'Η προσωπική προσέγγιση κάθε πολίτη χωριστά δείχνει μεθοδική, συνωμοτική δράση — όχι ανοιχτή πολιτική αντιπαράθεση.'
+      },
+      {
+        greek: 'Καὶ ἀφικομένης Ἀττικῆς τε νεὼς καὶ Κορινθίας πρέσβεις ἀγουσῶν καὶ <strong>ἐς λόγους καταστάντων</strong> <strong>ἐψηφίσαντο</strong> Κερκυραῖοι Ἀθηναίοις μὲν ξύμμαχοι εἶναι <strong>κατὰ τὰ ξυγκείμενα</strong>, Πελοποννησίοις δὲ φίλοι ὥσπερ καὶ πρότερον.',
+        lexical: L('ἀφικομένης· ἀφικνέομαι') + '= φτάνω<br>' + L('ἐς λόγους καταστάντων') + '= αφού ήρθαν σε διαπραγματεύσεις (οι πρέσβεις)<br>' + L('ἐψηφίσαντο· ψηφίζομαι') + '= αποφασίζω ' + AR + ' ψήφος, ψήφισμα<br>' + L('κατὰ τὰ ξυγκείμενα') + '= σύμφωνα με την ισχύουσα συνθήκη',
+        translation: 'Έφτασαν τότε ένα αθηναϊκό και ένα κορινθιακό καράβι με πρέσβεις το καθένα. Έγινε δημόσια συζήτηση και, μετά από ψηφοφορία, οι Κερκυραίοι αποφάσισαν να μείνουν σύμμαχοι των Αθηναίων σύμφωνα με τους όρους της συνθήκης, αλλά να διατηρούν, όπως και πριν, φιλικές σχέσεις με τους Πελοποννησίους.',
+        interpretive: 'Φανερή η προσπάθεια τήρησης ουδετερότητας. Η διπλωματική αυτή στάση, όχι εντελώς απαλλαγμένη από δολιότητα και ιδιοτέλεια, δηλώνει ακριβή υπολογισμό των συμφερόντων και πολιτικό ρεαλισμό — απαραίτητο στους ανίσχυρους λαούς για να βγουν αλώβητοι από τις συγκρούσεις των ισχυρών. Η εξισορροπητική προσπάθεια όμως ήταν καταδικασμένη σε αποτυχία. Το ψήφισμα είναι το πρώτο αποτέλεσμα της δράσης των ολιγαρχικών.'
+      },
+      {
+        greek: 'Καὶ (ἦν γὰρ Πειθίας <strong>ἐθελοπρόξενός</strong> τε τῶν Ἀθηναίων καὶ τοῦ δήμου <strong>προειστήκει</strong>) <strong>ὑπάγουσιν</strong> αὐτὸν οὗτοι οἱ ἄνδρες ἐς δίκην, λέγοντες Ἀθηναίοις τὴν Κέρκυραν <strong>καταδουλοῦν</strong>.',
+        lexical: L('ἐθελοπρόξενος') + '= ο εθελοντής πρόξενος, που αναλαμβάνει μόνος του τον ρόλο του προξένου χωρίς να έχει οριστεί από την πόλη<br>' + L('προειστήκει τοῦ δήμου') + '= ήταν αρχηγός του δημοκρατικού κόμματος<br>' + L('ὑπάγουσιν ἐς δίκην') + '= τον σέρνουν στο δικαστήριο<br>' + L('καταδουλοῦν') + '= προσπαθεί να υποδουλώσει (αποπειρατικός ενεστώτας)',
+        translation: 'Αρχηγός των δημοκρατικών ήταν τότε ο Πειθίας, (εθελοντής) πρόξενος των Αθηναίων. Οι πρώην αιχμάλωτοι, φίλοι των Κορινθίων, του έκαναν μήνυση με την κατηγορία ότι θέλει να υποδουλώσει την Κέρκυρα στους Αθηναίους.',
+        interpretive: 'Ο Πειθίας είχε μόνος του προθυμοποιηθεί, λόγω των δημοκρατικών του πεποιθήσεων, να εκτελεί χρέη προξένου των Αθηναίων. Η Κέρκυρα είχε ολιγαρχικό πολίτευμα κατά το πρότυπο της Κορίνθου, μέσα στο οποίο λειτουργούσε υποτυπωδώς η εκκλησία του δήμου (ἁλία), που ενισχύθηκε μετά τη συμμαχία του 433 π.Χ. Η παραπομπή του Πειθία σε δίκη πολιτικής σκοπιμότητας δηλώνει το αγεφύρωτο χάσμα ανάμεσα στις παρατάξεις.'
+      },
+      {
+        greek: 'Ὁ δὲ <strong>ἀποφυγὼν</strong> <strong>ἀνθυπάγει</strong> αὐτῶν τοὺς πλουσιωτάτους πέντε ἄνδρας, φάσκων τέμνειν <strong>χάρακας</strong> ἐκ τοῦ τε Διὸς τοῦ <strong>τεμένους</strong> καὶ τοῦ Ἀλκίνου· <strong>ζημία</strong> δὲ καθ᾽ ἑκάστην χάρακα ἐπέκειτο στατήρ.',
+        lexical: L('ἀποφεύγω') + '= (δικανικός όρος) αθωώνομαι. Ο κατήγορος λέγεται <em>διώκων</em>, ο κατηγορούμενος <em>φεύγων</em>, ο καταδικασθείς <em>ἁλίσκεται</em>, ο αθωωθείς <em>ἀποφεύγει</em><br>' + L('ἀνθυπάγω') + '= κάνω αντιμήνυση<br>' + L('ἡ χάραξ') + '= βέργα για στήριγμα των κλημάτων ' + AR + ' χαράκωμα<br>' + L('τέμενος') + '= κομμάτι γης αφιερωμένο σε θεό ' + AR + ' τέμνω, τέμενος<br>' + L('ζημία') + '= πρόστιμο',
+        translation: 'Ο Πειθίας αθωώθηκε και έκανε μήνυση εναντίον πέντε από τους πλουσιότερους αντιπάλους του, με την κατηγορία ότι, για να στηρίζουν τα κλήματά τους, έκοβαν βέργες από τους ιερούς περιβόλους του Διός και του Αλκίνου. Κατά τον νόμο, για κάθε βέργα το πρόστιμο ήταν ένας στατήρας.',
+        interpretive: 'Μετά την αθώωσή του ο Πειθίας σέρνει κι αυτός σε δίκη τους αντιπάλους του — πράξη που μαρτυρεί εκδικητική διάθεση και μισαλλοδοξία. Οι κατηγορίες του δεν έχουν πολιτική βάση αλλά θρησκευτικό και κοινωνικό χαρακτήρα, γιατί, όπως έδειξε η δική του αθώωση, ήταν δύσκολο να στοιχειοθετηθούν πολιτικές κατηγορίες.'
+      },
+      {
+        greek: '<strong>Ὀφλόντων</strong> δὲ αὐτῶν καὶ πρὸς τὰ ἱερὰ ἱκετῶν καθεζομένων <strong>διὰ πλῆθος τῆς ζημίας</strong>, ὅπως <strong>ταξάμενοι ἀποδῶσιν</strong>, ὁ Πειθίας (ἐτύγχανε γὰρ καὶ <strong>βουλῆς ὤν</strong>) πείθει ὥστε τῷ νόμῳ χρήσασθαι.',
+        lexical: L('ὀφλισκάνω') + '= καταδικάζομαι να πληρώσω πρόστιμο<br>' + L('διὰ πλῆθος τῆς ζημίας') + '= εξαιτίας της βαριάς χρηματικής ποινής<br>' + L('ταξάμενοι ἀποδῶσιν') + '= για να πληρώσουν το πρόστιμο ύστερα από συμφωνία (με δόσεις)<br>' + L('βουλῆς ὤν') + '= ήταν και μέλος της βουλής (γεν. κατηγορηματική διαιρετική)',
+        translation: 'Οι κατηγορούμενοι καταδικάστηκαν και έτρεξαν και κάθισαν ικέτες στους ναούς, ζητώντας να πληρώσουν με δόσεις το πρόστιμο, επειδή το ποσό ήταν πολύ μεγάλο. Ο Πειθίας, που ήταν μέλος της Βουλής, την έπεισε να εφαρμόσει τον νόμο.',
+        interpretive: 'Η άκαμπτη στάση του Πειθία («να εφαρμοστεί ο νόμος») είναι τυπικά νόμιμη, αλλά ουσιαστικά οδηγεί τους αντιπάλους του σε οικονομική εξόντωση — και σε αδιέξοδο.'
+      },
+      {
+        greek: 'Οἱ δ᾽ ἐπειδὴ τῷ τε νόμῳ <strong>ἐξείργοντο</strong> καὶ ἅμα <strong>ἐπυνθάνοντο</strong> τὸν Πειθίαν... μέλλειν τὸ πλῆθος <strong>ἀναπείσειν</strong> τοὺς αὐτοὺς Ἀθηναίοις φίλους τε καὶ ἐχθροὺς νομίζειν, <strong>ξυνίσταντό</strong> τε καὶ λαβόντες <strong>ἐγχειρίδια</strong> <strong>ἐξαπιναίως</strong> ἐς τὴν βουλὴν ἐσελθόντες τόν τε Πειθίαν κτείνουσι καὶ ἄλλους... ἐς ἑξήκοντα·',
+        lexical: L('ἐξείργοντο') + '= αποκλείονταν από τον νόμο (ο νόμος απαγόρευε την πληρωμή με δόσεις)<br>' + L('πυνθάνομαι') + '= πληροφορούμαι<br>' + L('ἀναπείθω') + '= μεταπείθω<br>' + L('ξυνίσταμαι') + '= συνωμοτώ<br>' + L('ἐγχειρίδια') + '= μαχαίρια ' + AR + ' εγχειρίδιο<br>' + L('ἐξαπιναίως') + '= ξαφνικά, αιφνιδιαστικά',
+        translation: 'Οι πέντε που είχαν καταδικαστεί δεν είχαν πια κανένα νόμιμο μέσο, και όταν πληροφορήθηκαν ότι ο Πειθίας είχε σκοπό, όσο ήταν βουλευτής, να πείσει τους συμπολίτες του να κάνουν επιθετική και αμυντική συμμαχία με τους Αθηναίους, οπλίστηκαν με κοντοσπάθια, όρμησαν ξαφνικά μέσα στη Βουλή και σκότωσαν τον Πειθία και άλλους εξήντα βουλευτές και ιδιώτες.',
+        interpretive: 'Η προσφυγή στη βία σηματοδοτεί την κατάρρευση των θεσμών: όταν τα νόμιμα μέσα εξαντλούνται, η πολιτική αντιπαράθεση γίνεται φονική. Η σφαγή μέσα στη Βουλή είναι συμβολική — πλήττεται η ίδια η καρδιά της πολιτικής ζωής.'
+      },
+      {
+        greek: 'οἱ δέ τινες τῆς αὐτῆς γνώμης τῷ Πειθίᾳ ὀλίγοι ἐς τὴν Ἀττικὴν τριήρη κατέφυγον ἔτι παροῦσαν.',
+        lexical: L('τῆς αὐτῆς γνώμης τῷ Πειθίᾳ') + '= ομοϊδεάτες με τον Πειθία<br>' + L('ἔτι παροῦσαν') + '= που ήταν ακόμη εκεί (στο λιμάνι)',
+        translation: 'Λίγοι από τους οπαδούς του Πειθία κατόρθωσαν να καταφύγουν στο αθηναϊκό καράβι, που ήταν ακόμη στο λιμάνι.',
+        interpretive: 'Η παραμονή του αθηναϊκού πλοίου ήταν κρίσιμη: έσωσε τους λίγους επιζώντες δημοκρατικούς, οι οποίοι κατέφυγαν στην Αθήνα — εξέλιξη που θα έχει συνέπειες στο κεφ. 71.'
+      }
+    ]
+  },
+
+  71: {
+    title: '§ 71 · Ουδετερότητα και πρεσβεία στην Αθήνα',
+    rows: [
+      {
+        greek: '<strong>Δράσαντες</strong> δὲ τοῦτο καὶ <strong>ξυγκαλέσαντες</strong> Κερκυραίους <strong>εἶπον</strong>',
+        lexical: L('δράσαντες· δράω, -ῶ') + '= ενεργώ, πράττω ' + AR + ' δράση, δραστήριος, δράμα, επίδραση<br>' + L('ξυγκαλέσαντες· ξυγκαλέω, -ῶ') + '= καλώ σε συνέλευση, συγκαλώ ' + AR + ' σύγκληση, κλήση · ' + F('xyn', 'ξυν- / ἐς') + '<br>' + L('εἶπον') + ': αόρ. β΄ του λέγω',
+        syntactic: '<strong>Δράσαντες, ξυγκαλέσαντες</strong>: χρονικές μετοχές (προτερόχρονο), συνημμένες στο εννοούμενο υποκ. του εἶπον (οἱ ὀλίγοι)<br><strong>τοῦτο</strong>: αντικ. του δράσαντες<br><strong>Κερκυραίους</strong>: αντικ. του ξυγκαλέσαντες<br><strong>εἶπον</strong>: ρήμα κύριας πρότασης (ιστορικός χρόνος)',
+        translation: 'Αφού έκαναν αυτό και κάλεσαν σε συνέλευση τους Κερκυραίους, είπαν',
+        interpretive: '<em>τοῦτο</em> = ο φόνος των δημοκρατικών αρχηγών. Αμέσως μετά το έγκλημα οι ολιγαρχικοί σπεύδουν να συγκαλέσουν την εκκλησία, για να νομιμοποιήσουν την πράξη τους και να ελέγξουν τις εξελίξεις.'
+      },
+      {
+        greek: 'ὅτι ταῦτα καὶ <strong>βέλτιστα εἴη</strong> καὶ <strong>ἥκιστ᾽ ἂν δουλωθεῖεν</strong> ὑπ᾽ Ἀθηναίων,',
+        lexical: L('ταῦτα') + '= δηλ. ο φόνος των δημοκρατικών αρχηγών<br>' + L('βέλτιστα') + ': υπερθ. του ἀγαθός ' + AR + ' βελτίωση<br>' + L('ἥκιστ᾽ ἂν δουλωθεῖεν ὑπ᾽ Ἀθηναίων') + '= δε θα υποδουλώνονταν με κανένα τρόπο πια από τους Αθηναίους<br>' + L('ἥκιστα') + ': υπερθ. επιρρ. (ἧττον – ἥκιστα)<br>' + L('δουλωθεῖεν') + ': ευκτ. αορ. παθ. του δουλόω, -ῶ ' + AR + ' υποδούλωση',
+        syntactic: '<strong>ὅτι... εἴη</strong>: δευτ. ειδική πρόταση, αντικ. του εἶπον · ' + F('euktiki', 'ευκτική πλαγίου λόγου') + '<br><strong>ταῦτα</strong>: υποκ. του εἴη ' + F('attiki', 'αττική σύνταξη') + '<br><strong>βέλτιστα</strong>: κατηγορούμενο<br><strong>(ὅτι) ἥκιστ᾽ ἂν δουλωθεῖεν</strong>: ειδική πρόταση · ' + F('dynitiki', 'δυνητική ευκτική') + '<br><strong>ὑπ᾽ Ἀθηναίων</strong>: ποιητικό αίτιο',
+        translation: 'ότι αυτό ήταν και το καλύτερο και ότι με κανέναν τρόπο δεν θα υποδουλώνονταν πια από τους Αθηναίους,',
+        interpretive: 'Προπαγανδιστικό επιχείρημα: ο φόνος παρουσιάζεται ως «το καλύτερο» και ως εγγύηση ότι η Κέρκυρα δεν θα υποδουλωθεί στους Αθηναίους. Οι ολιγαρχικοί εκμεταλλεύονται το αίσθημα ανεξαρτησίας των Κερκυραίων για να συγκαλύψουν το έγκλημα.'
+      },
+      {
+        greek: '<strong>τό τε λοιπὸν</strong> <strong>μηδετέρους</strong> δέχεσθαι, <strong>ἀλλ᾽ ἢ</strong> μιᾷ <strong>νηὶ</strong> <strong>ἡσυχάζοντας</strong>, τὸ δὲ πλέον πολέμιον <strong>ἡγεῖσθαι</strong>.',
+        lexical: L('τό τε λοιπὸν') + '= και στο εξής<br>' + L('μηδετέρους') + '= ούτε τους μεν ούτε τους δε (ούτε Αθηναίους ούτε Λακεδαιμονίους) ' + AR + ' ουδέτερος, ουδετερότητα<br>' + L('ἀλλ᾽ ἢ') + '= εκτός, παρά μόνο<br>' + L('ἡσυχάζω') + '= μένω ουδέτερος<br>' + L('ἡγοῦμαι') + '= θεωρώ ' + AR + ' ηγεσία (άλλη σημασία)',
+        syntactic: '<strong>τὸ λοιπόν</strong>: επιρρ. προσδ. χρόνου<br><strong>δέχεσθαι, ἡγεῖσθαι</strong>: τελικά απαρέμφατα, αντικ. του εἶπον (= πρότειναν, βουλητική σημασία)· υποκ. τους εννοείται <em>Κερκυραίους</em> → ετεροπροσωπία<br><strong>μηδετέρους</strong>: αντικ. του δέχεσθαι<br><strong>μιᾷ νηί</strong>: δοτ. του τρόπου (συνοδείας)<br><strong>ἡσυχάζοντας</strong>: τροπική μετοχή, συνημμένη στο εννοούμενο υποκ. του δέχεσθαι<br><strong>τὸ πλέον</strong>: αντικ. του ἡγεῖσθαι · <strong>πολέμιον</strong>: κατηγορούμενο του αντικειμένου',
+        translation: 'και στο εξής, μένοντας ουδέτεροι, να μη δέχονται κανέναν από τους δυο, παρά μόνο αν έρχονται με ένα καράβι, οποιαδήποτε όμως μεγαλύτερη δύναμη να τη θεωρούν εχθρική.',
+        interpretive: 'Η πολιτική ουδετερότητας, η απεμπλοκή δηλαδή της Κέρκυρας από τον πόλεμο, ήταν συνετή. Αυτό όμως δεν αναιρεί τον αρχικό σκοπό των ολιγαρχικών, που ήταν να εγκαταστήσουν την ολιγαρχία στην Κέρκυρα. Ο περιορισμός «μιᾷ νηί» αποκλείει πρακτικά κάθε αθηναϊκή στρατιωτική παρέμβαση.'
+      },
+      {
+        greek: 'Ὡς δὲ εἶπον, καὶ <strong>ἐπικυρῶσαι ἠνάγκασαν</strong> τὴν <strong>γνώμην</strong>.',
+        lexical: L('ἐπικυρῶσαι· ἐπικυρόω, -ῶ') + '= επικυρώνω ' + AR + ' κύρος, κύρωση, επικύρωση<br>' + L('γνώμη') + '= πρόταση<br>' + L('ἀναγκάζω') + ' ' + AR + ' ανάγκη, αναγκαστικός',
+        syntactic: '<strong>Ὡς δὲ εἶπον</strong>: δευτ. χρονική πρόταση (ὡς + οριστ. αορίστου — προτερόχρονο, πραγματικό)<br><strong>ἐπικυρῶσαι</strong>: τελικό απαρέμφατο, αντικ. του ἠνάγκασαν· υποκ. του (ενν. τοὺς Κερκυραίους) — ετεροπροσωπία<br><strong>τὴν γνώμην</strong>: αντικ. του ἐπικυρῶσαι',
+        translation: 'Και αφού είπαν αυτά, ανάγκασαν (τους Κερκυραίους) να επικυρώσουν την πρόταση.',
+        interpretive: 'Οι ολιγαρχικοί, με το κλίμα ψυχολογικής βίας και τρομοκρατίας που δημιουργούν, εξαναγκάζουν τους Κερκυραίους να επικυρώσουν την πρότασή τους. Καταλύεται η ουσία των δημοκρατικών θεσμών, η ελευθερία στη λήψη αποφάσεων. Η πολιτική φενάκη φαίνεται στις αντιφατικές ενέργειές τους: από τη μια <em>συγκαλούν</em> την εκκλησία, από την άλλη <em>δεσμεύουν</em> τη βούλησή της.'
+      },
+      {
+        greek: '<strong>Πέμπουσι</strong> δὲ καὶ ἐς τὰς Ἀθήνας εὐθὺς πρέσβεις περί τε τῶν <strong>πεπραγμένων</strong> <strong>διδάξοντας</strong> ὡς <strong>ξυνέφερε</strong>',
+        lexical: L('πέμπουσι') + ': ιστορικός ενεστώτας του πέμπω ' + AR + ' πομπή, αποστολή<br>' + L('διδάξοντας· διδάσκω') + '= εξηγώ ' + AR + ' διδασκαλία, δίδαγμα<br>' + L('πεπραγμένων') + ': μτχ. παρακ. παθ. του πράσσω ' + AR + ' πράξη, πράγμα<br>' + L('ξυμφέρει') + '= συμφέρει ' + AR + ' συμφέρον',
+        syntactic: '<strong>Πέμπουσι</strong>: ' + F('istorikos', 'ιστορικός ενεστώτας') + '<br><strong>ἐς τὰς Ἀθήνας</strong>: εμπρόθ. προσδ. κίνησης σε τόπο<br><strong>πρέσβεις</strong>: αντικ. του Πέμπουσι<br><strong>διδάξοντας</strong>: ' + F('teliki', 'τελική μετοχή') + ', συνημμένη στο πρέσβεις<br><strong>περὶ τῶν πεπραγμένων</strong>: εμπρόθ. προσδ. αναφοράς· <strong>τῶν πεπραγμένων</strong>: επιθετική μτχ. ουσιαστικοποιημένη<br><strong>ὡς ξυνέφερε</strong>: δευτ. ειδική πρόταση, αντικ. του διδάξοντας (ὡς: υποκειμενική άποψη)',
+        translation: 'Και στέλνουν αμέσως πρέσβεις και στην Αθήνα, για να εξηγήσουν ότι όσα είχαν γίνει ήταν προς το συμφέρον (και των Αθηναίων)',
+        interpretive: 'Η αποστολή πρέσβεων είναι διπλωματικός ελιγμός. Ο Θουκυδίδης δεν κάνει λόγο για αντίστοιχη κίνηση προς τη Σπάρτη, διότι η νέα κατάσταση ήταν προφανώς ευνοϊκή γι᾽ αυτήν. Η πρεσβεία είχε διπλό σκοπό: να πείσει τους Αθηναίους ότι οι εξελίξεις τους συνέφεραν και να αποτρέψει τους καταφυγόντες δημοκρατικούς από κάθε αντίδραση.'
+      },
+      {
+        greek: 'καὶ τοὺς ἐκεῖ <strong>καταπεφευγότας</strong> <strong>πείσοντας</strong> μηδὲν <strong>ἀνεπιτήδειον</strong> πράσσειν, ὅπως μή τις <strong>ἐπιστροφὴ</strong> γένηται.',
+        lexical: L('τοὺς ἐκεῖ καταπεφευγότας') + '= αυτούς που είχαν καταφύγει εκεί ' + AR + ' καταφύγιο<br>' + L('πείσοντας') + ': μτχ. μέλλ. του πείθω ' + AR + ' πειθώ, πειστικός<br>' + L('ἀνεπιτήδειον') + '(ενν. τῇ Κερκύρᾳ) = εχθρική ενέργεια ' + AR + ' επιτήδειος<br>' + L('ὅπως μή τις ἐπιστροφὴ γένηται') + '= για να μην υπάρξει καμιά αντεκδίκηση (κατά των Κερκυραίων από την πλευρά των Αθηναίων)',
+        syntactic: '<strong>πείσοντας</strong>: ' + F('teliki', 'τελική μετοχή') + ', συνημμένη στο πρέσβεις<br><strong>τοὺς καταπεφευγότας</strong>: επιθετική μτχ. ουσιαστικοποιημένη, αντικ. του πείσοντας<br><strong>ἐκεῖ</strong>: επιρρ. προσδ. τόπου<br><strong>πράσσειν</strong>: τελικό απαρέμφατο, αντικ. του πείσοντας· υποκ.: τοὺς καταπεφευγότας (ετεροπροσωπία)<br><strong>μηδὲν ἀνεπιτήδειον</strong>: αντικ. του πράσσειν<br><strong>ὅπως μή... γένηται</strong>: δευτ. τελική πρόταση (υποτακτική, γιατί εξαρτάται από τον ιστορικό ενεστώτα Πέμπουσι, που λογίζεται αρκτικός χρόνος)<br><strong>τις ἐπιστροφή</strong>: υποκ. του γένηται',
+        translation: 'και για να πείσουν αυτούς που είχαν καταφύγει εκεί να μην κάνουν καμιά εχθρική ενέργεια, ώστε να μην υπάρξει καμιά αντεκδίκηση.',
+        interpretive: 'Οι ολιγαρχικοί επιδιώκουν να αποτρέψουν κάθε αντίδραση στη νέα πολιτική κατάσταση. Δεν είναι μόνο δολοφόνοι αλλά και αναίσχυντοι δολοπλόκοι: προσπαθούν να διεγείρουν τα αισθήματα φιλοπατρίας εκείνων που ήθελαν να φονεύσουν.'
+      }
+    ]
+  },
+
+  72: {
+    title: '§ 72 · Ανάμειξη της Σπάρτης — Η πρώτη σύγκρουση',
+    rows: [
+      {
+        greek: '<strong>Ἐλθόντων</strong> δὲ οἱ Ἀθηναῖοι τούς τε πρέσβεις <strong>ὡς νεωτερίζοντας</strong> <strong>ξυλλαβόντες</strong>, καὶ ὅσους ἔπεισαν, <strong>κατέθεντο</strong> ἐς Αἴγιναν.',
+        lexical: L('ἐλθόντων') + '(ενν. τῶν πρέσβεων) = όταν έφτασαν<br>' + L('νεωτερίζω') + '= επιχειρώ πολιτικές μεταβολές, υποκινώ επανάσταση ' + AR + ' νεωτερισμός<br>' + L('ξυλλαμβάνω') + '= συλλαμβάνω ' + AR + ' σύλληψη<br>' + L('κατέθεντο· κατατίθεμαι') + '= τοποθετώ κάπου για ασφάλεια ' + AR + ' κατάθεση, παρακαταθήκη',
+        syntactic: '<strong>Ἐλθόντων</strong> (ενν. τῶν πρέσβεων): χρονική μτχ., ' + F('gen_apol', 'γενική απόλυτη') + '<br><strong>οἱ Ἀθηναῖοι</strong>: υποκ. του κατέθεντο<br><strong>ξυλλαβόντες</strong>: χρονική μτχ., συνημμένη στο οἱ Ἀθηναῖοι<br><strong>ὡς νεωτερίζοντας</strong>: αιτιολογική μτχ. υποκειμενικής αιτιολογίας (ὡς), συνημμένη στο πρέσβεις<br><strong>τοὺς πρέσβεις</strong>: αντικ. του ξυλλαβόντες<br><strong>ὅσους ἔπεισαν</strong>: δευτ. αναφορική ονοματική πρόταση, αντικ. του ξυλλαβόντες<br><strong>ἐς Αἴγιναν</strong>: εμπρόθ. κίνηση σε τόπο',
+        translation: 'Όταν όμως έφτασαν (οι πρέσβεις), οι Αθηναίοι, αφού συνέλαβαν ως υποκινητές επανάστασης αυτούς και όσους (Κερκυραίους) αυτοί είχαν πείσει, τους συγκέντρωσαν για ασφάλεια στην Αίγινα.',
+        interpretive: 'Η αντίδραση των Αθηναίων υπήρξε άμεση. Η σύλληψη πρέσβεων, που θεωρούνταν πρόσωπα ιερά και απαραβίαστα, αντιστρατεύεται τους κανόνες του «διεθνούς δικαίου» της εποχής. Δικαιολογείται όμως από την κατάλυση της έννομης τάξης στην Κέρκυρα και από την ανάρμοστη δράση των ίδιων των πρέσβεων στην Αθήνα. Ο Θουκυδίδης δεν ξαναμιλά για την τύχη αυτών των ομήρων.'
+      },
+      {
+        greek: '<strong>Ἐν δὲ τούτῳ</strong> τῶν Κερκυραίων <strong>οἱ ἔχοντες τὰ πράγματα</strong> ἐλθούσης τριήρους Κορινθίας καὶ Λακεδαιμονίων πρέσβεων <strong>ἐπιτίθενται</strong> τῷ δήμῳ, καὶ μαχόμενοι ἐνίκησαν.',
+        lexical: L('ἐν δὲ τούτῳ') + '= στο μεταξύ<br>' + L('οἱ ἔχοντες τὰ πράγματα') + '= όσοι είχαν την εξουσία (οι ολιγαρχικοί)<br>' + L('τριήρης') + '= πολεμικό πλοίο με τρεις σειρές κουπιά<br>' + L('ἐπιτίθεμαι') + '+ δοτ. = επιτίθεμαι ' + AR + ' επίθεση<br>' + L('ὁ δῆμος') + '= οι δημοκρατικοί',
+        syntactic: '<strong>Ἐν τούτῳ</strong>: εμπρόθ. προσδ. χρόνου<br><strong>οἱ ἔχοντες</strong>: επιθετική μτχ. ουσιαστικοποιημένη, υποκ. του ἐπιτίθενται<br><strong>τῶν Κερκυραίων</strong>: γεν. διαιρετική<br><strong>τὰ πράγματα</strong>: αντικ. του ἔχοντες<br><strong>ἐλθούσης τριήρους... πρέσβεων</strong>: χρονική μτχ., ' + F('gen_apol', 'γενική απόλυτη') + '<br><strong>ἐπιτίθενται</strong>: ' + F('istorikos', 'ιστορικός ενεστώτας') + '<br><strong>τῷ δήμῳ</strong>: αντικ. του ἐπιτίθενται<br><strong>μαχόμενοι</strong>: τροπική μτχ., συνημμένη στο υποκ. του ἐνίκησαν',
+        translation: 'Στο μεταξύ οι Κερκυραίοι που είχαν στα χέρια τους την εξουσία, όταν έφτασε μια κορινθιακή τριήρης και πρέσβεις των Λακεδαιμονίων, επιτίθενται στους δημοκρατικούς και τους νίκησαν στη μάχη.',
+        interpretive: 'Η άφιξη πολεμικού πλοίου από την Κόρινθο και Λακεδαιμονίων πρέσβεων παρέχει την αναμενόμενη ευκαιρία στους ολιγαρχικούς, που επιτίθενται και νικούν. Η ξένη ανάμειξη ενθαρρύνει την εμφύλια σύγκρουση: ο διπολισμός Αθήνας – Σπάρτης μεταφέρεται στο εσωτερικό της πόλης.'
+      },
+      {
+        greek: '<strong>Ἀφικομένης δὲ νυκτὸς</strong> ὁ μὲν δῆμος ἐς τὴν ἀκρόπολιν καὶ <strong>τὰ μετέωρα</strong> τῆς πόλεως καταφεύγει καὶ <strong>αὐτοῦ</strong> <strong>ξυλλεγεὶς</strong> <strong>ἱδρύθη</strong>, καὶ τὸν Ὑλλαϊκὸν λιμένα <strong>εἶχον</strong>·',
+        lexical: L('ἀφικνοῦμαι') + '= φτάνω ' + AR + ' άφιξη<br>' + L('τὰ μετέωρα τῆς πόλεως') + '= τα ψηλά (και οχυρά) μέρη της πόλης ' + AR + ' μετέωρο<br>' + L('αὐτοῦ') + '= εκεί (επίρρημα)<br>' + L('ξυλλεγείς· ξυλλέγομαι') + '= συγκεντρώνομαι ' + AR + ' συλλογή<br>' + L('ἱδρύθη· ἱδρύομαι') + '= εγκαθίσταμαι, οχυρώνομαι ' + AR + ' ίδρυμα, ίδρυση',
+        syntactic: '<strong>Ἀφικομένης νυκτός</strong>: χρονική μτχ., ' + F('gen_apol', 'γενική απόλυτη') + '<br><strong>ἐς τὴν ἀκρόπολιν καὶ τὰ μετέωρα</strong>: εμπρόθ. κίνηση σε τόπο<br><strong>τῆς πόλεως</strong>: γεν. διαιρετική<br><strong>αὐτοῦ</strong>: επιρρ. προσδ. τόπου<br><strong>ξυλλεγείς</strong>: χρονική μτχ., συνημμένη στο ὁ δῆμος<br><strong>εἶχον</strong>: πληθυντικός με υποκ. το περιληπτικό δῆμος — ' + F('nooumeno', 'σχήμα κατά το νοούμενο') + '<br><strong>τὸν Ὑλλαϊκὸν λιμένα</strong>: αντικ. του εἶχον',
+        translation: 'Όταν όμως νύχτωσε, οι δημοκρατικοί κατέφυγαν στην ακρόπολη και στα ψηλά μέρη της πόλης και, αφού συγκεντρώθηκαν εκεί, οχυρώθηκαν. Είχαν (στον έλεγχό τους) και το Υλλαϊκό λιμάνι.',
+        interpretive: 'Οι δημοκρατικοί καταλαμβάνουν τα υψηλά, φυσικά οχυρά σημεία, καθώς και το Υλλαϊκό λιμάνι (από τον Ύλλο, γιο του Ηρακλή). Ο έλεγχος των λιμανιών είναι ζωτικός, γιατί από αυτά εξαρτάται η επικοινωνία με τους εξωτερικούς συμμάχους.'
+      },
+      {
+        greek: 'οἱ δὲ τήν τε ἀγορὰν <strong>κατέλαβον</strong>, <strong>οὗπερ</strong> οἱ πολλοὶ ᾤκουν αὐτῶν, καὶ τὸν λιμένα τὸν <strong>πρὸς αὐτῇ</strong> καὶ πρὸς τὴν <strong>ἤπειρον</strong>.',
+        lexical: L('οἱ δὲ') + '= οι ολιγαρχικοί<br>' + L('καταλαμβάνω') + ' ' + AR + ' κατάληψη, λήψη, σύλληψη<br>' + L('οὗπερ') + '= όπου ακριβώς<br>' + L('πρὸς αὐτῇ') + '= κοντά σ᾽ αυτήν (την αγορά)<br>' + L('ἤπειρος') + '= η στεριά (η απέναντι ακτή)',
+        syntactic: '<strong>οἱ δέ</strong>: υποκ. του κατέλαβον<br><strong>τὴν ἀγοράν, τὸν λιμένα</strong>: αντικ. του κατέλαβον<br><strong>οὗπερ... ᾤκουν</strong>: δευτ. αναφορική επιρρηματική (τοπική) πρόταση, προσδιορίζει το ἀγοράν<br><strong>οἱ πολλοί</strong>: υποκ. του ᾤκουν · <strong>αὐτῶν</strong>: γεν. διαιρετική<br><strong>τὸν πρὸς αὐτῇ</strong>: επιθετικός προσδ. στο λιμένα<br><strong>πρὸς τὴν ἤπειρον</strong>: εμπρόθ. προσδ. κατεύθυνσης',
+        translation: 'Οι άλλοι κατέλαβαν την αγορά, όπου ακριβώς κατοικούσαν οι περισσότεροι από αυτούς, και το λιμάνι που ήταν κοντά της και έβλεπε προς την (απέναντι) στεριά.',
+        interpretive: 'Οι ολιγαρχικοί —οι εύποροι πολίτες— κατοικούσαν γύρω από την αγορά: ο κοινωνικός διαχωρισμός αποτυπώνεται και στον χώρο της πόλης. Κατέχουν το λιμάνι του Αλκίνου με τον ναύσταθμο, που βλέπει προς την Ήπειρο — από εκεί θα έρθουν οι μισθοφόροι τους (κεφ. 73).'
+      }
+    ]
+  },
+
+  73: {
+    title: '§ 73 · Αναζήτηση συμμάχων — Δούλοι και μισθοφόροι',
+    rows: [
+      {
+        greek: '<strong>Tῇ δ᾽ ὑστεραίᾳ</strong> <strong>ἠκροβολίσαντό</strong> τε ὀλίγα καὶ ἐς τοὺς ἀγροὺς <strong>περιέπεμπον</strong> ἀμφότεροι,',
+        lexical: L('τῇ ὑστεραίᾳ') + '(ενν. ἡμέρᾳ) = την επόμενη μέρα ' + AR + ' ύστερα<br>' + L('ἠκροβολίσαντο· ἀκροβολίζομαι') + '= αψιμαχώ από απόσταση (ἄκρος + βάλλω) ' + AR + ' ακροβολισμός, ακροβολιστής<br>' + L('περιπέμπω') + '= στέλνω (απεσταλμένους) τριγύρω<br>' + L('ἀμφότεροι') + '= και οι δύο',
+        syntactic: '<strong>Τῇ ὑστεραίᾳ</strong>: δοτ. του χρόνου<br><strong>ἀμφότεροι</strong>: υποκ. του ἠκροβολίσαντο και του περιέπεμπον<br><strong>ὀλίγα</strong>: σύστοιχο αντικ. (επιρρηματικής χρήσης) του ἠκροβολίσαντο<br><strong>ἐς τοὺς ἀγρούς</strong>: εμπρόθ. κίνηση σε τόπο',
+        translation: 'Την επόμενη μέρα έγιναν λίγες αψιμαχίες και έστελναν (απεσταλμένους) στην ύπαιθρο και οι δύο παρατάξεις,',
+        interpretive: 'Η μάχη περιορίζεται σε αψιμαχίες από απόσταση· καμία πλευρά δεν μπορεί να επικρατήσει, γι᾽ αυτό και οι δύο στρέφονται στην αναζήτηση ενισχύσεων. Παρακολουθούμε τη γενίκευση του εμφυλίου.'
+      },
+      {
+        greek: 'τοὺς δούλους <strong>παρακαλοῦντές</strong> τε καὶ ἐλευθερίαν <strong>ὑπισχνούμενοι</strong>·',
+        lexical: L('παρακαλέω, -ῶ') + '= καλώ σε βοήθεια ' + AR + ' παράκληση<br>' + L('ὑπισχνούμενοι· ὑπισχνέομαι, -οῦμαι') + '= υπόσχομαι ' + AR + ' υπόσχεση',
+        syntactic: '<strong>παρακαλοῦντες, ὑπισχνούμενοι</strong>: τροπικές μετοχές (με απόχρωση σκοπού), συνημμένες στο ἀμφότεροι<br><strong>τοὺς δούλους</strong>: αντικ. του παρακαλοῦντες<br><strong>ἐλευθερίαν</strong>: αντικ. του ὑπισχνούμενοι',
+        translation: 'καλώντας τους δούλους (σε βοήθεια) και υποσχόμενοι σ᾽ αυτούς ελευθερία·',
+        interpretive: 'Πρόκειται για ασυνήθιστο γεγονός· όμως στο πλαίσιο μιας τόσο έντονης εμφύλιας διαμάχης οι δούλοι, που ξεπερνούσαν τότε το μισό πληθυσμό της Κέρκυρας, αποτελούσαν ικανή αριθμητική ενίσχυση για κάθε παράταξη. Κατά τον Α. Μπαγιόνα, η δράση των δούλων καθορίζεται από τις αντιθέσεις των ελευθέρων και δεν έχουν δικούς τους, διαφορετικούς σκοπούς· είναι όμως υπολογίσιμος παράγοντας.'
+      },
+      {
+        greek: 'καὶ τῷ μὲν δήμῳ τῶν <strong>οἰκετῶν</strong> τὸ πλῆθος <strong>παρεγένετο</strong> <strong>ξύμμαχον</strong>, τοῖς δ᾽ ἑτέροις ἐκ τῆς ἠπείρου <strong>ἐπίκουροι</strong> ὀκτακόσιοι.',
+        lexical: L('οἰκέτης') + '= δούλος που υπηρετεί στο σπίτι ' + AR + ' οίκος, οικιακός<br>' + L('παραγίγνομαι') + '= έρχομαι σε βοήθεια, προσχωρώ ' + AR + ' παρών<br>' + L('ξύμμαχος') + '= σύμμαχος<br>' + L('ἐπίκουρος') + '= μισθοφόρος ' + AR + ' επικουρία, επικουρικός',
+        syntactic: '<strong>τὸ πλῆθος</strong>: υποκ. του παρεγένετο · <strong>τῶν οἰκετῶν</strong>: γεν. διαιρετική<br><strong>τῷ δήμῳ, τοῖς ἑτέροις</strong>: αντικ. του παρεγένετο (δοτ.)<br><strong>ξύμμαχον</strong>: επιρρηματικό κατηγορούμενο του τρόπου στο πλῆθος<br><strong>ἐπίκουροι</strong>: υποκ. του εννοούμενου παρεγένοντο · <strong>ὀκτακόσιοι</strong>: επιθ. προσδ.<br><strong>ἐκ τῆς ἠπείρου</strong>: εμπρόθ. προσδ. προέλευσης<br><strong>μὲν... δέ</strong>: αντίθεση',
+        translation: 'Και στο πλευρό των δημοκρατικών τάχθηκε ως σύμμαχος το μεγαλύτερο μέρος των δούλων, ενώ στους άλλους ήρθαν από την ηπειρωτική χώρα οκτακόσιοι μισθοφόροι.',
+        interpretive: 'Οι <em>οἰκέται</em> ανήκουν στην τάξη των δούλων, αλλά βρίσκονται σε καλύτερη θέση από τους άλλους: ζουν στο σπίτι του κυρίου τους ως υπηρετικό προσωπικό. Η προσχώρησή τους στους δημοκρατικούς είναι λογική εξέλιξη, γιατί ιδεολογικά και κοινωνικά αισθάνονταν εγγύτερα σε αυτούς. Οι ολιγαρχικοί είχαν την οικονομική δυνατότητα να προσλάβουν μισθοφόρους, για να εξισωθούν αριθμητικά.'
+      }
+    ]
+  },
+
+  74: {
+    title: '§ 74 · Νίκη των δημοκρατικών — Ο εμπρησμός της πόλης',
+    rows: [
+      {
+        greek: '<strong>Διαλιπούσης δ᾽ ἡμέρας</strong> μάχη αὖθις γίγνεται καὶ νικᾷ ὁ δῆμος <strong>χωρίων τε ἰσχύι</strong> καὶ <strong>πλήθει προύχων</strong>·',
+        lexical: L('διαλιπούσης δ᾽ ἡμέρας') + '= κι αφού πέρασε μια μέρα · διαλείπω ' + AR + ' διάλειμμα<br>' + L('αὖθις') + '= πάλι<br>' + L('χωρίων ἰσχύι') + '= εξαιτίας της ισχύος των θέσεών τους ' + AR + ' χώρος, ισχυρός<br>' + L('πλήθει προύχων') + '= επειδή είχε αριθμητική υπεροχή · προύχω (κράση: πρό + ἔχω) ' + AR + ' προεξοχή',
+        syntactic: '<strong>Διαλιπούσης ἡμέρας</strong>: χρονική μτχ., ' + F('gen_apol', 'γενική απόλυτη') + '<br><strong>μάχη</strong>: υποκ. του γίγνεται · <strong>γίγνεται, νικᾷ</strong>: ' + F('istorikos', 'ιστορικοί ενεστώτες') + '<br><strong>ὁ δῆμος</strong>: υποκ. του νικᾷ<br><strong>ἰσχύι</strong>: δοτ. της αιτίας · <strong>χωρίων</strong>: γεν. υποκειμενική<br><strong>προύχων</strong>: αιτιολογική μτχ., συνημμένη στο ὁ δῆμος<br><strong>πλήθει</strong>: δοτ. της αναφοράς',
+        translation: 'Κι αφού πέρασε μια μέρα, γίνεται πάλι μάχη και νικούν οι δημοκρατικοί, εξαιτίας της ισχύος των θέσεών τους και επειδή υπερείχαν αριθμητικά.',
+        interpretive: 'Δεν είναι λογικό να πρόκειται για την ημέρα των αψιμαχιών, γιατί θα χρειάστηκε χρόνος ώσπου να συγκεντρωθούν οι δούλοι και να φτάσουν οι μισθοφόροι. Η κατάσταση αντιστρέφεται υπέρ του δήμου, που νικά λόγω της αριθμητικής του υπεροχής και της κατάληψης των πιο καίριων θέσεων.'
+      },
+      {
+        greek: 'αἵ τε <strong>γυναῖκες</strong> αὐτοῖς τολμηρῶς <strong>ξυνεπελάβοντο</strong> <strong>βάλλουσαι</strong> ἀπὸ τῶν οἰκιῶν τῷ <strong>κεράμῳ</strong> καὶ <strong>παρὰ φύσιν</strong> ὑπομένουσαι τὸν <strong>θόρυβον</strong>.',
+        lexical: L('ξυνεπελάβοντο· συνεπιλαμβάνομαί τινι') + '= βοηθώ, υποστηρίζω<br>' + L('βάλλω') + '= χτυπώ, ρίχνω ' + AR + ' βολή, βλήμα, πρόβλημα, εκβολή<br>' + L('κέραμος') + '= κεραμίδια ' + AR + ' κεραμίδι, κεραμική<br>' + L('παρὰ φύσιν') + '= σε αντίθεση προς τη γυναικεία φύση<br>' + L('θόρυβος') + '= ταραχή, αντάρα',
+        syntactic: '<strong>αἱ γυναῖκες</strong>: υποκ. του ξυνεπελάβοντο<br><strong>αὐτοῖς</strong>: αντικ. του ξυνεπελάβοντο (δοτ.)<br><strong>τολμηρῶς</strong>: επιρρ. προσδ. τρόπου<br><strong>βάλλουσαι, ὑπομένουσαι</strong>: τροπικές μετοχές, συνημμένες στο γυναῖκες<br><strong>ἀπὸ τῶν οἰκιῶν</strong>: εμπρόθ. προσδ. προέλευσης<br><strong>τῷ κεράμῳ</strong>: δοτ. οργανική του μέσου<br><strong>παρὰ φύσιν</strong>: εμπρόθ. προσδ. τρόπου (αντίθεσης)<br><strong>τὸν θόρυβον</strong>: αντικ. του ὑπομένουσαι',
+        translation: 'Και οι γυναίκες ακόμη τους βοήθησαν με πολλή τόλμη, ρίχνοντας κεραμίδια από τις στέγες των σπιτιών και υπομένοντας την αντάρα της μάχης, αντίθετα με τη γυναικεία φύση τους.',
+        interpretive: 'Ιδιαίτερη προβολή του ενεργού ρόλου των γυναικών, της ψυχραιμίας και της τόλμης τους. Οι γυναίκες έχουν συνήθως αντοχή αμυντική και όχι ορμή επιθετική· όταν όμως απειλούνται τα αγαπημένα τους πρόσωπα ή, όπως εδώ, η πατρίδα τους, δείχνουν τόλμη που υπερβαίνει τη γυναικεία τους φύση.'
+      },
+      {
+        greek: 'Γενομένης δὲ τῆς <strong>τροπῆς</strong> περὶ <strong>δείλην ὀψίαν</strong>, <strong>δείσαντες</strong> <strong>οἱ ὀλίγοι</strong> μὴ <strong>αὐτοβοεὶ</strong> ὁ δῆμος τοῦ τε <strong>νεωρίου</strong> κρατήσειεν ἐπελθὼν καὶ σφᾶς διαφθείρειεν,',
+        lexical: L('τροπή') + '= υποχώρηση, φυγή ' + AR + ' τρόπαιο<br>' + L('δείλη ὀψία') + '= αργά το απόγευμα (4–6 μ.μ.) ' + AR + ' όψιμος<br>' + L('δείσαντες· δείδω') + '= φοβούμαι ' + AR + ' δέος<br>' + L('οἱ ὀλίγοι') + '= οι ολιγαρχικοί (αντίθ. ὁ δῆμος, τὸ πλῆθος)<br>' + L('αὐτοβοεί') + '= με τον πρώτο αλαλαγμό, με αιφνιδιαστική έφοδο<br>' + L('νεώριον') + '= ναύσταθμος<br>' + L('ἐπέρχομαι') + '= επιτίθεμαι',
+        syntactic: '<strong>Γενομένης τῆς τροπῆς</strong>: χρονική μτχ., ' + F('gen_apol', 'γενική απόλυτη') + '<br><strong>περὶ δείλην ὀψίαν</strong>: εμπρόθ. προσδ. χρόνου<br><strong>δείσαντες</strong>: αιτιολογική μτχ., συνημμένη στο οἱ ὀλίγοι (υποκ. του ἐμπιπρᾶσι)<br><strong>μὴ... κρατήσειεν... διαφθείρειεν</strong>: δευτ. ' + F('endoiastiki', 'ενδοιαστική πρόταση') + ', αντικ. του δείσαντες· ευκτική πλαγίου λόγου<br><strong>ὁ δῆμος</strong>: υποκ. · <strong>τοῦ νεωρίου</strong>: αντικ. του κρατήσειεν (γεν.)<br><strong>ἐπελθών</strong>: χρονική μτχ., συνημμένη στο ὁ δῆμος<br><strong>αὐτοβοεί</strong>: επιρρ. προσδ. τρόπου · <strong>σφᾶς</strong>: αντικ. του διαφθείρειεν (πλάγια αυτοπάθεια)',
+        translation: 'Κι όταν έγινε η υποχώρηση αργά το σούρουπο, επειδή φοβήθηκαν οι ολιγαρχικοί μήπως οι δημοκρατικοί, αφού επιτεθούν, καταλάβουν με αιφνιδιαστική έφοδο τον ναύσταθμο και τους σκοτώσουν,',
+        interpretive: 'Η ημέρα χωριζόταν σε <em>πρωί</em> (ως τις 9), <em>πλήθουσα ἀγορά</em> (9–12), <em>μεσημβρία</em> (12–2) και <em>δείλη</em> (2–6 μ.μ.), που υποδιαιρούνταν σε <em>δείλη πρωία</em> (2–4) και <em>δείλη ὀψία</em> (4–6)· ακολουθούσε η <em>ἑσπέρα</em>. Ο φόβος των ολιγαρχικών για τον ναύσταθμο οδηγεί στην απονενοημένη ενέργεια του εμπρησμού.'
+      },
+      {
+        greek: '<strong>ἐμπιπρᾶσι</strong> τὰς οἰκίας τὰς ἐν κύκλῳ τῆς ἀγορᾶς καὶ τὰς <strong>ξυνοικίας</strong>, ὅπως μὴ ᾖ <strong>ἔφοδος</strong>, <strong>φειδόμενοι</strong> οὔτε οἰκείας οὔτε ἀλλοτρίας,',
+        lexical: L('ἐμπιπρᾶσι· ἐμπίπρημι') + '= πυρπολώ, βάζω φωτιά ' + AR + ' εμπρησμός, εμπρηστής<br>' + L('ξυνοικία') + '= μεγάλη οικία με πολλά διαμερίσματα, όπου έμεναν πολλές οικογένειες με ενοίκιο (≠ οἰκία: όπου μένει μία οικογένεια) ' + AR + ' συνοικία<br>' + L('ἔφοδος') + '= επίθεση ' + AR + ' έφοδος<br>' + L('φειδόμενοι· φείδομαι') + '= μεταχειρίζομαι με φειδώ, «λυπάμαι» ' + AR + ' φειδωλός<br>' + L('οὔτε οἰκείας οὔτε ἀλλοτρίας') + '(ενν. οἰκίας) = ούτε δικό τους ούτε ξένο σπίτι',
+        syntactic: '<strong>ἐμπιπρᾶσι</strong>: ' + F('istorikos', 'ιστορικός ενεστώτας') + '· υποκ.: οἱ ὀλίγοι<br><strong>τὰς οἰκίας, τὰς ξυνοικίας</strong>: αντικ. · <strong>τὰς ἐν κύκλῳ</strong>: επιθ. προσδ.<br><strong>τῆς ἀγορᾶς</strong>: γεν. εξαρτημένη από το ἐν κύκλῳ<br><strong>ὅπως μὴ ᾖ ἔφοδος</strong>: δευτ. τελική πρόταση (υποτακτική, μετά από ιστορικό ενεστώτα)<br><strong>ἔφοδος</strong>: υποκ. του ᾖ<br><strong>φειδόμενοι</strong>: τροπική μτχ., συνημμένη στο υποκ. του ἐμπιπρᾶσι<br><strong>οἰκείας, ἀλλοτρίας</strong>: αντικ. του φειδόμενοι (σε γεν.)',
+        translation: 'πυρπολούν τα σπίτια γύρω από την αγορά και τις πολυκατοικίες, για να μη γίνει επίθεση, χωρίς να λυπηθούν ούτε τα δικά τους ούτε τα ξένα σπίτια,',
+        interpretive: 'Ο εμπρησμός είναι απονενοημένη ενέργεια, υποκινούμενη από τον φόβο μήπως οι αντίπαλοι καταλάβουν το λιμάνι του Αλκίνου και τον ναύσταθμο. Έχει παρατηρηθεί όμως ότι ο εμπρησμός καθιστούσε πιο προσιτή την αγορά στον εχθρό· άρα η φωτιά αποσκοπούσε μάλλον στην <em>καθυστέρηση</em> της επίθεσης. Οι δύο παρατάξεις καταφεύγουν σε όλα τα δυνατά μέσα για να επικρατήσουν.'
+      },
+      {
+        greek: 'ὥστε καὶ <strong>χρήματα</strong> πολλὰ ἐμπόρων κατεκαύθη καὶ ἡ πόλις ἐκινδύνευσε πᾶσα διαφθαρῆναι, <strong>εἰ ἄνεμος ἐπεγένετο τῇ φλογὶ ἐπίφορος ἐς αὐτήν</strong>.',
+        lexical: L('χρήματα') + '= πράγματα, εμπορεύματα<br>' + L('κατακαίω') + ' ' + AR + ' κατάκαυση, καύσιμο<br>' + L('εἰ ἄνεμος ἐπεγένετο τῇ φλογὶ ἐπίφορος ἐς αὐτήν') + '= αν φυσούσε άνεμος τη φωτιά με κατεύθυνση προς αυτή (την πόλη)<br>' + L('φλόξ') + ' ' + AR + ' φλόγα, φλογερός',
+        syntactic: '<strong>ὥστε... κατεκαύθη... ἐκινδύνευσε</strong>: δευτ. συμπερασματική πρόταση (ὥστε + οριστική: πραγματικό αποτέλεσμα)<br><strong>χρήματα</strong>: υποκ. του κατεκαύθη ' + F('attiki', 'αττική σύνταξη') + ' · <strong>ἐμπόρων</strong>: γεν. κτητική<br><strong>διαφθαρῆναι</strong>: τελικό απαρέμφατο, αντικ. του ἐκινδύνευσε (ταυτοπροσωπία)<br><strong>πᾶσα</strong>: κατηγορηματικός προσδ. στο πόλις<br><strong>εἰ... ἐπεγένετο</strong>: ' + F('ypothetikos', 'υποθετικός λόγος — αντίθετο του πραγματικού') + '<br><strong>τῇ φλογί</strong>: αντικ. του ἐπεγένετο (δοτ.)<br><strong>ἐπίφορος</strong>: επιρρηματικό κατηγορούμενο του τρόπου στο ἄνεμος<br><strong>ἐς αὐτήν</strong>: εμπρόθ. κατεύθυνσης',
+        translation: 'ώστε κάηκαν πολλά εμπορεύματα και κινδύνευσε ολόκληρη η πόλη να καταστραφεί, αν φυσούσε άνεμος που θα έστρεφε τη φωτιά προς αυτήν.',
+        interpretive: 'Ο Θουκυδίδης τονίζει τις ολέθριες συνέπειες: η εμφύλια μανία δεν απειλεί μόνο τους αντιπάλους, αλλά την ίδια την πόλη — και τα συμφέροντα των εμπόρων, δηλαδή την οικονομική ζωή της.'
+      },
+      {
+        greek: 'Καὶ οἱ μὲν <strong>παυσάμενοι</strong> τῆς μάχης <strong>ὡς ἑκάτεροι ἡσυχάσαντες</strong> τὴν νύκτα <strong>ἐν φυλακῇ ἦσαν</strong>·',
+        lexical: L('παύομαι') + '+ γεν. = σταματώ ' + AR + ' παύση<br>' + L('ὡς ἑκάτεροι ἡσυχάσαντες') + '= καθώς και τα δύο στρατόπεδα απείχαν από πολεμικές ενέργειες<br>' + L('ἐν φυλακῇ ἦσαν') + '= βρίσκονταν σε επιφυλακή ' + AR + ' φύλακας, φυλακή',
+        syntactic: '<strong>οἱ μέν</strong>: υποκ. του ἦσαν<br><strong>παυσάμενοι</strong>: χρονική μτχ., συνημμένη στο οἱ μέν<br><strong>τῆς μάχης</strong>: γεν. αντικ. του παυσάμενοι<br><strong>ἑκάτεροι</strong>: επιμεριστική παράθεση στο οἱ μέν · <strong>ἡσυχάσαντες</strong>: αιτιολογική/χρονική μτχ., συνημμένη στο ἑκάτεροι<br><strong>τὴν νύκτα</strong>: αιτ. της χρονικής διάρκειας<br><strong>ἐν φυλακῇ</strong>: εμπρόθ. προσδ. τρόπου (κατάστασης)',
+        translation: 'Και αυτοί, αφού σταμάτησαν τη μάχη, καθώς και τα δύο στρατόπεδα απείχαν από πολεμικές ενέργειες, ήταν τη νύχτα σε επιφυλακή.',
+        interpretive: 'Ανακωχή εκ των πραγμάτων, χωρίς συμφωνία: η ένταση παραμένει και η σύγκρουση μπορεί να ξαναρχίσει ανά πάσα στιγμή.'
+      },
+      {
+        greek: 'καὶ ἡ Κορινθία ναῦς <strong>τοῦ δήμου κεκρατηκότος</strong> <strong>ὑπεξανήγετο</strong>, καὶ τῶν ἐπικούρων οἱ πολλοὶ ἐς τὴν ἤπειρον <strong>λαθόντες</strong> <strong>διεκομίσθησαν</strong>.',
+        lexical: L('κεκρατηκότος τοῦ δήμου') + '= όταν είχαν επικρατήσει οι δημοκρατικοί ' + AR + ' κράτος<br>' + L('ὑπεξανήγετο· ὑπεξανάγομαι') + '(ὑπό + ἐξ + ἀνά + ἄγω) = ανοίγομαι με προφυλάξεις (κρυφά) στο ανοιχτό πέλαγος<br>' + L('λαθόντες· λανθάνω') + '= διαφεύγω την προσοχή ' + AR + ' λάθος, λήθη, αλήθεια, απαρατήρητος<br>' + L('διεκομίσθησαν· διακομίζομαι') + '= μεταφέρομαι, περνώ ' + AR + ' διακομιδή',
+        syntactic: '<strong>ἡ Κορινθία ναῦς</strong>: υποκ. του ὑπεξανήγετο<br><strong>τοῦ δήμου κεκρατηκότος</strong>: χρονική (και αιτιολογική) μτχ., ' + F('gen_apol', 'γενική απόλυτη') + '<br><strong>τῶν ἐπικούρων</strong>: γεν. διαιρετική · <strong>οἱ πολλοί</strong>: υποκ. του διεκομίσθησαν<br><strong>ἐς τὴν ἤπειρον</strong>: εμπρόθ. κίνηση σε τόπο<br><strong>λαθόντες</strong>: τροπική μτχ., συνημμένη στο οἱ πολλοί',
+        translation: 'Και το κορινθιακό πλοίο, αφού είχαν επικρατήσει οι δημοκρατικοί, ανοίχτηκε κρυφά στο πέλαγος, και οι περισσότεροι από τους μισθοφόρους πέρασαν απαρατήρητοι στην απέναντι στεριά.',
+        interpretive: 'Είναι το κορινθιακό πλοίο που μετέφερε τους Λακεδαιμόνιους πρέσβεις και έδωσε το έναυσμα της σύγκρουσης (72.2). Μόλις η μάχη στράφηκε υπέρ των δημοκρατικών, οι Κορίνθιοι και οι μισθοφόροι έφυγαν κρυφά — η πρόθεση <em>ὑπό</em> στο ὑπεξανήγετο και το λαθόντες δηλώνουν ακριβώς τον κρυφό τρόπο — από φόβο μήπως συλληφθούν. Οι «προστάτες» εγκαταλείπουν τους ολιγαρχικούς στην τύχη τους.'
+      }
+    ]
+  }
+};
+
+const PARA_LIST = [70, 71, 72, 73, 74];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let currentPara = 71;
+let currentMode = 'lexical';
+
+const modeLabels = {
+  lexical: 'Λεξιλογικά · Γραμματικά',
+  syntactic: 'Συντακτικά',
+  translation: 'Μετάφραση',
+  interpretive: 'Ερμηνευτικά'
+};
+
+// Λέξεις με αναδυόμενο πίνακα κλίσης (μόνο στην όψη Λεξιλογικά)
+const morphWords = {
+  'δουλωθεῖεν': 'doulotheien',
+  'νηὶ': 'naus',
+  'διδάξοντας': 'didaxontas',
+  'ἱδρύθη': 'idrythi',
+  'γυναῖκες': 'gyni',
+  'ἐμπιπρᾶσι': 'empipresi',
+  'λαθόντες': 'lathontes',
+  'ἐψηφίσαντο': 'epsifisanto'
+};
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'exercises') {
+    var lbl = document.getElementById('card-para-label');
+    if (lbl) lbl.textContent = 'Θουκυδίδου Ἱστορίαι Γ΄ ' + currentPara;
+    renderExercises();
+  }
+}
+
+function loadParagraph(num) {
+  currentPara = num;
+  const data = paragraphs[num];
+  document.getElementById('para-title').textContent = data.title;
+  // Το κεφ. 70 διδάσκεται μόνο από μετάφραση: δεν έχει συντακτικά
+  const synBtn = document.getElementById('mode-syntactic');
+  const note = document.getElementById('mode-note');
+  if (data.translationOnly) {
+    synBtn.disabled = true;
+    synBtn.style.opacity = '0.35';
+    synBtn.style.cursor = 'not-allowed';
+    note.style.display = 'block';
+    note.innerHTML = 'Το κεφ. 70 διδάσκεται <strong>μόνο από μετάφραση</strong>. Το πρωτότυπο δίνεται για αναφορά· η έμφαση είναι στη μετάφραση και στα ερμηνευτικά σχόλια.';
+    if (currentMode === 'syntactic') currentMode = 'translation';
+  } else {
+    synBtn.disabled = false;
+    synBtn.style.opacity = '';
+    synBtn.style.cursor = '';
+    note.style.display = 'none';
+  }
+  setMode(currentMode);
+  updateNavArrows();
+}
+
+function navigatePara(dir) {
+  const idx = PARA_LIST.indexOf(currentPara);
+  const newIdx = idx + dir;
+  if (newIdx >= 0 && newIdx < PARA_LIST.length) {
+    loadParagraph(PARA_LIST[newIdx]);
+    window.scrollTo(0, 0);
+  }
+}
+
+function updateNavArrows() {
+  const idx = PARA_LIST.indexOf(currentPara);
+  document.getElementById('btn-prev').disabled = idx <= 0;
+  document.getElementById('btn-next').disabled = idx >= PARA_LIST.length - 1;
+}
+
+// ══════════════════════════════════════════════
+// MODE
+// ══════════════════════════════════════════════
+function setMode(mode) {
+  if (paragraphs[currentPara].translationOnly && mode === 'syntactic') return;
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode-' + mode).classList.add('active');
+  document.getElementById('col-header').textContent = modeLabels[mode];
+  renderTable();
+}
+
+// ══════════════════════════════════════════════
+// TABLE
+// ══════════════════════════════════════════════
+function renderTable() {
+  const data = paragraphs[currentPara];
+  if (!data) return;
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = data.rows.map(row => {
+    var greek = row.greek;
+    if (currentMode === 'lexical') {
+      Object.keys(morphWords).forEach(function(w) {
+        greek = greek.split(w).join('<span class="w-click" onclick="openMorph(\'' + morphWords[w] + '\')">' + w + '</span>');
+      });
+    }
+    var right = row[currentMode] || '<em style="color:var(--text-dim)">—</em>';
+    return '<tr><td class="td-greek">' + greek + '</td><td class="td-right">' + right + '</td></tr>';
+  }).join('');
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+// EXERCISES
+// ══════════════════════════════════════════════
+const exercisesData = {
+
+  70: [
+    {
+      type: 'mc',
+      num: 'Άσκηση 1 · Κατανόηση',
+      question: 'Ποια ήταν η <em>πραγματική</em> αιτία της απελευθέρωσης των Κερκυραίων αιχμαλώτων από τους Κορινθίους;',
+      options: ['Η εγγύηση των 800 ταλάντων από τους προξένους', 'Η υπόσχεσή τους να προσπαθήσουν να κάνουν την Κέρκυρα σύμμαχο της Κορίνθου', 'Η μεσολάβηση των Αθηναίων', 'Η λήξη των ναυμαχιών στην Επίδαμνο'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 2 · Κατανόηση',
+      question: 'Τι αποφάσισαν οι Κερκυραίοι μετά τη δημόσια συζήτηση με τους πρέσβεις;',
+      options: ['Να αποστατήσουν από την αθηναϊκή συμμαχία', 'Να συμμαχήσουν με τους Πελοποννησίους', 'Να μείνουν σύμμαχοι των Αθηναίων, διατηρώντας φιλικές σχέσεις με τους Πελοποννησίους', 'Να κηρύξουν πόλεμο στην Κόρινθο'],
+      correct: 2
+    },
+    {
+      type: 'tf',
+      num: 'Άσκηση 3 · Σωστό / Λάθος',
+      question: 'Να χαρακτηρίσετε τις προτάσεις ως Σ (Σωστό) ή Λ (Λάθος):',
+      statements: [
+        { text: 'Ο Πειθίας είχε οριστεί επίσημα από την πόλη πρόξενος των Αθηναίων.', correct: false },
+        { text: 'Ο Πειθίας αθωώθηκε στη δίκη που του έκαναν οι ολιγαρχικοί.', correct: true },
+        { text: 'Οι πέντε πλούσιοι κατηγορήθηκαν για πολιτικά εγκλήματα.', correct: false },
+        { text: 'Ο νόμος απαγόρευε την πληρωμή του προστίμου με δόσεις.', correct: true },
+        { text: 'Οι ολιγαρχικοί σκότωσαν τον Πειθία μέσα στη Βουλή.', correct: true }
+      ]
+    },
+    {
+      type: 'match',
+      num: 'Άσκηση 4 · Δικανική ορολογία',
+      question: 'Να αντιστοιχίσετε κάθε όρο με τη σημασία του:',
+      pairs: [
+        { left: 'διώκων', right: 'ο κατήγορος' },
+        { left: 'φεύγων', right: 'ο κατηγορούμενος' },
+        { left: 'ἁλίσκεται', right: 'καταδικάζεται' },
+        { left: 'ἀποφεύγει', right: 'αθωώνεται' }
+      ]
+    },
+    {
+      type: 'vocab',
+      num: 'Άσκηση 5 · Ετυμολογία',
+      question: 'Ποια νεοελληνική λέξη σχετίζεται ετυμολογικά με την αρχαία; Επιλέξτε:',
+      items: [
+        { ancient: 'ἀφεθέντες (ἀφίημι)', correct: 'άφεση', wrong: ['αφή', 'αφέντης'] },
+        { ancient: 'ἀποστήσωσιν (ἀφίστημι)', correct: 'αποστασία', wrong: ['αποστολή', 'απόσταγμα'] },
+        { ancient: 'διηγγυημένοι', correct: 'φερέγγυος', wrong: ['διήγηση', 'γηγενής'] },
+        { ancient: 'ἐξείργοντο (εἴργω)', correct: 'ειρκτή', wrong: ['ειρήνη', 'εργασία'] },
+        { ancient: 'ὀφλόντων (ὀφλισκάνω)', correct: 'εξόφληση', wrong: ['όφελος', 'οφθαλμός'] }
+      ]
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 6 · Ερμηνευτική ερώτηση',
+      question: 'Ποια στάση αποφάσισαν να κρατήσουν οι Κερκυραίοι απέναντι στις πιέσεις Αθηναίων και Κορινθίων; Ποιοι λόγοι την επέβαλαν και ποιες πιθανότητες διατήρησης είχε;',
+      answer: 'Οι Κερκυραίοι αποφάσισαν να μείνουν σύμμαχοι των Αθηναίων «κατὰ τὰ ξυγκείμενα» (δηλ. με την αμυντική συμμαχία του 433 π.Χ.), διατηρώντας όμως φιλικές σχέσεις με τους Πελοποννησίους. Η στάση αυτή δηλώνει ακριβή υπολογισμό συμφερόντων και πολιτικό ρεαλισμό, απαραίτητο στους ανίσχυρους λαούς για να βγουν αλώβητοι από τις συγκρούσεις των ισχυρών· δεν είναι όμως απαλλαγμένη από δολιότητα και ιδιοτέλεια, και αποτελεί το πρώτο αποτέλεσμα της δράσης των ολιγαρχικών. Η εξισορροπητική προσπάθεια ήταν <strong>καταδικασμένη σε αποτυχία</strong>, γιατί η πόλη ήταν ήδη βαθιά διχασμένη και οι δύο υπερδυνάμεις δεν ανέχονταν ενδιάμεσες θέσεις.'
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 7 · Ερμηνευτική ερώτηση',
+      question: 'Να συγκρίνετε τις δύο προσφυγές στη δικαιοσύνη (των ολιγαρχικών και του Πειθία) ως προς την αποτελεσματικότητά τους και να την αιτιολογήσετε.',
+      answer: 'Η δίκη των ολιγαρχικών κατά του Πειθία ήταν <strong>πολιτικής σκοπιμότητας</strong> (κατηγορία ότι υποδουλώνει την Κέρκυρα στους Αθηναίους) και απέτυχε: ο Πειθίας αθωώθηκε, γιατί είναι δύσκολο να στοιχειοθετηθεί κατηγορία πολιτικής υφής. Η αντιμήνυση του Πειθία είχε <strong>θρησκευτικό και κοινωνικό χαρακτήρα</strong> (κοπή χαράκων από τα ιερά τεμένη, με συγκεκριμένο πρόστιμο ανά χάρακα) και πέτυχε: οι πέντε πλούσιοι καταδικάστηκαν. Και οι δύο δίκες όμως δείχνουν ότι η δικαιοσύνη έχει γίνει όργανο πολιτικής αντιπαράθεσης — και η επιτυχία του Πειθία οδήγησε τελικά στη δολοφονία του.'
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 8 · Ερμηνευτική ερώτηση',
+      question: 'Να παρουσιάσετε τις ενέργειες κάθε παράταξης (ολιγαρχικών – δημοκρατικών) που οδήγησαν στην κλιμάκωση της εμφύλιας σύγκρουσης.',
+      answer: '<strong>Ολιγαρχικοί</strong>: προσεγγίζουν έναν έναν τους πολίτες για αποστασία από την Αθήνα → επιτυγχάνουν ψήφισμα ουδετερότητας → σέρνουν τον Πειθία σε δίκη → μετά την καταδίκη τους και την πληροφορία για επιθετική και αμυντική συμμαχία με την Αθήνα, συνωμοτούν και δολοφονούν τον Πειθία και άλλους εξήντα μέσα στη Βουλή.<br><strong>Δημοκρατικοί (Πειθίας)</strong>: αντιμήνυση στους πέντε πλουσιότερους αντιπάλους → άκαμπτη εφαρμογή του νόμου (όχι πληρωμή με δόσεις) → σχέδιο για στενότερη συμμαχία με την Αθήνα.<br>Κάθε κίνηση προκαλεί σκληρότερη αντίδραση: από τα νόμιμα μέσα περνάμε στη βία.'
+    }
+  ],
+
+  71: [
+    {
+      type: 'mc',
+      num: 'Άσκηση 1 · Λεξιλόγιο',
+      question: 'Τι σημαίνει η φράση <em>«ἀλλ᾽ ἢ μιᾷ νηί»</em>;',
+      options: ['και με ένα πλοίο', 'παρά μόνο με ένα πλοίο', 'ούτε με ένα πλοίο', 'με περισσότερα από ένα πλοία'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 2 · Γραμματική',
+      question: 'Ο τύπος <em>δουλωθεῖεν</em> είναι:',
+      options: ['οριστική αορίστου παθητικής φωνής', 'ευκτική ενεστώτα μέσης φωνής', 'ευκτική αορίστου παθητικής φωνής', 'υποτακτική αορίστου παθητικής φωνής'],
+      correct: 2
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 3 · Σύνταξη — μετοχές',
+      question: 'Οι μετοχές <em>διδάξοντας</em> και <em>πείσοντας</em> είναι:',
+      options: ['χρονικές μετοχές', 'αιτιολογικές μετοχές', 'τελικές μετοχές (μέλλοντα)', 'κατηγορηματικές μετοχές'],
+      correct: 2
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 4 · Σύνταξη — προτάσεις',
+      question: 'Η πρόταση <em>«ὅπως μή τις ἐπιστροφὴ γένηται»</em> είναι:',
+      options: ['ενδοιαστική', 'τελική', 'ειδική', 'συμπερασματική'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 5 · Σύνταξη — εκφορά',
+      question: 'Γιατί η ειδική πρόταση <em>«ὅτι ταῦτα καὶ βέλτιστα εἴη»</em> εκφέρεται με ευκτική;',
+      options: ['Δηλώνει ευχή', 'Είναι ευκτική πλαγίου λόγου, γιατί εξαρτάται από ρήμα ιστορικού χρόνου (εἶπον)', 'Δηλώνει το δυνατό στο παρόν', 'Δηλώνει επανάληψη στο παρελθόν'],
+      correct: 1
+    },
+    {
+      type: 'tf',
+      num: 'Άσκηση 6 · Σωστό / Λάθος',
+      question: 'Να χαρακτηρίσετε τις προτάσεις ως Σ ή Λ:',
+      statements: [
+        { text: 'Οι ολιγαρχικοί άφησαν ελεύθερους τους Κερκυραίους να αποφασίσουν.', correct: false },
+        { text: 'Η πρόταση των ολιγαρχικών προέβλεπε ουδετερότητα της Κέρκυρας.', correct: true },
+        { text: 'Οι ολιγαρχικοί έστειλαν πρέσβεις και στη Σπάρτη.', correct: false },
+        { text: 'Η τελική πρόταση εκφέρεται με υποτακτική, γιατί το Πέμπουσι είναι ιστορικός ενεστώτας.', correct: true }
+      ]
+    },
+    {
+      type: 'match',
+      num: 'Άσκηση 7 · Αντιστοίχιση',
+      question: 'Να αντιστοιχίσετε κάθε λέξη/φράση με τη σημασία της:',
+      pairs: [
+        { left: 'ἡσυχάζοντας', right: 'μένοντας ουδέτεροι' },
+        { left: 'ἀνεπιτήδειον', right: 'εχθρική ενέργεια' },
+        { left: 'ἐπιστροφή', right: 'αντεκδίκηση' },
+        { left: 'γνώμη', right: 'πρόταση' },
+        { left: 'τὸ λοιπόν', right: 'στο εξής' }
+      ]
+    },
+    {
+      type: 'vocab',
+      num: 'Άσκηση 8 · Ετυμολογία',
+      question: 'Ποια λέξη είναι ετυμολογικά συγγενής με τον αρχαίο τύπο;',
+      items: [
+        { ancient: 'δράσαντες', correct: 'επίδραση', wrong: ['δρόμος', 'δράκος'] },
+        { ancient: 'ξυγκαλέσαντες', correct: 'κλήση', wrong: ['κάλλος', 'καλάθι'] },
+        { ancient: 'διδάξοντας', correct: 'διδασκαλία', wrong: ['δίδυμος', 'δίοδος'] },
+        { ancient: 'πέμπουσι', correct: 'πομπή', wrong: ['πέμπτος', 'πεμπτουσία'] },
+        { ancient: 'πράσσειν', correct: 'πράξη', wrong: ['πράσινος', 'πρασιά'] }
+      ]
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 9 · Συντακτική ανάλυση',
+      question: 'Να καταγράψετε τις ειδικές προτάσεις του κεφ. 71, να βρείτε τη συντακτική τους θέση και να δικαιολογήσετε την εισαγωγή και την εκφορά τους.',
+      answer: '1. <strong>ὅτι ταῦτα καὶ βέλτιστα εἴη</strong>: αντικ. του εἶπον· εισάγεται με ὅτι (αντικειμενική κρίση)· εκφέρεται με ευκτική πλαγίου λόγου, γιατί εξαρτάται από ρήμα ιστορικού χρόνου.<br>2. <strong>(ὅτι) ἥκιστ᾽ ἂν δουλωθεῖεν ὑπ᾽ Ἀθηναίων</strong>: αντικ. του εἶπον· εκφέρεται με δυνητική ευκτική (ευκτική + ἄν), που διατηρείται αμετάβλητη στον πλάγιο λόγο.<br>3. <strong>ὡς ξυνέφερε</strong>: αντικ. της μετοχής διδάξοντας· εισάγεται με ὡς (υποκειμενική άποψη των ολιγαρχικών)· εκφέρεται με οριστική (διατήρηση της έγκλισης του ευθέος λόγου).'
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 10 · Ερμηνευτική ερώτηση',
+      question: '<em>ξυγκαλέσαντες Κερκυραίους... ἐπικυρῶσαι ἠνάγκασαν τὴν γνώμην</em>: Να εξηγήσετε και να σχολιάσετε την αντιφατικότητα των φράσεων αυτών.',
+      answer: 'Από τη μια οι ολιγαρχικοί <strong>συγκαλούν</strong> την εκκλησία του δήμου, θεσμό που προϋποθέτει ελεύθερη συζήτηση και ψηφοφορία· από την άλλη <strong>εξαναγκάζουν</strong> τους Κερκυραίους να επικυρώσουν την πρότασή τους. Με το κλίμα ψυχολογικής βίας και τρομοκρατίας που δημιουργεί η πρόσφατη δολοφονία, καταλύεται η ουσία των δημοκρατικών θεσμών — η ελευθερία στη λήψη αποφάσεων. Διατηρείται μόνο το προσωπείο της νομιμότητας: πρόκειται για πολιτική φενάκη.'
+    }
+  ],
+
+  72: [
+    {
+      type: 'mc',
+      num: 'Άσκηση 1 · Λεξιλόγιο',
+      question: 'Η φράση <em>«οἱ ἔχοντες τὰ πράγματα»</em> σημαίνει:',
+      options: ['όσοι είχαν τα πράγματά τους', 'όσοι είχαν την εξουσία', 'οι έμποροι της πόλης', 'όσοι είχαν τα όπλα'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 2 · Σύνταξη — μετοχή',
+      question: 'Η μετοχή <em>ὡς νεωτερίζοντας</em> είναι:',
+      options: ['τελική', 'χρονική', 'αιτιολογική υποκειμενικής αιτιολογίας', 'υποθετική'],
+      correct: 2
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 3 · Σύνταξη — γενική απόλυτη',
+      question: 'Ποια από τις παρακάτω μετοχές είναι <em>γενική απόλυτη</em>;',
+      options: ['ξυλλαβόντες', 'μαχόμενοι', 'Ἀφικομένης (νυκτός)', 'ξυλλεγείς'],
+      correct: 2
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 4 · Σύνταξη',
+      question: 'Γιατί το ρήμα <em>εἶχον</em> είναι σε πληθυντικό, ενώ υποκείμενο είναι το <em>ὁ δῆμος</em>;',
+      options: ['Λόγω αττικής σύνταξης', 'Λόγω σχήματος κατά το νοούμενο (ο δῆμος = οι δημοκρατικοί)', 'Γιατί είναι απρόσωπο ρήμα', 'Γιατί πρόκειται για λάθος αντιγραφής'],
+      correct: 1
+    },
+    {
+      type: 'tf',
+      num: 'Άσκηση 5 · Σωστό / Λάθος',
+      question: 'Να χαρακτηρίσετε τις προτάσεις ως Σ ή Λ:',
+      statements: [
+        { text: 'Οι Αθηναίοι συνέλαβαν τους Κερκυραίους πρέσβεις και τους κράτησαν στην Αίγινα.', correct: true },
+        { text: 'Οι ολιγαρχικοί επιτέθηκαν στους δημοκρατικούς πριν φτάσει η κορινθιακή τριήρης.', correct: false },
+        { text: 'Οι δημοκρατικοί κατέφυγαν στην ακρόπολη και στα ψηλά μέρη της πόλης.', correct: true },
+        { text: 'Οι ολιγαρχικοί κατοικούσαν κυρίως γύρω από την αγορά.', correct: true },
+        { text: 'Οι δημοκρατικοί κατέλαβαν το λιμάνι που έβλεπε προς την Ήπειρο.', correct: false }
+      ]
+    },
+    {
+      type: 'match',
+      num: 'Άσκηση 6 · Αντιστοίχιση',
+      question: 'Να αντιστοιχίσετε κάθε λέξη/φράση με τη σημασία της:',
+      pairs: [
+        { left: 'ἐν δὲ τούτῳ', right: 'στο μεταξύ' },
+        { left: 'τὰ μετέωρα', right: 'τα ψηλά μέρη' },
+        { left: 'αὐτοῦ', right: 'εκεί' },
+        { left: 'ἱδρύθη', right: 'οχυρώθηκε, εγκαταστάθηκε' },
+        { left: 'κατέθεντο', right: 'τοποθέτησαν για ασφάλεια' }
+      ]
+    },
+    {
+      type: 'vocab',
+      num: 'Άσκηση 7 · Ετυμολογία',
+      question: 'Ποια λέξη είναι ετυμολογικά συγγενής με τον τύπο <em>κατέλαβον</em> (λαμβάνω);',
+      items: [
+        { ancient: 'κατέλαβον (α)', correct: 'σύλληψη', wrong: ['λάφυρο', 'λέξη'] },
+        { ancient: 'κατέλαβον (β)', correct: 'υπόληψη', wrong: ['λαβίδα', 'διάλειμμα'] },
+        { ancient: 'κατέλαβον (γ)', correct: 'αντιληπτός', wrong: ['λήμμα', 'λαβύρινθος'] }
+      ]
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 8 · Σύνταξη',
+      question: 'Να εντοπίσετε τις μετοχές του κεφ. 72 που βρίσκονται σε πτώση γενική, να χαρακτηρίσετε τη συντακτική τους θέση και να αιτιολογήσετε την πτώση τους.',
+      answer: '<strong>Ἐλθόντων</strong> (ενν. τῶν πρέσβεων), <strong>ἐλθούσης</strong> (τριήρους... καὶ πρέσβεων), <strong>Ἀφικομένης</strong> (νυκτός): χρονικές μετοχές, σε <strong>γενική απόλυτη</strong>, γιατί το υποκείμενό τους δεν έχει καμία συντακτική θέση στην πρόταση του ρήματος από το οποίο εξαρτώνται (ετεροπροσωπία) — οπότε μετοχή και υποκείμενο τίθενται σε γενική.'
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 9 · Ερμηνευτική ερώτηση',
+      question: 'Πώς κρίνετε τη σύλληψη των Κερκυραίων πρέσβεων από τους Αθηναίους;',
+      answer: 'Οι πρέσβεις θεωρούνταν πρόσωπα ιερά και απαραβίαστα, οπότε η σύλληψή τους αντιστρατεύεται τους κανόνες του «διεθνούς δικαίου» της εποχής. Η ενέργεια όμως των Αθηναίων δικαιολογείται, εν μέρει, από την κατάλυση της έννομης τάξης που προηγήθηκε στην Κέρκυρα και από την ανάρμοστη δράση των ίδιων των πρέσβεων στην Αθήνα (προσπάθησαν να πείσουν τους καταφυγόντες, γι᾽ αυτό συλλαμβάνονται «ὡς νεωτερίζοντες»). Ο Θουκυδίδης δεν ξαναμιλά για την τύχη τους.'
+    }
+  ],
+
+  73: [
+    {
+      type: 'mc',
+      num: 'Άσκηση 1 · Λεξιλόγιο',
+      question: 'Τι σημαίνει <em>ἠκροβολίσαντο</em>;',
+      options: ['ανέβηκαν στην ακρόπολη', 'έκαναν αψιμαχίες από απόσταση', 'πολέμησαν σώμα με σώμα', 'έστειλαν απεσταλμένους'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 2 · Λεξιλόγιο',
+      question: 'Οι <em>ἐπίκουροι</em> του κειμένου είναι:',
+      options: ['οι δούλοι του σπιτιού', 'οι μισθοφόροι', 'οι Κορίνθιοι πρέσβεις', 'οι σύμμαχοι Αθηναίοι'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 3 · Σύνταξη',
+      question: 'Ποιος είναι ο συντακτικός ρόλος του <em>ξύμμαχον</em>;',
+      options: ['αντικείμενο του παρεγένετο', 'επιρρηματικό κατηγορούμενο του τρόπου στο πλῆθος', 'επιθετικός προσδιορισμός', 'παράθεση'],
+      correct: 1
+    },
+    {
+      type: 'tf',
+      num: 'Άσκηση 4 · Σωστό / Λάθος',
+      question: 'Να χαρακτηρίσετε τις προτάσεις ως Σ ή Λ:',
+      statements: [
+        { text: 'Μόνο οι δημοκρατικοί υποσχέθηκαν ελευθερία στους δούλους.', correct: false },
+        { text: 'Οι περισσότεροι δούλοι τάχθηκαν με τους δημοκρατικούς.', correct: true },
+        { text: 'Στους ολιγαρχικούς ήρθαν οκτακόσιοι μισθοφόροι από την Πελοπόννησο.', correct: false },
+        { text: 'Οι οἰκέται ζούσαν στο σπίτι του κυρίου τους ως υπηρετικό προσωπικό.', correct: true }
+      ]
+    },
+    {
+      type: 'fill',
+      num: 'Άσκηση 5 · Συμπλήρωση κενών',
+      question: 'Συμπληρώστε τη λέξη που λείπει (με βάση τη μετάφραση):',
+      sentences: [
+        { before: 'Την επόμενη μέρα έγιναν λίγες ', blank: 'αψιμαχίες', after: '.' },
+        { before: 'Υπόσχονταν στους δούλους ', blank: 'ελευθερία', after: '.' },
+        { before: 'Στους ολιγαρχικούς ήρθαν οκτακόσιοι ', blank: 'μισθοφόροι', after: ' από την απέναντι στεριά.' }
+      ]
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 6 · Ερμηνευτική ερώτηση',
+      question: 'Προσπαθήστε να φανταστείτε τα επιχειρήματα με τα οποία κάθε πλευρά αποπειράθηκε να προσεταιριστεί τους δούλους. Γιατί τελικά τα επιχειρήματα των δημοκρατικών αποδείχτηκαν πιο ισχυρά;',
+      answer: 'Και οι δύο πλευρές υπόσχονταν <strong>ελευθερία</strong>. Οι δημοκρατικοί μπορούσαν επιπλέον να προβάλουν την ιδεολογική τους εγγύτητα (ισότητα, συμμετοχή του πλήθους), ενώ οι ολιγαρχικοί, ως ιδιοκτήτες των περισσότερων δούλων, ήταν λιγότερο πειστικοί. Οι δούλοι ιδεολογικά και κοινωνικά αισθάνονταν εγγύτερα στους δημοκρατικούς· ίσως και η συμπεριφορά των δημοκρατικών απέναντί τους ήταν πιο ήπια. Οι ολιγαρχικοί αναπλήρωσαν τη διαφορά με τα χρήματά τους, προσλαμβάνοντας μισθοφόρους.'
+    }
+  ],
+
+  74: [
+    {
+      type: 'mc',
+      num: 'Άσκηση 1 · Λεξιλόγιο',
+      question: 'Τι σημαίνει <em>αὐτοβοεί</em>;',
+      options: ['με τη δική τους βοήθεια', 'με τον πρώτο αλαλαγμό, με αιφνιδιαστική έφοδο', 'με δυνατές φωνές', 'αυτοβούλως'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 2 · Λεξιλόγιο',
+      question: 'Το ρήμα <em>ὑπεξανήγετο</em> δηλώνει ότι το κορινθιακό πλοίο:',
+      options: ['βυθίστηκε', 'ανοίχτηκε κρυφά, με προφυλάξεις, στο πέλαγος', 'επιτέθηκε στους δημοκρατικούς', 'αγκυροβόλησε στο λιμάνι'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 3 · Σύνταξη — προτάσεις',
+      question: 'Η πρόταση <em>«μὴ αὐτοβοεὶ ὁ δῆμος τοῦ τε νεωρίου κρατήσειεν»</em> είναι:',
+      options: ['τελική', 'ενδοιαστική, αντικ. του δείσαντες', 'ειδική', 'υποθετική'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 4 · Σύνταξη — υποθετικός λόγος',
+      question: 'Ο υποθετικός λόγος <em>«ἐκινδύνευσε... διαφθαρῆναι, εἰ ἄνεμος ἐπεγένετο»</em> δηλώνει:',
+      options: ['ανοιχτή υπόθεση', 'το αντίθετο του πραγματικού', 'απλή σκέψη του λέγοντος', 'προσδοκώμενο'],
+      correct: 1
+    },
+    {
+      type: 'mc',
+      num: 'Άσκηση 5 · Σύνταξη',
+      question: 'Ποιος ο συντακτικός ρόλος του <em>τῷ κεράμῳ</em>;',
+      options: ['αντικείμενο του βάλλουσαι', 'δοτική οργανική του μέσου', 'δοτική προσωπική', 'δοτική του τόπου'],
+      correct: 1
+    },
+    {
+      type: 'tf',
+      num: 'Άσκηση 6 · Σωστό / Λάθος',
+      question: 'Να χαρακτηρίσετε τις προτάσεις ως Σ ή Λ:',
+      statements: [
+        { text: 'Οι δημοκρατικοί νίκησαν χάρη στις θέσεις τους και στην αριθμητική τους υπεροχή.', correct: true },
+        { text: 'Οι γυναίκες έριχναν κεραμίδια από τις στέγες.', correct: true },
+        { text: 'Οι δημοκρατικοί έβαλαν φωτιά στα σπίτια γύρω από την αγορά.', correct: false },
+        { text: 'Ολόκληρη η πόλη κάηκε από τη φωτιά.', correct: false },
+        { text: 'Οι περισσότεροι μισθοφόροι έφυγαν κρυφά στην Ήπειρο.', correct: true }
+      ]
+    },
+    {
+      type: 'match',
+      num: 'Άσκηση 7 · Αντιστοίχιση',
+      question: 'Να αντιστοιχίσετε κάθε λέξη με τη σημασία της:',
+      pairs: [
+        { left: 'τροπή', right: 'υποχώρηση, φυγή' },
+        { left: 'νεώριον', right: 'ναύσταθμος' },
+        { left: 'ξυνοικία', right: 'πολυκατοικία με ενοίκιο' },
+        { left: 'χρήματα', right: 'εμπορεύματα' },
+        { left: 'ἐπίκουροι', right: 'μισθοφόροι' }
+      ]
+    },
+    {
+      type: 'vocab',
+      num: 'Άσκηση 8 · Ετυμολογία',
+      question: 'Ποια λέξη είναι ετυμολογικά συγγενής με τον αρχαίο τύπο;',
+      items: [
+        { ancient: 'λαθόντες (λανθάνω)', correct: 'αλήθεια', wrong: ['λάδι', 'λαός'] },
+        { ancient: 'κεκρατηκότος (κρατέω)', correct: 'δημοκρατία', wrong: ['κρατήρας', 'κρασί'] },
+        { ancient: 'βάλλουσαι (βάλλω)', correct: 'πρόβλημα', wrong: ['βαλίτσα', 'βαλανίδι'] },
+        { ancient: 'δείσαντες (δείδω)', correct: 'δέος', wrong: ['δείπνο', 'δείκτης'] },
+        { ancient: 'ἐμπιπρᾶσι (ἐμπίπρημι)', correct: 'εμπρησμός', wrong: ['εμπόριο', 'εμπιστοσύνη'] }
+      ]
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 9 · Ερμηνευτική ερώτηση',
+      question: 'Να εξηγήσετε τους λόγους που ώθησαν τους ολιγαρχικούς στον εμπρησμό της περιοχής γύρω από την αγορά. Πώς κρίνετε την ενέργειά τους αυτή;',
+      answer: 'Οι ολιγαρχικοί, μετά την υποχώρησή τους, φοβήθηκαν μήπως οι δημοκρατικοί με αιφνιδιαστική έφοδο καταλάβουν τον ναύσταθμο και τους εξοντώσουν. Γι᾽ αυτό πυρπόλησαν τα σπίτια και τις πολυκατοικίες γύρω από την αγορά, «ὅπως μὴ ᾖ ἔφοδος» — μάλλον για να <strong>καθυστερήσουν</strong> την επίθεση, αφού ο εμπρησμός καθιστούσε την αγορά πιο προσιτή. Πρόκειται για απονενοημένη ενέργεια: δεν λυπήθηκαν ούτε τα δικά τους ούτε τα ξένα σπίτια, κάηκαν πολλά εμπορεύματα και κινδύνευσε όλη η πόλη. Ο φόβος και το πάθος του εμφυλίου υπερισχύουν κάθε ορθολογικού υπολογισμού και κάθε σεβασμού για την κοινή πατρίδα.'
+    },
+    {
+      type: 'open',
+      num: 'Άσκηση 10 · Ερμηνευτική ερώτηση',
+      question: 'Ποια σκοπιμότητα εξυπηρετούν οι ρηματικοί τύποι <em>ὑπεξανήγετο – λαθόντες</em> (74.3), με τους οποίους ο Θουκυδίδης αναφέρεται στην αποχώρηση του κορινθιακού πλοίου και των επικούρων;',
+      answer: 'Και οι δύο τύποι δηλώνουν <strong>κρυφή, αθόρυβη αποχώρηση</strong>: η πρόθεση <em>ὑπό</em> στο ὑπεξανήγετο δηλώνει τον κρυφό τρόπο, και το λαθόντες (λανθάνω = διαφεύγω την προσοχή) ότι οι μισθοφόροι έφυγαν απαρατήρητοι. Ο Θουκυδίδης υπογραμμίζει έτσι ότι οι Κορίνθιοι, που με την άφιξή τους είχαν δώσει το έναυσμα της σύγκρουσης, και οι μισθοφόροι εγκατέλειψαν τους ολιγαρχικούς μόλις η μάχη στράφηκε εναντίον τους, φοβούμενοι μήπως συλληφθούν. Αναδεικνύεται έτσι ο ιδιοτελής και αναξιόπιστος ρόλος των ξένων «προστατών» στην ιστορική πορεία ενός λαού.'
+    }
+  ]
+};
+
+// ══════════════════════════════════════════════
+// ΕΠΙΠΛΕΟΝ ΑΠΛΕΣ ΑΣΚΗΣΕΙΣ ΓΡΑΜΜΑΤΙΚΗΣ & ΣΥΝΤΑΞΗΣ (10 ανά κεφάλαιο 71–74)
+// Στη συμπλήρωση, εναλλακτικές σωστές απαντήσεις χωρίζονται με «/»
+// ══════════════════════════════════════════════
+const extraExercises = {
+  71: [
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>πράσσειν</em> (μηδὲν ἀνεπιτήδειον πράσσειν) είναι:',
+      options:['απαρέμφατο ενεστώτα ενεργητικής φωνής','γ΄ πληθ. οριστικής ενεστώτα','απαρέμφατο αορίστου ενεργητικής φωνής','μετοχή ενεστώτα'], correct:0 },
+    { type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>Πέμπουσι</em> είναι:',
+      options:['γ΄ πληθ. υποτακτικής ενεστώτα','γ΄ πληθ. οριστικής ενεστώτα','γ΄ πληθ. οριστικής μέλλοντα','γ΄ πληθ. ευκτικής ενεστώτα'], correct:1 },
+    { type:'fill', t:'Γραμματική — εγκλίσεις', question:'Να γράψετε τον τύπο <em>Πέμπουσι</em> (γ΄ πληθ.) στον ίδιο χρόνο:',
+      sentences:[
+        { before:'υποτακτική: ', blank:'πέμπωσι/πέμπωσιν', after:'' },
+        { before:'ευκτική: ', blank:'πέμποιεν', after:'' },
+        { before:'προστακτική: ', blank:'πεμπόντων', after:'' },
+        { before:'απαρέμφατο: ', blank:'πέμπειν', after:'' }
+      ] },
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>πείσοντας</em> είναι μετοχή:',
+      options:['ενεστώτα του πείθω','μέλλοντα του πείθω','αορίστου του πείθω','παρακειμένου του πείθω'], correct:1 },
+    { type:'fill', t:'Γραμματική — ουσιαστικά', question:'Να γράψετε τους τύπους στον άλλο αριθμό, στην ίδια πτώση:',
+      sentences:[
+        { before:'τὴν γνώμην → ', blank:'τὰς γνώμας', after:'' },
+        { before:'Κερκυραίους → ', blank:'Κερκυραῖον', after:'' },
+        { before:'(μιᾷ) νηί → ', blank:'ναυσί/ναυσίν', after:'' }
+      ] },
+    { type:'mc', t:'Σύνταξη', question:'<em>ὅτι ταῦτα καὶ βέλτιστα εἴη</em>: η λέξη <em>ταῦτα</em> είναι:',
+      options:['αντικείμενο','υποκείμενο του εἴη','κατηγορούμενο','επιθετικός προσδιορισμός'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>ταῦτα καὶ βέλτιστα εἴη</em>: η λέξη <em>βέλτιστα</em> είναι:',
+      options:['υποκείμενο','αντικείμενο','κατηγορούμενο στο ταῦτα','επίρρημα'], correct:2 },
+    { type:'mc', t:'Σύνταξη', question:'<em>Πέμπουσι... πρέσβεις</em>: η λέξη <em>πρέσβεις</em> είναι:',
+      options:['υποκείμενο του Πέμπουσι','αντικείμενο του Πέμπουσι','κατηγορούμενο','παράθεση'], correct:1 },
+    { type:'mc', t:'Σύνταξη — μετοχή', question:'Η μετοχή <em>Δράσαντες</em> είναι:',
+      options:['τελική','αιτιολογική','χρονική','υποθετική'], correct:2 },
+    { type:'mc', t:'Σύνταξη', question:'<em>ἐπικυρῶσαι ἠνάγκασαν τὴν γνώμην</em>: οι λέξεις <em>τὴν γνώμην</em> είναι:',
+      options:['υποκείμενο του ἠνάγκασαν','αντικείμενο του ἐπικυρῶσαι','κατηγορούμενο','υποκείμενο του ἐπικυρῶσαι'], correct:1 }
+  ],
+  72: [
+{ type:'mc', t:'Γραμματική — ρήμα', question:'<em>καὶ ὅσους ἔπεισαν</em>: ο τύπος <em>ἔπεισαν</em> είναι:',
+      options:['γ΄ πληθ. οριστικής παρατατικού του πείθω','γ΄ πληθ. οριστικής αορίστου του πείθω','γ΄ πληθ. οριστικής ενεστώτα του πείθω','γ΄ πληθ. ευκτικής αορίστου του πείθω'], correct:1 },
+{ type:'fill', t:'Γραμματική — εγκλίσεις', question:'Να γράψετε τον τύπο <em>ἔπεισαν</em> (γ΄ πληθ., αόρ. α΄) στον ίδιο χρόνο:',
+      sentences:[
+        { before:'υποτακτική: ', blank:'πείσωσι/πείσωσιν', after:'' },
+        { before:'ευκτική: ', blank:'πείσαιεν/πείσειαν', after:'' },
+        { before:'προστακτική: ', blank:'πεισάντων', after:'' },
+        { before:'απαρέμφατο: ', blank:'πεῖσαι', after:'' }
+      ] },
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>ἱδρύθη</em> είναι:',
+      options:['γ΄ εν. οριστικής αορίστου παθητικής φωνής του ἱδρύω','γ΄ εν. οριστικής παρατατικού του ἱδρύω','γ΄ εν. υποτακτικής αορίστου του ἱδρύω','γ΄ εν. ευκτικής αορίστου του ἱδρύω'], correct:0 },
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>ἱδρύθη</em> στην <em>ευκτική</em> του ίδιου χρόνου και προσώπου είναι:',
+      options:['ἱδρυθῇ','ἱδρυθείη','ἱδρύθητι','ἱδρυθῆναι'], correct:1 },
+    { type:'fill', t:'Γραμματική — ουσιαστικά', question:'Να γράψετε τους τύπους στον άλλο αριθμό, στην ίδια πτώση:',
+      sentences:[
+        { before:'τὴν ἀκρόπολιν → ', blank:'τὰς ἀκροπόλεις', after:'' },
+        { before:'τὸν λιμένα → ', blank:'τοὺς λιμένας', after:'' },
+        { before:'νυκτός → ', blank:'νυκτῶν', after:'' },
+        { before:'τῷ δήμῳ → ', blank:'τοῖς δήμοις', after:'' }
+      ] },
+    { type:'mc', t:'Σύνταξη', question:'Ποιο είναι το υποκείμενο του <em>κατέθεντο</em> (72.1);',
+      options:['τοὺς πρέσβεις','οἱ Ἀθηναῖοι','ὅσους','Αἴγιναν'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>καὶ τὸν Ὑλλαϊκὸν λιμένα εἶχον</em>: οι λέξεις <em>τὸν λιμένα</em> είναι:',
+      options:['υποκείμενο','αντικείμενο του εἶχον','κατηγορούμενο','επιρρηματικός προσδιορισμός τόπου'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>ἐπιτίθενται τῷ δήμῳ</em>: οι λέξεις <em>τῷ δήμῳ</em> είναι:',
+      options:['υποκείμενο','αντικείμενο του ἐπιτίθενται','δοτική του χρόνου','δοτική του μέσου'], correct:1 },
+    { type:'mc', t:'Σύνταξη — μετοχή', question:'Η μετοχή <em>ξυλλαβόντες</em> είναι:',
+      options:['χρονική','τελική','εναντιωματική','υποθετική'], correct:0 },
+    { type:'mc', t:'Σύνταξη — μετοχή', question:'<em>καὶ μαχόμενοι ἐνίκησαν</em>: η μετοχή <em>μαχόμενοι</em> είναι:',
+      options:['αιτιολογική','τελική','τροπική','εναντιωματική'], correct:2 }
+  ],
+  73: [
+    { type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>περιέπεμπον</em> είναι:',
+      options:['γ΄ πληθ. οριστικής αορίστου','γ΄ πληθ. οριστικής παρατατικού','γ΄ πληθ. οριστικής ενεστώτα','α΄ εν. οριστικής ενεστώτα'], correct:1 },
+    { type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>ἠκροβολίσαντο</em> είναι:',
+      options:['γ΄ πληθ. οριστικής αορίστου μέσης φωνής','γ΄ πληθ. οριστικής παρατατικού μέσης φωνής','γ΄ πληθ. ευκτικής αορίστου','γ΄ πληθ. υποτακτικής αορίστου'], correct:0 },
+{ type:'fill', t:'Γραμματική — εγκλίσεις', question:'Να γράψετε τον τύπο <em>περιέπεμπον</em> (γ΄ πληθ.) στον <em>ενεστώτα</em>:',
+      sentences:[
+        { before:'οριστική: ', blank:'περιπέμπουσι/περιπέμπουσιν', after:'' },
+        { before:'υποτακτική: ', blank:'περιπέμπωσι/περιπέμπωσιν', after:'' },
+        { before:'ευκτική: ', blank:'περιπέμποιεν', after:'' },
+        { before:'απαρέμφατο: ', blank:'περιπέμπειν', after:'' }
+      ] },
+    { type:'fill', t:'Γραμματική — ουσιαστικά', question:'Να γράψετε τους τύπους στον άλλο αριθμό, στην ίδια πτώση:',
+      sentences:[
+        { before:'τοὺς δούλους → ', blank:'τὸν δοῦλον', after:'' },
+        { before:'τοὺς ἀγρούς → ', blank:'τὸν ἀγρόν', after:'' },
+        { before:'ἐλευθερίαν → ', blank:'ἐλευθερίας', after:'' },
+        { before:'τῶν οἰκετῶν → ', blank:'τοῦ οἰκέτου', after:'' }
+      ] },
+    { type:'mc', t:'Σύνταξη', question:'Ποιο είναι το υποκείμενο του <em>περιέπεμπον</em>;',
+      options:['τοὺς ἀγρούς','ἀμφότεροι','τοὺς δούλους','ὀλίγα'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>τοὺς δούλους παρακαλοῦντες</em>: οι λέξεις <em>τοὺς δούλους</em> είναι:',
+      options:['υποκείμενο','αντικείμενο του παρακαλοῦντες','κατηγορούμενο','παράθεση'], correct:1 },
+    { type:'mc', t:'Σύνταξη — μετοχή', question:'Η μετοχή <em>ὑπισχνούμενοι</em> είναι:',
+      options:['χρονική','τροπική','υποθετική','εναντιωματική'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>τῶν οἰκετῶν τὸ πλῆθος</em>: οι λέξεις <em>τῶν οἰκετῶν</em> είναι:',
+      options:['γενική κτητική','γενική διαιρετική','γενική απόλυτη','γενική αντικειμενική'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>τοῖς δ᾽ ἑτέροις ἐκ τῆς ἠπείρου ἐπίκουροι ὀκτακόσιοι</em>: η λέξη <em>ἐπίκουροι</em> είναι:',
+      options:['αντικείμενο','υποκείμενο του (εννοούμενου) παρεγένοντο','κατηγορούμενο','παράθεση'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>Τῇ ὑστεραίᾳ</em> είναι:',
+      options:['δοτική του χρόνου','δοτική του μέσου','αντικείμενο','δοτική προσωπική'], correct:0 }
+  ],
+  74: [
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>ἐκινδύνευσε</em> είναι:',
+      options:['γ΄ εν. οριστικής παρατατικού του κινδυνεύω','γ΄ εν. οριστικής αορίστου του κινδυνεύω','γ΄ εν. ευκτικής αορίστου του κινδυνεύω','γ΄ εν. οριστικής μέλλοντα του κινδυνεύω'], correct:1 },
+{ type:'fill', t:'Γραμματική — εγκλίσεις', question:'Να γράψετε τον τύπο <em>ἐκινδύνευσε</em> (γ΄ εν., αόρ. α΄) στον ίδιο χρόνο:',
+      sentences:[
+        { before:'υποτακτική: ', blank:'κινδυνεύσῃ', after:'' },
+        { before:'ευκτική: ', blank:'κινδυνεύσειε/κινδυνεύσειεν/κινδυνεύσαι', after:'' },
+        { before:'προστακτική: ', blank:'κινδυνευσάτω', after:'' },
+        { before:'απαρέμφατο: ', blank:'κινδυνεῦσαι', after:'' }
+      ] },
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>παυσάμενοι</em> είναι μετοχή:',
+      options:['ενεστώτα μέσης φωνής του παύω','αορίστου μέσης φωνής του παύω','μέλλοντα μέσης φωνής του παύω','αορίστου παθητικής φωνής του παύω'], correct:1 },
+{ type:'mc', t:'Γραμματική — ρήμα', question:'Ο τύπος <em>διεκομίσθησαν</em> είναι:',
+      options:['γ΄ πληθ. οριστικής αορίστου παθητικής φωνής του διακομίζω','γ΄ πληθ. οριστικής παρατατικού του διακομίζω','γ΄ πληθ. ευκτικής αορίστου του διακομίζω','γ΄ πληθ. οριστικής μέλλοντα του διακομίζω'], correct:0 },
+    { type:'fill', t:'Γραμματική — ουσιαστικά', question:'Να γράψετε τους τύπους στον άλλο αριθμό, στην ίδια πτώση:',
+      sentences:[
+        { before:'αἱ γυναῖκες → ', blank:'ἡ γυνή', after:'' },
+        { before:'τὰς οἰκίας → ', blank:'τὴν οἰκίαν', after:'' },
+        { before:'τῆς ἀγορᾶς → ', blank:'τῶν ἀγορῶν', after:'' },
+        { before:'ἡ ναῦς → ', blank:'αἱ νῆες', after:'' }
+      ] },
+    { type:'mc', t:'Σύνταξη', question:'<em>καὶ νικᾷ ὁ δῆμος</em>: οι λέξεις <em>ὁ δῆμος</em> είναι:',
+      options:['αντικείμενο','υποκείμενο του νικᾷ','κατηγορούμενο','παράθεση'], correct:1 },
+    { type:'mc', t:'Σύνταξη', question:'<em>ἐμπιπρᾶσι τὰς οἰκίας</em>: οι λέξεις <em>τὰς οἰκίας</em> είναι:',
+      options:['υποκείμενο','αντικείμενο του ἐμπιπρᾶσι','κατηγορούμενο','αιτιατική του χρόνου'], correct:1 },
+    { type:'mc', t:'Σύνταξη — μετοχή', question:'Η μετοχή <em>δείσαντες</em> είναι:',
+      options:['χρονική','τελική','αιτιολογική','υποθετική'], correct:2 },
+    { type:'mc', t:'Σύνταξη — μετοχή', question:'<em>βάλλουσαι ἀπὸ τῶν οἰκιῶν τῷ κεράμῳ</em>: η μετοχή <em>βάλλουσαι</em> είναι:',
+      options:['τροπική','τελική','εναντιωματική','χρονική'], correct:0 },
+    { type:'mc', t:'Σύνταξη', question:'<em>ἡ πόλις ἐκινδύνευσε πᾶσα διαφθαρῆναι</em>: το απαρέμφατο <em>διαφθαρῆναι</em> είναι:',
+      options:['υποκείμενο του ἐκινδύνευσε','αντικείμενο του ἐκινδύνευσε','κατηγορούμενο','επεξήγηση'], correct:1 }
+  ]
+};
+Object.keys(extraExercises).forEach(function (p) {
+  var list = exercisesData[p];
+  extraExercises[p].forEach(function (ex) {
+    ex.num = 'Άσκηση ' + (list.length + 1) + ' · ' + ex.t;
+    list.push(ex);
+  });
+});
+
+let currentCard = 0;
+
+function getExercises() {
+  return exercisesData[currentPara] || [];
+}
+
+function renderExercises() {
+  const exs = getExercises();
+  const total = exs.length;
+  document.getElementById('card-total').textContent = total;
+  document.getElementById('card-dots').innerHTML = exs.map((_, i) =>
+    '<div class="card-dot" onclick="goCard(' + i + ')"></div>'
+  ).join('');
+  goCard(0);
+}
+
+function goCard(idx) {
+  const exs = getExercises();
+  const total = exs.length;
+  currentCard = idx;
+  document.getElementById('card-area').innerHTML =
+    '<div class="card-inner">' + renderExercise(exs[idx], idx) + '</div>';
+  matchState = {};
+  document.getElementById('card-current').textContent = idx + 1;
+  document.getElementById('card-progress').style.width = ((idx + 1) / total * 100) + '%';
+  document.querySelectorAll('.card-dot').forEach(function(d, i) {
+    d.className = 'card-dot' + (i === idx ? ' active' : (i < idx ? ' done' : ''));
+  });
+  document.getElementById('card-prev').disabled = idx <= 0;
+  document.getElementById('card-next').disabled = idx >= total - 1;
+  document.getElementById('card-area').scrollTop = 0;
+}
+
+function cardNav(dir) {
+  const next = currentCard + dir;
+  if (next >= 0 && next < getExercises().length) goCard(next);
+}
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function renderExercise(ex, idx) {
+  let content = '';
+
+  if (ex.type === 'mc') {
+    content = '<div class="mc-options">' +
+      ex.options.map((opt, oi) =>
+        '<button class="mc-opt" onclick="checkMC(this, ' + oi + ', ' + ex.correct + ', \'fb-' + idx + '\')">' +
+        '<span class="mc-letter">' + ['α','β','γ','δ'][oi] + '.</span> ' + opt + '</button>'
+      ).join('') +
+      '</div><div class="feedback" id="fb-' + idx + '"></div>';
+  }
+
+  else if (ex.type === 'tf') {
+    content = '<div class="tf-options">' +
+      ex.statements.map((st, si) =>
+        '<div class="tf-row"><span style="flex:1">' + st.text + '</span>' +
+        '<div class="tf-btns">' +
+        '<button class="tf-btn" onclick="checkTF(this, true, ' + st.correct + ', \'tf-fb-' + idx + '-' + si + '\')">Σ</button>' +
+        '<button class="tf-btn" onclick="checkTF(this, false, ' + st.correct + ', \'tf-fb-' + idx + '-' + si + '\')">Λ</button>' +
+        '</div><span id="tf-fb-' + idx + '-' + si + '" style="font-size:1.1rem;min-width:30px;"></span></div>'
+      ).join('') + '</div>';
+  }
+
+  else if (ex.type === 'match') {
+    const indexed = ex.pairs.map((p, i) => ({ text: p.right, val: i }));
+    const shuffled = shuffle(indexed);
+    content = '<div class="match-grid">' +
+      '<div class="match-col" id="match-left-' + idx + '">' +
+      ex.pairs.map((p, pi) => '<div class="match-item" data-val="' + pi + '" data-side="left" onclick="matchClick(this, ' + idx + ')">' + p.left + '</div>').join('') +
+      '</div><div class="match-col" id="match-right-' + idx + '">' +
+      shuffled.map(p => '<div class="match-item" data-val="' + p.val + '" data-side="right" onclick="matchClick(this, ' + idx + ')">' + p.text + '</div>').join('') +
+      '</div></div><div class="feedback" id="fb-' + idx + '"></div>';
+  }
+
+  else if (ex.type === 'fill') {
+    const blanksAttr = ex.sentences.map(s => s.blank).join('||');
+    content = ex.sentences.map((s, si) =>
+      '<div class="fill-text">' + s.before +
+      '<input class="blank-input" id="fill-' + idx + '-' + si + '" placeholder="λέξη" autocomplete="off" spellcheck="false">' +
+      '<span>' + s.after + '</span></div>'
+    ).join('') +
+    '<button class="check-btn" onclick="checkFill(' + idx + ')" data-blanks="' + blanksAttr + '" id="fillbtn-' + idx + '">Έλεγχος</button>' +
+    '<button class="check-btn" onclick="revealFill(' + idx + ')" style="background:var(--border);color:var(--text-dim);margin-left:0.5rem">Απάντηση</button>' +
+    '<div class="feedback" id="fb-' + idx + '"></div>';
+  }
+
+  else if (ex.type === 'vocab') {
+    var vocabRows = ex.items.map(function(item) {
+      var opts = shuffle([item.correct, item.wrong[0], item.wrong[1]]);
+      var btns = opts.map(function(o) {
+        var isCorrect = (o === item.correct) ? 'true' : 'false';
+        return '<button class="mc-opt vocab-opt" onclick="checkVocabOpt(this,' + isCorrect + ')" style="font-size:clamp(1.15rem,1.7vw,1.35rem);padding:0.45rem 1rem;margin:0.25rem;width:auto;display:inline-flex">' + o + '</button>';
+      }).join('');
+      return '<tr><td>' + item.ancient + '</td><td>' + btns + '</td></tr>';
+    }).join('');
+    content = '<table class="vocab-table">' + vocabRows + '</table>';
+  }
+
+  else if (ex.type === 'open') {
+    var answerHtml = ex.answer
+      ? '<button class="check-btn" onclick="toggleAnswer(this)" data-answer="' + ex.answer.replace(/"/g, '&quot;') + '" style="margin-top:0.8rem;background:var(--bg3);color:var(--text-dim);border:1px solid var(--border)">Προτεινόμενη απάντηση ▾</button>' +
+        '<div class="open-answer" style="display:none;margin-top:0.8rem;padding:0.8rem 1rem;border-left:2px solid var(--gold-dim);font-family:\'EB Garamond\',serif;font-size:1.35rem;line-height:1.7;color:var(--text)"></div>'
+      : '';
+    content = '<textarea class="open-textarea" placeholder="Γράψτε εδώ την απάντησή σας..."></textarea>' + answerHtml;
+  }
+
+  return '<div class="exercise-block">' +
+    '<div class="ex-num">' + ex.num + '</div>' +
+    '<div class="ex-question">' + (ex.question || '') + '</div>' +
+    content + '</div>';
+}
+
+// ── CHECK FUNCTIONS ──
+function checkMC(btn, chosen, correct, fbId) {
+  const parent = btn.closest('.mc-options');
+  parent.querySelectorAll('.mc-opt').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(fbId);
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✓ Σωστό!';
+    fb.className = 'feedback show ok';
+  } else {
+    btn.classList.add('wrong');
+    parent.querySelectorAll('.mc-opt')[correct].classList.add('correct');
+    fb.textContent = '✗ Λάθος. Σωστή απάντηση: ' + ['α','β','γ','δ'][correct];
+    fb.className = 'feedback show err';
+  }
+}
+
+function checkTF(btn, answer, correct, fbId) {
+  const row = btn.closest('.tf-row');
+  row.querySelectorAll('.tf-btn').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(fbId);
+  if (answer === correct) {
+    btn.classList.add('correct');
+    fb.innerHTML = '<span style="color:#4a8a4a">✓</span>';
+  } else {
+    btn.classList.add('wrong');
+    fb.innerHTML = '<span style="color:#c84030">✗ (' + (correct ? 'Σ' : 'Λ') + ')</span>';
+  }
+}
+
+let matchState = {};
+
+function matchClick(el, idx) {
+  if (el.classList.contains('matched')) return;
+  const side = el.dataset.side;
+  const val = el.dataset.val;
+  if (!matchState[idx]) matchState[idx] = {};
+
+  if (side === 'left') {
+    document.querySelectorAll('#match-left-' + idx + ' .match-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    matchState[idx].left = val;
+  } else {
+    if (matchState[idx].left === undefined) return;
+    matchState[idx].right = val;
+  }
+
+  if (matchState[idx].left !== undefined && matchState[idx].right !== undefined) {
+    const leftEl = document.querySelector('#match-left-' + idx + ' [data-val="' + matchState[idx].left + '"]');
+    const rightEl = el;
+    if (matchState[idx].left === matchState[idx].right) {
+      leftEl.classList.remove('selected'); leftEl.classList.add('matched');
+      rightEl.classList.add('matched');
+      const all = document.querySelectorAll('#match-left-' + idx + ' .match-item').length;
+      const done = document.querySelectorAll('#match-left-' + idx + ' .match-item.matched').length;
+      if (all === done) {
+        const fb = document.getElementById('fb-' + idx);
+        fb.textContent = '✓ Όλες οι αντιστοιχίσεις σωστές!';
+        fb.className = 'feedback show ok';
+      }
+    } else {
+      leftEl.classList.remove('selected'); leftEl.classList.add('wrong-match');
+      rightEl.classList.add('wrong-match');
+      setTimeout(() => {
+        leftEl.classList.remove('wrong-match');
+        rightEl.classList.remove('wrong-match');
+      }, 800);
+    }
+    matchState[idx].left = undefined;
+    matchState[idx].right = undefined;
+  }
+}
+
+function toggleAnswer(btn) {
+  var box = btn.nextElementSibling;
+  if (box.style.display === 'none') {
+    box.innerHTML = btn.getAttribute('data-answer');
+    box.style.display = 'block';
+    btn.textContent = 'Προτεινόμενη απάντηση ▴';
+  } else {
+    box.style.display = 'none';
+    btn.textContent = 'Προτεινόμενη απάντηση ▾';
+  }
+}
+
+function checkVocabOpt(btn, isCorrect) {
+  var row = btn.closest('tr');
+  var btns = row.querySelectorAll('.vocab-opt');
+  btns.forEach(function(b) {
+    b.disabled = true;
+    b.style.opacity = '0.6';
+  });
+  btn.style.opacity = '1';
+  btn.classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) {
+    btns.forEach(function(b) {
+      if (b.getAttribute('onclick').indexOf('true') > -1) { b.classList.add('correct'); b.style.opacity = '1'; }
+    });
+  }
+}
+
+function normalizeGreek(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+function checkFill(idx) {
+  const btn = document.getElementById('fillbtn-' + idx);
+  const answers = btn.getAttribute('data-blanks').split('||');
+  let allOk = true;
+  answers.forEach((ans, si) => {
+    const inp = document.getElementById('fill-' + idx + '-' + si);
+    if (ans.split('/').some(alt => normalizeGreek(inp.value) === normalizeGreek(alt))) {
+      inp.classList.remove('wrong'); inp.classList.add('correct');
+    } else {
+      inp.classList.remove('correct'); inp.classList.add('wrong');
+      allOk = false;
+    }
+  });
+  const fb = document.getElementById('fb-' + idx);
+  if (allOk) { fb.textContent = '✓ Όλες οι απαντήσεις σωστές!'; fb.className = 'feedback show ok'; }
+  else { fb.textContent = '✗ Κάποιες απαντήσεις είναι λανθασμένες.'; fb.className = 'feedback show err'; }
+}
+
+function revealFill(idx) {
+  const btn = document.getElementById('fillbtn-' + idx);
+  const answers = btn.getAttribute('data-blanks').split('||');
+  answers.forEach((ans, si) => {
+    const inp = document.getElementById('fill-' + idx + '-' + si);
+    inp.value = ans.split('/')[0];
+    inp.classList.remove('wrong'); inp.classList.add('correct');
+  });
+  const fb = document.getElementById('fb-' + idx);
+  fb.textContent = 'Οι σωστές απαντήσεις εμφανίστηκαν.';
+  fb.className = 'feedback show ok';
+}
+
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-btn');
+  if (html.dataset.theme === 'night') {
+    delete html.dataset.theme;
+    btn.textContent = '☀';
+  } else {
+    html.dataset.theme = 'night';
+    btn.textContent = '☾';
+  }
+}
+
+const hour = new Date().getHours();
+if (hour >= 20 || hour < 7) {
+  document.documentElement.dataset.theme = 'night';
+  document.getElementById('theme-btn').textContent = '☾';
+}
+</script>
+
+<!-- FOCUS POPUP -->
+<div class="popup-overlay" id="focus-overlay" onclick="closeFocusOutside(event)">
+  <div class="popup-box" id="focus-box">
+    <button class="popup-close" onclick="closeFocus()">✕</button>
+    <div class="popup-label">Εστίαση</div>
+    <div class="popup-title" id="focus-title"></div>
+    <div id="focus-content"></div>
+  </div>
+</div>
+
+<script>
+const focusData = {
+
+  euktiki: {
+    title: 'Ευκτική πλαγίου λόγου',
+    sections: [
+      { heading: 'Τι είναι;', type: 'note',
+        text: 'Όταν ρήμα <em>ιστορικού χρόνου</em> (παρατατικός, αόριστος, υπερσυντέλικος) εισάγει πλάγιο λόγο, η οριστική ή η υποτακτική του ευθέος λόγου <em>μπορεί</em> να τραπεί σε ευκτική. Αυτή είναι η <strong>ευκτική του πλαγίου λόγου</strong>. Η δυνητική ευκτική και η δυνητική οριστική <em>δεν αλλάζουν</em>.' },
+      { heading: 'Στο κείμενο', type: 'table',
+        rows: [
+          ['εἶπον ὅτι... βέλτιστα εἴη', '71.1 — ευθύς λόγος: «βέλτιστά ἐστι»'],
+          ['δείσαντες μὴ... κρατήσειεν... διαφθείρειεν', '74.2 — ενδοιαστική· ευθύς λόγος: «μὴ κρατήσῃ... διαφθείρῃ»']
+        ] }
+    ]
+  },
+
+  dynitiki: {
+    title: 'Δυνητική ευκτική',
+    sections: [
+      { heading: 'Μορφή & σημασία', type: 'note',
+        text: '<strong>ευκτική + ἄν</strong>: δηλώνει το <em>δυνατό</em> ή <em>πιθανό</em> στο παρόν ή στο μέλλον. Μεταφράζεται με «θα μπορούσε να…», «θα…». Με την άρνηση (ή με το ἥκιστα) δηλώνει κάτι αδύνατο.' },
+      { heading: 'Στο κείμενο', type: 'table',
+        rows: [
+          ['ἥκιστ᾽ ἂν δουλωθεῖεν', 'με κανέναν τρόπο δεν θα υποδουλώνονταν'],
+          ['στον πλάγιο λόγο', 'διατηρείται αμετάβλητη, γιατί είναι δυνητική έγκλιση']
+        ] }
+    ]
+  },
+
+  attiki: {
+    title: 'Αττική σύνταξη',
+    sections: [
+      { heading: 'Κανόνας', type: 'note',
+        text: 'Όταν το υποκείμενο είναι <strong>ουδέτερο πληθυντικού</strong>, το ρήμα μπαίνει συνήθως σε <strong>ενικό</strong> αριθμό, γιατί τα ουδέτερα θεωρούνται σύνολο.' },
+      { heading: 'Στο κείμενο', type: 'table',
+        rows: [
+          ['ταῦτα... εἴη', '71.1'],
+          ['χρήματα πολλὰ... κατεκαύθη', '74.2']
+        ] }
+    ]
+  },
+
+  teliki: {
+    title: 'Τελική μετοχή',
+    sections: [
+      { heading: 'Ορισμός', type: 'note',
+        text: 'Μετοχή <strong>μέλλοντα</strong> που δηλώνει <strong>σκοπό</strong>. Αποδίδεται με «για να…». Βρίσκεται συνήθως μετά από ρήματα κίνησης ή αποστολής (πέμπω, ἔρχομαι κ.ά.).' },
+      { heading: 'Στο κείμενο (71.2)', type: 'table',
+        rows: [
+          ['Πέμπουσι... πρέσβεις διδάξοντας', 'στέλνουν πρέσβεις για να εξηγήσουν'],
+          ['...καὶ πείσοντας', 'και για να πείσουν'],
+          ['συνημμένες', 'στο πρέσβεις (αντικ. του Πέμπουσι)']
+        ] }
+    ]
+  },
+
+  gen_apol: {
+    title: 'Γενική απόλυτη',
+    sections: [
+      { heading: 'Ορισμός', type: 'note',
+        text: 'Επιρρηματική μετοχή της οποίας το υποκείμενο <strong>δεν έχει καμία συντακτική θέση</strong> στην πρόταση όπου ανήκει. Τότε και η μετοχή και το υποκείμενό της μπαίνουν σε <strong>γενική</strong>. Συνήθως είναι χρονική ή αιτιολογική.' },
+      { heading: 'Παραδείγματα στα κεφ. 71–74', type: 'table',
+        rows: [
+          ['Ἐλθόντων (τῶν πρέσβεων)', '72.1 — χρονική'],
+          ['ἐλθούσης τριήρους... καὶ πρέσβεων', '72.2 — χρονική'],
+          ['Ἀφικομένης νυκτός', '72.3 — χρονική'],
+          ['Διαλιπούσης ἡμέρας', '74.1 — χρονική'],
+          ['Γενομένης τῆς τροπῆς', '74.2 — χρονική'],
+          ['τοῦ δήμου κεκρατηκότος', '74.3 — χρονική / αιτιολογική']
+        ] }
+    ]
+  },
+
+  istorikos: {
+    title: 'Ιστορικός ενεστώτας',
+    sections: [
+      { heading: 'Τι είναι;', type: 'note',
+        text: 'Ενεστώτας που χρησιμοποιείται αντί για αόριστο σε αφήγηση παρελθόντος, για να δώσει <strong>ζωντάνια και παραστατικότητα</strong> — σαν τα γεγονότα να εκτυλίσσονται μπροστά στον αναγνώστη. Συντακτικά μπορεί να λογιστεί είτε ως αρκτικός είτε ως ιστορικός χρόνος.' },
+      { heading: 'Στο κείμενο', type: 'table',
+        rows: [
+          ['Πέμπουσι', '71.2 → εδώ ως αρκτικός: γι᾽ αυτό ὅπως μή... γένηται (υποτακτική)'],
+          ['ἐπιτίθενται', '72.2'],
+          ['καταφεύγει', '72.3'],
+          ['γίγνεται, νικᾷ', '74.1'],
+          ['ἐμπιπρᾶσι', '74.2 → ὅπως μὴ ᾖ ἔφοδος (υποτακτική)']
+        ] }
+    ]
+  },
+
+  endoiastiki: {
+    title: 'Ενδοιαστικές προτάσεις',
+    sections: [
+      { heading: 'Ορισμός', type: 'note',
+        text: 'Εξαρτώνται από ρήματα ή εκφράσεις <strong>φόβου</strong> (δέδοικα, φοβοῦμαι, δείδω κ.ά.) και δηλώνουν το περιεχόμενο του φόβου. Εισάγονται με <strong>μή</strong> (φόβος μήπως γίνει κάτι) ή <strong>μὴ οὐ</strong> (φόβος μήπως δεν γίνει). Εκφορά: υποτακτική (μετά από αρκτικό χρόνο) ή ευκτική πλαγίου λόγου (μετά από ιστορικό).' },
+      { heading: 'Στο κείμενο (74.2)', type: 'table',
+        rows: [
+          ['δείσαντες', 'ρήμα φόβου — μτχ. αορίστου (ιστορικός χρόνος)'],
+          ['μὴ... κρατήσειεν... διαφθείρειεν', 'ευκτική πλαγίου λόγου'],
+          ['συντακτική θέση', 'αντικείμενο του δείσαντες']
+        ] }
+    ]
+  },
+
+  ypothetikos: {
+    title: 'Υποθετικός λόγος — Αντίθετο του πραγματικού',
+    sections: [
+      { heading: 'Μορφή', type: 'table',
+        rows: [
+          ['Υπόθεση', 'εἰ + οριστική ιστορικού χρόνου'],
+          ['Απόδοση', 'δυνητική οριστική (ιστορικός χρόνος + ἄν)'],
+          ['Σημασία', 'κάτι που δεν έγινε / δεν γίνεται']
+        ] },
+      { heading: 'Στο κείμενο (74.2)', type: 'note',
+        text: '<em>ἡ πόλις ἐκινδύνευσε πᾶσα διαφθαρῆναι, εἰ ἄνεμος ἐπεγένετο</em>: η απόδοση <em>ἐκινδύνευσε διαφθαρῆναι</em> ισοδυναμεί με δυνητική οριστική (<em>ἂν διεφθάρη</em>) — ρήματα όπως κινδυνεύω, δεῖ, ἔδει παραλείπουν συχνά το ἄν. Η φωτιά δεν ήρθε τελικά προς την πόλη, γιατί δεν φύσηξε άνεμος.' }
+    ]
+  },
+
+  nooumeno: {
+    title: 'Σχήμα κατά το νοούμενο',
+    sections: [
+      { heading: 'Ορισμός', type: 'note',
+        text: 'Η συμφωνία γίνεται <strong>με βάση το νόημα</strong> και όχι με βάση τον γραμματικό τύπο. Συχνά ένα περιληπτικό ουσιαστικό σε ενικό (ὁ δῆμος, τὸ πλῆθος, ἡ πόλις) συντάσσεται με ρήμα σε πληθυντικό.' },
+      { heading: 'Στο κείμενο (72.3)', type: 'table',
+        rows: [
+          ['ὁ μὲν δῆμος... καταφεύγει... ἱδρύθη', 'ενικός (γραμματική συμφωνία)'],
+          ['καὶ τὸν Ὑλλαϊκὸν λιμένα εἶχον', 'πληθυντικός — νοούνται «οἱ δημοκρατικοί»']
+        ] }
+    ]
+  },
+
+  xyn: {
+    title: 'Γλωσσικές ιδιοτυπίες του Θουκυδίδη',
+    sections: [
+      { heading: 'Αρχαιότεροι τύποι', type: 'table',
+        rows: [
+          ['ξύν, ξυν-', 'αντί σύν, συν- · ξυγκαλέσαντες, ξυνέφερε, ξυλλαβόντες, ξύμμαχος, ξυνοικία'],
+          ['ἐς', 'αντί εἰς · ἐς τὰς Ἀθήνας, ἐς Αἴγιναν'],
+          ['-σσ-', 'αντί -ττ- · πράσσειν, θάλασσα']
+        ] },
+      { heading: 'Σημείωση', type: 'note',
+        text: 'Ο Θουκυδίδης χρησιμοποιεί τους παλαιότερους αττικούς τύπους, που δίνουν στο ύφος του σοβαρότητα και αρχαϊκότητα.' }
+    ]
+  }
+};
+
+function openFocus(key) {
+  const data = focusData[key];
+  if (!data) return;
+  document.getElementById('focus-title').textContent = data.title;
+  let html = '';
+  data.sections.forEach(sec => {
+    html += '<div class="popup-section"><div class="popup-section-title">' + sec.heading + '</div>';
+    if (sec.type === 'table') {
+      html += '<table class="popup-table">' + sec.rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</table>';
+    } else if (sec.type === 'note') {
+      html += '<div class="popup-note">' + sec.text + '</div>';
+    }
+    html += '</div>';
+  });
+  document.getElementById('focus-content').innerHTML = html;
+  document.getElementById('focus-overlay').classList.add('open');
+}
+
+function closeFocus() { document.getElementById('focus-overlay').classList.remove('open'); }
+function closeFocusOutside(e) { if (e.target === document.getElementById('focus-overlay')) closeFocus(); }
+</script>
+
+<!-- MORPH POPUP -->
+<div class="morph-overlay" id="morph-overlay" onclick="closeMorphOutside(event)">
+  <div class="morph-box" id="morph-box">
+    <button class="morph-close" onclick="closeMorph()">✕</button>
+    <div class="morph-lemma" id="morph-lemma"></div>
+    <div class="morph-info" id="morph-info"></div>
+    <div id="morph-content"></div>
+  </div>
+</div>
+
+<script>
+const morphData = {
+  doulotheien: {
+    lemma: 'δουλόω, -ῶ',
+    info: 'Ευκτική αορίστου παθητικής φωνής',
+    type: 'verb',
+    rows: [['α΄ εν.','δουλωθείην'],['β΄ εν.','δουλωθείης'],['γ΄ εν.','δουλωθείη'],['α΄ πλ.','δουλωθεῖμεν'],['β΄ πλ.','δουλωθεῖτε'],['γ΄ πλ.','δουλωθεῖεν']],
+    highlight: 'δουλωθεῖεν',
+    note: 'Στο κείμενο: «ἥκιστ᾽ ἂν δουλωθεῖεν» — δυνητική ευκτική (71.1).'
+  },
+  naus: {
+    lemma: 'ἡ ναῦς, τῆς νεώς',
+    info: 'Ουσιαστικό · γ΄ κλίση · ανώμαλο',
+    type: 'noun',
+    rows: [['Ονομ.','ναῦς','νῆες'],['Γεν.','νεώς','νεῶν'],['Δοτ.','νηί','ναυσί(ν)'],['Αιτ.','ναῦν','ναῦς'],['Κλητ.','ναῦ','νῆες']],
+    highlight: 'νηί',
+    note: 'Στο κείμενο: «μιᾷ νηί» (71.1) · πβ. και «ἡ Κορινθία ναῦς» (74.3). Παράγωγα: ναύτης, ναυτικός, ναύσταθμος, νεώριον.'
+  },
+  didaxontas: {
+    lemma: 'διδάξων, -ουσα, -ον',
+    info: 'Μετοχή μέλλοντα ενεργητικής φωνής του διδάσκω · αρσενικό',
+    type: 'noun',
+    rows: [['Ονομ.','διδάξων','διδάξοντες'],['Γεν.','διδάξοντος','διδαξόντων'],['Δοτ.','διδάξοντι','διδάξουσι(ν)'],['Αιτ.','διδάξοντα','διδάξοντας'],['Κλητ.','διδάξων','διδάξοντες']],
+    highlight: 'διδάξοντας',
+    note: 'Θηλ.: διδάξουσα, -ούσης · Ουδ.: διδάξον, -οντος. Τελική μετοχή (71.2).'
+  },
+  idrythi: {
+    lemma: 'ἱδρύομαι',
+    info: 'Οριστική αορίστου παθητικής φωνής',
+    type: 'verb',
+    rows: [['α΄ εν.','ἱδρύθην'],['β΄ εν.','ἱδρύθης'],['γ΄ εν.','ἱδρύθη'],['α΄ πλ.','ἱδρύθημεν'],['β΄ πλ.','ἱδρύθητε'],['γ΄ πλ.','ἱδρύθησαν']],
+    highlight: 'ἱδρύθη',
+    note: 'Σημασία: εγκαθίσταμαι, οχυρώνομαι (72.3). Παράγωγα: ίδρυμα, ίδρυση, ιδρυτής.'
+  },
+  gyni: {
+    lemma: 'ἡ γυνή, τῆς γυναικός',
+    info: 'Ουσιαστικό · γ΄ κλίση · ανώμαλο',
+    type: 'noun',
+    rows: [['Ονομ.','γυνή','γυναῖκες'],['Γεν.','γυναικός','γυναικῶν'],['Δοτ.','γυναικί','γυναιξί(ν)'],['Αιτ.','γυναῖκα','γυναῖκας'],['Κλητ.','γύναι','γυναῖκες']],
+    highlight: 'γυναῖκες',
+    note: 'Στο κείμενο: «αἵ τε γυναῖκες... ξυνεπελάβοντο» (74.1).'
+  },
+  empipresi: {
+    lemma: 'ἐμπίπρημι',
+    info: 'Οριστική ενεστώτα ενεργητικής φωνής (ρ. σε -μι)',
+    type: 'verb',
+    rows: [['α΄ εν.','ἐμπίπρημι'],['β΄ εν.','ἐμπίπρης'],['γ΄ εν.','ἐμπίπρησι(ν)'],['α΄ πλ.','ἐμπίπραμεν'],['β΄ πλ.','ἐμπίπρατε'],['γ΄ πλ.','ἐμπιπρᾶσι(ν)']],
+    highlight: 'ἐμπιπρᾶσι(ν)',
+    note: 'Ιστορικός ενεστώτας (74.2). Αρχικοί χρόνοι: ἐμπίπρημι, ἐμπρήσω, ἐνέπρησα, ἐμπέπρηκα. Παράγωγα: εμπρησμός, εμπρηστής.'
+  },
+  lathontes: {
+    lemma: 'λαθών, -οῦσα, -όν',
+    info: 'Μετοχή αορίστου β΄ του λανθάνω · αρσενικό',
+    type: 'noun',
+    rows: [['Ονομ.','λαθών','λαθόντες'],['Γεν.','λαθόντος','λαθόντων'],['Δοτ.','λαθόντι','λαθοῦσι(ν)'],['Αιτ.','λαθόντα','λαθόντας'],['Κλητ.','λαθών','λαθόντες']],
+    highlight: 'λαθόντες',
+    note: 'Αρχικοί χρόνοι: λανθάνω, λήσω, ἔλαθον, λέληθα. Παράγωγα: λάθος, λήθη, αλήθεια, απαρατήρητος (σημ.).'
+  },
+  epsifisanto: {
+    lemma: 'ψηφίζομαι',
+    info: 'Οριστική αορίστου μέσης φωνής',
+    type: 'verb',
+    rows: [['α΄ εν.','ἐψηφισάμην'],['β΄ εν.','ἐψηφίσω'],['γ΄ εν.','ἐψηφίσατο'],['α΄ πλ.','ἐψηφισάμεθα'],['β΄ πλ.','ἐψηφίσασθε'],['γ΄ πλ.','ἐψηφίσαντο']],
+    highlight: 'ἐψηφίσαντο',
+    note: 'Σημασία: αποφασίζω με ψηφοφορία (70.2). Παράγωγα: ψήφος, ψήφισμα, ψηφοφορία.'
+  }
+};
+
+function openMorph(key) {
+  const d = morphData[key];
+  if (!d) return;
+  document.getElementById('morph-lemma').textContent = d.lemma;
+  document.getElementById('morph-info').textContent = d.info;
+  var html = '<table class="morph-table">';
+  if (d.type === 'noun') {
+    html += '<tr><th>Πτώση</th><th>Ενικός</th><th>Πληθυντικός</th></tr>';
+    d.rows.forEach(function(r) {
+      html += '<tr><td>' + r[0] + '</td><td class="' + (r[1] === d.highlight ? 'hi' : '') + '">' + r[1] + '</td><td class="' + (r[2] === d.highlight ? 'hi' : '') + '">' + r[2] + '</td></tr>';
+    });
+  } else {
+    html += '<tr><th>Πρόσωπο</th><th>Τύπος</th></tr>';
+    d.rows.forEach(function(r) {
+      html += '<tr><td>' + r[0] + '</td><td class="' + (r[1] === d.highlight ? 'hi' : '') + '">' + r[1] + '</td></tr>';
+    });
+  }
+  html += '</table>';
+  if (d.note) html += '<div class="morph-note">' + d.note + '</div>';
+  document.getElementById('morph-content').innerHTML = html;
+  document.getElementById('morph-overlay').classList.add('open');
+}
+
+function closeMorph() { document.getElementById('morph-overlay').classList.remove('open'); }
+function closeMorphOutside(e) { if (e.target === document.getElementById('morph-overlay')) closeMorph(); }
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeMorph(); closeFocus(); } });
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+loadParagraph(71);
+</script>
+
+<!-- PRINT MODAL (μηχανισμός ΛΕΒΙΑΘΑΝ) -->
+<div class="print-modal-overlay" id="printModalOverlay">
+  <div class="print-modal">
+    <div class="pm-hdr">
+      <h2>🖨️ Ρυθμίσεις Εκτύπωσης</h2>
+      <button class="pm-close" id="pmClose">✕</button>
+    </div>
+
+    <div class="pm-section">
+      <h3>📚 Ασκήσεις</h3>
+      <label class="pm-lbl">Περιεχόμενο φύλλου</label>
+      <select class="pm-select" id="pmScope">
+        <option value="current" selected>Τρέχον κεφάλαιο</option>
+        <option value="all">Όλα τα κεφάλαια (70–74)</option>
+      </select>
+      <div class="pm-toggle-row">
+        <label for="pmAnswerKey">Φύλλο απαντήσεων (για τον εκπαιδευτικό)</label>
+        <label class="pm-switch"><input type="checkbox" id="pmAnswerKey"><span class="pm-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>📝 Κείμενο Άσκησης</h3>
+      <div style="margin-bottom:10px">
+        <label class="pm-lbl">Τίτλος</label>
+        <input type="text" class="pm-input" id="pmTitle" value="ΑΣΚΗΣΕΙΣ">
+      </div>
+      <div style="margin-bottom:10px">
+        <label class="pm-lbl">Εκφώνηση / Οδηγία</label>
+        <textarea class="pm-textarea" id="pmInstructions">Να απαντήσετε στις παρακάτω ερωτήσεις.</textarea>
+      </div>
+      <div>
+        <label class="pm-lbl">Βαθμολογία (προαιρετικά)</label>
+        <input type="text" class="pm-input" id="pmScore" placeholder="π.χ. Μονάδες: 25">
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>🏫 Κεφαλίδα</h3>
+      <div class="pm-grid2" style="margin-bottom:10px">
+        <div>
+          <label class="pm-lbl">Σχολείο</label>
+          <input type="text" class="pm-input" id="pmSchool" placeholder="π.χ. 1ο ΓΕΛ Ηγουμενίτσας">
+        </div>
+        <div>
+          <label class="pm-lbl">Μάθημα</label>
+          <input type="text" class="pm-input" id="pmSubject" value="Αρχαία Ελληνικά">
+        </div>
+        <div>
+          <label class="pm-lbl">Τμήμα</label>
+          <input type="text" class="pm-input" id="pmClass" placeholder="π.χ. Α1">
+        </div>
+        <div>
+          <label class="pm-lbl">Ημερομηνία</label>
+          <input type="text" class="pm-input" id="pmDate" placeholder="___ / ___ / ____">
+        </div>
+      </div>
+      <div class="pm-toggle-row">
+        <label for="pmShowName">Πεδίο «Ονοματεπώνυμο»</label>
+        <label class="pm-switch"><input type="checkbox" id="pmShowName" checked><span class="pm-slider"></span></label>
+      </div>
+      <div style="margin-top:10px">
+        <label class="pm-lbl">Λογότυπο (URL εικόνας ή από αρχείο)</label>
+        <input type="text" class="pm-input" id="pmLogo" placeholder="https://...">
+      </div>
+      <div class="pm-grid2" style="margin-top:8px">
+        <div>
+          <label class="pm-lbl">Πλάτος λογοτύπου</label>
+          <select class="pm-select" id="pmLogoW">
+            <option value="40">40px</option><option value="60">60px</option><option value="80" selected>80px</option><option value="100">100px</option><option value="120">120px</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Ύψος λογοτύπου</label>
+          <select class="pm-select" id="pmLogoH">
+            <option value="40">40px</option><option value="60" selected>60px</option><option value="80">80px</option><option value="100">100px</option><option value="auto">auto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>🎨 Μορφοποίηση</h3>
+      <div class="pm-grid2">
+        <div>
+          <label class="pm-lbl">Γραμματοσειρά</label>
+          <select class="pm-select" id="pmFont">
+            <option value="'Times New Roman', serif" selected>Times New Roman</option>
+            <option value="'Arial', sans-serif">Arial</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="'Georgia', serif">Georgia</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Μέγεθος γραμμάτων</label>
+          <select class="pm-select" id="pmFontSize">
+            <option value="11pt">11pt</option><option value="12pt" selected>12pt</option><option value="13pt">13pt</option><option value="14pt">14pt</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Περιθώριο Κάθετο</label>
+          <select class="pm-select" id="pmMarginV">
+            <option value="15mm">15mm</option><option value="20mm" selected>20mm</option><option value="25mm">25mm</option><option value="30mm">30mm</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Περιθώριο Οριζόντιο</label>
+          <select class="pm-select" id="pmMarginH">
+            <option value="15mm">15mm</option><option value="20mm" selected>20mm</option><option value="25mm">25mm</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Απόσταση ερωτήσεων</label>
+          <select class="pm-select" id="pmQSpacing">
+            <option value="12px">12px</option><option value="16px" selected>16px</option><option value="20px">20px</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Απόσταση επιλογών</label>
+          <select class="pm-select" id="pmOptSpacing">
+            <option value="4px">4px</option><option value="6px" selected>6px</option><option value="8px">8px</option>
+          </select>
+        </div>
+        <div>
+          <label class="pm-lbl">Ύψος γραμμής</label>
+          <select class="pm-select" id="pmLineHeight">
+            <option value="1.4">1.4</option><option value="1.5" selected>1.5</option><option value="1.6">1.6</option><option value="1.8">1.8</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>📏 Γραμμές Απάντησης</h3>
+      <div class="pm-toggle-row">
+        <label for="pmShowLines">Εμφάνιση γραμμών (ανοιχτές ερωτήσεις)</label>
+        <label class="pm-switch"><input type="checkbox" id="pmShowLines" checked><span class="pm-slider"></span></label>
+      </div>
+      <div id="pmLinesCountRow">
+        <label class="pm-lbl">Αριθμός γραμμών</label>
+        <input type="number" class="pm-input" id="pmLinesCount" value="6" min="1" max="15">
+      </div>
+    </div>
+
+    <div class="pm-section">
+      <h3>💧 Υδατογραφία (Watermark)</h3>
+      <div class="pm-toggle-row">
+        <label for="pmWatermarkOn">Ενεργοποίηση υδατογραφίας</label>
+        <label class="pm-switch"><input type="checkbox" id="pmWatermarkOn"><span class="pm-slider"></span></label>
+      </div>
+      <div id="pmWatermarkRow" style="display:none">
+        <div style="margin-bottom:10px">
+          <label class="pm-lbl">Κείμενο υδατογραφίας</label>
+          <input type="text" class="pm-input" id="pmWatermarkText" value="ΔΕΙΓΜΑ">
+        </div>
+        <div class="pm-grid2">
+          <div>
+            <label class="pm-lbl">Χρώμα</label>
+            <input type="color" class="pm-input" id="pmWatermarkColor" value="#cccccc" style="height:40px">
+          </div>
+          <div>
+            <label class="pm-lbl">Διαφάνεια</label>
+            <input type="range" class="pm-input" id="pmWatermarkOpacity" min="0.1" max="1" step="0.1" value="0.3" style="cursor:pointer">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-footer">
+      <button class="pm-btn pm-btn-secondary" id="pmCancel">Ακύρωση</button>
+      <button class="pm-btn pm-btn-secondary" id="pmCopyLink">📋 Αντιγραφή</button>
+      <button class="pm-btn pm-btn-secondary" id="pmShareLink">🔗 Κοινή χρήση</button>
+      <button class="pm-btn pm-btn-primary" id="pmPrint">🖨️ Εκτύπωση</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// ΕΚΤΥΠΩΣΗ ΦΥΛΛΟΥ ΑΣΚΗΣΕΩΝ (μηχανισμός ΛΕΒΙΑΘΑΝ)
+// ══════════════════════════════════════════════
+let _pmListenersAttached = false;
+const GR_KEYS = ['Α','Β','Γ','Δ','Ε','ΣΤ','Ζ','Η'];
+const GR_LOW  = ['α','β','γ','δ','ε','στ','ζ','η'];
+
+function openPrintModal() {
+  document.getElementById('pmTitle').value = 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ ' + currentPara + ' — ΑΣΚΗΣΕΙΣ';
+  document.getElementById('printModalOverlay').classList.add('active');
+  attachPrintModalListeners();
+}
+function closePrintModal() { document.getElementById('printModalOverlay').classList.remove('active'); }
+
+function chapterLink(para) {
+  return location.origin + location.pathname + '#ex=' + para;
+}
+
+function attachPrintModalListeners() {
+  if (_pmListenersAttached) return;
+  _pmListenersAttached = true;
+  document.getElementById('pmClose').addEventListener('click', closePrintModal);
+  document.getElementById('pmCancel').addEventListener('click', closePrintModal);
+  document.getElementById('printModalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('printModalOverlay')) closePrintModal();
+  });
+  document.getElementById('pmShowLines').addEventListener('change', function() {
+    document.getElementById('pmLinesCountRow').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('pmWatermarkOn').addEventListener('change', function() {
+    document.getElementById('pmWatermarkRow').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('pmScope').addEventListener('change', function() {
+    document.getElementById('pmTitle').value = this.value === 'all'
+      ? 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ 70–74 — ΑΣΚΗΣΕΙΣ'
+      : 'ΘΟΥΚΥΔΙΔΗΣ Γ΄ ' + currentPara + ' — ΑΣΚΗΣΕΙΣ';
+  });
+  document.getElementById('pmPrint').addEventListener('click', () => {
+    const s = collectPrintSettings();
+    closePrintModal();
+    printWorksheet(s);
+  });
+
+  const pmCopy = document.getElementById('pmCopyLink');
+  pmCopy.addEventListener('click', async () => {
+    const url = chapterLink(currentPara);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      pmCopy.textContent = '✓ Αντιγράφηκε';
+      setTimeout(() => { pmCopy.innerHTML = '📋 Αντιγραφή'; }, 1800);
+    } catch (e) { window.prompt('Αντιγράψτε τον σύνδεσμο:', url); }
+  });
+
+  const pmShare = document.getElementById('pmShareLink');
+  pmShare.addEventListener('click', async () => {
+    const url = chapterLink(currentPara);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Θουκυδίδης Γ΄ ' + currentPara + ' — Ασκήσεις', text: 'Άνοιγμα των ασκήσεων στην εφαρμογή:', url });
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        pmShare.textContent = '✓ Αντιγράφηκε';
+        setTimeout(() => { pmShare.innerHTML = '🔗 Κοινή χρήση'; }, 1800);
+      } else { window.prompt('Αντιγράψτε τον σύνδεσμο:', url); }
+    } catch (e) { /* ακύρωση */ }
+  });
+}
+
+function collectPrintSettings() {
+  return {
+    scope:    document.getElementById('pmScope').value,
+    answerKey:document.getElementById('pmAnswerKey').checked,
+    title:    document.getElementById('pmTitle').value.trim() || 'ΑΣΚΗΣΕΙΣ',
+    instructions: document.getElementById('pmInstructions').value.trim(),
+    score:    document.getElementById('pmScore').value.trim(),
+    school:   document.getElementById('pmSchool').value.trim(),
+    subject:  document.getElementById('pmSubject').value.trim(),
+    className:document.getElementById('pmClass').value.trim(),
+    date:     document.getElementById('pmDate').value.trim(),
+    showName: document.getElementById('pmShowName').checked,
+    logoUrl:  document.getElementById('pmLogo').value.trim(),
+    logoW:    document.getElementById('pmLogoW').value,
+    logoH:    document.getElementById('pmLogoH').value,
+    font:     document.getElementById('pmFont').value,
+    fontSize: document.getElementById('pmFontSize').value,
+    marginV:  document.getElementById('pmMarginV').value,
+    marginH:  document.getElementById('pmMarginH').value,
+    showLines:document.getElementById('pmShowLines').checked,
+    linesCount:parseInt(document.getElementById('pmLinesCount').value) || 6,
+    lineHeight:document.getElementById('pmLineHeight').value,
+    qSpacing:document.getElementById('pmQSpacing').value,
+    optSpacing:document.getElementById('pmOptSpacing').value,
+    watermark: document.getElementById('pmWatermarkOn').checked,
+    watermarkText: document.getElementById('pmWatermarkText').value.trim() || 'ΔΕΙΓΜΑ',
+    watermarkOpacity: document.getElementById('pmWatermarkOpacity').value,
+    watermarkColor: document.getElementById('pmWatermarkColor').value,
+  };
+}
+
+function exTypeLabel(ex) {
+  // «Άσκηση 3 · Σωστό / Λάθος» → «Σωστό / Λάθος»
+  const parts = (ex.num || '').split('·');
+  return parts.length > 1 ? parts.slice(1).join('·').trim() : '';
+}
+
+function renderExerciseForPrint(ex, num, s) {
+  const lbl = exTypeLabel(ex);
+  let html = '<div class="pq"><p class="pq-num">Άσκηση ' + num + (lbl ? ' · <span style="font-weight:normal;font-style:italic">' + lbl + '</span>' : '') + '</p>';
+  if (ex.question) html += '<p class="pq-q">' + ex.question + '</p>';
+
+  if (ex.type === 'mc') {
+    html += '<div class="pq-opts">' + ex.options.map((o, i) =>
+      '<div class="pq-opt"><span class="pq-k">' + GR_LOW[i] + '.</span> ' + o + '</div>').join('') + '</div>';
+  }
+  else if (ex.type === 'tf') {
+    html += '<table class="pq-tf"><tbody>' + ex.statements.map((st, i) =>
+      '<tr><td class="pq-tf-n">' + (i + 1) + '.</td><td>' + st.text + '</td><td class="pq-tf-b">☐ Σ &nbsp; ☐ Λ</td></tr>').join('') + '</tbody></table>';
+  }
+  else if (ex.type === 'match') {
+    const right = shuffle(ex.pairs.map(p => p.right));
+    html += '<table class="pq-dd"><thead><tr><th>Στήλη Α</th><th>Στήλη Β</th></tr></thead><tbody>';
+    ex.pairs.forEach((p, i) => {
+      html += '<tr><td><b>' + (i + 1) + '.</b> ' + p.left + '</td><td><b>' + GR_LOW[i] + '.</b> ' + right[i] + '</td></tr>';
+    });
+    html += '</tbody></table><p class="pq-dd-ans">Αντιστοιχίσεις: ' + ex.pairs.map((_, i) => (i + 1) + ' → ___').join(' &nbsp;&nbsp; ') + '</p>';
+  }
+  else if (ex.type === 'vocab') {
+    html += '<table class="pq-dd"><tbody>' + ex.items.map(it => {
+      const opts = shuffle([it.correct, it.wrong[0], it.wrong[1]]);
+      return '<tr><td style="width:38%;font-style:italic">' + it.ancient + '</td><td>' +
+        opts.map(o => '☐ ' + o).join(' &nbsp;&nbsp;&nbsp; ') + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+  else if (ex.type === 'fill') {
+    html += '<div class="pq-opts">' + ex.sentences.map((st, i) =>
+      '<div class="pq-opt"><span class="pq-k">' + (i + 1) + '.</span> <span>' + st.before + '<span class="pq-gap"></span>' + st.after + '</span></div>').join('') + '</div>';
+  }
+  else if (ex.type === 'open') {
+    if (s.showLines) {
+      html += '<div class="pq-lines">';
+      for (let i = 0; i < s.linesCount; i++) html += '<div class="pq-line"></div>';
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderAnswerForPrint(ex, num) {
+  let a = '';
+  if (ex.type === 'mc') a = GR_LOW[ex.correct] + '. ' + ex.options[ex.correct];
+  else if (ex.type === 'tf') a = ex.statements.map((st, i) => (i + 1) + '. ' + (st.correct ? 'Σ' : 'Λ')).join(' · ');
+  else if (ex.type === 'match') a = ex.pairs.map(p => '<i>' + p.left + '</i> → ' + p.right).join(' · ');
+  else if (ex.type === 'vocab') a = ex.items.map(it => '<i>' + it.ancient + '</i> → ' + it.correct).join(' · ');
+  else if (ex.type === 'fill') a = ex.sentences.map((st, i) => (i + 1) + '. ' + st.blank).join(' · ');
+  else if (ex.type === 'open') a = ex.answer || '';
+  return '<div class="pq-ans"><b>Άσκηση ' + num + '.</b> ' + a + '</div>';
+}
+
+function printWorksheet(s) {
+  const paras = s.scope === 'all' ? PARA_LIST : [currentPara];
+  const linkPara = paras.length === 1 ? paras[0] : currentPara;
+  const setUrl = chapterLink(linkPara);
+  const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=4&data=' + encodeURIComponent(setUrl);
+
+  const qrCornerInner = `
+      <a href="${setUrl}" style="display:inline-block;text-align:center;text-decoration:none;color:#000">
+        <img src="${qrSrc}" alt="QR ασκήσεων" style="width:76px;height:76px;border:1px solid #ddd;border-radius:6px" loading="eager">
+        <div style="font-size:7pt;color:#666;margin-top:2px;line-height:1.2;max-width:92px">Σκανάρετε για τις ασκήσεις</div>
+      </a>`;
+
+  // 3η στήλη: αν υπάρχει λογότυπο → λογότυπο (χωρίς QR)· αλλιώς → QR
+  const cornerCell = s.logoUrl ? `
+    <td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:${s.logoW}px">
+      <img src="${s.logoUrl}" style="width:${s.logoW}px;height:${s.logoH==='auto'?'auto':s.logoH+'px'};object-fit:contain" onerror="this.style.display='none'">
+    </td>`
+    : `<td rowspan="2" style="text-align:right;vertical-align:middle;padding-left:10px;width:96px">${qrCornerInner}</td>`;
+
+  let headerHTML = `<table class="hdr-table"><tr>`;
+  headerHTML += s.school ? `<td><strong>Σχολείο:</strong> ${s.school}</td>` : `<td></td>`;
+  headerHTML += s.subject ? `<td><strong>Μάθημα:</strong> ${s.subject}</td>` : `<td></td>`;
+  headerHTML += cornerCell;
+  headerHTML += `</tr><tr>`;
+  if (s.showName) headerHTML += `<td><strong>Ονοματεπώνυμο:</strong> ___________________________</td>`;
+  else if (s.className) headerHTML += `<td><strong>Τμήμα:</strong> ${s.className}</td>`;
+  else headerHTML += `<td></td>`;
+  if (s.date) headerHTML += `<td><strong>Ημερομηνία:</strong> ${s.date}</td>`;
+  else if (s.className && s.showName) headerHTML += `<td><strong>Τμήμα:</strong> ${s.className}</td>`;
+  else headerHTML += `<td></td>`;
+  headerHTML += `</tr></table><hr class="hdr-line">`;
+
+  let body = '', answers = '', n = 0;
+  paras.forEach(p => {
+    const exs = exercisesData[p] || [];
+    if (paras.length > 1) {
+      body += '<h2 class="ch-title">' + paragraphs[p].title + '</h2>';
+      if (s.answerKey) answers += '<h3 class="ch-sub">' + paragraphs[p].title + '</h3>';
+    }
+    exs.forEach(ex => {
+      n++;
+      body += renderExerciseForPrint(ex, n, s);
+      if (s.answerKey) answers += renderAnswerForPrint(ex, n);
+    });
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="el"><head><meta charset="UTF-8">
+<title>${s.title}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:${s.font};font-size:${s.fontSize};color:#000;padding:${s.marginV} ${s.marginH}}
+  @media print{body{padding:0}}
+  .hdr-table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:${s.fontSize}}
+  .hdr-table td{padding:3px 0;width:50%;vertical-align:top}
+  .hdr-line{border:none;border-top:1.5px solid #333;margin-bottom:14px}
+  .print-title{text-align:center;font-size:calc(${s.fontSize} + 3pt);font-weight:bold;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+  .print-instr{font-size:${s.fontSize};text-align:justify;margin-bottom:5px;line-height:1.7}
+  .print-score{font-size:${s.fontSize};font-style:italic;color:#444;margin-bottom:14px}
+  .ch-title{font-size:calc(${s.fontSize} + 1pt);margin:18px 0 10px;padding-bottom:3px;border-bottom:1px solid #999}
+  .ch-sub{font-size:${s.fontSize};margin:12px 0 6px}
+  .pq{margin-bottom:${s.qSpacing};page-break-inside:avoid}
+  .pq-num{font-weight:bold;font-size:${s.fontSize};margin-bottom:3px}
+  .pq-q{font-size:${s.fontSize};margin-bottom:${s.optSpacing};line-height:${s.lineHeight}}
+  .pq-opts{display:flex;flex-direction:column;gap:${s.optSpacing};margin-top:${s.optSpacing}}
+  .pq-opt{font-size:${s.fontSize};display:flex;align-items:baseline;gap:6px;line-height:${s.lineHeight}}
+  .pq-k{font-weight:bold}
+  .pq-tf{width:100%;border-collapse:collapse;font-size:${s.fontSize}}
+  .pq-tf td{padding:${s.optSpacing} 4px;vertical-align:top;line-height:${s.lineHeight};border-bottom:1px dotted #bbb}
+  .pq-tf-n{width:24px;font-weight:bold}
+  .pq-tf-b{width:90px;white-space:nowrap;text-align:right}
+  .pq-dd{width:100%;border-collapse:collapse;margin-top:6px;font-size:${s.fontSize}}
+  .pq-dd th,.pq-dd td{border:1px solid #ccc;padding:6px 10px;line-height:${s.lineHeight}}
+  .pq-dd th{background:#f0f0f0;font-weight:bold}
+  .pq-dd-ans{font-size:calc(${s.fontSize} - 1pt);color:#555;margin-top:8px}
+  .pq-gap{border-bottom:1px solid #333;display:inline-block;min-width:120px;margin:0 3px}
+  .pq-lines{margin-top:10px}
+  .pq-line{border-bottom:1px solid #aaa;height:24px;margin-bottom:2px}
+  .answers{page-break-before:always}
+  .answers h2{text-align:center;font-size:calc(${s.fontSize} + 2pt);letter-spacing:2px;margin-bottom:12px}
+  .pq-ans{font-size:calc(${s.fontSize} - 1pt);line-height:1.5;margin-bottom:8px;text-align:justify}
+  em{font-style:italic}
+  @media print{ .no-print{display:none!important} }
+  ${s.watermark ? `
+  .watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:80pt;font-weight:900;color:${s.watermarkColor};opacity:${s.watermarkOpacity};white-space:nowrap;pointer-events:none;z-index:9999;font-family:${s.font};letter-spacing:8px}` : ''}
+  @page{margin:${s.marginV} ${s.marginH};@top-center{content:none}@bottom-center{content:none}@bottom-left{content:none}@bottom-right{content:none}@top-left{content:none}@top-right{content:none}}
+</style></head><body>
+  ${s.watermark ? `<div class="watermark">${s.watermarkText}</div>` : ''}
+  ${headerHTML}
+  <div class="print-title">${s.title}</div>
+  ${s.instructions ? `<p class="print-instr">${s.instructions}</p>` : ''}
+  ${s.score ? `<p class="print-score">${s.score}</p>` : ''}
+  ${body}
+  ${s.answerKey ? `<div class="answers"><h2>ΑΠΑΝΤΗΣΕΙΣ</h2>${answers}</div>` : ''}
+  <button class="no-print" onclick="setTimeout(()=>window.print(),300)" style="position:fixed;top:20px;right:20px;padding:12px 24px;font-size:15px;background:#a68a2e;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Εκτύπωση</button>
+</body></html>`;
+
+  const blob = new Blob([html], {type: 'text/html; charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// Άνοιγμα απευθείας στις ασκήσεις ενός κεφαλαίου (σύνδεσμος/QR: #ex=71)
+(function () {
+  const m = (location.hash || '').match(/ex=(\d+)/);
+  if (m && paragraphs[+m[1]]) { loadParagraph(+m[1]); showPage('exercises'); }
+})();
+</script>
+
+<script>
+/* Λογότυπο εκτύπωσης από τη συσκευή: «📁 Από αρχείο» δίπλα στο πεδίο URL· η εικόνα (ή το URL) μένει αποθηκευμένη στη συσκευή για τις επόμενες εκτυπώσεις */
+(function(){
+  var KEY='lev_print_logo';
+  function init(){
+    var inp=document.getElementById('pmLogo'); if(!inp||inp.dataset.levLogo) return; inp.dataset.levLogo='1';
+    var box=document.createElement('div'); box.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px';
+    var file=document.createElement('input'); file.type='file'; file.accept='image/*'; file.style.display='none';
+    var btn=document.createElement('button'); btn.type='button'; btn.textContent='📁 Από αρχείο'; btn.className='pm-btn-logo';
+    btn.style.cssText='padding:7px 12px;border-radius:8px;border:1px solid rgba(0,0,0,.18);background:#fff;font:inherit;font-size:13px;cursor:pointer;color:#333';
+    var chip=document.createElement('span'); chip.style.cssText='display:none;align-items:center;gap:8px;font-size:12.5px;color:#555';
+    var img=document.createElement('img'); img.style.cssText='height:30px;max-width:90px;object-fit:contain;border:1px solid rgba(0,0,0,.1);border-radius:4px;background:#fff';
+    var nm=document.createElement('span'); var rm=document.createElement('button'); rm.type='button'; rm.textContent='✕'; rm.title='Αφαίρεση λογοτύπου';
+    rm.style.cssText='border:none;background:none;cursor:pointer;font-size:14px;color:#a33';
+    chip.appendChild(img); chip.appendChild(nm); chip.appendChild(rm);
+    box.appendChild(btn); box.appendChild(chip); box.appendChild(file); inp.parentNode.insertBefore(box, inp.nextSibling);
+    function save(o){ try{ if(o) localStorage.setItem(KEY, JSON.stringify(o)); else localStorage.removeItem(KEY); }catch(e){} }
+    function show(src,name){
+      if(src && src.indexOf('data:')===0){ inp.value=src; inp.style.display='none'; img.src=src; nm.textContent=name||'λογότυπο από τη συσκευή'; chip.style.display='inline-flex'; btn.textContent='📁 Αλλαγή'; }
+      else { chip.style.display='none'; inp.style.display=''; btn.textContent='📁 Από αρχείο'; if(src!=null) inp.value=src; }
+    }
+    btn.addEventListener('click',function(){ file.click(); });
+    file.addEventListener('change',function(){
+      var f=file.files&&file.files[0]; if(!f) return; var rd=new FileReader();
+      rd.onload=function(){ var im=new Image(); im.onload=function(){
+        var M=360, k=Math.min(1, M/Math.max(im.width,im.height)), c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(im.width*k)); c.height=Math.max(1,Math.round(im.height*k));
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height); var src=c.toDataURL('image/png');
+        show(src,f.name); save({src:src,name:f.name}); file.value=''; }; im.src=rd.result; };
+      rd.readAsDataURL(f);
+    });
+    rm.addEventListener('click',function(){ inp.value=''; show('',''); save(null); });
+    inp.addEventListener('change',function(){ var v=inp.value.trim(); save(v?{src:v}:null); });
+    try{ var o=JSON.parse(localStorage.getItem(KEY)||'null'); if(o&&o.src) show(o.src,o.name); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  setTimeout(init,800);
+})();
+</script>
+</body>
+</html>
