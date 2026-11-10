@@ -610,6 +610,13 @@ select.gap-in{cursor:pointer;}
   .slot-lbl{width:auto;min-width:0;overflow-wrap:anywhere;line-height:1.35;}
   .slot-zone{min-height:clamp(44px, 5.5vw, 6.5vh);white-space:normal;overflow-wrap:anywhere;line-height:1.4;}
 }
+
+/* ═══ Αντιστοίχιση (υπολογιστής): μικρότερα γράμματα — χωρούν ολόκληρες προτάσεις ═══ */
+@media(min-width:641px){
+  .drag-chip,.slot-lbl,.slot-zone{font-size:min(clamp(14px, 1.3vw, 2.2vh), 20px);}
+  .drag-chip{padding:clamp(6px, .8vw, 1vh) clamp(12px, 1.5vw, 2vh);}
+  .slot-zone{min-height:clamp(38px, 4.4vw, 5.2vh);}
+}
 </style>
 </head>
 <body>
@@ -991,7 +998,19 @@ function derange(q){
   for(let t=0;t<80;t++){ const o=shuffle(idx); if(o.every((v,p)=>v!==q.ans[p])) return o; }
   return idx.map((_,p)=>q.ans[(p+1)%n]); // εφεδρικά: κυκλική μετατόπιση
 }
+function ddAutoSwap(q){
+  // Αν οι όροι της αριστερής στήλης είναι σαφώς μεγαλύτεροι από τις απαντήσεις, αντιμετάθεση: το εκτενές πάει δεξιά, το σύντομο αριστερά
+  try{
+    const n=q.tgts.length;
+    if(!n||n!==q.items.length||!Array.isArray(q.ans)||q.ans.length!==n) return q;
+    if(new Set(q.ans).size!==n||q.ans.some(a=>!(a>=0&&a<n))) return q;
+    const avg=a=>a.reduce((s,x)=>s+String(x).length,0)/a.length;
+    if(avg(q.tgts)<=avg(q.items)*1.2) return q;
+    return Object.assign({},q,{tgts:q.items.slice(),items:q.tgts.slice(),ans:q.tgts.map((_,j)=>q.ans.indexOf(j))});
+  }catch(e){return q;}
+}
 function buildDrag(q,container){
+  q=ddAutoSwap(q);
   const order=derange(q);
   const slotVal=new Array(q.tgts.length).fill(null);
   const chips={}, zones=[];
