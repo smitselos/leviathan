@@ -46,6 +46,10 @@ export default async function handler(req, res) {
           networkId: f.networkId || prev.networkId || null,
           _isNetwork: typeof f._isNetwork === 'boolean' ? f._isNetwork : (prev._isNetwork || false),
           favorite: typeof f.favorite === 'boolean' ? f.favorite : (prev.favorite || false),
+          // Σύνδεσμος «Πολυμέσων» (βίντεο/ιστότοπος) + πεδία εφαρμογής — να μη χάνονται σε re-POST
+          linkUrl: typeof f.linkUrl === 'string' ? f.linkUrl : (prev.linkUrl || null),
+          ghUrl: f.ghUrl || prev.ghUrl || null,
+          isApp: typeof f.isApp === 'boolean' ? f.isApp : (prev.isApp || false),
           openCount: prev.openCount || 0,
           openedAt: prev.openedAt || null,
           addedAt: prev.addedAt || Date.now(),

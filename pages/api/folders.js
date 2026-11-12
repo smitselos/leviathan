@@ -1,5 +1,5 @@
 // pages/api/folders.js
-// GET    → { rootId, folders:[{id,name,createdAt}] }
+// GET    → { rootId, appsFolderId, mediaFolderId, folders:[{id,name,createdAt}] }
 // POST   → δημιουργία φακέλου  body:{ name }            → { folder, folders }
 // DELETE → αφαίρεση φακέλου    body:{ id, deleteFromDrive:bool }
 //          Αν deleteFromDrive=true: ο φάκελος (και ό,τι περιέχει)
@@ -10,7 +10,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 import {
   getDrive, loadRegistry, saveRegistry,
-  ensureRootFolder, ensureAppsFolder, createFolder, trashDriveFile,
+  ensureRootFolder, ensureAppsFolder, ensureMediaFolder, createFolder, trashDriveFile,
 } from '../../lib/drive';
 
 export default async function handler(req, res) {
@@ -24,8 +24,11 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const rootId = await ensureRootFolder(drive);
       const appsFolderId = await ensureAppsFolder(drive);
+      // «Πολυμέσα» μέσα στον «Εφαρμογές» — σφάλμα εδώ ΔΕΝ πρέπει να ρίχνει όλη τη φόρτωση
+      let mediaFolderId = null;
+      try { mediaFolderId = await ensureMediaFolder(drive, appsFolderId); } catch (e) { console.error('[folders] media', e.message); }
       const reg = await loadRegistry(drive);
-      return res.status(200).json({ rootId, appsFolderId, folders: reg.folders });
+      return res.status(200).json({ rootId, appsFolderId, mediaFolderId, folders: reg.folders });
     }
 
     if (req.method === 'POST') {
