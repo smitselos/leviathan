@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { toEmbedUrl } from '../lib/embed';
 
 const TAG_COLORS = [
   { bg:'#ede9fe', text:'#6d28d9' }, { bg:'#dcfce7', text:'#15803d' },
@@ -10,29 +11,7 @@ const TAG_COLORS = [
 ];
 const tagColor = (t) => TAG_COLORS[Math.abs([...t].reduce((a,c)=>a+c.charCodeAt(0),0)) % TAG_COLORS.length];
 
-// Μετατροπή YouTube link → embed μορφή (ώστε να φορτώνει σε iframe)
-// Καλύπτει: youtu.be/ID · youtube.com/watch?v=ID · /shorts/ID · /live/ID · ήδη /embed/
-function toEmbedUrl(url) {
-  if (!url) return url;
-  try {
-    const u = new URL(url);
-    const host = u.hostname.replace('www.', '');
-    let id = null;
-    if (host === 'youtu.be') id = u.pathname.slice(1);
-    else if (host.endsWith('youtube.com')) {
-      if (u.pathname === '/watch') id = u.searchParams.get('v');
-      else if (u.pathname.startsWith('/embed/')) return url; // ήδη embed
-      else if (u.pathname.startsWith('/shorts/')) id = u.pathname.split('/')[2];
-      else if (u.pathname.startsWith('/live/')) id = u.pathname.split('/')[2];
-    }
-    if (id) {
-      const t = u.searchParams.get('t') || u.searchParams.get('start');
-      const start = t ? `?start=${parseInt(t)||0}` : '';
-      return `https://www.youtube.com/embed/${id}${start}`;
-    }
-  } catch {}
-  return url;
-}
+// Μετατροπή συνδέσμων YouTube / Vimeo σε embed — κοινό helper (lib/embed.js)
 
 export default function LivePage() {
   const router = useRouter();

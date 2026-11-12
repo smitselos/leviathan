@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import { toEmbedUrl } from '../lib/embed';
 
 // ── Energy Insights palette (από το παλιό ΛΕΒΙΑΘΑΝ) ──
 const PALETTE = {
@@ -211,14 +212,7 @@ const shareLabel = (v) => !v || v === 'none' ? null
   : '👤 Επιλεγμένοι';
 // Υποφάκελοι Drive μέσα στον φάκελο «Εφαρμογές»
 const isDriveFolder = (f) => (f?.mimeType || '') === 'application/vnd.google-apps.folder';
-const toEmbedUrl = (url) => {
-  if (!url) return url;
-  // YouTube → embed
-  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
-  if (m) return `https://www.youtube.com/embed/${m[1]}`;
-  // Ήδη embed ή άλλο URL → ως έχει
-  return url;
-};
+// toEmbedUrl (YouTube / Vimeo → embed): κοινό helper στο lib/embed.js
 const QrIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>;
 
 const getEditUrl = (f) => {
