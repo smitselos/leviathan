@@ -362,6 +362,9 @@ export default function Home() {
 
   const [folders, setFolders] = useState([]);
   const [appsFolderId, setAppsFolderId] = useState(null);
+  // «Πολυμέσα»: ειδικός φάκελος μέσα στον «Εφαρμογές» (δημιουργείται αυτόματα από το /api/folders)
+  const [mediaFolderId, setMediaFolderId] = useState(null);
+  const mediaUploadRef = useRef(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -620,6 +623,7 @@ export default function Home() {
       const df = await rf.json(); const dr = await rr.json();
       setFolders(Array.isArray(df.folders) ? df.folders : []);
       setAppsFolderId(df.appsFolderId || null);
+      setMediaFolderId(df.mediaFolderId || null);
       const allFiles = Array.isArray(dr.files) ? dr.files : [];
       setFiles(allFiles);
       // Ανασύσταση κατάστασης μοιράσματος εφαρμογών GitHub (entries με id 'gh:…')
@@ -1823,6 +1827,76 @@ export default function Home() {
     setBusy('');
   };
 
+  // ── «Πολυμέσα»: σύνδεσμοι (βίντεο / ιστότοποι) και αρχεία πολυμέσων ──
+  // Κάθε σύνδεσμος γίνεται ένα μικρό αρχείο-συντόμευση «Όνομα.url» στον φάκελο
+  // «Πολυμέσα» του Drive (ώστε να υπάρχει και εκτός εφαρμογής) και καταχωρείται με linkUrl.
+  // Μοίρασμα / QR / Live χρησιμοποιούν ΑΠΕΥΘΕΙΑΣ το linkUrl — χωρίς Drive, χωρίς σύνδεση Google.
+  const isMediaLink = (f) => !!f?.linkUrl;
+  const mediaDisplayName = (f) => (f?.name || '').replace(/\.url$/i, '');
+  const addMediaLink = async () => {
+    if (!mediaFolderId || !session?.accessToken) { alert('Ο φάκελος «Πολυμέσα» δεν είναι ακόμα έτοιμος — ανανέωσε τη σελίδα.'); return; }
+    let url = (prompt('Σύνδεσμος (YouTube, Vimeo ή ιστότοπος):') || '').trim();
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    let host = '';
+    try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { alert('Ο σύνδεσμος δεν είναι έγκυρος.'); return; }
+    const name = (prompt('Τίτλος:', host) || '').trim();
+    if (!name) return;
+    const fileName = name.replace(/[\\/:*?"<>|]/g, '-') + '.url';
+    setBusy('mediaLink');
+    try {
+      const metadata = { name: fileName, mimeType: 'application/internet-shortcut', parents: [mediaFolderId] };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', new Blob(['[InternetShortcut]\r\nURL=' + url + '\r\n'], { type: 'application/internet-shortcut' }));
+      const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType',
+        { method:'POST', headers:{ Authorization:'Bearer ' + session.accessToken }, body: form });
+      const doc = await res.json();
+      // Στο μητρώο ο ΤΙΤΛΟΣ (χωρίς .url) — έτσι εμφανίζεται και στη σελίδα τάξης
+      if (doc.id) await registerFiles([{ id: doc.id, name, mimeType: doc.mimeType, folderId: mediaFolderId, linkUrl: url, tags: ['Σύνδεσμος'] }]);
+      else alert('Σφάλμα αποθήκευσης συνδέσμου' + (doc.error?.message ? ': ' + doc.error.message : ''));
+    } catch (e) { alert('Σφάλμα αποθήκευσης συνδέσμου: ' + e.message); }
+    setBusy('');
+  };
+  // Αφαίρεση στοιχείου: αν είναι μοιρασμένο, πρώτα αποδημοσίευση (να φύγει από σελίδα τάξης / εισερχόμενα)
+  const removeMediaItem = async (f) => {
+    const choice = prompt('Αφαίρεση «' + mediaDisplayName(f) + '».\n\n  1 = αφαίρεση μόνο από τη λίστα (μένει στο Drive)\n  2 = διαγραφή και από το Drive (στον κάδο)\n\n(Άκυρο για ακύρωση)');
+    if (choice !== '1' && choice !== '2') return;
+    try {
+      if (f.visibility && f.visibility !== 'none') {
+        await fetch('/api/publish?key=' + encodeURIComponent(f.id), { method:'DELETE' });
+      }
+      const r = await fetch('/api/registry', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, deleteFromDrive: choice === '2' }) });
+      const d = await r.json(); if (d.files) setFiles(d.files);
+    } catch (e) { alert('Σφάλμα αφαίρεσης: ' + e.message); }
+  };
+  const onMediaUpload = async (e) => {
+    const list = Array.from(e.target.files || []); e.target.value = '';
+    if (!list.length || !mediaFolderId) return;
+    await uploadFilesTo(list, mediaFolderId);
+  };
+  // Μοίρασμα συνδέσμου: ίδιο modal ορατότητας με τις εφαρμογές GitHub — ο server
+  // αποθηκεύει το linkUrl ως ghUrl και παρακάμπτει το Drive (η σελίδα τάξης ανοίγει το ghUrl).
+  const togglePublishLink = (f) => {
+    const savedV = f.visibility || 'none';
+    setShareMessage('');
+    setVisibilityDraft(savedV);
+    setVisibilityPicker({ _shareApp: true, id: f.id, name: mediaDisplayName(f), _ghUrl: f.linkUrl, visibility: savedV });
+  };
+  const mediaIcon = (f) => {
+    if (isMediaLink(f)) return /youtu\.?be|vimeo\.com/i.test(f.linkUrl) ? '🎬' : '🌐';
+    const m = f.mimeType || '';
+    if (m.startsWith('video/')) return '🎞';
+    if (m.startsWith('audio/')) return '🎵';
+    if (m.startsWith('image/')) return '🖼';
+    return '📄';
+  };
+  const mediaKind = (f) => {
+    if (isMediaLink(f)) { try { return new URL(f.linkUrl).hostname.replace(/^www\./, ''); } catch (e) { return 'Σύνδεσμος'; } }
+    const m = f.mimeType || '';
+    return m.startsWith('video/') ? 'Βίντεο' : m.startsWith('audio/') ? 'Ήχος' : m.startsWith('image/') ? 'Εικόνα' : 'Αρχείο';
+  };
+
   // ── Wallet renderer (κινητό): στοιβαγμένες κάρτες — κοινό για φακέλους & εφαρμογές ──
   // items: [{ view, type:'stat'|'folder', tone, label/value/sub/unit/icon ή name/desc/icon }]
   // activeId: ποια κάρτα είναι ανοιχτή · onTap(item, isExpanded): χειρισμός αγγίγματος
@@ -1922,8 +1996,11 @@ export default function Home() {
   const countFor = (fid) => files.filter((f) => f.folderId === fid).length;
 
   // Αρχεία εκτός του φακέλου «Εφαρμογές» (για τις κανονικές λίστες) — εξαιρούνται και όσα βρίσκονται σε υποφακέλους εφαρμογών
-  const appSubfolderIds = new Set(files.filter((f) => appsFolderId && f.folderId === appsFolderId && isDriveFolder(f)).map((f) => f.id));
-  const normalFiles = files.filter((f) => (!appsFolderId || f.folderId !== appsFolderId) && !appSubfolderIds.has(f.folderId));
+  // (ο «Πολυμέσα» εξαιρείται: έχει δική του κάρτα, δεν είναι υποφάκελος εφαρμογών)
+  const appSubfolderIds = new Set(files.filter((f) => appsFolderId && f.folderId === appsFolderId && isDriveFolder(f) && f.id !== mediaFolderId).map((f) => f.id));
+  const normalFiles = files.filter((f) => (!appsFolderId || f.folderId !== appsFolderId) && !appSubfolderIds.has(f.folderId) && (!mediaFolderId || f.folderId !== mediaFolderId));
+  // Περιεχόμενο «Πολυμέσων»: σύνδεσμοι (linkUrl) + ανεβασμένα αρχεία
+  const mediaFiles = mediaFolderId ? files.filter((f) => f.folderId === mediaFolderId && !isDriveFolder(f)) : [];
   // Φάκελος «Πρότυπα» (με βάση το όνομα) + τα Google Docs μέσα του
   const templatesFolder = folders.find(f => f.name === 'Πρότυπα');
   const templateFiles = templatesFolder
@@ -2311,13 +2388,17 @@ export default function Home() {
             const q = ghSearch.trim().toLowerCase();
             // «Οι εφαρμογές μου» — εφαρμογές του χρήστη στον φάκελο «Εφαρμογές» του Drive (ρίζα + υποφάκελοι)
             const MY_APPS = '__mine__';
+            const MEDIA = '__media__'; // «Πολυμέσα» (Drive: Εφαρμογές / Πολυμέσα)
+            const mediaScope = [...mediaFiles]
+              .filter((f) => !q || mediaDisplayName(f).toLowerCase().includes(q) || (f.linkUrl || '').toLowerCase().includes(q))
+              .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
             const myApps = [...allAppFiles].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-            const mySubs = files.filter((f) => appsFolderId && f.folderId === appsFolderId && isDriveFolder(f))
+            const mySubs = files.filter((f) => appsFolderId && f.folderId === appsFolderId && isDriveFolder(f) && f.id !== mediaFolderId)
               .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'el'));
             const myScope = q ? myApps.filter((f) => (f.name || '').toLowerCase().includes(q))
               : myAppsSub ? myApps.filter((f) => f.folderId === myAppsSub.id)
               : myApps.filter((f) => f.folderId === appsFolderId);
-            const scope = ghOpenFolder === MY_APPS ? []
+            const scope = (ghOpenFolder === MY_APPS || ghOpenFolder === MEDIA) ? []
               : q
               ? ghAppList.filter(a => (a.name || '').toLowerCase().includes(q) || (a.folder || '').toLowerCase().includes(q) || (a.path || '').toLowerCase().includes(q))
               : inFolder ? (inFolder.apps || []).map(a => ({ ...a, folder: inFolder.name }))
@@ -2328,17 +2409,27 @@ export default function Home() {
             <>
               <div style={{ ...S.pageHeader, gap: isMobile ? 8 : 14 }}>
                 <button onClick={ghOpenFolder === MY_APPS && myAppsSub ? () => { setMyAppsSub(null); setGhSearch(''); } : ghOpenFolder ? () => { setGhOpenFolder(null); setGhSearch(''); } : goHome} style={{ ...S.backBtn, padding: isMobile ? '6px 10px' : '8px 16px', fontSize: isMobile ? 12 : 13 }}>← Πίσω</button>
-                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{ghOpenFolder === MY_APPS ? (myAppsSub ? <>📂 {trunc(myAppsSub.name, isMobile ? 14 : 30)}</> : '⭐ Οι εφαρμογές μου') : ghOpenFolder ? <>📂 {trunc(ghOpenFolder, isMobile ? 14 : 30)}</> : 'Εφαρμογές'}</h1>
+                <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 17 : 22 }}>{ghOpenFolder === MEDIA ? '🎬 Πολυμέσα' : ghOpenFolder === MY_APPS ? (myAppsSub ? <>📂 {trunc(myAppsSub.name, isMobile ? 14 : 30)}</> : '⭐ Οι εφαρμογές μου') : ghOpenFolder ? <>📂 {trunc(ghOpenFolder, isMobile ? 14 : 30)}</> : 'Εφαρμογές'}</h1>
                 <div style={{ flex:1 }} />
+                {ghOpenFolder === MEDIA ? (
+                  <>
+                    <button onClick={addMediaLink} disabled={!!busy} style={{ ...btn('mini'), fontSize:12, padding:'6px 12px', whiteSpace:'nowrap' }} title="Σύνδεσμος βίντεο (YouTube, Vimeo) ή ιστοτόπου">{busy === 'mediaLink' ? '…' : (isMobile ? '＋ 🔗' : '＋ Σύνδεσμος')}</button>
+                    <button onClick={() => mediaUploadRef.current?.click()} disabled={!!busy} style={{ ...btn('mini'), fontSize:12, padding:'6px 12px', whiteSpace:'nowrap', opacity:0.8 }} title="Ανέβασμα βίντεο, ήχου ή εικόνας">{busy === 'upload' ? '…' : (isMobile ? '⬆️' : '＋ Ανέβασμα')}</button>
+                    <input ref={mediaUploadRef} type="file" multiple accept="video/*,audio/*,image/*" onChange={onMediaUpload} style={{ display:'none' }} />
+                  </>
+                ) : (
                 <button onClick={() => router.push(ghOpenFolder === MY_APPS && myAppsSub ? '/creator?folder=' + encodeURIComponent(myAppsSub.id) : '/creator')} style={{ ...btn('mini'), fontSize:12, padding:'6px 12px', whiteSpace:'nowrap' }} title="Δημιουργία εφαρμογής από πρότυπο">＋ Νέα εφαρμογή</button>
-                <span style={{ fontSize:11, fontWeight:700, color:'#8a7d4a', background:'#efe9d5', padding:'4px 10px', borderRadius:999, whiteSpace:'nowrap' }}>{ghOpenFolder === MY_APPS ? '⭐ Drive' : '⚡ GitHub'}</span>
+                )}
+                {!(isMobile && ghOpenFolder === MEDIA) && <span style={{ fontSize:11, fontWeight:700, color:'#8a7d4a', background:'#efe9d5', padding:'4px 10px', borderRadius:999, whiteSpace:'nowrap' }}>{(ghOpenFolder === MY_APPS || ghOpenFolder === MEDIA) ? '⭐ Drive' : '⚡ GitHub'}</span>}
               </div>
               <p style={{ fontSize:13, color:'#6b6b80', marginTop:-8, marginBottom:14 }}>
-                {ghOpenFolder === MY_APPS
+                {ghOpenFolder === MEDIA
+                  ? 'Σύνδεσμοι βίντεο (YouTube, Vimeo) και ιστοτόπων, καθώς και αρχεία βίντεο, ήχου και εικόνας. Βρίσκονται στον φάκελο «Εφαρμογές / Πολυμέσα» του Google Drive.'
+                  : ghOpenFolder === MY_APPS
                   ? 'Οι εφαρμογές σου στον φάκελο «Εφαρμογές» του Google Drive — όσες φτιάχνεις με το «＋ Νέα εφαρμογή» μπαίνουν εδώ.'
                   : 'Οι εφαρμογές φορτώνονται αυτόματα από το GitHub (φάκελος public/apps). Ανέβασε ένα .html σε υποφάκελο και, μετά το deploy, εμφανίζεται εδώ.'}
               </p>
-              <input type="search" placeholder="Αναζήτηση εφαρμογής…" value={ghSearch} onChange={(e) => setGhSearch(e.target.value)}
+              <input type="search" placeholder={ghOpenFolder === MEDIA ? 'Αναζήτηση στα πολυμέσα…' : 'Αναζήτηση εφαρμογής…'} value={ghSearch} onChange={(e) => setGhSearch(e.target.value)}
                 style={{ width:'100%', padding:'10px 14px', border:'1px solid #ebebeb', borderRadius:12, fontSize: isMobile ? 16 : 13, background:'#fff', marginBottom:20 }} />
               {ghApps === null ? <div style={S.empty}>Φόρτωση…</div> : (
                 <>
@@ -2361,6 +2452,20 @@ export default function Home() {
                           <button style={{ ...S.linkBtn, color:PALETTE.mustard.deep }}>Άνοιγμα φακέλου →</button>
                         </div>
                       </div>
+                      {/* Δεύτερη κάρτα: «Πολυμέσα» (Drive: Εφαρμογές / Πολυμέσα) */}
+                      {mediaFolderId && (
+                        <div className="ch" onClick={() => { setGhOpenFolder(MEDIA); setGhSearch(''); }}
+                          style={{ ...S.folderCard, background:PALETTE.peach.bgSoft, border:'1.5px solid ' + PALETTE.peach.accent }}>
+                          <div style={S.folderTop}>
+                            <div style={{ ...S.folderIcon, background:PALETTE.peach.bg, color:PALETTE.peach.deep, fontSize:18 }}>🎬</div>
+                          </div>
+                          <h3 style={{ ...S.folderTitle, color:'#3d3a2e' }}>Πολυμέσα</h3>
+                          <p style={{ ...S.folderDesc, color:'#3d3a2e', opacity:0.6 }}>Βίντεο · σύνδεσμοι · {mediaFiles.length} {mediaFiles.length === 1 ? 'στοιχείο' : 'στοιχεία'}</p>
+                          <div style={{ ...S.folderFoot, borderTopColor:PALETTE.peach.accent }}>
+                            <button style={{ ...S.linkBtn, color:PALETTE.peach.deep }}>Άνοιγμα φακέλου →</button>
+                          </div>
+                        </div>
+                      )}
                       {ghFolders.map((fl) => (
                         <div key={fl.name} className="ch" onClick={() => setGhOpenFolder(fl.name)}
                           style={{ ...S.folderCard, background:'#fbfaf4', border:'1.5px dashed #c9bd93' }}>
@@ -2376,7 +2481,39 @@ export default function Home() {
                       ))}
                     </div>
                   )}
-                  {ghOpenFolder === MY_APPS ? (
+                  {ghOpenFolder === MEDIA ? (
+                    mediaScope.length === 0
+                      ? <div style={S.empty}>{q ? 'Κανένα στοιχείο δεν ταιριάζει στην αναζήτηση.' : <>Ο φάκελος είναι άδειος. <button onClick={addMediaLink} style={{ ...S.linkBtn, color:PALETTE.peach.deep }}>＋ Σύνδεσμος</button></>}</div>
+                      : <div style={S.cardsGrid}>
+                          {mediaScope.map((f) => {
+                            const link = isMediaLink(f);
+                            const lbl = shareLabel(f.visibility);
+                            const openUrl = link ? f.linkUrl : `https://drive.google.com/file/d/${f.id}/view`;
+                            return (
+                              <div key={f.id} className="ch" style={{ ...S.folderCard, background:'#fff' }}>
+                                <div style={S.folderTop}>
+                                  <div style={{ ...S.folderIcon, background:PALETTE.peach.bg, color:PALETTE.peach.deep, fontSize:18 }}>{mediaIcon(f)}</div>
+                                  <button onClick={(e) => { e.stopPropagation(); setQrFile(link ? { id: f.id, name: mediaDisplayName(f), _ghUrl: f.linkUrl } : f); }} title="QR"
+                                    style={{ background:'transparent', border:'none', cursor:'pointer', color:'#8a7d4a', padding:2 }}>{QrIcon}</button>
+                                </div>
+                                <h3 style={S.folderTitle}>{trunc(mediaDisplayName(f), 42)}</h3>
+                                <p style={{ ...S.folderDesc, opacity:0.55, fontSize:11, wordBreak:'break-all' }}>{mediaKind(f)}</p>
+                                <div style={{ ...S.folderFoot, borderTopColor:'#f0f0f0', display:'flex', gap:6, flexWrap:'wrap' }}>
+                                  <button onClick={() => {
+                                    fetch('/api/registry', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, recordOpen: true }) }).catch(()=>{});
+                                    window.open(openUrl, '_blank');
+                                  }} style={{ ...btn('mini'), color:PALETTE.peach.deep }}>Άνοιγμα ↗</button>
+                                  <button onClick={() => addLiveItem(link ? { kind:'url', url:f.linkUrl, name:mediaDisplayName(f) } : { kind:'file', id:f.id, name:f.name })} style={{ ...btn('mini'), color:'#5c7a3a' }}>➕ Live</button>
+                                  <button onClick={() => link ? togglePublishLink(f) : togglePublish(f.id)}
+                                    style={{ ...btn('mini'), color: lbl ? '#fff' : PALETTE.peach.deep, background: lbl ? '#16a34a' : undefined }}
+                                    title="Μοίρασμα σε μαθητές/συνδέσεις">{lbl || '👤 Μοίρασμα'}</button>
+                                  <button onClick={() => removeMediaItem(f)} className="del-h" style={{ ...btn('mini'), color:'#999' }} title="Αφαίρεση">✕</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                  ) : ghOpenFolder === MY_APPS ? (
                     <>
                       {/* Υποφάκελοι του «Εφαρμογές» (μόνο στη ρίζα, χωρίς αναζήτηση) */}
                       {!q && !myAppsSub && (
@@ -2915,7 +3052,7 @@ export default function Home() {
                     <div style={{ padding:'0 14px 12px', borderTop:'1px solid rgba(0,0,0,0.04)' }}>
                       {item.message && <div style={{ fontSize:12, color:'#1a7f37', background:'#f0fdf4', padding:'8px 10px', borderRadius:8, marginTop:8, lineHeight:1.5 }}>💬 {item.message}</div>}
                       <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:8 }}>
-                        <button onClick={()=>{ markInboxSeen(item.fileId); const isHtml=/\.html?$/i.test(item.fileName||''); const isBin=/\.(pdf|jpe?g|png|gif|webp|svg|mp4|mp3|zip)$/i.test(item.fileName||''); const pUrl=isHtml?`/api/student-file?id=${item.fileId}`:!isBin?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`:`https://drive.google.com/file/d/${item.fileId}/preview`; if(isMobile){openExternal(pUrl);return;} setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true }); setShowMetaPanel(false); }}
+                        <button onClick={()=>{ markInboxSeen(item.fileId); if(item.ghUrl){ openExternal(item.ghUrl); return; } /* σύνδεσμος Πολυμέσων / εφαρμογή GitHub → απευθείας */ const isHtml=/\.html?$/i.test(item.fileName||''); const isBin=/\.(pdf|jpe?g|png|gif|webp|svg|mp4|mp3|zip)$/i.test(item.fileName||''); const pUrl=isHtml?`/api/student-file?id=${item.fileId}`:!isBin?`/api/inbox-pdf?id=${item.fileId}&name=${encodeURIComponent(item.fileName||'')}`:`https://drive.google.com/file/d/${item.fileId}/preview`; if(isMobile){openExternal(pUrl);return;} setViewing({ id:item.fileId, name:item.fileName||'Αρχείο', previewUrl:pUrl, isInbox:true }); setShowMetaPanel(false); }}
                           style={{ ...btn('mini'), fontSize:12 }}>Άνοιγμα →</button>
                         <button onClick={()=>{ markInboxSeen(item.fileId); window.open(`https://drive.google.com/uc?id=${item.fileId}&export=download`,'_blank'); }} style={{ ...btn('mini'), fontSize:12 }}>⬇ Λήψη</button>
                         <button onClick={()=> setInboxSaveTarget(inboxSaveTarget===key?null:key)} disabled={busy==='inbox-save'} style={{ ...btn('mini'), fontSize:12, color:'#15803d' }}>{busy==='inbox-save'?'…':'📁 Αποθήκευση'}</button>
