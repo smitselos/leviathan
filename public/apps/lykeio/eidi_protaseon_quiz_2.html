@@ -854,12 +854,12 @@ const CONFIG = {
   title: 'Τα είδη των προτάσεων',
   subtitle: 'Επίλεξε τρόπο εξάσκησης',
   adpDesc: 'Προσαρμοστική μάθηση ανά ενότητα: τι είναι πρόταση, δομή, κύριες και δευτερεύουσες, λειτουργία, λεκτικές πράξεις.',
-  sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sp2yWK_l7_sKlR8b4SClD8b5bWXW_zfv5kqVrN8NhcTya0eCKkj7n66ny1W7iamDWE8GznYipMuC/pubhtml',   // σύνδεσμος δημοσίευσης του Google Sheet
+  sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9sp2yWK_l7_sKlR8b4SClD8b5bWXW_zfv5kqVrN8NhcTya0eCKkj7n66ny1W7iamDWE8GznYipMuC/pub?output=csv',                  // κενό = ενσωματωμένες ερωτήσεις (EMBEDDED_BOOK) · με σύνδεσμο = Google Sheet (αν δεν φορτώσει, χρησιμοποιούνται οι ενσωματωμένες)
   questionsSheet: '',            // κενό = το 1ο φύλλο
   categoriesSheet: 'Κατηγορίες',
-  categoriesGid: '',             // gid του φύλλου «Κατηγορίες» · κενό (μαζί με το theoryGid) = φόρτωση όλου του εγγράφου και εύρεση των φύλλων με το όνομα
-  theoryGid: '',                 // gid του φύλλου «Θεωρία» (φόρτωση ως CSV)
-  spreadsheetId: '',             // εφεδρεία: ανάγνωση φύλλου με το όνομά του (χρειάζεται κοινοποίηση «Οποιοσδήποτε έχει τον σύνδεσμο»)
+  categoriesGid: '879816718',   // gid του φύλλου «Κατηγορίες» (φόρτωση ως CSV)
+  theoryGid: '810378272',       // gid του φύλλου «Θεωρία» (φόρτωση ως CSV)
+  spreadsheetId: '1q1mEmM1C4bqRWW_QY5CEbRLCKQ_tqA5GDeI_vhd9Yic',   // εφεδρεία: ανάγνωση φύλλου με το όνομά του (χρειάζεται κοινοποίηση «Οποιοσδήποτε έχει τον σύνδεσμο»)
   theorySheet: 'Θεωρία',
 };
 document.title = 'Quiz - ' + CONFIG.title;   // ΣΗΜ.: η λίστα εφαρμογών του ΛΕΒΙΑΘΑΝ διαβάζει το <title> στην αρχή του αρχείου — αλλάξτε το κι εκεί
