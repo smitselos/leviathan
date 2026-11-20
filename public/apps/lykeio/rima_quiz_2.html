@@ -1481,6 +1481,11 @@ function checkClkAnswer(q, sel) {
   return targets.every(t=>s.includes(t)) && s.length===targets.length;
 }
 function isCombo(q) { return !!(q && q.sub); }
+// Συνδυασμένες ερωτήσεις: πρώτα το 1ο σκέλος. Με «Συνέχεια» ελέγχεται: λάθος → όλη η ερώτηση λάθος (άμεσος έλεγχος) · σωστό → εμφανίζεται το 2ο (το 1ο κλειδώνει)
+// (εξαίρεση: YNGAP/MCGAP με «→», που έχουν ήδη δική τους διαδοχική ροή)
+const comboStepped = q => isCombo(q) && !(isYnFirst(q) && q.ynGate);
+const comboStep2 = (q, st) => !comboStepped(q) || !!st.answered || !!(st.answer && st.answer.__combo && st.answer.step2);
+const comboPart1Done = (q, st) => isYnFirst(q) ? !!(st.answer && st.answer.__combo && st.answer.yn) : st.clkSelected.length > 0;
 // Οι σύνθετοι τύποι κρατούν την απάντηση σε αντικείμενο· δημιουργείται στην πρώτη εμφάνιση της ερώτησης
 function prepAnswer(q, st) {
   if (!q) return;
@@ -1584,6 +1589,7 @@ function canCheckState(q, st) {
     if (Array.isArray(st.answer)) return st.answer.every(a=>a&&a.trim());
     return !!(st.answer && String(st.answer).trim());
   }
+  if (isCombo(q) && !comboStep2(q, st)) return false;
   if (isYnFirst(q) && q.ynGate) return !!(st.answer && st.answer.__combo && st.answer.yn) && (!ynGapOpen(q, st) || subFilled(q, st.answer.sub));
   if (isCombo(q)) return (isYnFirst(q) ? !!(st.answer && st.answer.yn) : st.clkSelected.length>0) && !!st.answer && !!st.answer.__combo && subFilled(q, st.answer.sub);
   if (q.type==='CAT') return !!(st.answer && st.answer.a && st.answer.a.every(c=>c!==null));
@@ -2068,7 +2074,7 @@ function renderAdaptive() {
       }
       html += `<button class="btn-next quiz-btn-full" id="btnNext">Επόμενο →</button>`;
     }
-  } else if (!isAutoCheckType(q)) {
+  } else if (!isAutoCheckType(q) && comboStep2(q, adp)) {
     html += `<button class="btn-check quiz-btn-full" id="btnCheck" ${canCheckAdp(q)?'':'disabled'}>Έλεγξε</button>`;
   }
   html += '</div>';
@@ -2086,7 +2092,7 @@ function renderAdaptive() {
   // FAB action button (mobile only) — outside the answers-card
   if (adp.answered && (isOk || adp.showFbCard)) {
     html += `<div class="fab-action"><button class="fab-btn next" id="btnNextFab" title="Επόμενο">→</button></div>`;
-  } else if (!adp.answered && !isAutoCheckType(q)) {
+  } else if (!adp.answered && !isAutoCheckType(q) && comboStep2(q, adp)) {
     html += `<div class="fab-action"><button class="fab-btn check" id="btnCheckFab" ${canCheckAdp(q)?'':'disabled'} title="Έλεγχος">✓</button></div>`;
   }
   return html;
@@ -2282,7 +2288,7 @@ function renderSel() {
     ${renderSelQuestionBody(q)}
   </div>`;
 
-  if (!sel.answered && !isAutoCheckType(q)) {
+  if (!sel.answered && !isAutoCheckType(q) && comboStep2(q, sel)) {
     html += `<button class="btn-check quiz-btn-full" id="btnSelCheck" ${canSelCheck()?'':'disabled'} style="margin-top:10px">Έλεγξε</button>`;
     html += `<div class="fab-action"><button class="fab-btn check" id="btnSelCheckFab" ${canSelCheck()?'':'disabled'} title="Έλεγχος">✓</button></div>`;
   } else if (sel.answered) {
@@ -2505,8 +2511,16 @@ function renderQuestionBody(q, mode) {
   if (q.type==='MC'||q.type==='YN') return renderMC(q, mode);
   if (q.type==='DD') return renderDD(q, mode);
   if (q.type==='GAP') return renderGAPInput(q, mode);
-  if (isYnFirst(q)) { const st = mode==='adp' ? adp : sel; return renderYnFirst(q, mode) + (ynGapOpen(q, st) ? renderComboSub(q, mode) : ''); }
-  if (isCombo(q)) return renderComboSub(q, mode);
+  if (isCombo(q)) {
+    const st = mode==='adp' ? adp : sel;
+    if (!comboStep2(q, st)) {
+      const ok = comboPart1Done(q, st);
+      return (isYnFirst(q) ? renderYnFirst(q, mode) : '') +
+        `<button class="btn-check quiz-btn-full" data-combo-next="${mode}" ${ok ? '' : 'disabled'}>Συνέχεια στο 2ο σκέλος →</button>`;
+    }
+    if (isYnFirst(q)) return renderYnFirst(q, mode) + (ynGapOpen(q, st) ? renderComboSub(q, mode) : '');
+    return renderComboSub(q, mode);
+  }
   if (q.type==='CAT') return renderCAT(q, mode);
   if (q.type==='ORD') return renderORD(q, mode);
   return '';
@@ -2667,7 +2681,20 @@ function attachEvents() {
       if (!ynGapOpen(q, st)) { if (b.dataset.mode==='adp') doCheck(); else doSelCheck(); return; }   // χωρίς κενό → έλεγχος αμέσως
       render(); return;
     }
+    if (st.answer.step2) return;   // 1ο σκέλος κλειδωμένο
     st.answer.yn = b.dataset.ynOpt; render();
+  }));
+
+  // Συνδυασμένες: «Συνέχεια στο 2ο σκέλος»
+  document.querySelectorAll('[data-combo-next]').forEach(b => b.addEventListener('click', () => {
+    const st = b.dataset.comboNext==='adp' ? adp : sel;
+    if (st.answered || !st.answer || !st.answer.__combo) return;
+    const isAdp = b.dataset.comboNext==='adp';
+    const cq = isAdp ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx];
+    // Έλεγχος του 1ου σκέλους: αν είναι λάθος, όλη η ερώτηση είναι λάθος → κατευθείαν έλεγχος (χωρίς 2ο σκέλος)
+    const part1Ok = isYnFirst(cq) ? String(st.answer.yn||'').toUpperCase() === cq.ynCorrect : checkClkAnswer(cq, st.clkSelected);
+    if (!part1Ok) { if (isAdp) doCheck(); else doSelCheck(); return; }
+    st.answer.step2 = true; render();
   }));
 
   // Ταξινόμηση σε κατηγορίες (CAT)
@@ -2701,6 +2728,7 @@ function attachEvents() {
     const mode = b.dataset.mode;
     const st = mode==='adp' ? adp : sel;
     if (st.answered) return;
+    { const cq = mode==='adp' ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx]; if (comboStepped(cq) && st.answer && st.answer.step2) return; }   // 1ο σκέλος κλειδωμένο
     if (b.dataset.phrase) {
       const phrase = b.dataset.phrase;
       const idx = st.clkSelected.indexOf(phrase);
