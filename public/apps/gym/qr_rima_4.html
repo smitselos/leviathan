@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Βαθμίδα × Όψη = Ρηματικός χρόνος</title>
+<style>
+  :root { --blue:#1A8FD0; --dark:#14466B; --pale:#E8F4FC; --line:#BFD7EA; --grey:#6b7785; --ink:#1f2933;
+          --bath:#1A73C9; --opsi:#C26A00; --aux:#7B3FB5; --ok:#1E9E5A; --bad:#D64545; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Helvetica Neue", Arial, sans-serif; color:var(--ink); background:#f6f9fc;
+         font-size:clamp(14px, 12px + .45vw, 20px); }
+  header { text-align:center; padding:18px 10px 6px; }
+  h1 { margin:0; color:var(--blue); font-size:clamp(1.15rem, 1rem + 1vw, 2rem); }
+  .sub { margin:6px 0 0; color:var(--grey); font-size:.9em; }
+  .tabs { display:flex; justify-content:center; gap:8px; margin:14px 0 4px; flex-wrap:wrap; }
+  .tabs button { font:inherit; font-size:.92em; border:1.5px solid var(--blue); background:#fff; color:var(--blue);
+                 border-radius:22px; padding:.45em 1.1em; cursor:pointer; }
+  .tabs button.on { background:var(--blue); color:#fff; }
+  main { width:min(96vw, 1500px); margin:10px auto 30px; display:grid; gap:18px; grid-template-columns:1fr; }
+  @media (min-width: 980px) { main { grid-template-columns: 1.35fr 1fr; align-items:start; } }
+
+  /* πλέγμα */
+  .gridwrap { position:relative; background:#fff; border-radius:14px; padding:14px 14px 10px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .grid { display:grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap:8px; align-items:stretch; }
+  .rl { display:flex; flex-direction:column; justify-content:center; text-align:right; padding-right:6px; font-weight:700; font-size:.92em; }
+  .rl small { font-weight:400; color:var(--grey); font-size:.82em; }
+  .cl { text-align:center; font-weight:700; font-size:.92em; padding-top:4px; }
+  .rl.hl, .cl.hl { color:var(--blue); }
+  .cell { -webkit-tap-highlight-color:transparent; outline:none; border:1.5px solid #7FC0EA; border-radius:12px; padding:.7em .3em; text-align:center; cursor:pointer;
+          display:flex; flex-direction:column; justify-content:center; min-height:5.2em; transition:transform .12s, box-shadow .12s, background .15s; }
+  @media (hover:hover) { .cell:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(26,143,208,.18); } }
+  .sh { display:none; }
+  @media (max-width: 620px) { .lg { display:none; } .sh { display:inline; } .grid { gap:5px; } .rl { font-size:.8em; padding-right:2px; } .cell { min-height:4.6em; padding:.5em .15em; } .cell .n { font-size:.82em; } .cell .f { font-size:.85em; } .gridwrap { padding:10px 8px 8px; } .axes { font-size:.7em; } }
+  .cell .n { font-weight:700; color:var(--dark); font-size:.9em; line-height:1.2; }
+  .cell .f { font-style:italic; color:var(--opsi); margin-top:.35em; font-size:.95em; }
+  .r0 { background:#E8F4FC; } .r1 { background:#D6ECFA; } .r2 { background:#C4E3F7; }
+  .cell.empty { background:#F4F5F7; border:1.5px dashed #C9CFD6; color:#A0A8B2; font-size:1.4em; }
+  .cell.dim { opacity:.45; }
+  .cell.sel { outline:3px solid #F2B33D; outline-offset:1px; opacity:1; }
+  .cell.good { background:#DDF5E6 !important; border-color:var(--ok); }
+  .cell.wrong { background:#FBE1E1 !important; border-color:var(--bad); }
+  .axes { display:flex; justify-content:space-between; margin-top:10px; font-size:.78em; font-weight:700; color:var(--blue); gap:8px; }
+  .verbsel { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; font-size:.92em; }
+  .verbsel select { font:inherit; padding:.3em .6em; border-radius:8px; border:1.5px solid var(--line); }
+
+  /* κάρτα */
+  .card { background:#fff; border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); overflow:hidden; }
+  .card .ch { background:var(--blue); color:#fff; padding:.7em 1em; }
+  .card .ch b { font-size:1.08em; }
+  .card .ch small { display:block; opacity:.9; font-size:.82em; margin-top:2px; }
+  .card .cb { padding:1em; }
+  .form { font-size:1.6em; text-align:center; margin:.2em 0 .5em; letter-spacing:.5px; }
+  .form span { padding:0 .06em; border-radius:4px; }
+  .p-stem { color:var(--opsi); font-weight:700; } .p-aug, .p-end, .p-tha { color:var(--bath); font-weight:700; }
+  .p-aux { color:var(--aux); font-weight:700; }
+  .sep { color:#b8c2cc; font-weight:400; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; font-size:.78em; margin-bottom:.8em; }
+  .legend i { display:inline-block; width:.8em; height:.8em; border-radius:3px; margin-right:4px; vertical-align:-1px; }
+  .expl { background:#F7FBFE; border-left:4px solid var(--blue); padding:.6em .8em; border-radius:6px; font-size:.92em; line-height:1.45; }
+  .expl p { margin:.25em 0; }
+  .ex { margin:.8em 0 0; font-style:italic; font-size:.95em; }
+  .ex b { color:var(--dark); }
+  .klbtn { margin-top:.9em; font:inherit; font-size:.88em; background:#fff; border:1.5px solid var(--blue); color:var(--blue); border-radius:18px; padding:.35em 1em; cursor:pointer; }
+  .kl { margin-top:.6em; border-collapse:collapse; width:100%; font-size:.95em; }
+  .kl td { padding:.3em .6em; border-top:1px solid #e6eef5; }
+  .kl td:first-child { color:var(--grey); font-size:.82em; width:5.5em; }
+  .kl td:last-child { font-style:italic; }
+  .placeholder { color:var(--grey); text-align:center; padding:2.2em 1em; }
+
+  /* εξάσκηση */
+  .q { text-align:center; }
+  .q .ask { color:var(--grey); font-size:.9em; }
+  .q .word { font-size:2em; font-style:italic; color:var(--dark); margin:.25em 0 .1em; font-weight:700; }
+  .q .verb { color:var(--grey); font-size:.85em; }
+  .score { display:flex; justify-content:center; gap:16px; margin:.8em 0; font-size:.9em; }
+  .score b { color:var(--blue); }
+  .fb { margin-top:.8em; border-radius:8px; padding:.7em .9em; font-size:.93em; line-height:1.45; text-align:left; display:none; }
+  .fb.ok { display:block; background:#E9F8EF; border:1px solid #9ED9B6; }
+  .fb.no { display:block; background:#FDEEEE; border:1px solid #F0B3B3; }
+  .fb .tick { font-weight:700; }
+  .next { margin-top:.9em; font:inherit; background:var(--blue); color:#fff; border:0; border-radius:20px; padding:.5em 1.4em; cursor:pointer; display:none; }
+  .hidden { display:none !important; }
+  /* σταυρόνημα αξόνων */
+  #cross { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:0; }
+  .grid { position:relative; z-index:1; }
+
+  #cross rect { transform-box:fill-box; }
+  #cross .bo { fill:rgba(194,106,0,.13); stroke:rgba(194,106,0,.45); stroke-width:1.5; transform-origin:left center; animation:growx .45s ease-out both; }
+  #cross .bb { fill:rgba(26,115,201,.13); stroke:rgba(26,115,201,.45); stroke-width:1.5; transform-origin:center bottom; animation:growy .45s .15s ease-out both; }
+  @keyframes growx { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+  @keyframes growy { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+  #cross circle { fill:#F2B33D; stroke:#fff; stroke-width:3; opacity:0; animation:pop .25s .5s forwards; }
+  #cross text { font-size:12px; font-weight:700; opacity:0; animation:pop .25s .45s forwards; }
+  @keyframes draw { to { stroke-dashoffset:0; } }
+  @keyframes pop { to { opacity:1; } }
+  .rl.hl { color:var(--opsi); } .cl.hl { color:var(--bath); }
+  .cell.dim { opacity:.25; }
+  .grid.focus .rl:not(.hl), .grid.focus .cl:not(.hl) { opacity:.25; }
+  .rl, .cl, .cell { transition:opacity .25s, transform .12s, box-shadow .12s, background .15s; }
+  /* σύρσιμο */
+  .chip { display:inline-block; font-size:1.5em; font-style:italic; font-weight:700; color:var(--dark); background:#FFF4D6; border:2px solid #F2B33D;
+          border-radius:12px; padding:.3em .8em; cursor:grab; touch-action:none; user-select:none; box-shadow:0 4px 12px rgba(0,0,0,.12); }
+  .chip.drag { position:fixed; z-index:50; cursor:grabbing; transform:translate(-50%,-50%) scale(1.05); margin:0; }
+  .chip.fly { position:fixed; z-index:50; transition:left .6s ease, top .6s ease, opacity .4s .6s; transform:translate(-50%,-50%); }
+  .cell.over { outline:3px dashed #F2B33D; outline-offset:1px; }
+  .drophint { color:var(--grey); font-size:.85em; margin-top:.5em; }
+  /* τροχοί */
+  .grid.wheel .cell:not(.center) { opacity:.12; pointer-events:none; }
+  .grid.wheel .rl:not(.whl), .grid.wheel .cl:not(.whl) { visibility:hidden; }
+  .cell.center { background:#FFF4D6 !important; border:2px solid #F2B33D !important; font-size:1.25em; font-style:italic; font-weight:700; color:var(--dark); cursor:default; }
+  .wh { display:flex; align-items:center; justify-content:center; gap:4px; user-select:none; touch-action:none; }
+  .wh.v { flex-direction:column; height:100%; }
+  .wh.v .drum { flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:.4em 0; }
+  .wh.v .drum .cur { padding:.4em .3em; border-top:1px dashed #E8C9A4; border-bottom:1px dashed #E8C9A4; }
+  .rl.whl { padding-right:6px; }
+  .wh button { font:inherit; border:1.5px solid var(--line); background:#fff; color:var(--blue); border-radius:50%; width:1.9em; height:1.9em; cursor:pointer; line-height:1; padding:0; }
+  .drum { overflow:hidden; border-radius:10px; border:2px solid; background:#fff; text-align:center; position:relative; }
+  .wh.v .drum { border-color:var(--opsi); width:100%; } .wh.h .drum { border-color:var(--bath); }
+  .drum .it { padding:.15em .4em; white-space:nowrap; transition:transform .25s; }
+  .drum .ghost { color:#b8c2cc; font-size:.75em; }
+  .drum .cur { font-weight:700; }
+  .wh.v .cur { color:var(--opsi); } .wh.h .cur { color:var(--bath); }
+  .wh.h .drum { display:flex; align-items:center; justify-content:center; padding:.3em .4em; flex:1; min-width:0; }
+  .wh.h .drum { justify-content:space-between; }
+  .wh.h .ghost { font-size:.72em; }
+  .wh.h { width:min(100%, 22em); margin:0 auto; }
+  .wh small { line-height:1.2; }
+  @media (max-width: 620px) { .wh.h .ghost { display:none; } .wh.h .drum { justify-content:center; } .rl.whl { max-width:6.6em; } .wh.v .drum .it { padding:.1em .15em; font-size:.92em; } .wh button { width:1.6em; height:1.6em; } }
+  .drum .cur { font-size:1.05em; }
+  .spin { animation:spin .25s ease-out; }
+  @keyframes spin { from { transform:translateY(-35%); opacity:.3; } to { transform:none; opacity:1; } }
+  .wh.h .spin { animation:spinh .25s ease-out; }
+  @keyframes spinh { from { transform:translateX(-35%); opacity:.3; } to { transform:none; opacity:1; } }
+  .chk { margin-top:.6em; font:inherit; background:#F2B33D; color:#3b2a00; border:0; border-radius:20px; padding:.5em 1.4em; cursor:pointer; font-weight:700; }
+  .cell.reveal { opacity:1 !important; }
+  .cell.center.good { background:#DDF5E6 !important; border-color:var(--ok) !important; }
+  .cell.center.wrong { background:#FBE1E1 !important; border-color:var(--bad) !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Χρονική βαθμίδα × Ρηματική όψη = Ρηματικός χρόνος</h1>
+  <p class="sub">Κάθε ρηματικός χρόνος βρίσκεται στη διασταύρωση δύο αξόνων: <b>πότε</b> (βαθμίδα) και <b>πώς</b> (όψη)</p>
+  <div class="tabs"><button data-m="explore" class="on">🔍 Εξερεύνηση</button><button data-m="practice">🎯 Βρες το κελί</button><button data-m="wheel">🎡 Γύρισε τους άξονες</button></div>
+</header>
+
+<main>
+  <section class="gridwrap">
+    <div class="verbsel" id="verbsel">Ρήμα:
+      <select id="verb"></select>
+    </div>
+    <div class="grid" id="grid"></div><svg id="cross"></svg>
+  </section>
+  <section class="card" id="card"></section>
+</main>
+
+<script>
+// ---------------- δεδομένα ----------------
+const BATH = ['Παρελθόν', 'Παρόν', 'Μέλλον'];
+const OPSI = [['Μη συνοπτική', 'σε εξέλιξη'], ['Συνοπτική', 'ολοκληρωμένη'], ['Συντελεσμένη', 'με αποτέλεσμα']];
+// [όψη][βαθμίδα] → χρόνος
+const TENSE = [['impf', 'pres', 'futc'], ['aor', null, 'futs'], ['plup', 'perf', 'futp']];
+const TNAME = { pres:'Ενεστώτας', impf:'Παρατατικός', aor:'Αόριστος', futc:'Εξακολουθητικός Μέλλοντας', futs:'Συνοπτικός Μέλλοντας', perf:'Παρακείμενος', plup:'Υπερσυντέλικος', futp:'Συντελεσμένος Μέλλοντας' };
+const SHO = ['Μη συνοπτ.', 'Συνοπτική', 'Συντελ.'];
+const SHT = { pres:'Ενεστώτας', impf:'Παρατατ.', aor:'Αόριστος', futc:'Εξακ.<br>Μέλλ.', futs:'Συνοπτ.<br>Μέλλ.', perf:'Παρακείμ.', plup:'Υπερσυντ.', futp:'Συντελ.<br>Μέλλ.' };
+const P6 = ['α΄ ενικό', 'β΄ ενικό', 'γ΄ ενικό', 'α΄ πληθ.', 'β΄ πληθ.', 'γ΄ πληθ.'];
+const A_END = ['ω', 'εις', 'ει', 'ουμε', 'ετε', 'ουν'];
+const PAST = ['α', 'ες', 'ε', 'αμε', 'ατε', 'αν'];
+const ECHO = ['έχω', 'έχεις', 'έχει', 'έχουμε', 'έχετε', 'έχουν'];
+const EICHA = ['είχα', 'είχες', 'είχε', 'είχαμε', 'είχατε', 'είχαν'];
+// κάθε ρήμα: σε κάθε πρόσωπο [αύξηση, θέμα, κατάληξη]
+const pastA = (aug, st1, st2) => PAST.map((e, i) => [0, 1, 2, 5].includes(i) ? [aug, st1, e] : ['', st2, e]);
+const V = {
+  'γράφω': { pres: A_END.map(e => ['', 'γράφ', e]), impf: pastA('έ', 'γραφ', 'γράφ'), aor: pastA('έ', 'γραψ', 'γράψ'), futs: A_END.map(e => ['', 'γράψ', e]), inf: ['γράψ', 'ει'], ns: 'γραφ-', s: 'γραψ-' },
+  'λύνω':  { pres: A_END.map(e => ['', 'λύν', e]), impf: pastA('έ', 'λυν', 'λύν'), aor: pastA('έ', 'λυσ', 'λύσ'), futs: A_END.map(e => ['', 'λύσ', e]), inf: ['λύσ', 'ει'], ns: 'λυν-', s: 'λυσ-' },
+  'παίζω': { pres: A_END.map(e => ['', 'παίζ', e]), impf: pastA('έ', 'παιζ', 'παίζ'), aor: pastA('έ', 'παιξ', 'παίξ'), futs: A_END.map(e => ['', 'παίξ', e]), inf: ['παίξ', 'ει'], ns: 'παιζ-', s: 'παιξ-' },
+  'τρέχω': { pres: A_END.map(e => ['', 'τρέχ', e]), impf: pastA('έ', 'τρεχ', 'τρέχ'), aor: pastA('έ', 'τρεξ', 'τρέξ'), futs: A_END.map(e => ['', 'τρέξ', e]), inf: ['τρέξ', 'ει'], ns: 'τρεχ-', s: 'τρεξ-' },
+  'αγαπώ': { pres: ['ώ', 'άς', 'ά', 'άμε', 'άτε', 'ούν'].map(e => ['', 'αγαπ', e]), impf: ['ούσα', 'ούσες', 'ούσε', 'ούσαμε', 'ούσατε', 'ούσαν'].map(e => ['', 'αγαπ', e]),
+             aor: PAST.map((e, i) => ['', [0, 1, 2, 5].includes(i) ? 'αγάπησ' : 'αγαπήσ', e]), futs: A_END.map(e => ['', 'αγαπήσ', e]), inf: ['αγαπήσ', 'ει'], ns: 'αγαπ-', s: 'αγαπησ-' },
+  'θεωρώ': { pres: ['ώ', 'είς', 'εί', 'ούμε', 'είτε', 'ούν'].map(e => ['', 'θεωρ', e]), impf: ['ούσα', 'ούσες', 'ούσε', 'ούσαμε', 'ούσατε', 'ούσαν'].map(e => ['', 'θεωρ', e]),
+             aor: PAST.map((e, i) => ['', [0, 1, 2, 5].includes(i) ? 'θεώρησ' : 'θεωρήσ', e]), futs: A_END.map(e => ['', 'θεωρήσ', e]), inf: ['θεωρήσ', 'ει'], ns: 'θεωρ-', s: 'θεωρησ-' },
+};
+// παράδειγμα-πρόταση (με το γράφω) και εξήγηση για κάθε χρόνο
+const INFO = {
+  impf: { ex: 'Όλο το απόγευμα <b>έγραφα</b> την εργασία μου.', b: 'PAST', o: 'το <b>μη συνοπτικό θέμα</b>: η ενέργεια φαίνεται σε εξέλιξη' },
+  pres: { ex: 'Τώρα <b>γράφω</b> την εργασία μου.', b: 'PRES', o: 'το <b>μη συνοπτικό θέμα</b>: η ενέργεια φαίνεται σε εξέλιξη' },
+  futc: { ex: 'Από αύριο <b>θα γράφω</b> λίγο κάθε μέρα.', b: 'το <b>θα</b>', o: 'το <b>μη συνοπτικό θέμα</b>: διάρκεια ή επανάληψη' },
+  aor:  { ex: 'Χθες <b>έγραψα</b> την εργασία μου.', b: 'PAST', o: 'το <b>συνοπτικό θέμα</b>: η ενέργεια φαίνεται ολοκληρωμένη' },
+  futs: { ex: 'Αύριο <b>θα γράψω</b> την εργασία μου.', b: 'το <b>θα</b>', o: 'το <b>συνοπτικό θέμα</b>: η ενέργεια φαίνεται ολοκληρωμένη' },
+  plup: { ex: 'Όταν ήρθες, <b>είχα γράψει</b> ήδη την εργασία.', b: 'ο <b>Παρατατικός</b> του βοηθητικού: <b>είχα</b>', o: 'το <b>βοηθητικό + απαρέμφατο</b>: ολοκληρώθηκε πριν από άλλη ενέργεια' },
+  perf: { ex: '<b>Έχω γράψει</b> την εργασία· μπορώ να βγω.', b: 'ο <b>Ενεστώτας</b> του βοηθητικού: <b>έχω</b>', o: 'το <b>βοηθητικό + απαρέμφατο</b>: το αποτέλεσμα ισχύει τώρα' },
+  futp: { ex: 'Ως το βράδυ <b>θα έχω γράψει</b> την εργασία.', b: 'το <b>θα</b> μπροστά από το βοηθητικό: <b>θα έχω</b>', o: 'το <b>βοηθητικό + απαρέμφατο</b>: θα έχει ολοκληρωθεί πριν από κάποια στιγμή' },
+};
+// τύπος σε κομμάτια: [{t, k}]
+function parts(v, t, p) {
+  const d = V[v];
+  const seg = a => [a[0] && { t: a[0], k: 'aug' }, { t: a[1], k: 'stem' }, { t: a[2], k: 'end' }].filter(Boolean);
+  const inf = [{ t: d.inf[0], k: 'stem' }, { t: d.inf[1], k: 'end' }];
+  switch (t) {
+    case 'pres': return seg(d.pres[p]);
+    case 'impf': return seg(d.impf[p]);
+    case 'aor':  return seg(d.aor[p]);
+    case 'futc': return [{ t: 'θα', k: 'tha', sp: 1 }, ...seg(d.pres[p])];
+    case 'futs': return [{ t: 'θα', k: 'tha', sp: 1 }, ...seg(d.futs[p])];
+    case 'perf': return [{ t: ECHO[p], k: 'aux', sp: 1 }, ...inf];
+    case 'plup': return [{ t: EICHA[p], k: 'aux', sp: 1 }, ...inf];
+    case 'futp': return [{ t: 'θα', k: 'tha', sp: 1 }, { t: ECHO[p], k: 'aux', sp: 1 }, ...inf];
+  }
+}
+const plain = ps => ps.map(x => x.t + (x.sp ? ' ' : '')).join('').trim();
+const colored = ps => ps.map((x, i) => `<span class="p-${x.k}">${x.t}</span>` + (x.sp ? ' ' : (i < ps.length - 1 ? '<span class="sep">-</span>' : ''))).join('');
+
+// ---------------- κατάσταση ----------------
+let mode = 'explore', verb = 'γράφω', sel = null, Q = null, score = { ok: 0, all: 0, streak: 0 };
+const grid = document.getElementById('grid'), card = document.getElementById('card');
+const vs = document.getElementById('verb');
+vs.innerHTML = Object.keys(V).map(v => `<option>${v}</option>`).join('');
+vs.onchange = () => { verb = vs.value; drawGrid(); if (sel) showCard(...sel); };
+
+let WO = 0, WB = 0;
+const wrap3 = (i) => (i + 3) % 3;
+const STEMS = v => [V[v].ns, V[v].s, V[v].inf.join('')];
+const STEMCAP = ['μη συνοπτικό θέμα', 'συνοπτικό θέμα', 'έχω + απαρέμφατο'];
+const ENDS = ['-α  + αύξηση', '-ω', 'θα + -ω'];
+const ENDCAP = ['παρελθοντική κατάληξη', 'παροντική κατάληξη', 'θα + παροντική κατάληξη'];
+const ENDP = ['είχα', 'έχω', 'θα έχω'];
+const ON = i => `<span class="lg">${OPSI[i][0]}</span><span class="sh">${SHO[i]}</span>`;
+function wheelV() { const st = STEMS(Q ? Q.v : verb); const sm = 'display:block;font-weight:400;font-size:.68em;color:var(--grey);font-style:italic';
+  return `<div class="wh v"><button data-w="o" data-d="-1" aria-label="πάνω">▲</button><div class="drum" id="drumO"><div class="it ghost">${ON(wrap3(WO - 1))}</div><div class="it cur">${ON(WO)}<small style="${sm}">${WO === 2 ? 'έχω + ' + st[2] : st[WO]}</small></div><div class="it ghost">${ON(wrap3(WO + 1))}</div></div><button data-w="o" data-d="1" aria-label="κάτω">▼</button></div>`; }
+function wheelH() { const lab = WO === 2 ? ENDP : ENDS; const sm = 'display:block;font-weight:400;font-size:.68em;color:var(--grey)';
+  return `<div class="wh h"><button data-w="b" data-d="-1" aria-label="αριστερά">◀</button><div class="drum" id="drumB"><span class="it ghost">${BATH[wrap3(WB - 1)]}</span><span class="it cur">${BATH[WB]}<small style="${sm}">${lab[WB]}</small></span><span class="it ghost">${BATH[wrap3(WB + 1)]}</span></div><button data-w="b" data-d="1" aria-label="δεξιά">▶</button></div>`; }
+function centerHTML() {
+  if (!Q) return '';
+  const t = TENSE[WO][[0, 1, 2][WB]];
+  if (!t) { const d = V[Q.v]; return `<div>${colored([{ t: d.futs[0][1], k: 'stem' }, { t: 'ω', k: 'end' }])}</div><small style="font-size:.55em;font-style:normal;color:var(--bad);font-weight:400">μόνο του δεν στέκει!</small>`; }
+  return `<div>${colored(parts(Q.v, t, 0))}</div>`;
+}
+function drawGrid() {
+  if (mode === 'wheel') {
+    let h = '';
+    for (let r = 0; r < 3; r++) {
+      if (r === 0) h += `<div class="rl whl" data-r="1" style="grid-row: 1 / span 3">${wheelV()}</div>`;
+      for (let c = 0; c < 3; c++) {
+        const t = TENSE[r][c];
+        if (r === 1 && c === 1) { h += `<div class="cell center" data-r="1" data-c="1" id="center">${centerHTML()}</div>`; continue; }
+        h += t ? `<div class="cell r${r}" data-r="${r}" data-c="${c}"><div class="n"><span class="lg">${TNAME[t].replace(' ', '<br>')}</span><span class="sh">${SHT[t]}</span></div></div>` : `<div class="cell empty" data-r="${r}" data-c="${c}"></div>`;
+      }
+    }
+    h += '<div></div><div class="cl whl" data-c="1" style="grid-column: 2 / span 3">' + wheelH() + '</div>';
+    grid.innerHTML = h; grid.className = 'grid wheel'; cross.innerHTML = '';
+    return;
+  }
+  grid.className = 'grid';
+  let h = '<div></div>';
+  for (let r = 0; r < 3; r++) {
+    h += `<div class="rl" data-r="${r}"><span class="lg">${OPSI[r][0]}</span><span class="sh">${SHO[r]}</span><small>(${OPSI[r][1]})</small></div>`;
+    for (let c = 0; c < 3; c++) {
+      const t = TENSE[r][c];
+      if (!t) { h += `<div class="cell empty" data-r="${r}" data-c="${c}">—</div>`; continue; }
+      const f = mode === 'explore' ? `<div class="f">${plain(parts(verb, t, 0))}</div>` : '';
+      h += `<div class="cell r${r}" data-r="${r}" data-c="${c}" tabindex="0"><div class="n"><span class="lg">${TNAME[t].replace(' ', '<br>')}</span><span class="sh">${SHT[t]}</span></div>${f}</div>`;
+    }
+  }
+  h = h.replace('<div></div>', '');
+  // ετικέτες στηλών (άξονας βαθμίδας) κάτω από το πλέγμα
+  h += '<div></div>' + BATH.map((b, c) => `<div class="cl" data-c="${c}">${b}</div>`).join('');
+  grid.innerHTML = h;
+  highlight();
+}
+const cross = document.getElementById('cross');
+function drawCross(r, c) {
+  cross.innerHTML = '';
+  if (r == null) return;
+  const W = cross.getBoundingClientRect();
+  const R = el => { const b = el.getBoundingClientRect(); return { l: b.left - W.left, r: b.right - W.left, t: b.top - W.top, b: b.bottom - W.top }; };
+  const cell = R(grid.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`));
+  const rl = R(grid.querySelector(`.rl[data-r="${r}"]`)), cl = R(grid.querySelector(`.cl[data-c="${c}"]`));
+  const p = 5; // περιθώριο γύρω από τα κελιά
+  // γωνία (Γ): οριζόντια λωρίδα από το όνομα της όψης ως το κελί, κάθετη από το κελί ως το όνομα της βαθμίδας
+  cross.innerHTML = `
+    <rect class="bo" x="${rl.l - p}" y="${cell.t - p}" width="${cell.r - rl.l + 2 * p}" height="${cell.b - cell.t + 2 * p}" rx="14"/>
+    <rect class="bb" x="${cell.l - p}" y="${cell.t - p}" width="${cell.r - cell.l + 2 * p}" height="${cl.b - cell.t + 2 * p}" rx="14"/>`;
+}
+window.addEventListener('resize', () => { if (mode === 'explore' && sel) drawCross(...sel); else if (crossShown) drawCross(...crossShown); });
+let crossShown = null;
+function highlight() {
+  grid.querySelectorAll('.cell, .rl, .cl').forEach(e => e.classList.remove('sel', 'dim', 'hl', 'path'));
+  drawCross(null); crossShown = null;
+  grid.classList.remove('focus');
+  if (mode !== 'explore' || !sel) return;
+  grid.classList.add('focus');
+  const [r, c] = sel;
+  grid.querySelectorAll('.cell').forEach(e => { const on = +e.dataset.r === r && +e.dataset.c === c; e.classList.toggle('dim', !on); e.classList.toggle('path', on && !(+e.dataset.r === r && +e.dataset.c === c) && ((+e.dataset.r === r && +e.dataset.c < c) || (+e.dataset.c === c && +e.dataset.r > r))); });
+  grid.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).classList.add('sel');
+  grid.querySelector(`.rl[data-r="${r}"]`).classList.add('hl');
+  grid.querySelector(`.cl[data-c="${c}"]`).classList.add('hl');
+  if (TENSE[r][c]) drawCross(r, c);
+}
+const LEGEND = `<div class="legend"><span><i style="background:var(--opsi)"></i>θέμα → όψη</span><span><i style="background:var(--bath)"></i>αύξηση / κατάληξη / θα → βαθμίδα</span><span><i style="background:var(--aux)"></i>βοηθητικό έχω → συντελεσμένη όψη</span></div>`;
+function showCard(r, c) {
+  const t = TENSE[r][c];
+  if (!t) {
+    card.innerHTML = `<div class="ch"><b>Παρόν + Συνοπτική όψη</b><small>Γιατί το κελί είναι άδειο;</small></div><div class="cb"><div class="expl">
+      <p>Η <b>συνοπτική όψη</b> παρουσιάζει την ενέργεια <b>ολοκληρωμένη</b>, ως ένα σύνολο με αρχή και τέλος.</p>
+      <p>Τη στιγμή όμως που μιλάμε (<b>παρόν</b>) η ενέργεια <b>εξελίσσεται ακόμη</b>· δεν μπορούμε να τη δούμε τελειωμένη.</p>
+      <p>Γι’ αυτό ο συνδυασμός δεν δίνει χρόνο και οι χρόνοι είναι <b>οκτώ</b> και όχι εννέα.</p></div></div>`;
+    return;
+  }
+  const ps = parts(verb, t, 0), I = INFO[t];
+  const end = ps[ps.length - 1].t, hasAug = ps.some(x => x.k === 'aug');
+  const bTxt = I.b === 'PAST' ? (hasAug ? `η <b>αύξηση</b> και η <b>παρελθοντική κατάληξη</b> -${end}` : `η <b>παρελθοντική κατάληξη</b> -${end} <span style="color:var(--grey)">(εδώ χωρίς αύξηση, γιατί δεν τονίζεται)</span>`) : I.b === 'PRES' ? `η <b>παροντική κατάληξη</b> -${end}` : I.b;
+  card.innerHTML = `<div class="ch"><b>${TNAME[t]}</b><small>${BATH[c]} + ${OPSI[r][0]} όψη · ρήμα: ${verb}</small></div><div class="cb">
+    <div class="form">${colored(ps)}</div>${LEGEND}
+    <div class="expl"><p>⏱ <b>Βαθμίδα (${BATH[c].toLowerCase()})</b>: τη δείχνει ${bTxt}.</p><p>👁 <b>Όψη (${OPSI[r][0].toLowerCase()})</b>: τη δείχνει ${I.o}.</p></div>
+    <p class="ex"><span style="font-style:normal;color:var(--grey);font-size:.85em">Παράδειγμα με το «γράφω»:</span><br>${I.ex}</p>
+    <button class="klbtn" id="klb">Δες όλη την κλίση ▾</button><div id="klw"></div></div>`;
+  document.getElementById('klb').onclick = e => {
+    const w = document.getElementById('klw');
+    if (w.innerHTML) { w.innerHTML = ''; e.target.textContent = 'Δες όλη την κλίση ▾'; return; }
+    w.innerHTML = '<table class="kl">' + P6.map((p, i) => `<tr><td>${p}</td><td>${colored(parts(verb, t, i))}</td></tr>`).join('') + '</table>';
+    e.target.textContent = 'Κρύψε την κλίση ▴';
+  };
+}
+function exploreIntro() {
+  card.innerHTML = `<div class="ch"><b>Πώς διαβάζεται το σχήμα</b><small>Πάτησε ένα κελί του πίνακα</small></div><div class="cb"><div class="placeholder">
+    👆 Πάτησε έναν χρόνο για να δεις <b>σε ποια βαθμίδα</b> και <b>σε ποια όψη</b> ανήκει και <b>από ποια κομμάτια</b> φτιάχνεται.<br><br>Άλλαξε το ρήμα επάνω για να δεις ότι το σύστημα είναι ίδιο για όλα τα ρήματα.</div></div>`;
+}
+
+// ---------------- εξάσκηση ----------------
+const CELLS = []; TENSE.forEach((row, r) => row.forEach((t, c) => t && CELLS.push([r, c])));
+function newQ() {
+  const vs = Object.keys(V), v = vs[Math.floor(Math.random() * vs.length)];
+  let rc; do { rc = CELLS[Math.floor(Math.random() * CELLS.length)]; } while (Q && Q.r === rc[0] && Q.c === rc[1]);
+  const p = Math.floor(Math.random() * 6);
+  Q = { v, r: rc[0], c: rc[1], p, ps: parts(v, TENSE[rc[0]][rc[1]], p), done: false };
+  drawGrid();
+  const isDrag = mode === 'drag';
+  card.innerHTML = `<div class="ch"><b>${isDrag ? 'Σύρε τον τύπο στη θέση του' : 'Βρες το κελί'}</b><small>Σε ποια διασταύρωση βαθμίδας και όψης ανήκει ο τύπος;</small></div><div class="cb q">
+    <div class="ask">Ρηματικός τύπος:</div>${isDrag ? `<div style="margin:.5em 0"><span class="chip" id="chip">${plain(Q.ps)}</span></div><div class="drophint">Πιάσε τον τύπο και άφησέ τον στο σωστό κελί του πίνακα.</div>` : `<div class="word">${plain(Q.ps)}</div>`}<div class="verb">(ρήμα: ${v}, ${P6[p]})</div>
+    <div class="score">Σωστά: <b id="s1">${score.ok}</b> / <b id="s2">${score.all}</b> · Σερί: <b id="s3">${score.streak}</b></div>
+    <div class="fb" id="fb"></div><button class="next" id="next">Επόμενος τύπος →</button></div>`;
+  document.getElementById('next').onclick = newQ;
+  if (isDrag) initDrag(document.getElementById('chip'));
+}
+function newWheelQ() {
+  const vs = Object.keys(V), v = vs[Math.floor(Math.random() * vs.length)];
+  let rc; do { rc = CELLS[Math.floor(Math.random() * CELLS.length)]; } while (Q && Q.r === rc[0] && Q.c === rc[1]);
+  Q = { v, r: rc[0], c: rc[1], p: 0, ps: parts(v, TENSE[rc[0]][rc[1]], 0), done: false };
+  do { WO = Math.floor(Math.random() * 3); WB = Math.floor(Math.random() * 3); } while (WO === Q.r && WB === Q.c);
+  drawGrid();
+  card.innerHTML = `<div class="ch"><b>Γύρισε τους τροχούς</b><small>Ο αριστερός τροχός αλλάζει το θέμα, ο κάτω την κατάληξη</small></div><div class="cb q">
+    <div class="ask">Φτιάξε στο κέντρο του πίνακα τον</div><div class="word" style="font-style:normal">${TNAME[TENSE[Q.r][Q.c]]}</div><div class="verb">του ρήματος «${v}» (α΄ ενικό)</div>
+    <div class="drophint">🟠 θέμα → όψη · 🔵 κατάληξη / αύξηση / θα → βαθμίδα</div>
+    <button class="chk" id="chk">Έλεγχος ✓</button>
+    <div class="score">Σωστά: <b id="s1">${score.ok}</b> / <b id="s2">${score.all}</b> · Σερί: <b id="s3">${score.streak}</b></div>
+    <div class="fb" id="fb"></div><button class="next" id="next">Επόμενος χρόνος →</button></div>`;
+  document.getElementById('next').onclick = newWheelQ;
+  document.getElementById('chk').onclick = () => { if (!Q.done) { document.getElementById('chk').style.display = 'none'; answer(WO, WB, true); } };
+}
+function turn(w, d) {
+  if (!Q || Q.done || mode !== 'wheel') return;
+  if (w === 'o') WO = wrap3(WO + d); else WB = wrap3(WB + d);
+  grid.querySelector('.rl.whl').innerHTML = wheelV();
+  grid.querySelector('.cl.whl').innerHTML = wheelH();
+  const dr = grid.querySelector(w === 'o' ? '#drumO' : '#drumB'); dr.classList.add('spin'); if (d < 0) dr.style.animationDirection = 'reverse';
+  const ce = document.getElementById('center'); ce.innerHTML = centerHTML(); ce.classList.remove('spin'); void ce.offsetWidth; ce.classList.add('spin');
+  const fb = document.getElementById('fb'); if (fb && fb.className.includes('no') && !Q.done) fb.className = 'fb';
+}
+grid.addEventListener('click', e => { const b = e.target.closest('.wh button'); if (b) { e.stopPropagation(); turn(b.dataset.w, +b.dataset.d); } }, true);
+grid.addEventListener('wheel', e => { const w = e.target.closest('.wh'); if (!w || mode !== 'wheel') return; e.preventDefault(); turn(w.classList.contains('v') ? 'o' : 'b', Math.sign(e.deltaY || e.deltaX)); }, { passive: false });
+let swipe = null;
+grid.addEventListener('pointerdown', e => { const w = e.target.closest('.drum'); if (w && mode === 'wheel') swipe = { x: e.clientX, y: e.clientY, v: !!w.closest('.wh.v') }; });
+window.addEventListener('pointerup', e => { if (!swipe) return; const d = swipe.v ? e.clientY - swipe.y : e.clientX - swipe.x; if (Math.abs(d) > 20) turn(swipe.v ? 'o' : 'b', d > 0 ? -1 : 1); swipe = null; });
+function cellCenter(r, c) { const b = grid.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).getBoundingClientRect(); return [(b.left + b.right) / 2, (b.top + b.bottom) / 2]; }
+function initDrag(chip) {
+  let home = null, over = null;
+  const cellAt = (x, y) => { chip.style.visibility = 'hidden'; const el = document.elementFromPoint(x, y); chip.style.visibility = ''; return el && el.closest('.cell'); };
+  chip.addEventListener('pointerdown', e => {
+    if (Q.done) return;
+    e.preventDefault(); chip.setPointerCapture(e.pointerId);
+    home = chip.getBoundingClientRect();
+    chip.classList.add('drag'); chip.style.left = e.clientX + 'px'; chip.style.top = e.clientY + 'px';
+  });
+  chip.addEventListener('pointermove', e => {
+    if (!chip.classList.contains('drag')) return;
+    chip.style.left = e.clientX + 'px'; chip.style.top = e.clientY + 'px';
+    const c = cellAt(e.clientX, e.clientY);
+    if (over && over !== c) over.classList.remove('over');
+    over = c; if (c) c.classList.add('over');
+  });
+  chip.addEventListener('pointerup', e => {
+    if (!chip.classList.contains('drag')) return;
+    chip.classList.remove('drag'); if (over) over.classList.remove('over');
+    const c = cellAt(e.clientX, e.clientY);
+    if (!c || c.classList.contains('empty')) {
+      if (c) { const fb = document.getElementById('fb'); fb.className = 'fb no'; fb.innerHTML = '⚠️ Αυτό το κελί είναι άδειο: δεν υπάρχει χρόνος με παρόν και συνοπτική όψη. Δοκίμασε ξανά.'; }
+      chip.style.left = chip.style.top = ''; return;
+    }
+    const r = +c.dataset.r, cc = +c.dataset.c, ok = r === Q.r && cc === Q.c;
+    answer(r, cc);
+    // ο τύπος «πετά» στη σωστή θέση
+    const [x0, y0] = [e.clientX, e.clientY], [x1, y1] = cellCenter(Q.r, Q.c);
+    chip.classList.add('fly'); chip.style.left = x0 + 'px'; chip.style.top = y0 + 'px';
+    requestAnimationFrame(() => requestAnimationFrame(() => { chip.style.left = x1 + 'px'; chip.style.top = y1 + 'px'; chip.style.opacity = ok ? '0' : '0'; }));
+    setTimeout(() => { chip.style.display = 'none'; }, 1100);
+  });
+}
+const BCLUE = c => ['το παρελθόν το δείχνουν η αύξηση / η παρελθοντική κατάληξη ή το «είχα»', 'το παρόν το δείχνουν η παροντική κατάληξη ή το «έχω»', 'το μέλλον το δείχνει το «θα»'][c];
+const OCLUE = r => ['το μη συνοπτικό θέμα δείχνει ενέργεια σε εξέλιξη', 'το συνοπτικό θέμα δείχνει ενέργεια ολοκληρωμένη', 'το έχω / είχα + απαρέμφατο δείχνει συντελεσμένη όψη'][r];
+function answer(r, c, isWheel) {
+  if (!Q || Q.done) return;
+  const cell = isWheel ? grid.querySelector('.cell.center') : grid.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+  const fb = document.getElementById('fb'), t = TENSE[Q.r][Q.c];
+  const okB = c === Q.c, okO = r === Q.r;
+  if (TENSE[r][c] === null) {
+    fb.className = 'fb no'; fb.innerHTML = '⚠️ Συνοπτικό θέμα + παροντική κατάληξη (π.χ. <i>γράψω</i>) δεν στέκει μόνο του· χρειάζεται <b>θα</b> ή <b>να</b>. Δεν είναι χρόνος. Δοκίμασε ξανά.';
+    if (isWheel) document.getElementById('chk').style.display = '';
+    return;
+  }
+  Q.done = true; score.all++;
+  const right = isWheel ? (Q.r === 1 && Q.c === 1 ? cell : grid.querySelector(`.cell[data-r="${Q.r}"][data-c="${Q.c}"]`)) : grid.querySelector(`.cell[data-r="${Q.r}"][data-c="${Q.c}"]`);
+  if (isWheel) right.classList.add('reveal');
+  const form = `<div class="form" style="font-size:1.25em;margin:.3em 0">${colored(Q.ps)}</div>`;
+  if (okB && okO) {
+    score.ok++; score.streak++; cell.classList.add('good');
+    fb.className = 'fb ok';
+    fb.innerHTML = `<span class="tick">✔ Σωστά! ${TNAME[t]}</span> (${BATH[Q.c].toLowerCase()} + ${OPSI[Q.r][0].toLowerCase()} όψη)${form}⏱ ${BCLUE(Q.c)} · 👁 ${OCLUE(Q.r)}.`;
+  } else {
+    score.streak = 0; cell.classList.add('wrong'); right.classList.add('good');
+    const bMsg = okB ? `✔ Η <b>βαθμίδα</b> είναι σωστή (${BATH[Q.c].toLowerCase()}).` : `✘ Η <b>βαθμίδα</b> δεν είναι ${BATH[c].toLowerCase()} αλλά <b>${BATH[Q.c].toLowerCase()}</b>: ${BCLUE(Q.c)}.`;
+    const oMsg = okO ? `✔ Η <b>όψη</b> είναι σωστή (${OPSI[Q.r][0].toLowerCase()}).` : `✘ Η <b>όψη</b> δεν είναι ${OPSI[r][0].toLowerCase()} αλλά <b>${OPSI[Q.r][0].toLowerCase()}</b>: ${OCLUE(Q.r)}.`;
+    fb.className = 'fb no';
+    fb.innerHTML = `<span class="tick">Όχι ακριβώς. Είναι ${TNAME[t]}.</span>${form}${bMsg}<br>${oMsg}`;
+  }
+  document.getElementById('s1').textContent = score.ok; document.getElementById('s2').textContent = score.all; document.getElementById('s3').textContent = score.streak;
+  document.getElementById('next').style.display = 'inline-block';
+  if (isWheel) return;
+  crossShown = [Q.r, Q.c]; drawCross(Q.r, Q.c);
+  grid.querySelectorAll('.cell').forEach(e => { const er = +e.dataset.r, ec = +e.dataset.c; if (!e.classList.contains('good') && !e.classList.contains('wrong') && ((er === Q.r && ec < Q.c) || (ec === Q.c && er > Q.r))) e.classList.add('path'); });
+  grid.querySelector(`.rl[data-r="${Q.r}"]`).classList.add('hl'); grid.querySelector(`.cl[data-c="${Q.c}"]`).classList.add('hl');
+}
+
+// ---------------- συμβάντα ----------------
+grid.addEventListener('click', e => {
+  const el = e.target.closest('.cell'); if (!el) return;
+  const r = +el.dataset.r, c = +el.dataset.c;
+  if (mode === 'explore') { sel = [r, c]; highlight(); showCard(r, c); if (innerWidth < 980) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  else if (mode === 'practice') answer(r, c);
+});
+grid.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('cell')) { e.preventDefault(); e.target.click(); } });
+document.querySelector('.tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  mode = b.dataset.m;
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.getElementById('verbsel').classList.toggle('hidden', mode !== 'explore');
+  sel = null;
+  if (mode === 'explore') { drawGrid(); exploreIntro(); } else if (mode === 'wheel') { Q = null; newWheelQ(); } else { Q = null; newQ(); }
+});
+drawGrid(); exploreIntro();
+</script>
+</body>
+</html>
