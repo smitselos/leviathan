@@ -503,6 +503,8 @@ const EMBEDDED_BOOK = null;
 //   CLKMC  Εντοπισμός + Πολλαπλή  Λέξη-Στόχος + Επιλογή Α–Δ · Σωστή: Α/Β/Γ/Δ
 //   CLKYN  Εντοπισμός + Ναι/Όχι   Λέξη-Στόχος + Επιλογή Α, Β · Σωστή: Α/Β
 //   CLKGAP Εντοπισμός + Κενό      Λέξη-Στόχος · Σωστή: απάντηση κενού (όπως GAP)
+//   MCGAP  Πολλαπλή + Κενό        Επιλογή Α–Δ · Σωστή: γράμμα || απάντηση κενού (π.χ. «Β || ειρωνεία»)
+//   YNGAP  Ναι/Όχι + Κενό         Επιλογή Α, Β (κενές = Ναι, Όχι) · Σωστή: Α/Β || απάντηση κενού (π.χ. «Α || που»)
 //   CAT    Ταξινόμηση             Επιλογή Α–Δ = ονόματα κατηγοριών · Σωστή: στοιχείο→Α|στοιχείο→Β|…
 //   ORD    Βάλε σε σειρά          Σωστή: 1ο|2ο|3ο|… (η εφαρμογή τα ανακατεύει)
 // Στους συνδυασμένους τύπους, η οδηγία του 2ου σκέλους γράφεται στο «Κείμενο Ερώτησης» μετά από ||
@@ -776,8 +778,12 @@ function normType(raw) {
   return TYPE_ALIASES[t] || t;
 }
 // Συνδυασμένοι τύποι: εντοπισμός (CLK) + δεύτερο σκέλος
-const COMBO_SUB = {CLKMC:'MC', CLKYN:'YN', CLKGAP:'GAP'};
-const KNOWN_TYPES = ['MC','YN','GAP','CLK','DD','CLKMC','CLKYN','CLKGAP','CAT','ORD'];
+const COMBO_SUB = {CLKMC:'MC', CLKYN:'YN', CLKGAP:'GAP', YNGAP:'GAP', MCGAP:'GAP'};
+const KNOWN_TYPES = ['MC','YN','GAP','CLK','DD','CLKMC','CLKYN','CLKGAP','YNGAP','MCGAP','CAT','ORD'];
+// YNGAP: 1ο σκέλος Ναι/Όχι (όχι εντοπισμός), 2ο σκέλος κενό · MCGAP: 1ο σκέλος πολλαπλή επιλογή (Α–Δ), 2ο σκέλος κενό
+const isYnFirst = (q) => !!(q && (q.type === 'YNGAP' || q.type === 'MCGAP'));
+// YNGAP με «→»: το κενό φαίνεται μόνο αφού ο μαθητής πατήσει το σωστό κουμπί (και υπάρχει λέξη κενού)
+const ynGapOpen = (q, st) => !q.ynGate || !!(st && st.answer && st.answer.yn && String(st.answer.yn).toUpperCase() === q.ynCorrect && q.correct);
 const OPT_KEYS = ['Α','Β','Γ','Δ'];
 
 // Μετατροπή γραμμών πίνακα (κεφαλίδες + γραμμές) σε ερωτήσεις
@@ -817,13 +823,26 @@ function buildQuestion(obj) {
   obj.optB = obj['Επιλογή Β'] || null;
   obj.optC = obj['Επιλογή Γ'] || null;
   obj.optD = obj['Επιλογή Δ'] || null;
-  if (obj.type === 'YN' || obj.type === 'CLKYN') { obj.optA = obj.optA || 'Ναι'; obj.optB = obj.optB || 'Όχι'; }
+  if (obj.type === 'YN' || obj.type === 'CLKYN' || obj.type === 'YNGAP') { obj.optA = obj.optA || 'Ναι'; obj.optB = obj.optB || 'Όχι'; }
   obj.leftItems  = [obj['Αριστερά 1'],obj['Αριστερά 2'],obj['Αριστερά 3'],obj['Αριστερά 4']].filter(Boolean);
   obj.rightItems = [obj['Δεξιά 1'],obj['Δεξιά 2'],obj['Δεξιά 3'],obj['Δεξιά 4']].filter(Boolean);
   obj.targets = obj['Λέξη-Στόχος'] ? obj['Λέξη-Στόχος'].split('|').map(t=>t.trim()).filter(Boolean) : [];
-  if ((obj.type === 'CLK' || obj.sub) && (!obj.excerpt || !obj.targets.length)) { console.warn('Εντοπισμός χωρίς Απόσπασμα ή Λέξη-Στόχο', obj.id); return null; }
+  if ((obj.type === 'CLK' || (obj.sub && !isYnFirst(obj))) && (!obj.excerpt || !obj.targets.length)) { console.warn('Εντοπισμός χωρίς Απόσπασμα ή Λέξη-Στόχο', obj.id); return null; }
   obj.correct = (obj['Σωστή Απάντηση']||'').trim();
   if (['MC','YN','CLKMC','CLKYN'].includes(obj.type)) obj.correct = normLetter(obj.correct);
+  if (obj.type === 'YNGAP' || obj.type === 'MCGAP') {
+    // Σωστή: «Α || απάντηση κενού» → ynCorrect = Α, correct = απάντηση κενού (όπως GAP)
+    // «Α → λέξη»: το κενό ανοίγει μόνο όταν ο μαθητής πατήσει το σωστό κουμπί · «Α» σκέτο = χωρίς κενό
+    if (obj.correct.includes('||')) {
+      const cp = obj.correct.split('||');
+      if (!cp[1].trim()) { console.warn(obj.type + ': η Σωστή Απάντηση θέλει «γράμμα || απάντηση κενού»', obj['ID']); return null; }
+      obj.ynCorrect = normLetter(cp[0].trim()); obj.correct = cp.slice(1).join('||').trim(); obj.ynGate = false;
+    } else {
+      const cp = obj.correct.split(/→|->/);
+      obj.ynCorrect = normLetter(cp[0].trim()); obj.correct = (cp[1] || '').trim(); obj.ynGate = true;
+    }
+    if (!obj.ynCorrect) { console.warn(obj.type + ': λείπει το γράμμα στη Σωστή Απάντηση', obj['ID']); return null; }
+  }
   obj.fb = [obj['Διόρθωση 1'],obj['Διόρθωση 2'],obj['Διόρθωση 3'],obj['Διόρθωση 4']].map(fmtRich);
   if (obj.type === 'CAT') {
     // Κατηγορίες = Επιλογή Α–Δ · Σωστή: στοιχείο→Α|στοιχείο→Β (δεκτό και το όνομα της κατηγορίας)
@@ -1115,12 +1134,16 @@ function checkClkAnswer(q, sel) {
   return targets.every(t=>s.includes(t)) && s.length===targets.length;
 }
 function isCombo(q) { return !!(q && q.sub); }
+// Συνδυασμένες ερωτήσεις: πρώτα το 1ο σκέλος. Με «Συνέχεια» ελέγχεται: λάθος → όλη η ερώτηση λάθος (άμεσος έλεγχος) · σωστό → εμφανίζεται το 2ο (το 1ο κλειδώνει)
+const comboStepped = q => isCombo(q) && !(isYnFirst(q) && q.ynGate);
+const comboStep2 = (q, st) => !comboStepped(q) || !!st.answered || !!(st.answer && st.answer.__combo && st.answer.step2);
+const comboPart1Done = (q, st) => isYnFirst(q) ? !!(st.answer && st.answer.__combo && st.answer.yn) : st.clkSelected.length > 0;
 // Οι σύνθετοι τύποι κρατούν την απάντηση σε αντικείμενο· δημιουργείται στην πρώτη εμφάνιση της ερώτησης
 function prepAnswer(q, st) {
   if (!q) return;
   const tag = q.id + '|' + q.type;
   if (isCombo(q)) {
-    if (!st.answer || st.answer.__combo !== tag) st.answer = { __combo: tag, sub: null, clk: [] };
+    if (!st.answer || st.answer.__combo !== tag) st.answer = { __combo: tag, sub: null, clk: [], yn: null };
   } else if (q.type === 'CAT') {
     if (!st.answer || st.answer.__cat !== tag) st.answer = { __cat: tag, a: new Array(q.catItems.length).fill(null), pick: null };
   } else if (q.type === 'ORD') {
@@ -1149,7 +1172,8 @@ function checkAnswer(q, answer) {
   if (isCombo(q)) {
     // Έλεγχος στο τέλος: σωστή μόνο αν είναι σωστά ΚΑΙ τα δύο σκέλη
     if (!answer || !answer.__combo) return false;
-    const clkOk = checkClkAnswer(q, answer.clk);
+    const clkOk = isYnFirst(q) ? String(answer.yn||'').toUpperCase() === q.ynCorrect : checkClkAnswer(q, answer.clk);
+    if (isYnFirst(q) && q.ynGate && (!clkOk || !q.correct)) return clkOk;
     const subOk = q.sub === 'GAP' ? checkGapAnswer(q, answer.sub)
       : q.correct.trim().toUpperCase() === String(answer.sub||'').trim().toUpperCase();
     return clkOk && subOk;
@@ -1216,7 +1240,9 @@ function canCheckState(q, st) {
     if (Array.isArray(st.answer)) return st.answer.every(a=>a&&a.trim());
     return !!(st.answer && String(st.answer).trim());
   }
-  if (isCombo(q)) return st.clkSelected.length>0 && !!st.answer && !!st.answer.__combo && subFilled(q, st.answer.sub);
+  if (isCombo(q) && !comboStep2(q, st)) return false;
+  if (isYnFirst(q) && q.ynGate) return !!(st.answer && st.answer.__combo && st.answer.yn) && (!ynGapOpen(q, st) || subFilled(q, st.answer.sub));
+  if (isCombo(q)) return (isYnFirst(q) ? !!(st.answer && st.answer.yn) : st.clkSelected.length>0) && !!st.answer && !!st.answer.__combo && subFilled(q, st.answer.sub);
   if (q.type==='CAT') return !!(st.answer && st.answer.a && st.answer.a.every(c=>c!==null));
   if (q.type==='ORD') return !!(st.answer && st.answer.seq && st.answer.seq.length===q.ordItems.length);
   return false;
@@ -1248,11 +1274,11 @@ function scheduleAutoCheck() {
 
 const TYPE_LABELS = {
   MC:'Πολλαπλή επιλογή', YN:'Ναι / Όχι', GAP:'Συμπλήρωση κενού', CLK:'Εντοπισμός', DD:'Αντιστοίχιση',
-  CLKMC:'Εντοπισμός + Πολλαπλή επιλογή', CLKYN:'Εντοπισμός + Ναι / Όχι', CLKGAP:'Εντοπισμός + Συμπλήρωση',
+  CLKMC:'Εντοπισμός + Πολλαπλή επιλογή', CLKYN:'Εντοπισμός + Ναι / Όχι', CLKGAP:'Εντοπισμός + Συμπλήρωση', YNGAP:'Ναι / Όχι + Συμπλήρωση', MCGAP:'Πολλαπλή επιλογή + Συμπλήρωση',
   CAT:'Ταξινόμηση σε κατηγορίες', ORD:'Βάλε σε σειρά'
 };
 const TYPE_SHORT = { MC:'Πολλ. Επιλογής', YN:'Ναι/Όχι', DD:'Αντιστοίχιση', GAP:'Συμπλήρωση', CLK:'Εντοπισμός',
-  CLKMC:'Εντοπ.+Πολλαπλή', CLKYN:'Εντοπ.+Ναι/Όχι', CLKGAP:'Εντοπ.+Κενό', CAT:'Ταξινόμηση', ORD:'Σειρά' };
+  CLKMC:'Εντοπ.+Πολλαπλή', CLKYN:'Εντοπ.+Ναι/Όχι', CLKGAP:'Εντοπ.+Κενό', YNGAP:'Ναι/Όχι+Κενό', MCGAP:'Πολλαπλή+Κενό', CAT:'Ταξινόμηση', ORD:'Σειρά' };
 // Φίλτρα τύπων: μόνο οι τύποι που υπάρχουν στις ερωτήσεις
 function typeChipList() {
   const present = KNOWN_TYPES.filter(t => allQ.some(q => q.type === t));
@@ -1520,7 +1546,7 @@ function renderAdaptive() {
       }
       html += `<button class="btn-next quiz-btn-full" id="btnNext">Επόμενο →</button>`;
     }
-  } else if (!isAutoCheckType(q)) {
+  } else if (!isAutoCheckType(q) && comboStep2(q, adp)) {
     html += `<button class="btn-check quiz-btn-full" id="btnCheck" ${canCheckAdp(q)?'':'disabled'}>Έλεγξε</button>`;
   }
   html += '</div>';
@@ -1538,7 +1564,7 @@ function renderAdaptive() {
   // FAB action button (mobile only) — outside the answers-card
   if (adp.answered && (isOk || adp.showFbCard)) {
     html += `<div class="fab-action"><button class="fab-btn next" id="btnNextFab" title="Επόμενο">→</button></div>`;
-  } else if (!adp.answered && !isAutoCheckType(q)) {
+  } else if (!adp.answered && !isAutoCheckType(q) && comboStep2(q, adp)) {
     html += `<div class="fab-action"><button class="fab-btn check" id="btnCheckFab" ${canCheckAdp(q)?'':'disabled'} title="Έλεγχος">✓</button></div>`;
   }
   return html;
@@ -1735,7 +1761,7 @@ function renderSel() {
     ${renderSelQuestionBody(q)}
   </div>`;
 
-  if (!sel.answered && !isAutoCheckType(q)) {
+  if (!sel.answered && !isAutoCheckType(q) && comboStep2(q, sel)) {
     html += `<button class="btn-check quiz-btn-full" id="btnSelCheck" ${canSelCheck()?'':'disabled'} style="margin-top:10px">Έλεγξε</button>`;
     html += `<div class="fab-action"><button class="fab-btn check" id="btnSelCheckFab" ${canSelCheck()?'':'disabled'} title="Έλεγχος">✓</button></div>`;
   } else if (sel.answered) {
@@ -1773,7 +1799,7 @@ function renderSelResults() {
 // ══════════════════════════════════════════════
 function renderExcerpt(q, mode) {
   if (q.type==='GAP') return renderExcerptGAP(q, mode);
-  if (q.type==='CLK' || isCombo(q)) return renderExcerptCLK(q, mode);
+  if (q.type==='CLK' || (isCombo(q) && !isYnFirst(q))) return renderExcerptCLK(q, mode);
   return `<div class="exc">${q.excerpt}</div>`;
 }
 
@@ -1958,13 +1984,25 @@ function renderQuestionBody(q, mode) {
   if (q.type==='MC'||q.type==='YN') return renderMC(q, mode);
   if (q.type==='DD') return renderDD(q, mode);
   if (q.type==='GAP') return renderGAPInput(q, mode);
-  if (isCombo(q)) return renderComboSub(q, mode);
+  if (isCombo(q)) {
+    const st = mode==='adp' ? adp : sel;
+    if (!comboStep2(q, st)) return (isYnFirst(q) ? renderYnFirst(q, mode) : '') +
+      `<button class="btn-check quiz-btn-full" data-combo-next="${mode}" ${comboPart1Done(q, st) ? '' : 'disabled'}>Συνέχεια στο 2ο σκέλος →</button>`;
+    if (isYnFirst(q)) return renderYnFirst(q, mode) + (ynGapOpen(q, st) ? renderComboSub(q, mode) : '');
+    return renderComboSub(q, mode);
+  }
   if (q.type==='CAT') return renderCAT(q, mode);
   if (q.type==='ORD') return renderORD(q, mode);
   return '';
 }
 
 // 2ο σκέλος συνδυασμένων τύπων (CLKMC / CLKYN / CLKGAP) — ο εντοπισμός γίνεται στο απόσπασμα από πάνω
+// 1ο σκέλος YNGAP / MCGAP: κουμπιά επιλογής (η απάντηση γράφεται στο st.answer.yn)
+function renderYnFirst(q, mode) {
+  const st = mode==='adp' ? adp : sel;
+  const v = { get answer() { return st.answer && st.answer.__combo ? st.answer.yn : null; }, get answered() { return st.answered || !!(q.ynGate && st.answer && st.answer.yn); } };
+  return renderMC({ ...q, correct: q.ynCorrect || '' }, mode, v).replace(/data-opt="/g, 'data-yn-opt="');
+}
 function renderComboSub(q, mode) {
   const st = mode==='adp' ? adp : sel;
   const v = subView(st);
@@ -2091,6 +2129,21 @@ function attachEvents() {
   const btnSelHome2 = document.getElementById('btnSelHome2');
   if (btnSelHome2) btnSelHome2.addEventListener('click', ()=>{ screen='home'; render(); });
 
+  // YNGAP / MCGAP: 1ο σκέλος
+  document.querySelectorAll('[data-yn-opt]').forEach(b => b.addEventListener('click', ()=>{
+    const st = b.dataset.mode==='adp' ? adp : sel;
+    if (st.answered || !st.answer || !st.answer.__combo) return;
+    const q = b.dataset.mode==='adp' ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx];
+    if (q && q.ynGate) {
+      if (st.answer.yn) return;                       // η επιλογή κλειδώνει
+      st.answer.yn = b.dataset.ynOpt;
+      if (!ynGapOpen(q, st)) { if (b.dataset.mode==='adp') doCheck(); else doSelCheck(); return; }   // χωρίς κενό → έλεγχος αμέσως
+      render(); return;
+    }
+    if (st.answer.step2) return;   // 1ο σκέλος κλειδωμένο
+    st.answer.yn = b.dataset.ynOpt; render();
+  }));
+
   // MC/YN options (both modes)
   document.querySelectorAll('[data-opt]').forEach(b => b.addEventListener('click', ()=>{
     const mode = b.dataset.mode;
@@ -2129,11 +2182,23 @@ function attachEvents() {
     st.answer.seq.splice(parseInt(b.dataset.ordRm), 1); render();
   }));
 
+  // Συνδυασμένες: «Συνέχεια στο 2ο σκέλος» (λάθος 1ο σκέλος → άμεσος έλεγχος)
+  document.querySelectorAll('[data-combo-next]').forEach(b => b.addEventListener('click', () => {
+    const isAdp = b.dataset.comboNext==='adp';
+    const st = isAdp ? adp : sel;
+    if (st.answered || !st.answer || !st.answer.__combo) return;
+    const cq = isAdp ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx];
+    const part1Ok = isYnFirst(cq) ? String(st.answer.yn||'').toUpperCase() === cq.ynCorrect : checkClkAnswer(cq, st.clkSelected);
+    if (!part1Ok) { if (isAdp) doCheck(); else doSelCheck(); return; }
+    st.answer.step2 = true; render();
+  }));
+
   // CLK tokens
   document.querySelectorAll('[data-word]').forEach(b => b.addEventListener('click', ()=>{
     const mode = b.dataset.mode;
     const st = mode==='adp' ? adp : sel;
     if (st.answered) return;
+    { const cq = mode==='adp' ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx]; if (comboStepped(cq) && st.answer && st.answer.step2) return; }   // 1ο σκέλος κλειδωμένο
     if (b.dataset.phrase) {
       const phrase = b.dataset.phrase;
       const idx = st.clkSelected.indexOf(phrase);
@@ -2798,7 +2863,7 @@ function renderPresQuestionBody(q) {
   }
   if (q.type==='CLK') return presClkHtml(q, pres.showAnswer);
   if (isCombo(q)) {
-    let html = presClkHtml(q, pres.showAnswer);
+    let html = isYnFirst(q) ? presOptsHtml({ ...q, correct: q.ynCorrect || '' }) : presClkHtml(q, pres.showAnswer);
     html += `<p class="q-step2"><span class="q-step-n">2</span>${q.q2 || (q.sub==='GAP' ? 'Συμπλήρωσε.' : 'Διάλεξε τη σωστή απάντηση.')}</p>`;
     if (q.sub==='GAP') {
       const ans = q.correct.split('|').map(x=>x.trim().split('/')[0]).filter(Boolean).join(' · ');
@@ -3064,6 +3129,8 @@ function renderQuestionForPrint(q, idx, s) {
   if (q.type === 'YN' || q.type === 'CLKYN') {
     html += `<div class="pq-yn"><span>☐ ${q.optA||'Ναι'}</span><span>☐ ${q.optB||'Όχι'}</span></div>`;
   }
+  if (q.type === 'YNGAP') html += `<div class="pq-yn"><span>☐ ${q.optA||'Ναι'}</span><span>☐ ${q.optB||'Όχι'}</span></div>`;
+  if (q.type === 'MCGAP') html += `<div class="pq-opts">${[q.optA,q.optB,q.optC,q.optD].filter(Boolean).map((o,i)=>`<div class="pq-opt"><span class="pq-k">${OPT_KEYS[i]}.</span> ${o}</div>`).join('')}</div>`;
 
   if (q.type === 'CAT') {
     html += `<p class="pq-q" style="font-weight:400">Στοιχεία: ${shuffle(q.catItems.map(it=>it.t)).map(t=>`<b>${t}</b>`).join(' · ')}</p>`;
@@ -3106,7 +3173,7 @@ function renderQuestionForPrint(q, idx, s) {
     }
   }
 
-  if (s.showLines && ['CLK','GAP','CLKGAP'].includes(q.type)) {
+  if (s.showLines && ['CLK','GAP','CLKGAP','YNGAP','MCGAP'].includes(q.type)) {
     html += `<div class="pq-lines">`;
     for (let i = 0; i < s.linesCount; i++) {
       html += `<div class="pq-line"></div>`;
