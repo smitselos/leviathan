@@ -1481,7 +1481,24 @@ function checkClkAnswer(q, sel) {
   return targets.every(t=>s.includes(t)) && s.length===targets.length;
 }
 function isCombo(q) { return !!(q && q.sub); }
-// Συνδυασμένες ερωτήσεις: πρώτα το 1ο σκέλος. Με «Συνέχεια» ελέγχεται: λάθος → όλη η ερώτηση λάθος (άμεσος έλεγχος) · σωστό → εμφανίζεται το 2ο (το 1ο κλειδώνει)
+// Αυτόματη μετάβαση στο 1ο σκέλος: λάθος επιλογή → αμέσως έλεγχος (όλη η ερώτηση λάθος)·
+// σωστό και πλήρες 1ο σκέλος → εμφανίζεται αμέσως το 2ο σκέλος.
+function comboAutoStep(mode, lastPick) {
+  const isAdp = mode==='adp'; const st = isAdp ? adp : sel;
+  const q = isAdp ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx];
+  if (!q || !comboStepped(q) || st.answered || !st.answer || !st.answer.__combo || st.answer.step2) return false;
+  const fail = () => { if (isAdp) doCheck(); else doSelCheck(); return true; };
+  if (isYnFirst(q)) {
+    if (!st.answer.yn) return false;
+    if (String(st.answer.yn).toUpperCase() !== q.ynCorrect) return fail();
+    st.answer.step2 = true; render(); return true;
+  }
+  const targets = q.targets.map(t=>t.trim().toLowerCase());
+  if (lastPick != null && st.clkSelected.includes(lastPick) && !targets.includes(String(lastPick).trim().toLowerCase())) return fail();
+  if (checkClkAnswer(q, st.clkSelected)) { st.answer.step2 = true; render(); return true; }
+  return false;
+}
+// Συνδυασμένες ερωτήσεις: πρώτα το 1ο σκέλος. Μόλις απαντηθεί ελέγχεται αυτόματα: λάθος → όλη η ερώτηση λάθος (άμεσος έλεγχος) · σωστό → εμφανίζεται το 2ο (το 1ο κλειδώνει)
 // (εξαίρεση: YNGAP/MCGAP με «→», που έχουν ήδη δική τους διαδοχική ροή)
 const comboStepped = q => isCombo(q) && !(isYnFirst(q) && q.ynGate);
 const comboStep2 = (q, st) => !comboStepped(q) || !!st.answered || !!(st.answer && st.answer.__combo && st.answer.step2);
@@ -2513,11 +2530,7 @@ function renderQuestionBody(q, mode) {
   if (q.type==='GAP') return renderGAPInput(q, mode);
   if (isCombo(q)) {
     const st = mode==='adp' ? adp : sel;
-    if (!comboStep2(q, st)) {
-      const ok = comboPart1Done(q, st);
-      return (isYnFirst(q) ? renderYnFirst(q, mode) : '') +
-        `<button class="btn-check quiz-btn-full" data-combo-next="${mode}" ${ok ? '' : 'disabled'}>Συνέχεια στο 2ο σκέλος →</button>`;
-    }
+    if (!comboStep2(q, st)) return isYnFirst(q) ? renderYnFirst(q, mode) : '';
     if (isYnFirst(q)) return renderYnFirst(q, mode) + (ynGapOpen(q, st) ? renderComboSub(q, mode) : '');
     return renderComboSub(q, mode);
   }
@@ -2682,20 +2695,12 @@ function attachEvents() {
       render(); return;
     }
     if (st.answer.step2) return;   // 1ο σκέλος κλειδωμένο
-    st.answer.yn = b.dataset.ynOpt; render();
+    st.answer.yn = b.dataset.ynOpt;
+    if (comboAutoStep(b.dataset.mode)) return;
+    render();
   }));
 
-  // Συνδυασμένες: «Συνέχεια στο 2ο σκέλος»
-  document.querySelectorAll('[data-combo-next]').forEach(b => b.addEventListener('click', () => {
-    const st = b.dataset.comboNext==='adp' ? adp : sel;
-    if (st.answered || !st.answer || !st.answer.__combo) return;
-    const isAdp = b.dataset.comboNext==='adp';
-    const cq = isAdp ? adp.queue[adp.qIdx] : sel.queue[sel.qIdx];
-    // Έλεγχος του 1ου σκέλους: αν είναι λάθος, όλη η ερώτηση είναι λάθος → κατευθείαν έλεγχος (χωρίς 2ο σκέλος)
-    const part1Ok = isYnFirst(cq) ? String(st.answer.yn||'').toUpperCase() === cq.ynCorrect : checkClkAnswer(cq, st.clkSelected);
-    if (!part1Ok) { if (isAdp) doCheck(); else doSelCheck(); return; }
-    st.answer.step2 = true; render();
-  }));
+  // (αυτόματη μετάβαση: βλ. comboAutoStep)
 
   // Ταξινόμηση σε κατηγορίες (CAT)
   document.querySelectorAll('[data-cat-item]').forEach(b => b.addEventListener('click', e => {
@@ -2738,6 +2743,7 @@ function attachEvents() {
       const idx = st.clkSelected.indexOf(w);
       if (idx!==-1) st.clkSelected.splice(idx,1); else st.clkSelected.push(w);
     }
+    if (comboAutoStep(mode, b.dataset.phrase || String(b.dataset.word||'').replace(/[.;:!?«»"'()\[\]…·]/g,'').replace(/^,+|,+$/g,'').trim())) return;
     render();
   }));
 
