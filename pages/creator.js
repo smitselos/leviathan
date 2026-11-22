@@ -1094,7 +1094,7 @@ export default function Creator() {
       if (step === 'edit' && data && tpl.id === 'quiz-xlsx-deck') {
         if (!confirm(msg + '\n\nΝα αντικαταστήσουν τις ενότητες και τις ερωτήσεις της εφαρμογής που επεξεργάζεστε;')) { setXlBusy(false); return; }
         const nq = normalizeData(r.data);
-        upd((n) => { if (r.hasGen) ['title', 'eyebrow', 'heading', 'subtitle', 'credits', 'shuffleQs', 'shuffleOpts'].forEach((k) => { n[k] = nq[k]; }); n.decks = nq.decks; if (nq.mx) n.mx = nq.mx; else delete n.mx; });
+        upd((n) => { if (r.hasGen) ['title', 'eyebrow', 'heading', 'subtitle', 'credits', 'shuffleQs', 'shuffleOpts'].forEach((k) => { n[k] = nq[k]; }); n.decks = nq.decks; if (nq.mx) { n.mx = nq.mx; n.theory = nq.theory || []; } else delete n.mx; });
         setSel({ d: 0, q: 0 }); setPanel('question');
       } else {
         openData(r.data, null);
