@@ -474,9 +474,9 @@ select.gap-in{cursor:pointer;}
 .cmb-step{display:flex;gap:8px;align-items:flex-start;font-weight:700;font-size:clamp(13px,1.6vw,17px);line-height:1.4;color:var(--ink);margin-top:4px;}
 .cmb-step2{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(107,63,160,.25);}
 /* η ερώτηση του 2ου σκέλους σε κανονικό μέγεθος ερώτησης (όχι μικρή ετικέτα) */
-.cmb-step2 > span:last-child{font-family:'Literata',serif;font-weight:500;font-size:clamp(17px,2.3vw,23px);line-height:1.45;}
+.cmb-step2 > span:last-child{font-family:'Literata',serif;font-style:italic;font-weight:400;font-size:clamp(17px,2.3vw,23px);line-height:1.5;}
 .cmb-step2 .cmb-n{margin-top:4px;}
-.cmb-step2.cmb-plain > span:last-child{font-family:inherit;font-weight:700;font-size:inherit;}
+.cmb-step2.cmb-plain > span:last-child{font-family:inherit;font-style:normal;font-weight:700;font-size:inherit;}
 .cmb-step2.cmb-plain .cmb-n{margin-top:0;}
 .cmb-n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;}
 .opt-btn.picked{border-color:var(--purple);background:rgba(107,63,160,.12);}
@@ -1009,6 +1009,8 @@ function fitCard(){
       return bottom-(r.bottom-pb); };
     qt.style.fontSize='';
     let fs=parseFloat(getComputedStyle(qt).fontSize)||18, guard=0;
+    // Σύνθετες: η ερώτηση του 2ου σκέλους παίρνει το ΙΔΙΟ μέγεθος με την ερώτηση του 1ου (αριστερά)
+    const q2s=right.querySelector('.cmb-step2:not(.cmb-plain) > span:last-child'); if(q2s) q2s.style.fontSize=fs+'px';
     while(leftOver()>1 && fs>13 && guard++<40){ fs=Math.max(13,fs*0.93); qt.style.fontSize=fs+'px'; }
   }
   right.style.zoom='';
