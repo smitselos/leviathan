@@ -443,6 +443,10 @@ body{
 .dk1-lbl,.dk4-lbl{color:var(--purple);}
 .tf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .tf-row .opt-btn{justify-content:center;text-align:center;font-weight:700;}
+/* Ναι/Όχι και σχόλιο διόρθωσης: ίδια γραμματοσειρά με τις ερωτήσεις (Literata) */
+.tf-row .opt-btn{font-family:'Literata',serif;font-weight:600;}
+.fb-box{font-family:'Literata',serif;}
+.fb-box .fb-th{font-family:inherit;}
 .gap-text,.clk-text{
   font-family:'Literata',serif;font-size:clamp(15px,1.9vw,19px);line-height:2.1;
   background:#fff;border-radius:10px;padding:14px 16px;border:1px solid rgba(107,63,160,.12);
@@ -1011,6 +1015,15 @@ function fitCard(){
     let fs=parseFloat(getComputedStyle(qt).fontSize)||18, guard=0;
     // Σύνθετες: η ερώτηση του 2ου σκέλους παίρνει το ΙΔΙΟ μέγεθος με την ερώτηση του 1ου (αριστερά)
     const q2s=right.querySelector('.cmb-step2:not(.cmb-plain) > span:last-child'); if(q2s) q2s.style.fontSize=fs+'px';
+    // Ναι/Όχι στο μέγεθος της ερώτησης· σχόλιο διόρθωσης λίγο μικρότερο (όχι μικρά γράμματα)
+    right.querySelectorAll('.tf-row .opt-btn').forEach(b=>{ b.style.fontSize=fs+'px'; });
+    // Σύνθετες: ΟΛΕΣ οι απαντήσεις (επιλογές Α–Δ, Ναι/Όχι, κενό) και στα δύο σκέλη στο ίδιο μέγεθος με την ερώτηση
+    if(right.querySelector('.cmb-part2')){
+      right.querySelectorAll('.opt-btn').forEach(b=>{ b.style.fontSize=fs+'px'; });
+      right.querySelectorAll('.opt-lbl').forEach(b=>{ b.style.fontSize=Math.round(fs*0.92)+'px'; });
+      right.querySelectorAll('.cmb-part2 .gap-text, .cmb-part2 .gap-in').forEach(b=>{ b.style.fontSize=fs+'px'; });
+    }
+    const fbx=right.querySelector('.fb-box'); if(fbx) fbx.style.fontSize=Math.round(fs*0.9)+'px';
     while(leftOver()>1 && fs>13 && guard++<40){ fs=Math.max(13,fs*0.93); qt.style.fontSize=fs+'px'; }
   }
   right.style.zoom='';
