@@ -107,8 +107,9 @@ const TYPES = [
   { t: 'clkyn', icon: '☝◐', label: 'Εντοπισμός + Ναι/Όχι' },
   { t: 'clkgap', icon: '☝▭', label: 'Εντοπισμός + Κενό' },
   { t: 'yngap', icon: '◐▭', label: 'Ναι/Όχι + Κενό' },
+  { t: 'mcgap', icon: '●▭', label: 'Πολλαπλή + Κενό' },
 ];
-const COMBO_T = ['clkmc', 'clkyn', 'clkgap', 'yngap'];
+const COMBO_T = ['clkmc', 'clkyn', 'clkgap', 'yngap', 'mcgap'];
 const typesFor = (xl) => TYPES.filter((t) => (xl ? t.t !== 'cw' : !COMBO_T.includes(t.t)));
 const typeOf = (t) => TYPES.find((x) => x.t === t) || TYPES[0];
 const LABS = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ'];
@@ -129,6 +130,7 @@ function newQuestion(t, keep = {}) {
   if (t === 'clkyn') return { ...base, text: keep.text || '', q2: keep.q2 || '', labels: ['Ναι', 'Όχι'], ans: 0 };
   if (t === 'clkgap') return { ...base, text: keep.text || '', q2: keep.q2 || '', gapAns: '' };
   if (t === 'yngap') return { ...base, text: String(keep.text || '').replace(/\[([^\]|]+)(\|[^\]]*)?\]/g, '$1'), q2: keep.q2 || '', labels: ['Ναι', 'Όχι'], ans: 0, gapAns: '', gate: true };
+  if (t === 'mcgap') return { ...base, text: String(keep.text || '').replace(/\[([^\]|]+)(\|[^\]]*)?\]/g, '$1'), q2: keep.q2 || '', opts: ['', '', '', ''], ans: 0, gapAns: '', gate: false };
   return { ...base, q: base.q || 'Επίλεξε…', text: '' };
 }
 function newDeck(n) { return { label: 'Ενότητα ' + n, ktitle: '', author: '', sub: '', qs: [newQuestion('mcq')] }; }
@@ -273,11 +275,11 @@ function problemsOf(q) {
     if (!marked(q.text).length) p.push('Δεν υπάρχει σωστή λέξη: βάλτε τη σε [αγκύλες].');
   }
   if (['clkmc', 'clkyn', 'clkgap'].includes(q.t) && !marked(q.text).length) p.push('Δεν υπάρχει λέξη-στόχος: βάλτε τη σε [αγκύλες] στο απόσπασμα.');
-  if (q.t === 'clkmc') {
+  if (q.t === 'clkmc' || q.t === 'mcgap') {
     if ((q.opts || []).filter((o) => String(o).trim()).length < 2) p.push('Χρειάζονται τουλάχιστον 2 επιλογές.');
     if ((q.opts || []).some((o) => !String(o).trim())) p.push('Υπάρχει κενή επιλογή.');
   }
-  if ((q.t === 'clkgap' || (q.t === 'yngap' && !q.gate)) && !String(q.gapAns || '').trim()) p.push('Λείπει η σωστή απάντηση του κενού.');
+  if ((q.t === 'clkgap' || ((q.t === 'yngap' || q.t === 'mcgap') && !q.gate)) && !String(q.gapAns || '').trim()) p.push('Λείπει η σωστή απάντηση του κενού.');
   if (q.t === 'order') {
     const n = (q.lines || []).filter((l) => String(l).trim()).length;
     if (n < 3) p.push(`Χρειάζονται τουλάχιστον 3 περίοδοι (τώρα ${n}).`);
@@ -405,7 +407,7 @@ const stripTags = (s) => String(s || '').replace(/<br\s*\/?>/gi, '\n').replace(/
 // Ανενεργές γραμμές και τύποι που δεν επεξεργάζονται εδώ (CLKMC, CLKYN, CLKGAP…) δεν χάνονται: μένουν αυτούσιες στο mx.raw.
 const xlLat = (s) => s.replace(/[αβεζηικμνορτυχ]/g, (ch) => ({ α: 'a', β: 'b', ε: 'e', ζ: 'z', η: 'h', ι: 'i', κ: 'k', μ: 'm', ν: 'n', ο: 'o', ρ: 'p', τ: 't', υ: 'y', χ: 'x' }[ch]));
 function mitselosRows(all, hi, col, getDeck, warnings, mx) {
-  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap', ord: 'order', sort: 'sort', cat: 'sort', clkmc: 'clkmc', clkyn: 'clkyn', clktf: 'clkyn', clkgap: 'clkgap', yngap: 'yngap' };
+  const T = { yn: 'tf', mc: 'mcq', dd: 'drag', clk: 'click', gap: 'gap', ord: 'order', sort: 'sort', cat: 'sort', clkmc: 'clkmc', clkyn: 'clkyn', clktf: 'clkyn', clkgap: 'clkgap', yngap: 'yngap', mcgap: 'mcgap' };
   const keep = (pos, r) => { if (mx) mx.raw.push({ pos, row: r.slice() }); };
   all.slice(hi + 1).forEach((r, ri) => {
     if (!r.some((c) => c)) return;
@@ -437,13 +439,14 @@ function mitselosRows(all, hi, col, getDeck, warnings, mx) {
       // Σύνθετοι: «Κείμενο Ερώτησης» = οδηγία 1ου σκέλους || οδηγία 2ου σκέλους
       const qp = qt.split('||'); const q1 = qp[0].trim(), q2 = qp.slice(1).join('||').trim();
       let text = exc; const miss = [];
-      if (t !== 'yngap') col(r, 'Λέξη-Στόχος').split('|').map((x) => x.trim()).filter(Boolean).forEach((w) => {
+      const ynF = t === 'yngap' || t === 'mcgap';
+      if (!ynF) col(r, 'Λέξη-Στόχος').split('|').map((x) => x.trim()).filter(Boolean).forEach((w) => {
         const tryMark = (x) => { const i = text.indexOf(x); if (i < 0 || !x) return false; text = text.slice(0, i) + '[' + x + ']' + text.slice(i + x.length); return true; };
         if (!tryMark(w)) { const parts = w.split('/').map((x) => x.trim()).filter(Boolean); if (!(parts.length > 1 && parts.every(tryMark))) miss.push(w); }
       });
       if (miss.length) warnings.push(`${id}: η λέξη-στόχος «${miss.join(', ')}» δεν βρέθηκε στο απόσπασμα.`);
       const sw = stripTags(col(r, 'Σωστή Απάντηση'));
-      q = { ...newQuestion(t), q: q1 || (t === 'yngap' ? '' : 'Εντόπισε τις λέξεις που ζητούνται.'), q2, text };
+      q = { ...newQuestion(t), q: q1 || (ynF ? '' : 'Εντόπισε τις λέξεις που ζητούνται.'), q2, text };
       if (t === 'clkmc') {
         const o = ['Α', 'Β', 'Γ', 'Δ'].map((k) => stripTags(col(r, 'Επιλογή ' + k))); while (o.length > 2 && !o[o.length - 1]) o.pop();
         let ans = L(sw); if (ans < 0 || ans >= o.length) { warnings.push(`${id}: δεν βρέθηκε σωστή απάντηση — ορίστηκε η Α.`); ans = 0; }
@@ -453,6 +456,13 @@ function mitselosRows(all, hi, col, getDeck, warnings, mx) {
         q.labels = [col(r, 'Επιλογή Α') || 'Ναι', col(r, 'Επιλογή Β') || 'Όχι']; q.ans = L(sw) === 1 ? 1 : 0;
       } else if (t === 'clkgap') {
         q.gapAns = sw;
+      } else if (t === 'mcgap') {
+        const o = ['Α', 'Β', 'Γ', 'Δ'].map((k) => stripTags(col(r, 'Επιλογή ' + k))); while (o.length > 2 && !o[o.length - 1]) o.pop();
+        const gt = !sw.includes('||'), sp = gt ? sw.split(/→|->/) : sw.split('||');
+        let ans = L(sp[0].trim()); if (ans < 0 || ans >= o.length) { warnings.push(`${id}: MCGAP — δεν βρέθηκε το γράμμα της σωστής επιλογής — ορίστηκε η Α.`); ans = 0; }
+        q.opts = o; q.ans = ans; q.gapAns = sp.slice(1).join(gt ? '→' : '||').trim(); q.gate = gt;
+        if (!gt && !q.gapAns) warnings.push(`${id}: MCGAP — η «Σωστή Απάντηση» θέλει τη μορφή «Α || απάντηση κενού».`);
+        const nf = fixes.filter(Boolean).length; if (nf > 1) q.fbs = o.map((_, k) => fixes[k] || '');
       } else {
         q.labels = [col(r, 'Επιλογή Α') || 'Ναι', col(r, 'Επιλογή Β') || 'Όχι'];
         if (sw.includes('||')) { const sp = sw.split('||'); q.ans = L(sp[0].trim()) === 1 ? 1 : 0; q.gapAns = sp.slice(1).join('||').trim(); q.gate = false;
@@ -499,7 +509,7 @@ function mitselosRows(all, hi, col, getDeck, warnings, mx) {
       q = { ...newQuestion('sort'), q: withExc(qt || 'Ταξινόμησε τα στοιχεία στις σωστές κατηγορίες.'), cats };
     }
     if (!q) { keep(ri, r); warnings.push(`${id}: ο τύπος «${raw}» δεν υποστηρίζεται σε αυτή τη μορφή` + (mx ? ' — μένει αυτούσιος στην εξαγωγή xlsx.' : ' — παραλείφθηκε.')); return; }
-    if (t !== 'mcq' && !(t === 'clkmc' && q.fbs) && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
+    if (t !== 'mcq' && !((t === 'clkmc' || t === 'mcgap') && q.fbs) && fixes[0]) { q.fbC = fixes[0]; q.fbW = fixes[0]; }
     const df = parseInt(col(r, 'Δυσκολία')); if (df >= 1 && df <= 5) q.diff = df;
     if (mx) { q.mx = { pos: ri, row: r.slice() }; q.th = String(col(r, 'Θεωρία') || '').trim(); }
     deck.qs.push(q);
@@ -740,7 +750,7 @@ function mitselosSheets(data0, warnings) {
         const m = String(q.q || '').match(/^\*([\s\S]*?)\*\n\n([\s\S]*)$/); const exc = m ? m[1] : '', qt = m ? m[2] : String(q.q || '');
         const oT = o ? xlLat(xlN(o[ci('Τύπος')])) : '';
         // Άλλαξε ο τύπος → καθαρίζουν οι στήλες του παλιού τύπου
-        const FAM = { tf: ['yn'], mcq: ['mc'], drag: ['dd'], click: ['clk'], gap: ['gap'], order: ['ord'], sort: ['cat', 'sort'], clkmc: ['clkmc'], clkyn: ['clkyn', 'clktf'], clkgap: ['clkgap'], yngap: ['yngap'] };
+        const FAM = { tf: ['yn'], mcq: ['mc'], drag: ['dd'], click: ['clk'], gap: ['gap'], order: ['ord'], sort: ['cat', 'sort'], clkmc: ['clkmc'], clkyn: ['clkyn', 'clktf'], clkgap: ['clkgap'], yngap: ['yngap'], mcgap: ['mcgap'] };
         if (o && !(FAM[q.t] || []).includes(oT)) ['Απόσπασμα', 'Επιλογή Α', 'Επιλογή Β', 'Επιλογή Γ', 'Επιλογή Δ', 'Σωστή Απάντηση', 'Αριστερά 1', 'Αριστερά 2', 'Αριστερά 3', 'Αριστερά 4', 'Δεξιά 1', 'Δεξιά 2', 'Δεξιά 3', 'Δεξιά 4', 'Λέξη-Στόχος', 'Διόρθωση 2', 'Διόρθωση 3', 'Διόρθωση 4'].forEach((c) => { const i = ci(c); if (i >= 0) row[i] = ''; });
         const typ = (code, alts) => set('Τύπος', o && alts.includes(oT) ? o[ci('Τύπος')] : code);
         const fix = (arr) => [0, 1, 2, 3].forEach((i) => set('Διόρθωση ' + (i + 1), arr[i] || ''));
@@ -767,10 +777,14 @@ function mitselosSheets(data0, warnings) {
         } else if (COMBO_T.includes(q.t)) {
           const code = q.t.toUpperCase(); typ(code, FAM[q.t]);
           const q2 = String(q.q2 || '').trim(); set('Κείμενο Ερώτησης', (q.q || '') + (q2 ? ' || ' + q2 : ''));
-          set('Απόσπασμα', String(q.text || '').replace(/\[([^\]]+)\]/g, '$1')); set('Λέξη-Στόχος', q.t === 'yngap' ? '' : marked(q.text).join('|'));
+          set('Απόσπασμα', String(q.text || '').replace(/\[([^\]]+)\]/g, '$1')); set('Λέξη-Στόχος', q.t === 'yngap' || q.t === 'mcgap' ? '' : marked(q.text).join('|'));
           const yl = (q.labels || []);
           if (q.t === 'clkmc') {
             const ops = (q.opts || []).slice(0, 4); LET.forEach((L, i) => set('Επιλογή ' + L, ops[i] || '')); set('Σωστή Απάντηση', LET[q.ans] || 'Α');
+            const fbs = Array.isArray(q.fbs) && q.fbs.some(Boolean) ? q.fbs : null; fix(fbs || [q.fbC || q.fbW || '']);
+          } else if (q.t === 'mcgap') {
+            const ops = (q.opts || []).slice(0, 4); LET.forEach((L, i) => set('Επιλογή ' + L, ops[i] || '')); const g = String(q.gapAns || '').trim(), a = LET[q.ans] || 'Α';
+            set('Σωστή Απάντηση', q.gate ? a + (g ? ' → ' + g : '') : a + ' || ' + g);
             const fbs = Array.isArray(q.fbs) && q.fbs.some(Boolean) ? q.fbs : null; fix(fbs || [q.fbC || q.fbW || '']);
           } else {
             if (q.t === 'clkgap') LET.forEach((L) => set('Επιλογή ' + L, ''));
@@ -1738,7 +1752,7 @@ function MiniCwFields({ q, setQ }) {
 
 // Σύνθετοι τύποι (ΤΥΠΟΣ Α): 1ο σκέλος εντοπισμός ή Ναι/Όχι · 2ο σκέλος πολλαπλή, Ναι/Όχι ή κενό
 function ComboFields({ q, setQ }) {
-  const isGap = q.t === 'clkgap' || q.t === 'yngap';
+  const isGap = q.t === 'clkgap' || q.t === 'yngap' || q.t === 'mcgap', ynF = q.t === 'yngap' || q.t === 'mcgap';
   const yesNo = (label) => (
     <Field label={label}>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -1749,31 +1763,8 @@ function ComboFields({ q, setQ }) {
       </div>
     </Field>
   );
-  return (
-    <>
-      {q.t === 'yngap' && (
-        <Field label="Απόσπασμα (προαιρετικό)" hint="Η πρόταση ή το κείμενο που κρίνει ο μαθητής.">
-          <textarea style={{ ...S.input, minHeight: 80, fontFamily: 'Literata,serif', fontSize: 15, lineHeight: 1.7 }} value={q.text || ''} onChange={(e) => setQ({ text: e.target.value })} placeholder="Το βιβλίο που μου έδωσες είναι ωραίο." />
-        </Field>
-      )}
-      {q.t === 'yngap' && yesNo('Σωστή απάντηση του 1ου σκέλους')}
-      {q.t === 'yngap' && (
-        <Field label="Πότε εμφανίζεται το κενό">
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button onClick={() => setQ({ gate: true })} style={{ ...S.typeChip, ...(q.gate ? S.typeChipOn : {}) }}>Μόνο αφού πατήσει τη σωστή απάντηση</button>
-            <button onClick={() => setQ({ gate: false })} style={{ ...S.typeChip, ...(!q.gate ? S.typeChipOn : {}) }}>Πάντα, από την αρχή</button>
-          </div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>{q.gate
-            ? 'Η επιλογή Ναι/Όχι κλειδώνει. Στη σωστή ανοίγει η 2η ερώτηση με το κενό· στη λάθος η ερώτηση ελέγχεται αμέσως. Αν αφήσετε κενή τη σωστή απάντηση του κενού, η ερώτηση μένει απλό Ναι/Όχι.'
-            : 'Ο μαθητής βλέπει από την αρχή και τα δύο σκέλη και τα ελέγχει μαζί.'}</div>
-        </Field>
-      )}
-      <Field label="2ο σκέλος — οδηγία" hint={isGap ? 'Για κενό μέσα στην πρόταση γράψτε __________ (10 κάτω παύλες)· αλλιώς ο μαθητής γράφει σε πλαίσιο κάτω από την οδηγία.' : 'π.χ. «Ποιο είναι το είδος της;»'}>
-        <textarea style={{ ...S.input, minHeight: 56, fontFamily: 'Literata,serif', fontSize: 15 }} value={q.q2 || ''} onChange={(e) => setQ({ q2: e.target.value })}
-          placeholder={isGap ? 'Γράψε την αναφορική αντωνυμία: το βιβλίο __________ μου έδωσες.' : 'Ποια είναι η συντακτική λειτουργία της;'} />
-      </Field>
-      {q.t === 'clkmc' && (
-        <Field label="Επιλογές του 2ου σκέλους" hint="Πάτησε τον κύκλο για να ορίσεις τη σωστή.">
+  const optsEd = (label) => (
+    <Field label={label} hint="Πάτησε τον κύκλο για να ορίσεις τη σωστή.">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {(q.opts || []).map((o, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1786,7 +1777,32 @@ function ComboFields({ q, setQ }) {
             {q.opts.length < 4 && <button style={{ ...S.btnGhost, alignSelf: 'flex-start', fontSize: 13 }} onClick={() => setQ({ opts: [...q.opts, ''] })}>＋ Επιλογή</button>}
           </div>
         </Field>
+  );
+  return (
+    <>
+      {ynF && (
+        <Field label="Απόσπασμα (προαιρετικό)" hint="Η πρόταση ή το κείμενο που κρίνει ο μαθητής.">
+          <textarea style={{ ...S.input, minHeight: 80, fontFamily: 'Literata,serif', fontSize: 15, lineHeight: 1.7 }} value={q.text || ''} onChange={(e) => setQ({ text: e.target.value })} placeholder="Το βιβλίο που μου έδωσες είναι ωραίο." />
+        </Field>
       )}
+      {q.t === 'yngap' && yesNo('Σωστή απάντηση του 1ου σκέλους')}
+      {q.t === 'mcgap' && optsEd('Επιλογές του 1ου σκέλους')}
+      {ynF && (
+        <Field label="Πότε εμφανίζεται το κενό">
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button onClick={() => setQ({ gate: true })} style={{ ...S.typeChip, ...(q.gate ? S.typeChipOn : {}) }}>Μόνο αφού πατήσει τη σωστή απάντηση</button>
+            <button onClick={() => setQ({ gate: false })} style={{ ...S.typeChip, ...(!q.gate ? S.typeChipOn : {}) }}>Πάντα, από την αρχή</button>
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>{q.gate
+            ? (q.t === 'mcgap' ? 'Η επιλογή κλειδώνει.' : 'Η επιλογή Ναι/Όχι κλειδώνει.') + ' Στη σωστή ανοίγει η 2η ερώτηση με το κενό· στη λάθος η ερώτηση ελέγχεται αμέσως. Αν αφήσετε κενή τη σωστή απάντηση του κενού, η ερώτηση μένει απλή επιλογή.'
+            : 'Ο μαθητής βλέπει από την αρχή και τα δύο σκέλη και τα ελέγχει μαζί.'}</div>
+        </Field>
+      )}
+      <Field label="2ο σκέλος — οδηγία" hint={isGap ? 'Για κενό μέσα στην πρόταση γράψτε __________ (10 κάτω παύλες)· αλλιώς ο μαθητής γράφει σε πλαίσιο κάτω από την οδηγία.' : 'π.χ. «Ποιο είναι το είδος της;»'}>
+        <textarea style={{ ...S.input, minHeight: 56, fontFamily: 'Literata,serif', fontSize: 15 }} value={q.q2 || ''} onChange={(e) => setQ({ q2: e.target.value })}
+          placeholder={isGap ? 'Γράψε την αναφορική αντωνυμία: το βιβλίο __________ μου έδωσες.' : 'Ποια είναι η συντακτική λειτουργία της;'} />
+      </Field>
+      {q.t === 'clkmc' && optsEd('Επιλογές του 2ου σκέλους')}
       {q.t === 'clkyn' && yesNo('Σωστή απάντηση του 2ου σκέλους')}
       {isGap && (
         <Field label="Σωστή απάντηση του κενού" hint="Εναλλακτικές αποδεκτές με «/» (π.χ. το οποίο/που)· για πολλά κενά, χωρίστε τα με «|».">
@@ -1832,7 +1848,7 @@ function QuestionForm({ adv, theory, q, index, total, setQ, changeType, onUp, on
         ))}
       </div>
 
-      <Field label={q.t === 'tf' ? 'Πρόταση προς κρίση' : (q.t === 'gap' || q.t === 'click') ? 'Οδηγία (αριστερή στήλη)' : q.t === 'yngap' ? '1ο σκέλος — ερώτηση Ναι / Όχι' : COMBO_T.includes(q.t) ? '1ο σκέλος — οδηγία εντοπισμού' : 'Εκφώνηση'}
+      <Field label={q.t === 'tf' ? 'Πρόταση προς κρίση' : (q.t === 'gap' || q.t === 'click') ? 'Οδηγία (αριστερή στήλη)' : q.t === 'yngap' ? '1ο σκέλος — ερώτηση Ναι / Όχι' : q.t === 'mcgap' ? '1ο σκέλος — ερώτηση πολλαπλής επιλογής' : COMBO_T.includes(q.t) ? '1ο σκέλος — οδηγία εντοπισμού' : 'Εκφώνηση'}
         hint={q.t === 'click' ? 'π.χ. «Επίλεξε τα ρήματα σε παθητική φωνή»' : q.t === 'yngap' ? 'π.χ. «Είναι αναφορική η πρόταση «που μου έδωσες»;»' : COMBO_T.includes(q.t) ? 'π.χ. «Εντόπισε την αναφορική πρόταση»' : null}>
         <textarea style={{ ...S.input, minHeight: 64, fontFamily: 'Literata,serif', fontSize: 15 }} value={q.q} onChange={(e) => setQ({ q: e.target.value })} autoFocus={!q.q} />
       </Field>
@@ -1903,7 +1919,7 @@ function QuestionForm({ adv, theory, q, index, total, setQ, changeType, onUp, on
       )}
 
       {/* ── Κενά / Επιλογή λέξεων ── */}
-      {(q.t === 'gap' || q.t === 'click' || (COMBO_T.includes(q.t) && q.t !== 'yngap')) && (
+      {(q.t === 'gap' || q.t === 'click' || (COMBO_T.includes(q.t) && q.t !== 'yngap' && q.t !== 'mcgap')) && (
         <Field label={q.t === 'gap' || q.t === 'click' ? 'Κείμενο' : 'Απόσπασμα (με τη λέξη-στόχο σε [αγκύλες])'}
           hint={q.t === 'gap'
             ? 'Βάλε κάθε σωστή απάντηση σε [αγκύλες] — γίνεται κενό. Εναλλακτικές αποδεκτές: [πυκνό|δύσκολο].'

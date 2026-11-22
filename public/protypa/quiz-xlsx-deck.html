@@ -780,7 +780,7 @@ const LEV_AUTHOR=String(QUIZ.credits||'').replace(/[\s,·–—-]*\b(19|20)\d{2}
 const LEV_COPY='ΛΕΒΙΑΘΑΝ '+LEV_YEAR+(LEV_AUTHOR?' · '+LEV_AUTHOR:'');
 
 const LABS=['Α','Β','Γ','Δ','Ε','ΣΤ','Ζ','Η'];
-const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων',clkmc:'☝● Εντοπισμός + Πολλαπλή',clkyn:'☝◐ Εντοπισμός + Ναι/Όχι',clkgap:'☝▭ Εντοπισμός + Κενό',yngap:'◐▭ Ναι/Όχι + Κενό',order:'⇅ Αναδιάταξη',sort:'▤ Ταξινόμηση',cw:'✎ Σταυρόλεξο'};
+const TYPE_LBL={mcq:'● Πολλαπλής επιλογής',tf:'◐ Σωστό / Λάθος',drag:'⇄ Αντιστοίχιση',gap:'▭ Συμπλήρωση κενών',click:'☝ Επιλογή λέξεων',clkmc:'☝● Εντοπισμός + Πολλαπλή',clkyn:'☝◐ Εντοπισμός + Ναι/Όχι',clkgap:'☝▭ Εντοπισμός + Κενό',yngap:'◐▭ Ναι/Όχι + Κενό',mcgap:'●▭ Πολλαπλή + Κενό',order:'⇅ Αναδιάταξη',sort:'▤ Ταξινόμηση',cw:'✎ Σταυρόλεξο'};
 const DECKS=(QUIZ.decks||[]).filter(d=>d&&Array.isArray(d.qs)&&d.qs.length);
 
 /* ── Βοηθητικά ── */
@@ -957,7 +957,7 @@ function renderCard(){
     <div class="bc-result" id="bcResult"></div>`;
   const right=document.createElement('div');
   right.className='bc-right'; right.id='bcRight';
-  ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick,clkmc:buildCombo,clkyn:buildCombo,clkgap:buildCombo,yngap:buildCombo,order:buildOrder,sort:buildSort,cw:buildCw}[q.t]||buildMCQ)(q,right);
+  ({mcq:buildMCQ,tf:buildTF,drag:buildDrag,gap:buildGap,click:buildClick,clkmc:buildCombo,clkyn:buildCombo,clkgap:buildCombo,yngap:buildCombo,mcgap:buildCombo,order:buildOrder,sort:buildSort,cw:buildCw}[q.t]||buildMCQ)(q,right);
   card.appendChild(left); card.appendChild(right);
   stage.appendChild(card);
   fitCard();
@@ -1263,13 +1263,13 @@ function buildClick(q,container){
 }
 
 /* ═════════════════════════════════════
-   ΣΥΝΘΕΤΟΙ ΤΥΠΟΙ — clkmc / clkyn / clkgap (εντοπισμός + 2ο σκέλος), yngap (Ναι/Όχι + κενό)
+   ΣΥΝΘΕΤΟΙ ΤΥΠΟΙ — clkmc / clkyn / clkgap (εντοπισμός + 2ο σκέλος), yngap (Ναι/Όχι + κενό), mcgap (Πολλαπλή + κενό)
    Έλεγχος στο τέλος· η ερώτηση μετρά σωστή μόνο αν είναι σωστά ΚΑΙ τα δύο σκέλη.
    ═════════════════════════════════════ */
 const CMB_GAP=/_{5,}/;
 function cmbGapAns(q){ return String(q.gapAns||'').split('|').map(b=>b.split('/').map(x=>x.trim()).filter(Boolean)).filter(a=>a.length); }
 function buildCombo(q,container){
-  const ynFirst=q.t==='yngap', sub=q.t==='clkmc'?'mc':q.t==='clkyn'?'yn':'gap';
+  const ynFirst=q.t==='yngap'||q.t==='mcgap', mc1=q.t==='mcgap', sub=q.t==='clkmc'?'mc':q.t==='clkyn'?'yn':'gap';
   const step=(n,html,cls)=>{ const d=document.createElement('div'); d.className='cmb-step'+(cls?' '+cls:''); d.innerHTML=`<span class="cmb-n">${n}</span><span>${html}</span>`; container.appendChild(d); return d; };
   const toks=[]; let yn=null, pick=null; const inputs=[];
   // «κενό μετά τη σωστή απάντηση» (yngap, gate): η επιλογή κλειδώνει· σωστή → ανοίγει το 2ο σκέλος, λάθος → έλεγχος αμέσως
@@ -1286,12 +1286,13 @@ function buildCombo(q,container){
   const mark=(bs,chosen,ans)=>{ bs.forEach(b=>{ b.classList.add('disabled'); b.classList.remove('picked'); });
     if(bs[chosen]) bs[chosen].classList.add('chosen',chosen===ans?'correct':'wrong'); if(chosen!==ans&&bs[ans]) bs[ans].classList.add('reveal'); };
   const labels=(q.labels&&q.labels.length===2)?q.labels:['Ναι','Όχι'];
+  const opts1=mc1?(q.opts||[]).filter(o=>String(o).trim()):labels;
   let done=false, b1=null, b2=null, box=null;
   // ── 1ο σκέλος ──
   if(ynFirst){
     if(String(q.text||'').trim()){ const ex=document.createElement('div'); ex.className='clk-text'; ex.innerHTML=fmt(q.text); container.appendChild(ex); }
-    step(1,'Διάλεξε.');
-    b1=choiceBtns(labels,false,i=>{yn=i; if(gate) gateYn();},'tf-row');
+    step(1,mc1?'Διάλεξε τη σωστή απάντηση.':'Διάλεξε.');
+    b1=mc1?choiceBtns(opts1,true,i=>{yn=i; if(gate) gateYn();}):choiceBtns(labels,false,i=>{yn=i; if(gate) gateYn();},'tf-row');
   } else {
     step(1,'Πάτησε πάνω στις λέξεις που ζητούνται· ξαναπάτα για να αναιρέσεις.');
     box=document.createElement('div'); box.className='clk-text';
@@ -1342,7 +1343,7 @@ function buildCombo(q,container){
   }
   sub_.addEventListener('click',()=>{
     done=true; let ok1=true, ok2=true; const fix=[];
-    if(ynFirst){ ok1=yn===(q.ans|0); mark(b1,yn,q.ans|0); if(!ok1) fix.push('1ο σκέλος: '+labels[q.ans|0]); }
+    if(ynFirst){ ok1=yn===(q.ans|0); mark(b1,yn,q.ans|0); if(!ok1) fix.push('1ο σκέλος: '+opts1[q.ans|0]); }
     else { toks.forEach(t=>{ const sel=t.classList.contains('sel'), good=!!t.dataset.good; t.classList.remove('sel');
         if(sel&&good) t.classList.add('hit'); else if(sel&&!good){t.classList.add('bad');ok1=false;} else if(!sel&&good){t.classList.add('miss');ok1=false;} });
       box.classList.add('clk-done'); if(!ok1) fix.push('1ο σκέλος: με διακεκομμένο πλαίσιο όσες έπρεπε να επιλεγούν'); }
@@ -1641,7 +1642,7 @@ function collectPrintSettings(){
 // Μία ερώτηση → { html (φύλλο), key (λύση) }
 function prQuestion(q,num,s){
   let h=`<div class="pq"><p class="pq-num">Ερώτηση ${num}</p>`, key='';
-  if(q.t!=='gap' && q.t!=='click' && !/^(clkmc|clkyn|clkgap|yngap)$/.test(q.t)) h+=`<p class="pq-q">${fmt(q.q)}</p>`;
+  if(q.t!=='gap' && q.t!=='click' && !/^(clkmc|clkyn|clkgap|yngap|mcgap)$/.test(q.t)) h+=`<p class="pq-q">${fmt(q.q)}</p>`;
   if(q.t==='mcq'){
     const o=(q.opts||[]).map((t,i)=>({t,i})).filter(x=>String(x.t).trim());
     h+=`<div class="pq-opts">`+o.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x.t)}</div>`).join('')+`</div>`;
@@ -1666,13 +1667,14 @@ function prQuestion(q,num,s){
     const parts=splitMarked(q.text);
     h+=`<p class="pq-q">${fmt(q.q)} <i>(Υπογράμμισε.)</i></p><div class="pq-excerpt">${parts.map(fmt).join('')}</div>`;
     key=parts.filter((_,i)=>i%2).map(esc).join(' · ');
-  } else if(/^(clkmc|clkyn|clkgap|yngap)$/.test(q.t)){
+  } else if(/^(clkmc|clkyn|clkgap|yngap|mcgap)$/.test(q.t)){
     const L=q.labels&&q.labels.length===2?q.labels:['Ναι','Όχι'], q2=String(q.q2||'').trim();
     const yn=`<div class="pq-yn"><span>☐ ${esc(L[0])}</span><span>☐ ${esc(L[1])}</span></div>`;
     let k1;
-    if(q.t==='yngap'){ if(String(q.text||'').trim()) h+=`<div class="pq-excerpt">${fmt(q.text)}</div>`; h+=`<p class="pq-q">1. ${fmt(q.q)}</p>`+yn; k1=esc(L[q.ans|0]); }
+    if(q.t==='mcgap'){ const o=(q.opts||[]).filter(x=>String(x).trim()); if(String(q.text||'').trim()) h+=`<div class="pq-excerpt">${fmt(q.text)}</div>`; h+=`<p class="pq-q">1. ${fmt(q.q)}</p><div class="pq-opts">`+o.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x)}</div>`).join('')+`</div>`; k1=`${PR_LET[q.ans|0]}. ${fmt(o[q.ans|0]||'')}`; }
+    else if(q.t==='yngap'){ if(String(q.text||'').trim()) h+=`<div class="pq-excerpt">${fmt(q.text)}</div>`; h+=`<p class="pq-q">1. ${fmt(q.q)}</p>`+yn; k1=esc(L[q.ans|0]); }
     else { const parts=splitMarked(q.text); h+=`<p class="pq-q">1. ${fmt(q.q)} <i>(Υπογράμμισε.)</i></p><div class="pq-excerpt">${parts.map(fmt).join('')}</div>`; k1=parts.filter((_,i)=>i%2).map(esc).join(' · '); }
-    h+=`<p class="pq-q">2. ${q2?fmt(q2).replace(/_{5,}/g,'<span class="pq-gap">______________</span>'):(q.t==='clkgap'||q.t==='yngap'?'Συμπλήρωσε.':'Διάλεξε τη σωστή απάντηση.')}</p>`;
+    h+=`<p class="pq-q">2. ${q2?fmt(q2).replace(/_{5,}/g,'<span class="pq-gap">______________</span>'):(q.t==='clkgap'||q.t==='yngap'||q.t==='mcgap'?'Συμπλήρωσε.':'Διάλεξε τη σωστή απάντηση.')}</p>`;
     let k2;
     if(q.t==='clkmc'){ const o=(q.opts||[]).filter(x=>String(x).trim()); h+=`<div class="pq-opts">`+o.map((x,k)=>`<div class="pq-opt"><span class="pq-k">${PR_LET[k]}.</span> ${fmt(x)}</div>`).join('')+`</div>`; k2=`${PR_LET[q.ans|0]}. ${fmt(o[q.ans|0]||'')}`; }
     else if(q.t==='clkyn'){ h+=yn; k2=esc(L[q.ans|0]); }
