@@ -1264,7 +1264,7 @@ function buildClick(q,container){
 
 /* ═════════════════════════════════════
    ΣΥΝΘΕΤΟΙ ΤΥΠΟΙ — clkmc / clkyn / clkgap (εντοπισμός + 2ο σκέλος), yngap (Ναι/Όχι + κενό), mcgap (Πολλαπλή + κενό)
-   Έλεγχος στο τέλος· η ερώτηση μετρά σωστή μόνο αν είναι σωστά ΚΑΙ τα δύο σκέλη.
+   Το 2ο σκέλος ανοίγει ΜΟΝΟ αν το 1ο είναι σωστό· λάθος 1ο σκέλος → λάθος όλη η ερώτηση.
    ═════════════════════════════════════ */
 const CMB_GAP=/_{5,}/;
 function cmbGapAns(q){ return String(q.gapAns||'').split('|').map(b=>b.split('/').map(x=>x.trim()).filter(Boolean)).filter(a=>a.length); }
@@ -1273,7 +1273,7 @@ function buildCombo(q,container){
   const step=(n,html,cls)=>{ const d=document.createElement('div'); d.className='cmb-step'+(cls?' '+cls:''); d.innerHTML=`<span class="cmb-n">${n}</span><span>${html}</span>`; container.appendChild(d); return d; };
   const toks=[]; let yn=null, pick=null; const inputs=[];
   // «κενό μετά τη σωστή απάντηση» (yngap, gate): η επιλογή κλειδώνει· σωστή → ανοίγει το 2ο σκέλος, λάθος → έλεγχος αμέσως
-  const gate=ynFirst&&!!q.gate; let open2=!gate;
+  const gate=true; let open2=false, lock1=false;
   // Κουμπιά επιλογής χωρίς άμεσο έλεγχο
   const choiceBtns=(opts,letters,onPick,wrapCls)=>{
     const wrap=document.createElement('div'); if(wrapCls) wrap.className=wrapCls;
@@ -1297,7 +1297,7 @@ function buildCombo(q,container){
     step(1,'Πάτησε πάνω στις λέξεις που ζητούνται· ξαναπάτα για να αναιρέσεις.');
     box=document.createElement('div'); box.className='clk-text';
     const mk=(text,good)=>{ const t=document.createElement('span'); t.className='clk-tok'; t.innerHTML=fmt(text); t.dataset.good=good?'1':'';
-      t.addEventListener('click',()=>{ if(done) return; t.classList.toggle('sel'); upd(); }); toks.push(t); return t; };
+      t.addEventListener('click',()=>{ if(done||lock1) return; t.classList.toggle('sel'); upd(); autoChk(); }); toks.push(t); return t; };
     splitMarked(q.text).forEach((p,i)=>{
       if(i%2===1){ box.appendChild(mk(p,true)); return; }
       p.split(/(\s+)/).forEach(w=>{ if(!w) return;
@@ -1307,6 +1307,10 @@ function buildCombo(q,container){
     });
     container.appendChild(box);
   }
+  // Αυτόματος έλεγχος 1ου σκέλους (εντοπισμός): μόλις επιλεγούν τόσες λέξεις όσες οι λέξεις-στόχοι
+  // σωστό → ανοίγει το 2ο σκέλος· λάθος → η ερώτηση κρίνεται λάθος
+  const nGood=toks.filter(t=>t.dataset.good).length;
+  function autoChk(){ if(lock1||!nGood||toks.filter(t=>t.classList.contains('sel')).length<nGood) return; lock1=true; setTimeout(check1,250); }
   // ── 2ο σκέλος ──
   const n0=container.children.length;
   const q2=String(q.q2||'').trim(), ga=sub==='gap'?cmbGapAns(q):[];
@@ -1329,16 +1333,21 @@ function buildCombo(q,container){
   const p2=document.createElement('div'); p2.className='cmb-part2'; [...container.children].slice(n0).forEach(el=>p2.appendChild(el)); container.appendChild(p2);
   if(!open2) p2.style.display='none';
   addFB(container);
-  const sub_=document.createElement('button'); sub_.className='btn-submit'; sub_.textContent='Υποβολή'; sub_.disabled=true; container.appendChild(sub_);
+  const sub_=document.createElement('button'); sub_.className='btn-submit'; sub_.textContent='Υποβολή'; sub_.disabled=true; sub_.style.display='none'; container.appendChild(sub_);
+  function check1(){
+    const ok=toks.every(t=>t.classList.contains('sel')===!!t.dataset.good);
+    if(ok){ open2=true; p2.style.display=''; sub_.style.display=''; box.classList.add('clk-locked'); upd(); if(inputs[0]) inputs[0].focus(); }
+    else { sub_.disabled=false; sub_.click(); }
+  }
   function gateYn(){
     b1[0].parentNode.dataset.locked='1'; b1.forEach(b=>b.classList.add('disabled'));
-    if(yn===(q.ans|0) && ga.length){ open2=true; p2.style.display=''; b1[yn].classList.remove('picked'); b1[yn].classList.add('chosen','correct'); upd(); if(inputs[0]) inputs[0].focus(); }
+    if(yn===(q.ans|0) && ga.length){ open2=true; p2.style.display=''; sub_.style.display=''; b1[yn].classList.remove('picked'); b1[yn].classList.add('chosen','correct'); upd(); if(inputs[0]) inputs[0].focus(); }
     else { upd(); sub_.disabled=false; sub_.click(); }
   }
   inputs.forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!sub_.disabled) sub_.click(); }));
   function upd(){
     const ok1=ynFirst?yn!==null:toks.some(t=>t.classList.contains('sel'));
-    const ok2=!open2||(sub==='gap'?inputs.length&&inputs.every(x=>x.value.trim()):pick!==null);
+    const ok2=open2&&(sub==='gap'?inputs.length&&inputs.every(x=>x.value.trim()):pick!==null);
     sub_.disabled=!(ok1&&ok2);
   }
   sub_.addEventListener('click',()=>{

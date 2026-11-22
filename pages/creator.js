@@ -1780,6 +1780,7 @@ function ComboFields({ q, setQ }) {
   );
   return (
     <>
+      <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, margin: '-4px 0 10px' }}>Το 2ο σκέλος εμφανίζεται στον μαθητή μόνο αν απαντήσει σωστά στο 1ο· αν το 1ο είναι λάθος, λάθος είναι όλη η ερώτηση.</div>
       {ynF && (
         <Field label="Απόσπασμα (προαιρετικό)" hint="Η πρόταση ή το κείμενο που κρίνει ο μαθητής.">
           <textarea style={{ ...S.input, minHeight: 80, fontFamily: 'Literata,serif', fontSize: 15, lineHeight: 1.7 }} value={q.text || ''} onChange={(e) => setQ({ text: e.target.value })} placeholder="Το βιβλίο που μου έδωσες είναι ωραίο." />
@@ -1787,17 +1788,6 @@ function ComboFields({ q, setQ }) {
       )}
       {q.t === 'yngap' && yesNo('Σωστή απάντηση του 1ου σκέλους')}
       {q.t === 'mcgap' && optsEd('Επιλογές του 1ου σκέλους')}
-      {ynF && (
-        <Field label="Πότε εμφανίζεται το κενό">
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button onClick={() => setQ({ gate: true })} style={{ ...S.typeChip, ...(q.gate ? S.typeChipOn : {}) }}>Μόνο αφού πατήσει τη σωστή απάντηση</button>
-            <button onClick={() => setQ({ gate: false })} style={{ ...S.typeChip, ...(!q.gate ? S.typeChipOn : {}) }}>Πάντα, από την αρχή</button>
-          </div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>{q.gate
-            ? (q.t === 'mcgap' ? 'Η επιλογή κλειδώνει.' : 'Η επιλογή Ναι/Όχι κλειδώνει.') + ' Στη σωστή ανοίγει η 2η ερώτηση με το κενό· στη λάθος η ερώτηση ελέγχεται αμέσως. Αν αφήσετε κενή τη σωστή απάντηση του κενού, η ερώτηση μένει απλή επιλογή.'
-            : 'Ο μαθητής βλέπει από την αρχή και τα δύο σκέλη και τα ελέγχει μαζί.'}</div>
-        </Field>
-      )}
       <Field label="2ο σκέλος — οδηγία" hint={isGap ? 'Για κενό μέσα στην πρόταση γράψτε __________ (10 κάτω παύλες)· αλλιώς ο μαθητής γράφει σε πλαίσιο κάτω από την οδηγία.' : 'π.χ. «Ποιο είναι το είδος της;»'}>
         <textarea style={{ ...S.input, minHeight: 56, fontFamily: 'Literata,serif', fontSize: 15 }} value={q.q2 || ''} onChange={(e) => setQ({ q2: e.target.value })}
           placeholder={isGap ? 'Γράψε την αναφορική αντωνυμία: το βιβλίο __________ μου έδωσες.' : 'Ποια είναι η συντακτική λειτουργία της;'} />
