@@ -647,6 +647,10 @@ select.gap-in{cursor:pointer;}
 .th-card h3{margin:0 0 4px;font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--purple);}
 .th-card h2{margin:0 0 12px;font-size:20px;line-height:1.3;}
 .th-card ul{margin:0 0 14px 18px;padding:0;} .th-card li{margin:0 0 8px;line-height:1.55;font-size:15.5px;}
+.th-ask{margin:4px 0 14px;font-size:15px;line-height:1.5;color:var(--ink);}
+.th-btns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;}
+.th-btns .th-close{margin-left:0;}
+.th-rep{background:#fff!important;color:var(--purple)!important;border:2px solid var(--purple)!important;}
 .th-close{display:block;margin-left:auto;background:var(--purple);color:#fff;border:none;border-radius:10px;padding:9px 18px;font:600 14px/1 inherit;font-family:inherit;cursor:pointer;}
 </style>
 </head>
@@ -926,16 +930,57 @@ function enterQuiz(label){
   updateScoreBar();
   renderCard();
 }
+/* ═════════════════════════════════════
+   ΡΟΗ ΑΝΑ ΚΑΡΤΑ ΘΕΩΡΙΑΣ (ρύθμιση flowTheory · perTheory ερωτήσεις ανά κάρτα)
+   • Από κάθε κάρτα θεωρίας (στήλη «Θεωρία») δίνονται perTheory ερωτήσεις.
+   • 1ο λάθος → προστίθενται 2 ερωτήσεις στο τέλος της κάρτας: η λάθος ξανά + μία νέα της ίδιας κάρτας.
+   • Λάθος σε πρόσθετη → εμφανίζεται η θεωρία· ο μαθητής διαλέγει «Επανάληψη κάρτας» ή «Συνέχεια».
+   ═════════════════════════════════════ */
+const FLOW=!!QUIZ.flowTheory, PER=Math.max(1,parseInt(QUIZ.perTheory)||3);
+let runMeta=[], flowGate=null;
+function flowGroups(qs){
+  const order=(QUIZ.theory||[]).map(c=>String(c.k||'').trim()), map=new Map();
+  qs.forEach(q=>{ const k=String(q.th||'').split(',')[0].trim(); if(!map.has(k)) map.set(k,{k,qs:[],used:new Set(),extra:false}); map.get(k).qs.push(q); });
+  const rank=k=>{ if(!k) return 1e9; const i=order.indexOf(k); return i<0?1e6:i; };
+  return [...map.values()].sort((a,b)=>rank(a.k)-rank(b.k));
+}
+function flowPick(g,n,fresh){
+  const src=QUIZ.shuffleQs?shuffle(g.qs):[...g.qs];
+  const pool=fresh?src:src.filter(q=>!g.used.has(q)).concat(src.filter(q=>g.used.has(q))); // πρώτα όσες δεν έχουν δοθεί
+  const out=pool.slice(0,n); out.forEach(q=>g.used.add(q)); return out;
+}
+function flowAfter(ok,q){
+  const m=runMeta[curQi]; if(!m||ok) return;
+  if(m.extra){ flowGate=m.g; return; }
+  if(m.g.extra) return; m.g.extra=true;
+  const add=[q]; const nq=m.g.qs.filter(x=>!m.g.used.has(x)); if(nq.length){ const x=(QUIZ.shuffleQs?shuffle(nq):nq)[0]; m.g.used.add(x); add.push(x); }
+  let last=curQi; runMeta.forEach((mm,i)=>{ if(mm.g===m.g) last=Math.max(last,i); });
+  runList.splice(last+1,0,...add); runMeta.splice(last+1,0,...add.map(()=>({g:m.g,extra:true})));
+}
+function flowGateShow(g){
+  const c=THEORY[g.k], ov=document.createElement('div'); ov.className='th-ov';
+  const pts=c?(c.points||[]).map(x=>String(x||'').trim()).filter(Boolean):[];
+  ov.innerHTML=`<div class="th-card" role="dialog" aria-modal="true">${c?`<h3>📘 Θεωρία ${esc(c.k)}</h3>${c.title?`<h2>${fmt(c.title)}</h2>`:''}${pts.length?`<ul>${pts.map(x=>`<li>${fmt(x)}</li>`).join('')}</ul>`:''}`:`<h2>Χρειάζεται λίγη ακόμη εξάσκηση.</h2>`}
+    <p class="th-ask">Ξαναδιάβασε τη θεωρία. Θέλεις να επαναλάβεις αυτή την κάρτα ή να συνεχίσεις;</p>
+    <div class="th-btns"><button class="th-close th-rep">↺ Επανάληψη κάρτας</button><button class="th-close th-go">Συνέχεια →</button></div></div>`;
+  const go=(rep)=>{ ov.remove();
+    for(let i=runList.length-1;i>curQi;i--) if(runMeta[i]&&runMeta[i].g===g){ runList.splice(i,1); runMeta.splice(i,1); }
+    if(rep){ g.extra=false; const add=flowPick(g,PER,false); runList.splice(curQi+1,0,...add); runMeta.splice(curQi+1,0,...add.map(()=>({g,extra:false}))); }
+    curQi++; if(curQi>=runList.length) showResults(); else renderCard(); };
+  ov.querySelector('.th-rep').onclick=()=>go(true); ov.querySelector('.th-go').onclick=()=>go(false);
+  document.body.appendChild(ov);
+}
 function startQuiz(){
   if(LEV_SESSION&&!levName) levAskName();
-  curQi=0; score={c:0,w:0}; wrongQs=[]; retryMode=false;
+  curQi=0; score={c:0,w:0}; wrongQs=[]; retryMode=false; runMeta=[]; flowGate=null;
   const qs=qsOf(DECKS[curDk]);
   if(!qs.length){ alert('Δεν υπάρχουν ερωτήσεις αυτού του βαθμού δυσκολίας στην ενότητα.'); return; }
-  runList=QUIZ.shuffleQs?shuffle(qs):[...qs];
+  if(FLOW){ runList=[]; flowGroups(qs).forEach(g=>flowPick(g,PER,false).forEach(q=>{ runList.push(q); runMeta.push({g,extra:false}); })); }
+  else runList=QUIZ.shuffleQs?shuffle(qs):[...qs];
   enterQuiz(DECKS[curDk].label||('Ενότητα '+(curDk+1)));
 }
 function retryWrong(){
-  retryMode=true;
+  retryMode=true; runMeta=[]; flowGate=null;
   runList=[...wrongQs];
   curQi=0; score={c:0,w:0}; wrongQs=[];
   enterQuiz((DECKS[curDk].label||('Ενότητα '+(curDk+1)))+' — Επανάληψη λαθών');
@@ -954,6 +999,7 @@ function showResults(){
   document.getElementById('btnRetryWrong').style.display=(wrongQs.length>0)?'block':'none';
 }
 function nextCard(){
+  if(flowGate){ const g=flowGate; flowGate=null; flowGateShow(g); return; }
   curQi++;
   if(curQi>=runList.length) showResults(); else renderCard();
 }
@@ -1320,10 +1366,13 @@ function buildCombo(q,container){
   // Κουμπιά επιλογής χωρίς άμεσο έλεγχο
   const choiceBtns=(opts,letters,onPick,wrapCls)=>{
     const wrap=document.createElement('div'); if(wrapCls) wrap.className=wrapCls;
-    const bs=opts.map((o,i)=>{ const b=document.createElement('button'); b.className='opt-btn'; b.dataset.oi=i;
-      b.innerHTML=letters?`<span class="opt-lbl">${LABS[i]}.</span><span>${fmt(o)}</span>`:`<span>${fmt(o)}</span>`;
+    // Ανακάτεμα επιλογών Α–Δ (ρύθμιση «Ανακάτεμα επιλογών»)· τα bs μένουν με την ΑΡΧΙΚΗ σειρά (bs[i] = επιλογή i)
+    const perm=(letters&&QUIZ.shuffleOpts)?shuffle(opts.map((_,i)=>i)):opts.map((_,i)=>i);
+    const bs=[];
+    perm.forEach((i,pos)=>{ const o=opts[i]; const b=document.createElement('button'); b.className='opt-btn'; b.dataset.oi=i;
+      b.innerHTML=letters?`<span class="opt-lbl">${LABS[pos]}.</span><span>${fmt(o)}</span>`:`<span>${fmt(o)}</span>`;
       b.addEventListener('click',()=>{ if(done||wrap.dataset.locked) return; bs.forEach(x=>x.classList.remove('picked')); b.classList.add('picked'); onPick(i); upd(); });
-      wrap.appendChild(b); return b; });
+      wrap.appendChild(b); bs[i]=b; });
     container.appendChild(wrap); return bs;
   };
   const mark=(bs,chosen,ans)=>{ bs.forEach(b=>{ b.classList.add('disabled'); b.classList.remove('picked'); });
@@ -1619,7 +1668,8 @@ function addFB(container){
   container.appendChild(fb);
 }
 function finishQuestion(ok,q,container,autoFix){
-  if(ok) score.c++; else{score.w++; wrongQs.push(q);}
+  if(ok) score.c++; else{score.w++; if(!wrongQs.includes(q)) wrongQs.push(q);}
+  if(FLOW&&!retryMode) flowAfter(ok,q);
   document.getElementById('qsc').textContent=score.c;
   document.getElementById('qsw').textContent=score.w;
   document.getElementById('bcLeft').classList.add(ok?'answered-ok':'answered-ko');

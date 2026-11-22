@@ -1322,7 +1322,7 @@ export default function Creator() {
 
         {/* ── Κέντρο: φόρμα ── */}
         <div style={{ ...S.card, padding: narrow ? 16 : 22, minWidth: 0 }}>
-          {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} kind={tpl.kind} />}
+          {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} kind={tpl.kind} xl={tpl.id === 'quiz-xlsx-deck'} />}
           {panel === 'theory' && <TheoryForm cards={data.theory || []} upd={upd} />}
           {panel === 'deck' && <DeckForm deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} onDelete={() => delDeck(sel.d)} onOpenQs={() => setPanel('question')} isCw={isCw} kind={tpl.kind} count={deckCount(deck)} />}
           {panel === 'question' && isSort && pItem && (
@@ -1477,7 +1477,7 @@ function TheoryForm({ cards, upd }) {
   );
 }
 
-function GeneralForm({ data, upd, isCw, kind }) {
+function GeneralForm({ data, upd, isCw, kind, xl }) {
   const set = (k) => (e) => { const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value; upd((n) => { n[k] = v; }); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1501,6 +1501,16 @@ function GeneralForm({ data, upd, isCw, kind }) {
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleQs} onChange={set('shuffleQs')} /> Ανακάτεμα σειράς ερωτήσεων</label>
         <label style={S.check}><input type="checkbox" checked={!!data.shuffleOpts} onChange={set('shuffleOpts')} /> Ανακάτεμα επιλογών (πολλαπλής)</label>
       </div>}
+      {xl && (
+        <Field label="Ροή ανά κάρτα θεωρίας" hint="Οι ερωτήσεις κάθε ενότητας ομαδοποιούνται κατά κάρτα θεωρίας (στήλη «Θεωρία»). Ο μαθητής απαντά λίγες ερωτήσεις από κάθε κάρτα· με ένα λάθος προστίθενται 2 ερωτήσεις (η λάθος ξανά + μία νέα της ίδιας κάρτας)· αν κάνει λάθος και σε αυτές, βλέπει τη θεωρία και διαλέγει «Επανάληψη κάρτας» ή «Συνέχεια».">
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={S.check}><input type="checkbox" checked={!!data.flowTheory} onChange={set('flowTheory')} /> Ενεργή</label>
+            {!!data.flowTheory && <label style={{ ...S.check, gap: 8 }}>Ερωτήσεις ανά κάρτα
+              <input type="number" min={1} max={10} style={{ ...S.input, width: 70 }} value={data.perTheory || 3}
+                onChange={(e) => { const v = Math.max(1, Math.min(10, parseInt(e.target.value) || 3)); upd((n) => { n.perTheory = v; }); }} /></label>}
+          </div>
+        </Field>
+      )}
     </div>
   );
 }
