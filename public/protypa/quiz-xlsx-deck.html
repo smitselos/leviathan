@@ -473,6 +473,11 @@ select.gap-in{cursor:pointer;}
 /* Σύνθετοι τύποι: δύο σκέλη */
 .cmb-step{display:flex;gap:8px;align-items:flex-start;font-weight:700;font-size:clamp(13px,1.6vw,17px);line-height:1.4;color:var(--ink);margin-top:4px;}
 .cmb-step2{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(107,63,160,.25);}
+/* η ερώτηση του 2ου σκέλους σε κανονικό μέγεθος ερώτησης (όχι μικρή ετικέτα) */
+.cmb-step2 > span:last-child{font-family:'Literata',serif;font-weight:500;font-size:clamp(17px,2.3vw,23px);line-height:1.45;}
+.cmb-step2 .cmb-n{margin-top:4px;}
+.cmb-step2.cmb-plain > span:last-child{font-family:inherit;font-weight:700;font-size:inherit;}
+.cmb-step2.cmb-plain .cmb-n{margin-top:0;}
 .cmb-n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;}
 .opt-btn.picked{border-color:var(--purple);background:rgba(107,63,160,.12);}
 @media(min-width:641px){.q-instr{font-size:clamp(12px,1.5vw,2vh);}}
@@ -1009,7 +1014,8 @@ function fitCard(){
   right.style.zoom='';
   // Στο κινητό και στο Safari (iPhone/iPad/Mac) όχι CSS zoom — χαλά τη διάταξη
   // (π.χ. στην αντιστοίχιση οι κάρτες έπεφταν πάνω στις προτάσεις)· εκεί η στήλη απλώς κυλά.
-  if(NO_ZOOM) return;
+  // Σύνθετες ερωτήσεις: χωρίς σμίκρυνση — η στήλη κυλά, ώστε το 2ο σκέλος να μένει ευανάγνωστο
+  if(NO_ZOOM || right.querySelector('.cmb-part2')) return;
   let z=1, g2=0;
   while(right.scrollHeight>right.clientHeight+1 && z>0.6 && g2++<20){ z=Math.max(0.6,z-0.05); right.style.zoom=z; }
 }
@@ -1337,7 +1343,7 @@ function buildCombo(q,container){
   const n0=container.children.length;
   const q2=String(q.q2||'').trim(), ga=sub==='gap'?cmbGapAns(q):[];
   if(sub==='gap' && CMB_GAP.test(q2)){
-    step(2,'Συμπλήρωσε το κενό.','cmb-step2');
+    step(2,'Συμπλήρωσε το κενό.','cmb-step2 cmb-plain');
     const gt=document.createElement('div'); gt.className='gap-text';
     q2.split(CMB_GAP).forEach((part,i,arr)=>{ const sp=document.createElement('span'); sp.innerHTML=fmt(part); gt.appendChild(sp);
       if(i<arr.length-1){ const el=document.createElement('input'); el.type='text'; el.className='gap-in'; el.autocomplete='off'; el.spellcheck=false; el.setAttribute('autocapitalize','off');
@@ -1358,12 +1364,12 @@ function buildCombo(q,container){
   const sub_=document.createElement('button'); sub_.className='btn-submit'; sub_.textContent='Υποβολή'; sub_.disabled=true; sub_.style.display='none'; container.appendChild(sub_);
   function check1(){
     const ok=toks.every(t=>t.classList.contains('sel')===!!t.dataset.good);
-    if(ok){ open2=true; p2.style.display=''; sub_.style.display=''; box.classList.add('clk-locked'); upd(); if(inputs[0]) inputs[0].focus(); }
+    if(ok){ open2=true; p2.style.display=''; sub_.style.display=''; setTimeout(()=>p2.scrollIntoView({behavior:'smooth',block:'nearest'}),60); box.classList.add('clk-locked'); upd(); if(inputs[0]) inputs[0].focus(); }
     else { sub_.disabled=false; sub_.click(); }
   }
   function gateYn(){
     b1[0].parentNode.dataset.locked='1'; b1.forEach(b=>b.classList.add('disabled'));
-    if(yn===(q.ans|0) && ga.length){ open2=true; p2.style.display=''; sub_.style.display=''; b1[yn].classList.remove('picked'); b1[yn].classList.add('chosen','correct'); upd(); if(inputs[0]) inputs[0].focus(); }
+    if(yn===(q.ans|0) && ga.length){ open2=true; p2.style.display=''; sub_.style.display=''; setTimeout(()=>p2.scrollIntoView({behavior:'smooth',block:'nearest'}),60); b1[yn].classList.remove('picked'); b1[yn].classList.add('chosen','correct'); upd(); if(inputs[0]) inputs[0].focus(); }
     else { upd(); sub_.disabled=false; sub_.click(); }
   }
   inputs.forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!sub_.disabled) sub_.click(); }));
