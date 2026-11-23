@@ -628,7 +628,7 @@ body,#startScreen,.quiz-topbar,.quiz-bottom{background:var(--cream);}
 .start-sub{text-shadow:none;}
 .deck-card{border:1px solid #E9E0C8;border-radius:18px;box-shadow:var(--shadow);background:#F7F3E8;}
 .deck-card:nth-child(3n+2){background:#FAE0CC;border-color:#F0C4A0;}
-.deck-card:nth-child(3n+3){background:#F0E4A8;border-color:#D9BE52;}
+.deck-card:nth-child(3n+3){background:#DCEBEA;border-color:#9FC3C2;}
 .deck-card::before{display:none;}
 .deck-card:hover{box-shadow:0 4px 10px rgba(26,26,26,.06),0 16px 36px rgba(26,26,26,.10);}
 .deck-card.active{border:2px solid var(--navy);}
@@ -644,12 +644,14 @@ body,#startScreen,.quiz-topbar,.quiz-bottom{background:var(--cream);}
 .dc-sub{border-top-color:rgba(26,26,26,.1);}
 .start-credits{border-top-color:#E0D8C2;text-shadow:none;}
 .big-card{border-radius:20px;border:1px solid #E9E0C8;}
-.dk1 .bc-left{background:#8A7D4A;} .dk2 .bc-left{background:#C97B5A;} .dk3 .bc-left{background:#9C8126;}
+.dk1 .bc-left{background:#8A7D4A;} .dk2 .bc-left{background:#C97B5A;} .dk3 .bc-left{background:#3F7479;}
 .bc-left::after{background:rgba(255,255,255,.07);}
 .bc-left.answered-ok{background:var(--correct)!important;}
 .bc-left.answered-ko{background:var(--wrong)!important;}
 .bc-qtext{font-style:normal;font-weight:600;}
-.dk1 .bc-right{background:#FCF9F0;} .dk2 .bc-right{background:#FDF0E4;} .dk3 .bc-right{background:#F8F0C8;}
+.dk1 .bc-right{background:#FCF9F0;} .dk2 .bc-right{background:#FDF0E4;} .dk3 .bc-right{background:#F2F8F7;}
+/* 3η ενότητα (πετρόλ): απαλό δεξί φόντο, γράμματα επιλογών και ετικέτα ενότητας στον ίδιο τόνο */
+.dk3 .opt-lbl{color:#2F5F63;} .dk3-lbl{color:#2F5F63;}
 .opt-btn{border:1px solid #E5DCC4;border-radius:14px;box-shadow:0 1px 2px rgba(26,26,26,.04);}
 .opt-btn:hover{border-color:var(--purple);}
 .opt-lbl{color:var(--purple);font-weight:800;}
@@ -2022,7 +2024,7 @@ ${s.key?`<div class="pkey-page"><div class="print-title">${esc(s.title)} — Λ�
   const apply=()=>{ document.body.classList.toggle('ls-open',open); tg.textContent=open?'‹':'›'; };
   apply();
   tg.onclick=()=>{ open=!open; apply(); try{ localStorage.setItem('lev_side_open',open?'1':'0'); }catch(e){} setTimeout(()=>{ try{ fitCard(); }catch(e){} },240); };
-  const tones=['#F7F3E8','#FAE0CC','#F0E4A8'];
+  const tones=['#F7F3E8','#FAE0CC','#DCEBEA'];
   const nav=document.getElementById('lsNav');
   nav.innerHTML=`<button class="ls-item" data-home="1" type="button" title="Αρχική"><span class="ls-ic">⌂</span><span class="ls-tx">Αρχική</span></button><div class="ls-div"></div>`+
     DECKS.map((d,i)=>{ const L=d.label||('Ενότητα '+(i+1)); return `<button class="ls-item" data-dk="${i}" type="button" title="${esc(L)}"><span class="ls-ic ls-num" style="--tone:${tones[i%3]}">${String(i+1).padStart(2,'0')}</span><span class="ls-tx">${esc(L)}${d.ktitle?' · '+esc(String(d.ktitle).replace(/\*/g,'')):''}</span></button>`; }).join('');
