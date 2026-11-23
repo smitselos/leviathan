@@ -634,9 +634,13 @@ body,#startScreen,.quiz-topbar,.quiz-bottom{background:var(--cream);}
 .deck-card.active{border:2px solid var(--navy);}
 .dc-num{color:var(--navy);opacity:.14;font-weight:800;}
 .dc-title{color:#5C5330;}
-.dc-ktitle{font-style:normal;color:var(--ink);}
+.dc-ktitle{font-style:normal;color:var(--ink);font-weight:500;font-size:16px;}
+/* Η εκτύπωση / PDF υπάρχει στην πλευρική μπάρα (μόνο σε μεγάλες οθόνες· σε κινητό/tablet μένει το κουμπί) */
+@media(min-width:900px){ .btn-print-open{display:none!important;} }
 .dc-author{color:#A0583A;}
 .dc-count{color:#5C5330;}
+/* Πλήθος ερωτήσεων: αχνό και μικρό — πληροφορία μόνο για όποιον την ψάξει */
+.dc-count{font-size:9px;font-weight:400;opacity:.45;letter-spacing:.3px;}
 .dc-sub{border-top-color:rgba(26,26,26,.1);}
 .start-credits{border-top-color:#E0D8C2;text-shadow:none;}
 .big-card{border-radius:20px;border:1px solid #E9E0C8;}
@@ -676,7 +680,10 @@ body,#startScreen,.quiz-topbar,.quiz-bottom{background:var(--cream);}
   .ls-item:hover{background:rgba(255,255,255,.05);color:#ececec;}
   .ls-item.on{background:rgba(255,255,255,.09);color:#ececec;}
   .ls-ic{flex-shrink:0;width:28px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;}
-  .ls-num{border-radius:7px;color:#3d3a2e;font-size:11px;font-weight:800;}
+  /* Αριθμοί ενοτήτων: μικρό πλαίσιο χωρίς χρώμα· χρώμα μόνο στην ενότητα που παίζει */
+  .ls-num{width:20px;height:16px;flex:0 0 20px;margin:0 4px;border-radius:5px;border:1px solid rgba(255,255,255,.22);background:transparent;color:#8e8ea0;font-size:8px;font-weight:700;letter-spacing:.2px;}
+  .ls-item:hover .ls-num{color:#ececec;border-color:rgba(255,255,255,.4);}
+  .ls-item.on .ls-num{background:var(--tone);border-color:var(--tone);color:#3d3a2e;}
   .ls-tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   body:not(.ls-open) .ls-tx{display:none;}
   body:not(.ls-open) .ls-item{justify-content:center;padding:8px 0;}
@@ -2018,7 +2025,7 @@ ${s.key?`<div class="pkey-page"><div class="print-title">${esc(s.title)} — Λ�
   const tones=['#F7F3E8','#FAE0CC','#F0E4A8'];
   const nav=document.getElementById('lsNav');
   nav.innerHTML=`<button class="ls-item" data-home="1" type="button" title="Αρχική"><span class="ls-ic">⌂</span><span class="ls-tx">Αρχική</span></button><div class="ls-div"></div>`+
-    DECKS.map((d,i)=>{ const L=d.label||('Ενότητα '+(i+1)); return `<button class="ls-item" data-dk="${i}" type="button" title="${esc(L)}"><span class="ls-ic ls-num" style="background:${tones[i%3]}">${String(i+1).padStart(2,'0')}</span><span class="ls-tx">${esc(L)}${d.ktitle?' · '+esc(String(d.ktitle).replace(/\*/g,'')):''}</span></button>`; }).join('');
+    DECKS.map((d,i)=>{ const L=d.label||('Ενότητα '+(i+1)); return `<button class="ls-item" data-dk="${i}" type="button" title="${esc(L)}"><span class="ls-ic ls-num" style="--tone:${tones[i%3]}">${String(i+1).padStart(2,'0')}</span><span class="ls-tx">${esc(L)}${d.ktitle?' · '+esc(String(d.ktitle).replace(/\*/g,'')):''}</span></button>`; }).join('');
   const mark=()=>{ const inQuiz=document.getElementById('quizScreen').classList.contains('active')||document.getElementById('resultsScreen').classList.contains('active');
     nav.querySelectorAll('.ls-item').forEach(b=>b.classList.toggle('on', b.dataset.home?!inQuiz:(inQuiz&&+b.dataset.dk===curDk))); };
   nav.onclick=e=>{ const b=e.target.closest('.ls-item'); if(!b) return; if(b.dataset.home) goStart(); else { pickDeck(+b.dataset.dk); startQuiz(); } mark(); };
