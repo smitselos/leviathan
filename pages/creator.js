@@ -57,6 +57,15 @@ const TEMPLATES = [
     types: ['Άνοιγμα / εξαγωγή xlsx', 'Μορφή Αναφορικών', 'Νέο xlsx από την αρχή', 'Βαθμός δυσκολίας', 'Σχόλιο ανά επιλογή'],
   },
   {
+    id: 'quiz-xlsx-leviathan-deck',
+    badge: 'xlsx',
+    look: 'leviathan',
+    name: 'Δημιουργός & Επεξεργαστής xlsx τύπου Α · ΛΕΒΙΑΘΑΝ',
+    file: '/protypa/quiz-xlsx-leviathan-deck.html',
+    desc: 'Ο ίδιος επεξεργαστής xlsx τύπου Α (όλοι οι τύποι, σύνθετες ερωτήσεις, κάρτες θεωρίας, βαθμός δυσκολίας, ροή ανά κάρτα θεωρίας) με την αισθητική της πλατφόρμας ΛΕΒΙΑΘΑΝ: λογότυπο, κρεμ φόντο, πλευρική μπάρα, χρώματα πλατφόρμας.',
+    types: ['Άνοιγμα / εξαγωγή xlsx', 'Λογότυπο ΛΕΒΙΑΘΑΝ', 'Χρώματα πλατφόρμας', 'Ροή ανά κάρτα θεωρίας'],
+  },
+  {
     id: 'crossword-deck',
     kind: 'cw',
     name: 'Σταυρόλεξα ενοτήτων',
@@ -85,7 +94,9 @@ const tplOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 const isCwData = (d) => d && d.template === 'crossword-deck';
 const isParaData = (d) => d && d.template === 'paragraph-deck';
 const isSortData = (d) => d && d.template === 'sort-deck';
-const QUIZ_LIKE = ['quiz-xlsx-deck', 'quiz-paper-deck', 'quiz-archaia-deck', 'quiz-leviathan-deck'];
+const XL_T = ['quiz-xlsx-deck', 'quiz-xlsx-leviathan-deck'];
+const isXl = (id) => XL_T.includes(id);
+const QUIZ_LIKE = ['quiz-xlsx-deck', 'quiz-xlsx-leviathan-deck', 'quiz-paper-deck', 'quiz-archaia-deck', 'quiz-leviathan-deck'];
 const tplIdOfData = (d) => (isCwData(d) ? 'crossword-deck' : isParaData(d) ? 'paragraph-deck' : isSortData(d) ? 'sort-deck' : d && QUIZ_LIKE.includes(d.template) ? d.template : 'quiz-deck');
 
 const C = {
@@ -1091,12 +1102,13 @@ export default function Creator() {
       const r = await importQuizXlsx(f, defaultCredits());
       const nd = r.data.decks.length;
       const msg = `Βρέθηκαν ${r.n} ερωτήσεις σε ${nd} ${nd === 1 ? 'ενότητα' : 'ενότητες'}.` + (r.warnings.length ? '\n\nΠροσοχή:\n• ' + r.warnings.slice(0, 8).join('\n• ') + (r.warnings.length > 8 ? `\n… και ${r.warnings.length - 8} ακόμη` : '') : '');
-      if (step === 'edit' && data && tpl.id === 'quiz-xlsx-deck') {
+      if (step === 'edit' && data && isXl(tpl.id)) {
         if (!confirm(msg + '\n\nΝα αντικαταστήσουν τις ενότητες και τις ερωτήσεις της εφαρμογής που επεξεργάζεστε;')) { setXlBusy(false); return; }
         const nq = normalizeData(r.data);
         upd((n) => { if (r.hasGen) ['title', 'eyebrow', 'heading', 'subtitle', 'credits', 'shuffleQs', 'shuffleOpts'].forEach((k) => { n[k] = nq[k]; }); n.decks = nq.decks; if (nq.mx) { n.mx = nq.mx; n.theory = nq.theory || []; } else delete n.mx; });
         setSel({ d: 0, q: 0 }); setPanel('question');
       } else {
+        if (isXl(tpl.id)) r.data.template = tpl.id; // κρατά το πρότυπο που διαλέξατε (π.χ. ΛΕΒΙΑΘΑΝ)
         openData(r.data, null);
         alert(msg);
       }
@@ -1222,10 +1234,10 @@ export default function Creator() {
         {/* ── Αριστερά: γενικά, ενότητες, λίστα ερωτήσεων ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, position: narrow ? 'static' : 'sticky', top: 70 }}>
           <button onClick={() => setPanel('general')} style={{ ...S.navBtn, ...(panel === 'general' ? S.navBtnOn : {}) }}>⚙︎ Γενικά στοιχεία εφαρμογής</button>
-          {tpl.id === 'quiz-xlsx-deck' && (
+          {isXl(tpl.id) && (
             <button onClick={() => setPanel('theory')} style={{ ...S.navBtn, ...(panel === 'theory' ? S.navBtnOn : {}) }}>📘 Κάρτες θεωρίας ({(data.theory || []).length})</button>
           )}
-          {tpl.id === 'quiz-xlsx-deck' && (
+          {isXl(tpl.id) && (
             <div style={{ ...S.card, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ ...S.miniTitle, margin: 0, flex: 1 }}>📊 Excel</span>
               <button style={{ ...S.btnGhostSm }} disabled={xlBusy} title="Αντικατάσταση των ερωτήσεων από αρχείο xlsx (μορφή Αναφορικών)" onClick={() => xlRef.current?.click()}>⬆ Άνοιγμα xlsx</button>
@@ -1312,7 +1324,7 @@ export default function Creator() {
             </div>
             <div style={{ ...S.miniTitle, marginTop: 12 }}>＋ Προσθήκη ερώτησης</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              {typesFor(tpl.id === 'quiz-xlsx-deck').map((t) => (
+              {typesFor(isXl(tpl.id)).map((t) => (
                 <button key={t.t} onClick={() => addQuestion(t.t)} style={S.addBtn}><span style={{ color: C.purple }}>{t.icon}</span> {t.label}</button>
               ))}
             </div>
@@ -1322,7 +1334,7 @@ export default function Creator() {
 
         {/* ── Κέντρο: φόρμα ── */}
         <div style={{ ...S.card, padding: narrow ? 16 : 22, minWidth: 0 }}>
-          {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} kind={tpl.kind} xl={tpl.id === 'quiz-xlsx-deck'} />}
+          {panel === 'general' && <GeneralForm data={data} upd={upd} isCw={isCw} kind={tpl.kind} xl={isXl(tpl.id)} />}
           {panel === 'theory' && <TheoryForm cards={data.theory || []} upd={upd} />}
           {panel === 'deck' && <DeckForm deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} onDelete={() => delDeck(sel.d)} onOpenQs={() => setPanel('question')} isCw={isCw} kind={tpl.kind} count={deckCount(deck)} />}
           {panel === 'question' && isSort && pItem && (
@@ -1341,7 +1353,7 @@ export default function Creator() {
             <CwWordsForm key={sel.d} deck={deck} index={sel.d} upd={(fn) => upd((n) => fn(n.decks[sel.d]))} unplaced={(cwInfo?.unplaced || [])[sel.d] || []} />
           )}
           {panel === 'question' && q && (
-            <QuestionForm key={sel.d + ':' + sel.q} adv={tpl.id === 'quiz-xlsx-deck'} theory={data.theory || []} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
+            <QuestionForm key={sel.d + ':' + sel.q} adv={isXl(tpl.id)} theory={data.theory || []} q={q} index={sel.q} total={deck.qs.length} setQ={setQ} changeType={changeType}
               onUp={() => moveQ(sel.q, -1)} onDown={() => moveQ(sel.q, 1)} onDup={() => dupQ(sel.q)} onDel={() => delQ(sel.q)}
               onPrev={() => setSel((s) => ({ ...s, q: Math.max(0, s.q - 1) }))}
               onNext={() => sel.q < deck.qs.length - 1 ? setSel((s) => ({ ...s, q: s.q + 1 })) : addQuestion(q.t)} />
