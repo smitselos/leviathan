@@ -947,13 +947,19 @@ function flowGroups(qs){
 function flowPick(g,n,fresh){
   const src=QUIZ.shuffleQs?shuffle(g.qs):[...g.qs];
   const pool=fresh?src:src.filter(q=>!g.used.has(q)).concat(src.filter(q=>g.used.has(q))); // πρώτα όσες δεν έχουν δοθεί
-  const out=pool.slice(0,n); out.forEach(q=>g.used.add(q)); return out;
+  const out=pool.slice(0,n); out.forEach(q=>g.used.add(q));
+  // Κλιμάκωση: μέσα στην κάρτα από την ευκολότερη προς τη δυσκολότερη (χωρίς βαθμό → μένει στη θέση της σειράς)
+  return out.map((q,i)=>({q,i,d:+q.diff||0})).sort((a,b)=>(a.d&&b.d?a.d-b.d:0)||a.i-b.i).map(x=>x.q);
 }
 function flowAfter(ok,q){
   const m=runMeta[curQi]; if(!m||ok) return;
   if(m.extra){ flowGate=m.g; return; }
   if(m.g.extra) return; m.g.extra=true;
-  const add=[q]; const nq=m.g.qs.filter(x=>!m.g.used.has(x)); if(nq.length){ const x=(QUIZ.shuffleQs?shuffle(nq):nq)[0]; m.g.used.add(x); add.push(x); }
+  // Νέα ερώτηση ίδιας ή μικρότερης δυσκολίας από τη λάθος (η πλησιέστερη)· αν δεν υπάρχει, οποιαδήποτε αχρησιμοποίητη
+  const add=[q], dq=+q.diff||0; let nq=m.g.qs.filter(x=>!m.g.used.has(x)); if(QUIZ.shuffleQs) nq=shuffle(nq);
+  if(nq.length){ let x=nq[0];
+    if(dq){ const le=nq.filter(y=>(+y.diff||0)&&(+y.diff)<=dq); if(le.length){ const top=Math.max(...le.map(y=>+y.diff)); x=le.find(y=>+y.diff===top); } }
+    m.g.used.add(x); add.unshift(x); } // πρώτα η νέα (ευκολότερη/ίση), μετά η λάθος ξανά
   let last=curQi; runMeta.forEach((mm,i)=>{ if(mm.g===m.g) last=Math.max(last,i); });
   runList.splice(last+1,0,...add); runMeta.splice(last+1,0,...add.map(()=>({g:m.g,extra:true})));
 }
