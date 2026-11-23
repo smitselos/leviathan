@@ -51,8 +51,37 @@
   };
   var origOpen = window.open;
   window.open = function (url) {
-    if (typeof url === 'string' && htmlOf[url]) { makePdf(htmlOf[url]); return null; }
+    if (typeof url === 'string' && htmlOf[url]) {
+      makePdf(htmlOf[url]);
+      // «ψεύτικο» παράθυρο: κάποια πρότυπα, αν πάρουν null, ανοίγουν τη σελίδα με άλλον τρόπο
+      return { closed: false, close: function () {}, focus: function () {}, blur: function () {}, postMessage: function () {} };
+    }
     return origOpen.apply(window, arguments);
+  };
+
+  // ── Πρότυπα που τυπώνουν μέσα στην ίδια σελίδα (#printArea + @media print: σταυρόλεξο, παράγραφος, ταξινόμηση) ──
+  // Φτιάχνουμε ξεχωριστό έγγραφο με το #printArea και τους κανόνες εκτύπωσης ενεργούς ως κανονικούς.
+  function printRulesOf(css) {
+    var out = '', re = /@media\s+print\s*\{/gi, m;
+    while ((m = re.exec(css))) {
+      var i = re.lastIndex, depth = 1;
+      while (i < css.length && depth) { var c = css[i++]; if (c === '{') depth++; else if (c === '}') depth--; }
+      out += css.slice(re.lastIndex, i - 1) + '\n';
+      re.lastIndex = i;
+    }
+    // ο κανόνας «κρύψε ό,τι δεν είναι #printArea» κρύβει και το πλαίσιο του html2pdf → έξω
+    return out.replace(/[^{}]*:not\(\s*#printArea\s*\)[^{}]*\{[^}]*\}/g, '');
+  }
+  var origPrint = window.print;
+  window.print = function () {
+    var pa = document.getElementById('printArea');
+    if (!pa || !pa.innerHTML.trim()) return origPrint.apply(window, arguments);
+    var css = Array.prototype.map.call(document.querySelectorAll('style'), function (st) { return st.textContent; }).join('\n');
+    var links = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"]'), function (l) { return l.outerHTML; }).join('');
+    var html = '<!DOCTYPE html><html lang="el"><head><meta charset="utf-8">' + links +
+      '<style>' + css + '</style><style>' + printRulesOf(css) + '</style>' +
+      '<style>#printArea{display:block!important}</style></head><body>' + pa.outerHTML + '</body></html>';
+    makePdf(html);
   };
 
   // ── Μικρά μηνύματα / κουμπί «Έτοιμο» (όπως στον ΛΕΒΙΑΘΑΝ) ──
@@ -110,7 +139,7 @@
   }
   function fileName(doc) {
     var t = '';
-    try { var el = doc.querySelector('.print-title'); t = (el && el.textContent) || doc.title || ''; } catch (e) {}
+    try { var el = doc.querySelector('.print-title, .pa-title'); t = (el && el.textContent) || doc.title || ''; } catch (e) {}
     t = t.replace(/[\\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Φύλλο εργασίας';
     return t.slice(0, 80) + '.pdf';
   }
@@ -120,8 +149,18 @@
   // (Ό,τι είναι από μόνο του μεγαλύτερο από μία σελίδα συνεχίζει αναγκαστικά.)
   function paginate(d, pageH) {
     if (!(pageH > 100)) return;
-    var els = Array.prototype.slice.call(d.querySelectorAll('.hdr-table, .print-title, .pq'));
     var base = d.body.getBoundingClientRect().top;
+    // Κάθε .pa-page (π.χ. φύλλο + λύσεις) ξεκινά σε νέα σελίδα
+    Array.prototype.slice.call(d.querySelectorAll('.pa-page')).forEach(function (el, i) {
+      if (!i) return;
+      var top = el.getBoundingClientRect().top - base, rest = top % pageH;
+      if (rest > 1) {
+        var sp = d.createElement('div');
+        sp.style.cssText = 'height:' + Math.ceil(pageH - rest + 2) + 'px;margin:0;padding:0;border:0;';
+        el.parentNode.insertBefore(sp, el);
+      }
+    });
+    var els = Array.prototype.slice.call(d.querySelectorAll('.hdr-table, .print-title, .pq, .pa-head, .pa-grid, .pa-ex, .pa-box, .pa-clues li'));
     els.forEach(function (el) {
       var r = el.getBoundingClientRect();
       var top = r.top - base, bottom = top + r.height;

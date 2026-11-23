@@ -6,6 +6,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import { getDrive } from '../../../lib/drive';
+import { injectLevPrint } from '../../../lib/injectLevPrint';
 
 const GOOGLE_EXPORT = [
   'application/vnd.google-apps.document',
@@ -90,7 +91,7 @@ export default async function handler(req, res) {
       const dl = await drive.files.get({ fileId: id, alt: 'media' }, { responseType: 'text' });
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'no-store');
-      return res.send(dl.data);
+      return res.send(injectLevPrint(dl.data));
     }
 
     // Όλα τα υπόλοιπα (PDF, εικόνες) → ως έχουν

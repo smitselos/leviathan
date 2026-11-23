@@ -1,3 +1,4 @@
+import { injectLevPrint } from '../../lib/injectLevPrint';
 // pages/api/student-file.js
 // Σερβίρει δημόσιο αρχείο από Drive χωρίς auth
 // PDF/HTML → raw bytes (native browser rendering, ελαφρύ)
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
     if (isHtml) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'public, s-maxage=300');
-      return res.status(200).send(buffer);
+      return res.status(200).send(injectLevPrint(buffer.toString('utf8')));
     }
 
     if (isOffice) {
