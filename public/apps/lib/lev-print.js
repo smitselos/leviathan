@@ -146,7 +146,10 @@
     var fr = document.createElement('iframe');
     fr.setAttribute('aria-hidden', 'true');
     fr.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + widthPx + 'px;height:1200px;border:0;visibility:hidden;';
-    var extra = '<style id="lev-pdf">.no-print{display:none!important}' +
+    // iOS: χωρίς «αυτόματη μεγέθυνση κειμένου» (μεγάλωνε τις παραγράφους αλλά όχι τις σύντομες επιλογές)
+    var extra = '<meta name="viewport" content="width=' + widthPx + ', initial-scale=1">' +
+      '<style id="lev-pdf">html,body,*{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important}' +
+      '.no-print{display:none!important}' +
       'html,body{margin:0!important;padding:0!important;width:' + widthPx + 'px!important;max-width:none!important;background:#fff!important}' +
       '</style>';
     var doc = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, extra + '</head>') : extra + html;
