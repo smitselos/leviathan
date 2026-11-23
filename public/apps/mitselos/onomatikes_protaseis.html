@@ -2,6 +2,7 @@
 <html lang="el">
 <head>
 <meta charset="UTF-8">
+<script src="../lib/lev-print.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ονοματικές Προτάσεις</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2870,7 +2871,7 @@ function printSelWorksheet(questions, s) {
   ${s.instructions ? `<p class="print-instr">${s.instructions}</p>` : ''}
   ${s.score ? `<p class="print-score">${s.score}</p>` : ''}
   ${questionsHTML}
-  <button class="no-print" onclick="setTimeout(()=>window.print(),300)" style="position:fixed;top:20px;right:20px;padding:12px 24px;font-size:15px;background:#a68a2e;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Εκτύπωση</button>
+  <button class="no-print" onclick="try{window.print()}catch(e){}" style="position:fixed;top:20px;right:20px;padding:12px 24px;font-size:15px;background:#a68a2e;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Εκτύπωση</button>
 </body></html>`;
 
   const blob = new Blob([html], {type: 'text/html; charset=utf-8'});
