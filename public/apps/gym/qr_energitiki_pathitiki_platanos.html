@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Ποιος έκοψε τον πλάτανο; · Ενεργητική και παθητική σύνταξη</title>
+<style>
+:root{--desk:#EDE6D8;--paper:#FFFDF8;--ink:#22201c;--mut:#7b7466;--red:#C0392B;--red2:#F6DEDA;--green:#2E7D4F;--green2:#DDF0E4;--blue:#2C5F8A;--blue2:#E1ECF5;--line:#E4DCCB;--amber:#C98A1E;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--desk);color:var(--ink);font-family:"Helvetica Neue",Arial,sans-serif;min-height:100vh}
+.serif{font-family:Georgia,"Times New Roman",serif}
+.top{max-width:920px;margin:0 auto;padding:22px 18px 8px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand small{display:block;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--red);font-weight:700}
+.brand h1{font-family:Georgia,serif;font-size:30px;line-height:1.1}
+.brand h1 em{color:var(--red)}
+.stamps{display:flex;gap:8px}
+.stamp{width:44px;height:44px;border-radius:50%;border:2px dashed #b9ae98;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#b9ae98;font-size:17px;transition:all .3s}
+.stamp.now{border-style:solid;border-color:var(--red);color:var(--red);transform:scale(1.08)}
+.stamp.ok{border-style:solid;border-color:var(--green);background:var(--green);color:#fff}
+.wrap{max-width:920px;margin:0 auto;padding:10px 18px 40px;display:grid;grid-template-columns:250px 1fr;gap:18px}
+.note{background:#FFF6C9;border-radius:4px;padding:18px 16px;box-shadow:2px 3px 0 rgba(0,0,0,.08);transform:rotate(-1deg);align-self:start;position:sticky;top:14px}
+.note .st{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);font-weight:700}
+.note h2{font-family:Georgia,serif;font-size:21px;margin:4px 0 8px;line-height:1.2}
+.note p{font-size:14px;line-height:1.55}
+.note .task{margin-top:12px;padding-top:10px;border-top:1px dashed #d9c879;font-weight:600}
+.sheet{background:var(--paper);border-radius:3px;box-shadow:0 1px 0 #d8cfbd,0 10px 30px rgba(60,40,10,.13);padding:30px 34px;min-height:420px;position:relative}
+.sheet::before{content:"";position:absolute;top:0;bottom:0;left:22px;width:1px;background:#F2C9C2}
+.kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.ttl{font-family:Georgia,serif;font-size:24px;margin-bottom:16px}
+.txt{font-family:Georgia,serif;font-size:18px;line-height:2}
+.txt p{text-indent:1.6em;margin-bottom:6px}
+.sen{border-radius:3px;cursor:pointer;transition:background .15s}
+.st1 .sen:hover{background:#F6EFDF}
+.sen.cut{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:2px;color:#a39b8c;cursor:default}
+.sen.shake{animation:sh .35s;background:var(--blue2)}
+@keyframes sh{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.gap{display:inline-block;color:#cfc5b1;cursor:pointer;padding:0 4px;border-radius:3px;font-family:Arial;font-weight:700}
+.gap:hover{background:var(--blue2);color:var(--blue)}
+.gap.on{color:#fff;background:var(--blue)}
+.gap.on::before{content:"¶ "}
+.gap.ok{background:var(--green);color:#fff}.gap.ok::before{content:"¶ "}
+.gap.miss{background:var(--amber);color:#fff}
+.gap.miss::before{content:"? "}
+.gap.ko{background:#fff;color:var(--red);outline:2px solid var(--red)}
+.gap.ko::before{content:"✗ "}
+.slot{display:inline-block;min-width:118px;border-bottom:2px solid var(--red);text-align:center;color:var(--red);cursor:pointer;font-family:Arial;font-size:15px;font-weight:700;padding:0 6px;text-indent:0}
+.slot.empty{color:#d7a59e}
+.slot:not(.empty){min-width:0}
+.slot.sel{background:var(--red2)}
+.slot.ok{border-color:var(--green);color:var(--green)}
+.slot.ko{border-color:var(--red);background:var(--red2)}
+.bank{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+.chip{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:20px;padding:6px 14px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
+.chip.sel{background:var(--blue);color:#fff}
+.chip.used{opacity:.3;pointer-events:none}
+.ins{display:block;text-align:center;border:2px dashed #d7cdb9;border-radius:6px;color:#b0a58f;font-family:Arial;font-size:13px;font-weight:700;padding:5px;margin:6px 0;cursor:pointer;transition:all .15s}
+.ins:hover{border-color:var(--red);color:var(--red);background:#FDF3F1}
+.ins.ko{border-color:var(--red);background:var(--red2);color:var(--red)}
+.loose{background:#fff;border:1px solid var(--line);box-shadow:3px 4px 0 rgba(0,0,0,.06);transform:rotate(.6deg);padding:14px 16px;margin-bottom:16px;font-family:Georgia,serif;font-size:17px;line-height:1.8;border-left:4px solid var(--red)}
+.loose b{font-family:Arial;font-size:11px;letter-spacing:2px;color:var(--red);display:block}
+.placed{background:var(--green2);border-radius:4px}
+.fb{scroll-margin-bottom:100px;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:15px;line-height:1.55;display:none}
+.fb.ok{display:block;background:var(--green2);color:#1d5636}
+.fb.ko{display:block;background:var(--red2);color:#7a2219}
+.fb.info{display:block;background:var(--blue2);color:#1d3f5c}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{background:var(--red);color:#fff;border:0;border-radius:6px;padding:10px 20px;font-size:15px;font-weight:700;cursor:pointer}
+.btn.go{background:var(--green)}
+.btn.ghost{background:transparent;color:var(--red);border:2px solid var(--red)}
+.counter{font-size:13px;color:var(--mut);margin-top:8px}
+/* τελική σελίδα */
+.paper{background:#fff;padding:26px 34px;box-shadow:0 10px 30px rgba(60,40,10,.15);border-radius:2px}
+.mast{text-align:center;border-bottom:3px double var(--ink);padding-bottom:8px;margin-bottom:6px}
+.mast h3{font-family:Georgia,serif;font-size:34px;letter-spacing:1px}
+.mast div{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut)}
+.byline{display:flex;justify-content:space-between;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--ink);padding:4px 0;margin-bottom:16px}
+.paper h4{font-family:Georgia,serif;font-size:26px;margin-bottom:12px;line-height:1.2}
+.cols{column-count:2;column-gap:28px;hyphens:auto;-webkit-hyphens:auto;font-family:Georgia,serif;font-size:16px;line-height:1.7;text-align:justify}
+.cols p{text-indent:1.4em;margin-bottom:6px}
+.cols p:first-child::first-letter{float:left;font-size:46px;line-height:.9;padding:4px 6px 0 0;font-weight:700;color:var(--red)}
+.checks{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ck{background:var(--green2);border-radius:6px;padding:9px 12px;font-size:14px;line-height:1.4}
+.ck b{color:var(--green)}
+.score{font-family:Georgia,serif;font-size:15px;margin-top:14px;text-align:center;color:var(--mut)}
+footer{text-align:center;font-size:12px;color:var(--mut);padding:0 0 90px}
+.help{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;border-bottom:1px dotted var(--blue)}
+.intro p.lead{font-family:Georgia,serif;font-size:17px;line-height:1.75;margin-bottom:18px}
+.intro h5{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin:20px 0 10px}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.role{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#fff}
+.role.me{border:2px solid var(--red);background:#FFF8F6}
+.role .ic{font-size:24px}
+.role b{display:block;font-family:Georgia,serif;font-size:16px;margin:2px 0 4px}
+.role p{font-size:13.5px;line-height:1.5;color:#4a453c}
+.proc{display:grid;gap:8px}
+.pr{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.pr .n{width:34px;height:34px;flex-shrink:0;border-radius:50%;border:2px dashed #b9ae98;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#8a7f69}
+.pr b{display:block;font-size:14px}
+.pr span{font-size:13.5px;color:#4a453c}
+.pr.end{background:var(--green2);border-color:#bfe0cb}.pr.end .n{border:2px solid var(--green);color:var(--green)}
+.how{list-style:none;display:grid;gap:7px}
+.how li{font-size:14px;line-height:1.5;padding-left:22px;position:relative}
+.how li::before{content:"✎";position:absolute;left:0;color:var(--red)}
+.sign{margin-top:18px;font-family:Georgia,serif;font-style:italic;text-align:right;color:#4a453c}
+@media(max-width:720px){.roles{grid-template-columns:1fr}}
+.stamp{cursor:default;position:relative}
+.stamp.go{cursor:pointer}
+.stamp.go:hover{box-shadow:0 0 0 4px rgba(192,57,43,.15)}
+.stamp span{position:absolute;top:48px;left:50%;transform:translateX(-50%);font-family:Arial;font-size:10px;font-weight:600;color:var(--mut);white-space:nowrap;letter-spacing:.3px}
+.stamps{padding-bottom:16px;gap:22px}
+.order{font-family:Georgia,"Times New Roman",serif;font-size:16.5px;line-height:1.7;font-weight:400;color:#8a2a1e;background:#FDF3F1;border-left:4px solid var(--red);padding:12px 16px;border-radius:0 6px 6px 0;margin:-4px 0 16px}
+.order .by{display:block;text-align:right;font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:13px;color:#8a3a2e;margin-top:8px}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,253,248,.97);border-top:1px solid #d8cfbd;box-shadow:0 -4px 16px rgba(60,40,10,.08);z-index:20}
+.nav-in{max-width:920px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nav-mid{font-size:13px;color:var(--mut);text-align:center;flex:1}
+.nav-mid b{color:var(--ink)}
+.nm-h{font-size:11px}
+.nbtn{border:0;border-radius:6px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;min-width:120px}
+.nbtn.back{background:transparent;color:var(--mut);border:2px solid #d8cfbd}
+.nbtn.fwd{background:#cfc6b4;color:#fff;cursor:not-allowed}
+.nbtn.fwd.on{background:var(--green);cursor:pointer;animation:pulse 1.4s ease 2}
+.nbtn[hidden]{visibility:hidden;display:block}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(46,125,79,.25)}}
+@media(max-width:720px){.stamp span{display:none}.stamps{padding-bottom:0}.nbtn{min-width:0;padding:10px 14px;font-size:14px}.nav-mid{font-size:12px}.nm-x{display:none}.stamps{gap:8px}}
+@media(max-width:720px){.wrap{grid-template-columns:1fr}.note{position:static;transform:none}.sheet{padding:22px 18px}.sheet::before{display:none}.txt{font-size:17px}.cols{column-count:1}.checks{grid-template-columns:1fr}.brand h1{font-size:24px}}
+
+.slot[data-ph]:empty::before{content:attr(data-ph);color:#d7a59e;font-weight:600;font-size:13px}
+.slot{min-height:1.4em;line-height:1.4;vertical-align:baseline}
+.chip.wide{border-radius:8px;text-align:left}
+.tree{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0 4px;font-family:Georgia,serif}
+.tree .root{border:2px solid var(--ink);border-radius:8px;padding:8px 18px;font-size:18px;font-weight:700;background:#fff}
+.tree .crit{font-family:Arial;font-size:12.5px;color:var(--mut);letter-spacing:.3px}
+.tree .arr{font-family:Arial;color:#b9ae98;font-size:18px;letter-spacing:40px;padding-left:40px}
+.tree .kids{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.tree .slot{min-width:150px;padding:6px 10px;border:2px dashed #d7a59e;border-radius:8px;background:#fff}
+.tree .slot.ok{border-style:solid}
+.defl{font-family:Georgia,serif;font-size:19px;line-height:2.4}
+.anrow{display:grid;grid-template-columns:1fr 34px 1fr;align-items:center;gap:6px;margin:8px 0;font-family:Georgia,serif;font-size:16.5px}
+.anrow .src{background:#F1F7EC;border:1px solid #cfe3c1;border-radius:8px;padding:8px 12px}
+.anrow .ar{text-align:center;color:var(--mut);font-family:Arial;font-weight:700}
+.anrow .slot{display:block;min-width:0;padding:8px 10px;border:2px dashed #d7a59e;border-radius:8px;background:#fff;text-align:left;font-size:14.5px}
+.anrow .slot.ok{border-style:solid}
+.anhead{display:grid;grid-template-columns:1fr 34px 1fr;gap:6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);font-weight:700;margin-top:10px}
+.thesis{font-family:Georgia,serif;font-size:18px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:10px 14px;margin:6px 0 12px}
+.thesis small{display:block;font-family:Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:2px}
+.opts{display:grid;gap:8px}
+.opt{background:#fff;border:2px solid var(--line);border-radius:8px;padding:9px 12px 9px 38px;font-family:Georgia,serif;font-size:16px;cursor:pointer;position:relative;line-height:1.45}
+.opt::before{content:"";position:absolute;left:12px;top:11px;width:16px;height:16px;border:2px solid #b9ae98;border-radius:4px;background:#fff}
+.opt:hover{border-color:var(--blue)}
+.opt.on{border-color:var(--blue);background:var(--blue2)}
+.opt.on::before{background:var(--blue);border-color:var(--blue);content:"✓";color:#fff;font-size:12px;line-height:16px;text-align:center;font-family:Arial}
+.opt.ok{border-color:var(--green);background:var(--green2)}.opt.ok::before{background:var(--green);border-color:var(--green);content:"✓";color:#fff;font-size:12px;line-height:16px;text-align:center}
+.opt.ko{border-color:var(--red);background:var(--red2)}.opt.ko::before{border-color:var(--red);content:"✗";color:var(--red);font-size:12px;line-height:14px;text-align:center}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;min-height:10px}
+.card{background:#fff;border:2px solid var(--line);border-radius:8px;padding:7px 11px;font-family:Georgia,serif;font-size:15px;cursor:pointer;line-height:1.35;box-shadow:1px 2px 0 rgba(0,0,0,.05)}
+.card:hover{border-color:var(--blue)}
+.card.sel{border-color:var(--blue);background:var(--blue);color:#fff}
+.card.ok{border-color:var(--green);background:var(--green2);cursor:default}
+.card.ko{border-color:var(--red);background:var(--red2)}
+.card.shake{animation:sh .35s;border-color:var(--red)}
+.bins{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.bin{border:2px dashed #d7cdb9;border-radius:10px;padding:8px;min-height:150px;cursor:pointer;background:rgba(255,255,255,.5);display:flex;flex-direction:column;gap:6px}
+.bin:hover{border-color:var(--blue);background:var(--blue2)}
+.bin h6{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);text-align:center;margin-bottom:2px}
+.bin.mid h6{color:var(--green)}
+.bin .card{font-size:14px}
+.chain{display:flex;flex-direction:column;gap:4px;margin:8px 0 12px}
+.link{display:flex;align-items:center;gap:10px}
+.link .num{width:28px;height:28px;flex-shrink:0;border-radius:50%;border:2px dashed #b9ae98;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#b9ae98;font-size:14px}
+.link .box{flex:1;border:2px dashed #d7cdb9;border-radius:8px;padding:8px 12px;font-family:Georgia,serif;font-size:15.5px;color:#b0a58f;min-height:40px}
+.link.full .num{border:2px solid var(--green);background:var(--green);color:#fff}
+.link.full .box{border:2px solid var(--green);background:var(--green2);color:var(--ink)}
+.link .tag{font-family:Arial;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-right:6px}
+.down{font-family:Arial;color:#b9ae98;padding-left:7px;line-height:1}
+.mine{margin-top:16px;border-top:2px dashed var(--line);padding-top:12px}
+.mine b.l{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:4px}
+.mine .txt{font-size:17px;line-height:1.85}
+.mine .txt p{background:var(--green2);border-radius:4px;padding:4px 8px}
+.note .kw{margin-top:10px;padding-top:8px;border-top:1px dashed #d9c879;font-size:13px;line-height:1.5}
+.note .grp{display:inline-block;font-size:11px;font-weight:700;color:#7a5d0e;background:#F7E79A;border-radius:10px;padding:2px 9px;margin-bottom:6px}
+.stamps{gap:24px}
+.stamp.gs{margin-left:14px}
+.stamp{width:40px;height:40px;font-size:16px}
+.stamp span{top:44px}
+.paper .art{break-inside:avoid;margin-bottom:12px}
+.paper .art h5{text-align:left;font-family:Georgia,serif;font-size:17px;line-height:1.25;margin-bottom:2px}
+.paper .art i{display:block;font-family:Arial;font-style:normal;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:3px}
+.paper .art p{text-indent:0!important;font-size:14.5px;line-height:1.6;margin:0}
+.paper .art p::first-letter{all:unset}
+@media(max-width:720px){.bins{grid-template-columns:1fr}.anrow,.anhead{grid-template-columns:1fr}.anrow .ar{display:none}.anhead span:nth-child(2){display:none}.stamp.gs{margin-left:4px}}
+.ind{color:var(--green);background:#c6e7d2;border-radius:3px;padding:0 3px}
+#T2 .slot{min-width:90px}
+.mine .txt p#T2{background:#fff;border:1px dashed #d7cdb9}
+</style>
+<style>
+.bins.two{grid-template-columns:1fr 1fr}
+.frm{font-family:Georgia,serif;font-size:17px;background:#F1F7EC;border:1px solid #cfe3c1;border-radius:8px;padding:8px 12px;margin:4px 0}
+.frm small,.to small{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.to{font-family:Georgia,serif;font-size:18px;line-height:2.5;border:1px dashed #d7cdb9;border-radius:8px;padding:6px 12px;margin:4px 0 14px;background:#fff}
+.dn{text-align:center;color:#b9ae98;font-family:Arial;font-size:18px;line-height:1}
+.to .slot{min-width:130px}
+.src{display:block;font-family:Arial;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:2px}
+.card u{text-decoration:none;border-bottom:2px solid var(--amber);font-weight:700}
+.card.sel u{border-color:#fff}
+.mcq{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.mcq .q{font-family:Georgia,serif;font-size:16.5px;margin-bottom:8px;line-height:1.5}
+.mcq .q small{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:2px}
+.mcq .opt::before{border-radius:50%}
+.mcq .why{display:none;font-size:14px;line-height:1.5;margin-top:6px;padding:7px 10px;border-radius:6px}
+.mcq .why.ko{display:block;background:var(--red2);color:#7a2219}
+.mcq .why.ok{display:block;background:var(--green2);color:#1d5636}
+.src-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:6px}
+.clip{background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px 12px;box-shadow:2px 3px 0 rgba(0,0,0,.05)}
+.clip i{display:block;font-family:Arial;font-style:normal;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:3px}
+.clip b{font-family:Georgia,serif;font-size:16px;line-height:1.35}
+.pull{border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);padding:8px 0;margin:14px 0;font-family:Georgia,serif;font-style:italic;font-size:17px;text-align:center;break-inside:avoid}
+.hl{background:#FFF0B8;border-radius:3px;padding:0 2px}
+@media(max-width:720px){.src-grid{grid-template-columns:1fr}.bins.two{grid-template-columns:1fr}}
+.lead2{font-family:Georgia,serif;font-size:15.5px;color:#4a453c;margin-bottom:12px}
+.twin{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.art2{font-family:Georgia,serif;border-top:4px solid var(--ink);padding-top:8px}
+.art2.pas{border-top-color:var(--mut)}.art2.act{border-top-color:var(--red)}
+.art2 i{display:block;font-family:Arial;font-style:normal;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:4px}
+.art2.pas i{color:var(--mut)}
+.art2 h5{font-size:20px;line-height:1.25;margin-bottom:8px}
+.art2 p{font-size:15.5px;line-height:1.65;text-align:justify;hyphens:auto;margin-bottom:8px}
+.art2 .sum{font-family:Arial;font-size:13.5px;line-height:1.5;background:var(--blue2);color:#1d3f5c;border-radius:6px;padding:8px 10px;margin-top:6px}
+.art2.act .sum{background:var(--red2);color:#7a2219}
+@media(max-width:720px){.twin{grid-template-columns:1fr}}
+.art2 .gh{display:none}
+.art2.reveal .gh{display:inline;font-family:Arial;font-size:12.5px;font-weight:700;color:var(--red);border:1.5px dashed var(--red);border-radius:4px;padding:0 4px;margin:0 3px;background:#fff}
+.art2.reveal .gh::before{content:"+ "}
+.reveal-btn{margin-top:10px;font-size:14px;padding:8px 14px}
+.art2 .sum i.x{font-family:inherit;font-style:italic;font-size:inherit;letter-spacing:0;text-transform:none;color:inherit;display:inline;margin:0}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><small>Σχολική εφημερίδα · Ρεπορτάζ</small><h1>Ποιος έκοψε τον <em>πλάτανο</em>;</h1><span class="help" onclick="go(-1)">ⓘ Η υπόθεση και οι οδηγίες</span></div>
+  <div class="stamps" id="stamps"></div>
+</div>
+<div class="wrap">
+  <aside class="note" id="note"></aside>
+  <main id="main"></main>
+</div>
+<div class="nav"><div class="nav-in">
+  <button class="nbtn back" id="nBack" onclick="go(step-1)">← Πίσω</button>
+  <div class="nav-mid" id="nMid"></div>
+  <button class="nbtn fwd" id="nFwd" onclick="fwd()">Επόμενο →</button>
+</div></div>
+<footer>Νεοελληνική Γλώσσα Γυμνασίου · Ενεργητική και παθητική σύνταξη · Α. &amp; Σ. Μητσέλος</footer>
+<script>
+function fitZoom(){var d=document.documentElement;d.style.zoom=1;var w=document.querySelector('.wrap'),n=document.querySelector('.nav');
+ if(!w){return;} var h=w.getBoundingClientRect().bottom+scrollY+(n?n.offsetHeight:0)-30;
+ var z=Math.min(1.9,innerWidth/1150,innerHeight/h);d.style.zoom=Math.max(1,z);}
+addEventListener('resize',fitZoom);
+
+const GROUPS=['Τα είδη της σύνταξης','Μετατροπές','Δίπτωτα ρήματα · κατηγορούμενο','Ειδικές περιπτώσεις','Τι αλλάζει στο νόημα'];
+
+const ST=[
+/* ── 1 ── */
+{g:0,m:'Ενεργητική ή παθητική;',sh:'Διαλογή',type:'sort',
+ title:'Τα πρώτα μηνύματα',
+ def:'<b>Ενεργητική</b> σύνταξη: το υποκείμενο <b>ενεργεί</b>. <b>Παθητική</b>: το υποκείμενο <b>δέχεται</b> μια ενέργεια. Κριτήριο είναι η <b>διάθεση</b> (η σημασία) του ρήματος, όχι η φωνή (η κατάληξη).',
+ kw:'<b>Παγίδες:</b> «σπάω, λυγίζω, λιώνω»: ενεργητική φωνή, συχνά παθητική σημασία · «εργάζομαι, σέβομαι, αντιλαμβάνομαι»: παθητική φωνή, ενεργητική σημασία.',
+ task:'Στο γραφείο φτάνουν τα πρώτα μηνύματα για τον πλάτανο. Πριν γράψουμε οτιδήποτε, ξεχώρισε σε ποια αποσπάσματα έχουμε ενεργητική και σε ποια παθητική σύνταξη. Πάτησε ένα απόσπασμα και μετά τη στήλη.',
+ cols:['Ενεργητική σύνταξη','Παθητική σύνταξη'],
+ cards:[{t:'Το συνεργείο του Δήμου έκοψε τον πλάτανο.',c:0},
+  {t:'Κόπηκε ο πλάτανος της αυλής του σχολείου.',c:1},
+  {t:'Ένα μεγάλο κλαδί του πλατάνου έσπασε τον περασμένο χειμώνα.',c:1,e:'Το «έσπασε» έχει ενεργητική φωνή, αλλά εδώ <b>παθητική σημασία</b>: το κλαδί δεν έσπασε κάτι, έπαθε κάτι.'},
+  {t:'Οι εργαζόμενοι του Δήμου εργάστηκαν όλο το πρωί για την κοπή του πλατάνου.',c:0,e:'Το «εργάζομαι» έχει κατάληξη παθητικής φωνής, αλλά <b>ενεργητική σημασία</b>: τα υποκείμενα ενεργούν (αποθετικό ρήμα).'},
+  {t:'Ένα παλιό κλαδί του πλατάνου λύγισε από το βάρος του χιονιού.',c:1,e:'Το «λύγισε» εδώ δηλώνει πάθημα (λύγισε από το βάρος), άρα <b>παθητική σημασία</b>. Σύγκρινε: «λύγισα τη βέργα» (ενεργητική).'},
+  {t:'Οι μαθητές σέβονταν το δέντρο.',c:0,e:'Το «σέβομαι» είναι αποθετικό: παθητική φωνή, <b>ενεργητική σημασία</b>. Οι μαθητές ενεργούν (σέβονται κάτι).'},
+  {t:'Ο Σύλλογος Γονέων ζήτησε εξηγήσεις για την κοπή του πλατάνου.',c:0},
+  {t:'Το δέντρο χαρακτηρίστηκε επικίνδυνο από τους γεωπόνους.',c:1}],
+ ok:'Σωστά! Δεν κοιτάμε την κατάληξη (φωνή) αλλά τη <b>σημασία</b> (διάθεση): ενεργεί ή παθαίνει το υποκείμενο;'},
+
+/* ── 2 ── */
+{g:0,m:'Το ποιητικό αίτιο',sh:'Ο δράστης',type:'sort',
+ title:'Πού κρύβεται ο δράστης;',
+ def:'Στην παθητική σύνταξη, ο προσδιορισμός που δηλώνει <b>από ποιον ή από τι</b> προέρχεται το πάθημα του υποκειμένου λέγεται <b>ποιητικό αίτιο</b>. Συνήθως: <b>από + αιτιατική</b>. Σπανιότερα: με + αιτ. (δίπλα σε μετοχές), σε + αιτ. (δίπλα σε ρηματικά επίθετα σε -τος).',
+ kw:'<b>Προσοχή:</b> το «από + αιτιατική» δεν είναι πάντα ποιητικό αίτιο. Μπορεί να δηλώνει <b>τόπο, χρόνο, ύλη</b>, αιτία.',
+ task:'Ψάχνουμε ποιος ευθύνεται. Στις σημειώσεις μας υπογραμμίσαμε όλα τα «από…». Ποια είναι πραγματικά ποιητικό αίτιο, δηλαδή δείχνουν ποιος έκανε την ενέργεια; Πάτησε μια σημείωση και μετά τη στήλη.',
+ cols:['Ποιητικό αίτιο','Δεν είναι ποιητικό αίτιο'],
+ cards:[{t:'Ο πλάτανος κόπηκε <u>από συνεργείο του Δήμου</u>.',c:0},
+  {t:'Το συνεργείο που έκοψε τον πλάτανο ήρθε <u>από τις επτά το πρωί</u>.',c:1,e:'Το «από τις επτά» δηλώνει <b>χρόνο</b>. Επιπλέον, το «ήρθε» δεν είναι παθητικό ρήμα.'},
+  {t:'Στο κούτσουρο του πλατάνου κρεμάστηκε μια πινακίδα <u>από χαρτόνι</u> με τη λέξη «Γιατί;».',c:1,e:'Το «από χαρτόνι» δηλώνει <b>ύλη</b>: από τι είναι η πινακίδα, όχι ποιος την κρέμασε. Αν και το «κρεμάστηκε» είναι παθητικό, το «από χαρτόνι» προσδιορίζει την πινακίδα, όχι το ρήμα.'},
+  {t:'Η απόφαση για την κοπή υπογράφηκε <u>από τον δήμαρχο</u>.',c:0},
+  {t:'Οι εργάτες με τα πριόνια μπήκαν <u>από την πίσω πόρτα</u> του σχολείου.',c:1,e:'Το «από την πίσω πόρτα» δηλώνει <b>τόπο</b> (από πού μπήκαν). Το «μπήκαν» δεν είναι παθητικό ρήμα.'},
+  {t:'Η απουσία του πλατάνου έγινε αντιληπτή <u>σε όλη τη γειτονιά</u>.',c:0,e:'Δίπλα σε ρηματικό επίθετο σε -τος (αντιληπτός) το ποιητικό αίτιο εκφέρεται με <b>σε + αιτιατική</b>: «όλη η γειτονιά αντιλήφθηκε την απουσία».'}],
+ ok:'Σωστά! Το «από + αιτιατική» είναι ποιητικό αίτιο <b>μόνο</b> όταν βρίσκεται δίπλα σε παθητικό ρήμα και δηλώνει ποιος ή τι ευθύνεται για το πάθημα.'},
+
+/* ── 3 ── */
+{g:0,m:'Παράλειψη του ποιητικού αιτίου',sh:'Σιωπή',type:'sort',
+ title:'Γιατί λείπει ο δράστης;',
+ def:'Το ποιητικό αίτιο συχνά <b>παραλείπεται</b>: α) όταν <b>εννοείται</b> εύκολα, β) όταν <b>δεν είναι γνωστό</b>, γ) όταν ο συντάκτης θέλει να το <b>αποκρύψει</b> ή να το υποβαθμίσει (διακριτικότητα, σκοπιμότητα, προπαγάνδα).',
+ kw:'<b>Ερώτηση-κλειδί:</b> «Από ποιον;» Το ξέρουμε όλοι; Δεν το ξέρει κανείς; Ή το ξέρει ο συντάκτης, αλλά δεν θέλει να το πει;',
+ task:'Σε όλα αυτά τα αποσπάσματα κάτι έγινε, αλλά δεν λέγεται από ποιον. Για κάθε απόσπασμα αποφάσισε γιατί λείπει ο δράστης. Πάτησε ένα απόσπασμα και μετά τη στήλη.',
+ cols:['Εννοείται','Δεν είναι γνωστός','Αποκρύπτεται'],
+ cards:[{t:'<span class="src">Πινακίδα στην είσοδο</span>Απαγορεύεται η είσοδος στην αυλή του σχολείου κατά τη διάρκεια της κοπής του δέντρου.',c:0,e:'Είναι αυτονόητο ποιος απαγορεύει: η Διεύθυνση του σχολείου.'},
+  {t:'<span class="src">Ενημέρωση του Συλλόγου</span>Οι γονείς κλήθηκαν σε έκτακτη συνέλευση για την κοπή του πλατάνου.',c:0,e:'Εννοείται: τους κάλεσε το Διοικητικό Συμβούλιο του Συλλόγου, που στέλνει την ενημέρωση.'},
+  {t:'<span class="src">Φωτογραφία αναγνώστη</span>Τη νύχτα γράφτηκε στον τοίχο της αυλής του σχολείου: «Θέλουμε πίσω τον πλάτανο!»',c:1,e:'Κανείς δεν ξέρει ποιος το έγραψε· γι’ αυτό και δεν δηλώνεται.'},
+  {t:'<span class="src">Σημείωμα του επιστάτη</span>Ένα σημείωμα αφέθηκε πάνω στο κούτσουρο του πλατάνου.',c:1,e:'Ο επιστάτης βρήκε το σημείωμα, αλλά δεν ξέρει ποιος το άφησε.'},
+  {t:'<span class="src">Πρακτικά της συνέλευσης</span>Ειπώθηκαν προσβλητικά λόγια για τον υπεύθυνο του συνεργείου που έκοψε τον πλάτανο.',c:2,e:'Ο συντάκτης ξέρει ποιος μίλησε, αλλά δεν τον κατονομάζει από <b>διακριτικότητα</b>.'},
+  {t:'<span class="src">Ανάρτηση μαθητή που ήταν κι ο ίδιος στην παρέα</span>Πετάχτηκαν πέτρες στο φορτηγό του συνεργείου που έκοψε τον πλάτανο.',c:2,e:'Ο μαθητής ξέρει ποιοι πέταξαν τις πέτρες (ήταν κι ο ίδιος εκεί) και <b>αποσιωπά</b> τον δράστη, για να μη φανεί η ευθύνη τους.'}],
+ ok:'Σωστά! Η παράλειψη του ποιητικού αιτίου δεν είναι πάντα αθώα. Ο καλός αναγνώστης ρωτά: <b>«από ποιον;»</b>'},
+
+/* ── 4 ── */
+{g:1,m:'Μετατροπή σύνταξης',sh:'Μετατροπή',type:'slots',
+ title:'Δύο εκδοχές για το πρωτοσέλιδο',
+ def:'<b>Ενεργητική → παθητική:</b> το αντικείμενο γίνεται υποκείμενο · το ρήμα γίνεται παθητικό · το υποκείμενο γίνεται ποιητικό αίτιο.<br><b>Παθητική → ενεργητική:</b> το ποιητικό αίτιο γίνεται υποκείμενο · το ρήμα γίνεται ενεργητικό · το υποκείμενο γίνεται αντικείμενο.',
+ kw:'<b>Προσοχή:</b> το ρήμα μένει στον <b>ίδιο χρόνο</b> (έκοψε → κόπηκε, όχι κόβεται). Ελέγχουμε και την <b>πτώση</b> κάθε όρου.',
+ task:'Χρειάζομαι δύο εκδοχές για κάθε πρόταση: μία που τονίζει ποιος έκανε κάτι και μία που τονίζει τι έγινε. Μετάτρεψε τις προτάσεις στην άλλη σύνταξη. Πάτησε ένα κομμάτι και μετά το κενό. Τρία κομμάτια περισσεύουν.',
+ html:'<div class="frm"><small>Ενεργητική</small>Το συνεργείο του Δήμου έκοψε τον πλάτανο.</div><div class="dn">↓</div><div class="to"><small>Παθητική</small>[[a]] [[b]] [[c]].</div>'+
+      '<div class="frm"><small>Παθητική</small>Οι γονείς ενημερώθηκαν από τον διευθυντή.</div><div class="dn">↓</div><div class="to"><small>Ενεργητική</small>[[d]] [[e]] [[f]].</div>',
+ ph:{a:'υποκείμενο',b:'ρήμα',c:'ποιητικό αίτιο',d:'υποκείμενο',e:'ρήμα',f:'αντικείμενο'},
+ ans:{a:'Ο πλάτανος',b:'κόπηκε',c:'από το συνεργείο του Δήμου',d:'Ο διευθυντής',e:'ενημέρωσε',f:'τους γονείς'},
+ bank:['κόβεται','Ο πλάτανος','από το συνεργείο του Δήμου','τους γονείς','Ο διευθυντής','ενημερώνει','κόπηκε','Τον πλάτανο','ενημέρωσε'],
+ why:{'κόβεται':'Το «έκοψε» είναι αόριστος. Η μετατροπή κρατά τον <b>ίδιο χρόνο</b>: «κόπηκε», όχι «κόβεται» (ενεστώτας).',
+      'ενημερώνει':'Το «ενημερώθηκαν» είναι αόριστος· χρειάζεται «ενημέρωσε», όχι «ενημερώνει».',
+      'Τον πλάτανο':'Ως υποκείμενο της παθητικής ο όρος μπαίνει σε <b>ονομαστική</b>: «Ο πλάτανος».'},
+ slotMiss:{a:'Το αντικείμενο της ενεργητικής γίνεται υποκείμενο (σε ονομαστική).',b:'Παθητικό ρήμα στον ίδιο χρόνο με το «έκοψε».',c:'Το υποκείμενο της ενεργητικής γίνεται ποιητικό αίτιο (από + αιτιατική).',d:'Το ποιητικό αίτιο γίνεται υποκείμενο.',e:'Ενεργητικό ρήμα στον ίδιο χρόνο με το «ενημερώθηκαν».',f:'Το υποκείμενο της παθητικής γίνεται αντικείμενο (σε αιτιατική).'},
+ ok:'Σωστά! Η <b>ενεργητική</b> τονίζει ποιος ενεργεί (το συνεργείο, ο διευθυντής). Η <b>παθητική</b> τονίζει την ενέργεια και αυτόν που τη δέχεται (ο πλάτανος, οι γονείς).'},
+
+/* ── 5 ── */
+{g:2,m:'Δίπτωτα ρήματα',sh:'Δίπτωτα',type:'mcq',
+ title:'Η απάντηση του Δήμου',
+ def:'Με δίπτωτα ρήματα (άμεσο + έμμεσο αντικείμενο), στην παθητική το <b>άμεσο αντικείμενο γίνεται υποκείμενο</b> και το έμμεσο μένει αντικείμενο. Με ορισμένα ρήματα (<b>διδάσκω, στερώ, πληρώνω, δανείζω</b>) γίνονται <b>δύο</b> μετατροπές, αφού υποκείμενο μπορεί να γίνει και το έμμεσο αντικείμενο.',
+ kw:'<b>Δευτερεύουσα ως αντικείμενο:</b> στην παθητική είτε <b>μένει αντικείμενο</b> (προειδοποιήθηκαν… να μην…) είτε γίνεται <b>υποκείμενο</b> (απρόσωπη σύνταξη: Ανακοινώθηκε… ότι…).',
+ task:'Ο Δήμος απάντησε με επιστολή. Για τη στήλη μας θέλω τις φράσεις της σε παθητική σύνταξη. Διάλεξε τη σωστή μετατροπή για κάθε απόσπασμα.',
+ qs:[{q:'Ο Δήμος έστειλε στον Σύλλογο την έκθεση του γεωπόνου.',
+      o:['Ο Σύλλογος στάλθηκε την έκθεση του γεωπόνου από τον Δήμο.','Η έκθεση του γεωπόνου στάλθηκε στον Σύλλογο από τον Δήμο.','Η έκθεση του γεωπόνου στέλνεται στον Σύλλογο από τον Δήμο.'],a:1,
+      e:['Με το «πληρώνω» θα στεκόταν (το συνεργείο πληρώθηκε…), με το «στέλνω» όμως όχι: υποκείμενο της παθητικής γίνεται μόνο το <b>άμεσο αντικείμενο</b> (την έκθεση).','Σωστά: το άμεσο αντικείμενο (την έκθεση) έγινε υποκείμενο, το έμμεσο (στον Σύλλογο) έμεινε αντικείμενο, ο Δήμος έγινε ποιητικό αίτιο.','Η δομή είναι σωστή, αλλά άλλαξε ο <b>χρόνος</b>: το «έστειλε» είναι αόριστος, άρα «στάλθηκε», όχι «στέλνεται» (ενεστώτας).']},
+     {q:'Ο Δήμος πλήρωσε στο συνεργείο 600 ευρώ για την κοπή.',
+      o:['Μόνο: Τα 600 ευρώ πληρώθηκαν στο συνεργείο από τον Δήμο για την κοπή.','Μόνο: Το συνεργείο πληρώθηκε 600 ευρώ από τον Δήμο για την κοπή.','Και οι δύο παραπάνω εκδοχές είναι σωστές.'],a:2,
+      e:['Είναι σωστή, αλλά όχι η μόνη. Το «πληρώνω» δέχεται δύο μετατροπές.','Είναι σωστή, αλλά όχι η μόνη. Υποκείμενο μπορεί να γίνει και το άμεσο αντικείμενο (τα 600 ευρώ).','Σωστά: με το «πληρώνω» υποκείμενο μπορεί να γίνει είτε το άμεσο αντικείμενο (τα 600 ευρώ) είτε το έμμεσο (το συνεργείο).']},
+     {q:'Ο διευθυντής προειδοποίησε τους μαθητές να μην πλησιάζουν το κούτσουρο του πλατάνου.',
+      o:['Προειδοποιήθηκε από τον διευθυντή στους μαθητές να μην πλησιάζουν το κούτσουρο του πλατάνου.','Οι μαθητές προειδοποιούνται από τον διευθυντή να μην πλησιάζουν το κούτσουρο του πλατάνου.','Οι μαθητές προειδοποιήθηκαν από τον διευθυντή να μην πλησιάζουν το κούτσουρο του πλατάνου.'],a:2,
+      e:['Αυτό θα ταίριαζε στο «ανακοινώνω» (ανακοίνωσε <b>στους</b> γονείς). Το «προειδοποιώ» όμως έχει το πρόσωπο σε <b>αιτιατική</b> (τους μαθητές): αυτό γίνεται υποκείμενο, και η δευτερεύουσα μένει αντικείμενο.','Η δομή είναι σωστή, αλλά άλλαξε ο <b>χρόνος</b>: το «προειδοποίησε» είναι αόριστος, άρα «προειδοποιήθηκαν».','Σωστά: «τους μαθητές» έγινε υποκείμενο, η δευτερεύουσα «να μην πλησιάζουν…» έμεινε αντικείμενο.']},
+     {q:'Ο Δήμος ανακοίνωσε στους γονείς ότι θα φυτευτεί νέο δέντρο.',
+      o:['Οι γονείς ανακοινώθηκαν από τον Δήμο ότι θα φυτευτεί νέο δέντρο.','Ανακοινώθηκε από τον Δήμο στους γονείς ότι θα φυτευτεί νέο δέντρο.','Θα ανακοινωθεί από τον Δήμο στους γονείς ότι θα φυτευτεί νέο δέντρο.'],a:1,
+      e:['Αυτό θα ταίριαζε στο «προειδοποιώ» (οι μαθητές προειδοποιήθηκαν). Εδώ όμως το πρόσωπο είναι έμμεσο αντικείμενο (<b>στους</b> γονείς) και δεν γίνεται υποκείμενο· υποκείμενο γίνεται η δευτερεύουσα πρόταση.','Σωστά: η δευτερεύουσα «ότι θα φυτευτεί…» έγινε υποκείμενο του «ανακοινώθηκε» (απρόσωπη παθητική σύνταξη).','Η δομή είναι σωστή, αλλά άλλαξε ο <b>χρόνος</b>: το «ανακοίνωσε» είναι αόριστος, άρα «ανακοινώθηκε», όχι μέλλοντας.']}],
+ ok:'Σωστά! Στα δίπτωτα ρήματα συνήθως υποκείμενο γίνεται το άμεσο αντικείμενο· με το «πληρώνω» (όπως και με το διδάσκω, στερώ, δανείζω) υπάρχουν δύο δυνατές μετατροπές.'},
+
+/* ── 6 ── */
+{g:2,m:'Κατηγορούμενο στο αντικείμενο',sh:'Κατηγορ.',type:'slots',
+ title:'Τι έγραψαν οι γεωπόνοι',
+ def:'Όταν το αντικείμενο έχει <b>κατηγορούμενο</b>, στην παθητική το αντικείμενο γίνεται υποκείμενο και το κατηγορούμενο <b>ακολουθεί</b>: γίνεται κατηγορούμενο του υποκειμένου, σε <b>ονομαστική</b>.',
+ kw:'Οι γεωπόνοι χαρακτήρισαν <b>τον πλάτανο επικίνδυνο</b> (αιτιατική) → <b>Ο πλάτανος</b> χαρακτηρίστηκε <b>επικίνδυνος</b> (ονομαστική).',
+ task:'Η έκθεση των γεωπόνων και ένα παλιό τεύχος της εφημερίδας μας γράφουν για τον πλάτανο. Μετάτρεψε τις προτάσεις σε παθητική σύνταξη και πρόσεξε την πτώση του κατηγορουμένου. Πάτησε ένα κομμάτι και μετά το κενό. Τέσσερα κομμάτια περισσεύουν.',
+ html:'<div class="frm"><small>Ενεργητική · έκθεση γεωπόνων</small>Οι γεωπόνοι χαρακτήρισαν τον πλάτανο επικίνδυνο.</div><div class="dn">↓</div><div class="to"><small>Παθητική</small>[[a]] [[b]] [[c]] [[d]].</div>'+
+      '<div class="frm"><small>Ενεργητική · παλιό τεύχος της εφημερίδας</small>Οι μαθητές ονόμαζαν τον πλάτανο «παππού του σχολείου».</div><div class="dn">↓</div><div class="to"><small>Παθητική</small>[[e]] [[f]] [[g]] [[h]].</div>',
+ ph:{a:'υποκείμενο',b:'ρήμα',c:'κατηγορούμενο',d:'ποιητικό αίτιο',e:'υποκείμενο',f:'ρήμα',g:'κατηγορούμενο',h:'ποιητικό αίτιο'},
+ ans:{a:'Ο πλάτανος',b:'χαρακτηρίστηκε',c:'επικίνδυνος',d:'από τους γεωπόνους',e:'Ο πλάτανος',f:'ονομαζόταν',g:'«παππούς του σχολείου»',h:'από τους μαθητές'},
+ bank:['επικίνδυνος','Ο πλάτανος','από τους μαθητές','επικίνδυνο','ονομαζόταν','χαρακτηρίστηκε','«παππού του σχολείου»','Ο πλάτανος','χαρακτηρίζεται','από τους γεωπόνους','«παππούς του σχολείου»','ονόμαζαν'],
+ why:{'επικίνδυνο':'Το κατηγορούμενο ακολουθεί το υποκείμενο και μπαίνει σε <b>ονομαστική</b>: «ο πλάτανος… επικίνδυνος».',
+      '«παππού του σχολείου»':'Το κατηγορούμενο του υποκειμένου μπαίνει σε <b>ονομαστική</b>: «παππούς», όχι «παππού».',
+      'χαρακτηρίζεται':'Ο αόριστος «χαρακτήρισαν» γίνεται αόριστος: «χαρακτηρίστηκε».',
+      'ονόμαζαν':'Το «ονόμαζαν» είναι ενεργητικό. Χρειάζεται παθητικός παρατατικός: «ονομαζόταν».'},
+ slotMiss:{a:'Το αντικείμενο γίνεται υποκείμενο.',b:'Παθητικό ρήμα, ίδιος χρόνος (αόριστος).',c:'Το κατηγορούμενο σε ονομαστική.',d:'Το υποκείμενο της ενεργητικής γίνεται ποιητικό αίτιο.',e:'Το αντικείμενο γίνεται υποκείμενο.',f:'Παθητικό ρήμα, ίδιος χρόνος (παρατατικός).',g:'Το κατηγορούμενο σε ονομαστική.',h:'Το υποκείμενο της ενεργητικής γίνεται ποιητικό αίτιο.'},
+ ok:'Σωστά! Το κατηγορούμενο «ακολουθεί» τον όρο που προσδιορίζει: από την αιτιατική (τον πλάτανο επικίνδυνο) περνά στην ονομαστική (ο πλάτανος… επικίνδυνος).'},
+
+/* ── 7 ── */
+{g:3,m:'Αναφορικές προτάσεις · αποθετικά',sh:'Ειδικές',type:'mcq',
+ title:'Οι τελευταίες διορθώσεις',
+ def:'<b>Αναφορικό «που»:</b> το αντικαθιστούμε νοερά με «ο οποίος, η οποία, το οποίο» για να δούμε τον ρόλο του. Αν είναι αντικείμενο → γίνεται <b>υποκείμενο</b>· αν είναι υποκείμενο → γίνεται <b>ποιητικό αίτιο</b> (από τον οποίο…).<br><b>Αποθετικά</b> (σέβομαι, χειρίζομαι, αντιλαμβάνομαι…): δεν έχουν παθητική σημασία· χρησιμοποιούμε <b>ρηματικό επίθετο σε -τος</b> ή <b>περίφραση</b>.',
+ kw:'Οι πολίτες σέβονται τους νόμους → ✗ «Οι νόμοι σέβονται από τους πολίτες» · ✓ «Οι νόμοι είναι σεβαστοί από τους πολίτες».',
+ task:'Το άρθρο είναι σχεδόν έτοιμο. Σε τέσσερα σημεία θέλω παθητική σύνταξη, για να μη χαθεί η έμφαση. Διάλεξε τη σωστή μετατροπή για κάθε απόσπασμα.',
+ qs:[{q:'…ο πλάτανος, <b>που φύτεψαν οι πρώτοι απόφοιτοι</b> το 1932, …',
+      o:['ο πλάτανος, τον οποίο φυτεύτηκε από τους πρώτους αποφοίτους το 1932','ο πλάτανος, ο οποίος φυτεύτηκε από τους πρώτους αποφοίτους το 1932','ο πλάτανος, ο οποίος φυτευόταν από τους πρώτους αποφοίτους το 1932'],a:1,
+      e:['Σωστά βρήκες ότι το «που» είναι αντικείμενο (= τον οποίο). Στην παθητική όμως γίνεται <b>υποκείμενο</b>, άρα περνά σε ονομαστική: «ο οποίος».','Σωστά: το «που» (= τον οποίο) ήταν αντικείμενο και έγινε υποκείμενο (ο οποίος)· οι απόφοιτοι έγιναν ποιητικό αίτιο.','Η δομή είναι σωστή, αλλά άλλαξε ο <b>χρόνος</b>: το «φύτεψαν» είναι αόριστος, άρα «φυτεύτηκε», όχι «φυτευόταν» (παρατατικός).']},
+     {q:'…οι γεωπόνοι, <b>που εξέτασαν το δέντρο</b>, …',
+      o:['οι γεωπόνοι, οι οποίοι εξετάστηκε το δέντρο','οι γεωπόνοι, από τους οποίους εξετάστηκαν το δέντρο','οι γεωπόνοι, από τους οποίους εξετάστηκε το δέντρο'],a:2,
+      e:['Το «που» (= οι οποίοι) ήταν υποκείμενο· στην παθητική γίνεται <b>ποιητικό αίτιο</b>: «από τους οποίους». Δεν μπορεί να μείνει σε ονομαστική.','Το ποιητικό αίτιο είναι σωστό, όμως το ρήμα πρέπει να συμφωνεί με το νέο υποκείμενο, «το δέντρο» (ενικός): «εξετάστηκε», όχι «εξετάστηκαν».','Σωστά: το «που» (= οι οποίοι) ήταν υποκείμενο και έγινε ποιητικό αίτιο (από τους οποίους)· υποκείμενο έγινε «το δέντρο».']},
+     {q:'Οι μαθητές <b>σέβονταν</b> τον πλάτανο.',
+      o:['Ο πλάτανος σεβόταν από τους μαθητές.','Ο πλάτανος ήταν σεβαστός στους μαθητές.','Ο πλάτανος είναι σεβαστός στους μαθητές.'],a:1,
+      e:['Το «σέβομαι» είναι αποθετικό: έχει παθητική κατάληξη αλλά <b>μόνο ενεργητική σημασία</b>. Το «σεβόταν» θα σήμαινε ότι ο πλάτανος σεβόταν κάποιον.','Σωστά: το αποθετικό αντικαθίσταται με ρηματικό επίθετο σε -τος (σεβαστός), στον ίδιο χρόνο (παρατατικός → ήταν). Το ποιητικό αίτιο εδώ: σε + αιτιατική.','Σωστή λύση με ρηματικό επίθετο, αλλά άλλαξε ο <b>χρόνος</b>: το «σέβονταν» είναι παρατατικός, άρα «ήταν σεβαστός».']},
+     {q:'Ο αντιδήμαρχος <b>χειρίζεται</b> την υπόθεση του πλατάνου.',
+      o:['Η υπόθεση του πλατάνου χειρίζεται από τον αντιδήμαρχο.','Η υπόθεση του πλατάνου είναι χειριστή από τον αντιδήμαρχο.','Η υπόθεση του πλατάνου είναι αντικείμενο χειρισμού από τον αντιδήμαρχο.'],a:2,
+      e:['Το «χειρίζομαι» είναι αποθετικό: δεν έχει παθητική σημασία, άρα δεν σχηματίζει παθητική σύνταξη.','Σωστά σκέφτηκες ρηματικό επίθετο, αλλά από το «χειρίζομαι» δεν υπάρχει επίθετο σε -τος. Σε αυτή την περίπτωση χρησιμοποιούμε <b>περίφραση</b>.','Σωστά: όταν δεν υπάρχει ρηματικό επίθετο, χρησιμοποιούμε περίφραση με παθητική σημασία.']}],
+ ok:'Σωστά! Πριν μετατρέψουμε, ελέγχουμε πρώτα τον ρόλο του «που» και αν το ρήμα είναι αποθετικό.'},
+
+/* ── 8 ── */
+{g:4,m:'Τι αλλάζει στο νόημα',sh:'Πρωτοσέλιδα',type:'sort',
+ title:'Ποιος θα διάλεγε ποιο πρωτοσέλιδο;',
+ def:'Η <b>ενεργητική</b> σύνταξη τονίζει <b>ποιος ενεργεί</b>. Η <b>παθητική</b> τονίζει <b>την ενέργεια</b>, και, χωρίς ποιητικό αίτιο, μπορεί να αφήσει στη σκιά τον υπεύθυνο.',
+ kw:'Η επιλογή σύνταξης <b>δεν είναι ουδέτερη</b>: δείχνει τι θέλει να τονίσει ο συντάκτης και τι να αποσιωπήσει.',
+ task:'Τελευταίο βήμα πριν το τύπωμα. Αυτοί οι τίτλοι κυκλοφόρησαν για το ίδιο γεγονός. Ποιους θα διάλεγε ο Δήμος, που θέλει να μη φανεί ως υπεύθυνος, και ποιους ο Σύλλογος Γονέων, που θέλει να τονίσει την ευθύνη του Δήμου; Πάτησε έναν τίτλο και μετά τη στήλη.',
+ cols:['Θα τον διάλεγε ο Δήμος','Θα τον διάλεγε ο Σύλλογος Γονέων'],
+ cards:[{t:'Απομακρύνθηκε επικίνδυνο δέντρο από τον σχολικό χώρο',c:0,e:'Παθητική χωρίς ποιητικό αίτιο: τονίζεται η ενέργεια (και το «επικίνδυνο»), ενώ ο υπεύθυνος δεν αναφέρεται.'},
+  {t:'Ο Δήμος έκοψε τον πλάτανο χωρίς να ενημερώσει τους γονείς',c:1,e:'Ενεργητική: ο Δήμος είναι υποκείμενο και η ευθύνη του φαίνεται καθαρά.'},
+  {t:'Κόπηκε για λόγους ασφαλείας ο πλάτανος του σχολείου',c:0,e:'Παθητική χωρίς ποιητικό αίτιο: το βάρος πέφτει στους «λόγους ασφαλείας», όχι σε αυτόν που αποφάσισε.'},
+  {t:'Το συνεργείο του Δήμου ξερίζωσε το δέντρο των μαθητών',c:1,e:'Ενεργητική: ο δράστης στη θέση του υποκειμένου και ένα ρήμα με ένταση (ξερίζωσε).'}],
+ ok:'Σωστά! Ο ίδιος ο γεγονός, δύο συντάξεις, δύο διαφορετικές «αλήθειες». Ο κριτικός αναγνώστης ρωτά πάντα: <b>ποιος το έκανε, και γιατί δεν μου το λένε;</b>'}
+];
+ST[7].ok=ST[7].ok.replace('Ο ίδιος ο γεγονός','Το ίδιο γεγονός');
+const N=ST.length;
+
+let step=-1,maxStep=0,solved=Array(N).fill(false),firstTry=Array(N).fill(null);
+const $=id=>document.getElementById(id);
+const main=()=>$('main');
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function stamps(){ $('stamps').innerHTML=ST.map((s,i)=>{const can=i<=maxStep&&i!==step;const gs=i>0&&ST[i-1].g!==s.g;
+  return `<div class="stamp ${gs?'gs':''} ${solved[i]&&i!==step?'ok':i===step?'now':''} ${can?'go':''}" ${can?`onclick="go(${i})" title="Μετάβαση: ${s.m}"`:''}>${solved[i]&&i!==step?'✓':i+1}<span>${s.sh}</span></div>`;}).join(''); navbar(); }
+function navbar(){
+  const b=$('nBack'),f=$('nFwd'),m=$('nMid');
+  if(step<0){b.hidden=true;f.hidden=false;f.className='nbtn fwd on';f.textContent='Ξεκινάμε →';m.innerHTML='<b>Η υπόθεση</b>';return;}
+  if(step>=N){b.hidden=false;f.hidden=true;m.innerHTML='<b>Τα δύο άρθρα τυπώθηκαν</b>';return;}
+  b.hidden=false;f.hidden=false;
+  const ok=solved[step];f.className='nbtn fwd'+(ok?' on':'');
+  f.textContent=step===N-1?'Τύπωμα →':'Επόμενο →';
+  m.innerHTML=`Στάδιο <b>${step+1} / ${N}</b><span class="nm-x"> · ${ST[step].m}</span>`+(ok?'':'<br><span class="nm-h">ολοκλήρωσε το στάδιο για να συνεχίσεις</span>');
+}
+function go(i){ if(i===-1){step=-1;stamps();note();intro();window.scrollTo({top:0});fitZoom();return;} if(i<0||i>maxStep)return; step=i; stamps(); note();
+  if(step>=N)fin(); else ({slots:sSlots,sort:sSort,mcq:sMcq})[ST[step].type](ST[step]);
+  if(step<N&&solved[step])fb('ok',ST[step].ok); window.scrollTo({top:0}); fitZoom(); }
+function fwd(){ if(step<0){go(0);return;} if(step<N&&solved[step]) go(step+1); }
+function note(){
+  if(step<0){$('note').innerHTML='<div class="st">Νέα αποστολή</div><h2>Ρεπόρτερ σε δράση</h2><p>Ένα δέντρο κόπηκε. Όλοι μιλούν γι’ αυτό, αλλά κανείς δεν λέει καθαρά <b>ποιος</b> το έκοψε. Η απάντηση κρύβεται… στη σύνταξη.</p>';return;}
+  if(step>=N){$('note').innerHTML='<div class="st">Τυπώθηκε</div><h2>Μπράβο, ρεπόρτερ!</h2><p>Έλυσες την υπόθεση: βρήκες ποιος έκοψε τον πλάτανο και πώς κάθε πλευρά διάλεξε τη σύνταξή της.</p><div class="kw"><b>Θυμήσου:</b> όταν διαβάζεις παθητική σύνταξη χωρίς ποιητικό αίτιο, ρώτα: «<b>από ποιον;</b>»</div>';return;}
+  const s=ST[step]; $('note').innerHTML=`<span class="grp">Βήμα ${s.g+1} · ${GROUPS[s.g]}</span><div class="st">Θεωρία</div><h2>${s.m}</h2><p>${s.def}</p><div class="kw">${s.kw}</div>`; }
+function attempt(ok){ if(firstTry[step]===null) firstTry[step]=ok; }
+function fb(cls,html){const f=$('fb');if(!f)return;f.className='fb '+cls;f.innerHTML=html;setTimeout(()=>f.scrollIntoView({behavior:'smooth',block:'nearest'}),60);}
+function finish(){ solved[step]=true; if(maxStep<step+1)maxStep=step+1; $('row').innerHTML=''; fb('ok',ST[step].ok); stamps(); fitZoom(); }
+function sheet(inner,btns){return `<div class="sheet"><div class="kicker">Στάδιο ${step+1} · ${ST[step].m}</div><div class="ttl">${ST[step].title}</div><div class="order">${ST[step].task}<span class="by">— Η αρχισυντάκτρια</span></div>${inner}<div class="fb" id="fb"></div><div class="row" id="row">${solved[step]?'':btns}</div></div>`;}
+
+/* ══ Κομμάτια σε κενά ══ */
+function sSlots(s){
+  const keys=Object.keys(s.ans);const val={};let sel=null,lock=solved[step];
+  main().innerHTML=sheet('<div class="bank" id="B"></div><div id="T"></div>','<button class="btn" id="chk">Έλεγχος</button><button class="btn ghost" id="clr">Καθαρισμός</button>');
+  if(lock){const usedI=new Set();keys.forEach(k=>{const i=s.bank.findIndex((w,j)=>w===s.ans[k]&&!usedI.has(j));usedI.add(i);val[k]=i;});}
+  const isUsed=i=>Object.values(val).includes(i);
+  function drawBank(){const B=$('B');B.innerHTML='';if(lock){B.style.display='none';return;}
+    s.bank.forEach((w,i)=>{const c=document.createElement('span');c.className='chip'+(w.length>22?' wide':'')+(sel===i?' sel':'')+(isUsed(i)?' used':'');c.textContent=w;
+      c.onclick=()=>{if(lock)return;sel=sel===i?null:i;drawBank();};B.appendChild(c);});}
+  function drawT(){$('T').innerHTML=s.html.replace(/\[\[(\w)\]\]/g,(_,k)=>`<span class="slot${lock?' ok':''}" data-k="${k}" data-ph="${s.ph[k]}">${val[k]!==undefined?s.bank[val[k]]:''}</span>`);
+    $('T').querySelectorAll('.slot').forEach(sl=>sl.onclick=()=>{if(lock)return;const k=sl.dataset.k;
+      if(sel!==null){for(const x in val)if(val[x]===sel)delete val[x];val[k]=sel;sel=null;}else if(val[k]!==undefined)delete val[k];
+      $('fb').className='fb';drawBank();drawT();});}
+  drawBank();drawT();if(lock)return;
+  $('clr').onclick=()=>{for(const k in val)delete val[k];sel=null;$('fb').className='fb';drawBank();drawT();};
+  $('chk').onclick=()=>{if(keys.some(k=>val[k]===undefined)){fb('info','Συμπλήρωσε πρώτα όλα τα κενά.');return;}
+    let bad=[];keys.forEach(k=>{const sl=$('T').querySelector(`.slot[data-k="${k}"]`);const w=s.bank[val[k]];const r=w===s.ans[k];sl.classList.add(r?'ok':'ko');if(!r)bad.push([k,w]);});
+    attempt(!bad.length);
+    if(!bad.length){lock=true;drawBank();finish();return;}
+    const [k,w]=bad[0];fb('ko',`<b>${keys.length-bad.length} από ${keys.length}</b> σωστά. ${(s.why&&s.why[w])||s.slotMiss[k]} Πάτησε ένα κόκκινο κενό για να το αδειάσεις.`);};
+}
+
+/* ══ Ταξινόμηση σε στήλες ══ */
+function sSort(s){
+  const where={};let sel=null,lock=solved[step];const order=shuffle(s.cards.map((_,i)=>i));
+  if(lock)s.cards.forEach((c,i)=>where[i]=c.c);
+  const nb=s.cols.length;
+  main().innerHTML=sheet(`<div class="pool" id="P"></div><div class="bins ${nb===2?'two':''}" id="BN">${s.cols.map((c,j)=>`<div class="bin" data-j="${j}"><h6>${c}</h6></div>`).join('')}</div>`,'<button class="btn" id="chk">Έλεγχος</button>');
+  function card(i){const c=document.createElement('span');c.className='card'+(sel===i?' sel':'')+(lock?' ok':'');c.innerHTML=s.cards[i].t;
+    c.onclick=e=>{e.stopPropagation();if(lock)return;
+      if(where[i]!==undefined&&sel!==null&&sel!==i){where[sel]=where[i];sel=null;$('fb').className='fb';draw();return;}
+      sel=sel===i?null:i;draw();};return c;}
+  function draw(){const P=$('P');P.innerHTML='';order.forEach(i=>{if(where[i]===undefined)P.appendChild(card(i));});P.style.display=P.children.length?'flex':'none';
+    document.querySelectorAll('#BN .bin').forEach(b=>{const j=+b.dataset.j;b.querySelectorAll('.card').forEach(x=>x.remove());order.forEach(i=>{if(where[i]===j)b.appendChild(card(i));});
+      b.onclick=()=>{if(lock||sel===null)return;where[sel]=j;sel=null;$('fb').className='fb';draw();};});}
+  draw();if(lock)return;
+  $('chk').onclick=()=>{if(s.cards.some((_,i)=>where[i]===undefined)){fb('info','Τοποθέτησε πρώτα όλα τα αποσπάσματα στις στήλες.');return;}
+    const bad=s.cards.map((c,i)=>i).filter(i=>where[i]!==s.cards[i].c);attempt(!bad.length);
+    if(!bad.length){lock=true;draw();finish();return;}
+    bad.forEach(i=>delete where[i]);draw();
+    const c=s.cards[bad[0]];const tx=c.t.replace(/<span class="src">.*?<\/span>/,'').replace(/<[^>]+>/g,'');
+    fb('ko',`<b>${s.cards.length-bad.length} από ${s.cards.length}</b> σωστά. Τα λάθος αποσπάσματα γύρισαν πάνω. Βοήθεια για το πρώτο: «${tx}» ${c.e||'Ξανασκέψου: '+ST[step].kw.replace(/<[^>]+>/g,'')}`);};
+}
+
+/* ══ Ερωτήσεις επιλογής ══ */
+function sMcq(s){
+  const ch={};let lock=solved[step];
+  if(lock)s.qs.forEach((q,i)=>ch[i]=q.a);
+  main().innerHTML=sheet(s.qs.map((q,i)=>`<div class="mcq" id="q${i}"><div class="q"><small>Απόσπασμα ${i+1}</small>${q.q}</div><div class="opts">${q.o.map((o,j)=>`<div class="opt" data-i="${i}" data-j="${j}">${o}</div>`).join('')}</div><div class="why" id="w${i}"></div></div>`).join(''),'<button class="btn" id="chk">Έλεγχος</button>');
+  function draw(){document.querySelectorAll('.mcq .opt').forEach(o=>{const i=+o.dataset.i,j=+o.dataset.j;o.className='opt'+(ch[i]===j?(lock?' ok':' on'):'');
+    o.onclick=()=>{if(lock)return;ch[i]=j;$('w'+i).className='why';draw();};});}
+  draw();if(lock)return;
+  $('chk').onclick=()=>{if(s.qs.some((_,i)=>ch[i]===undefined)){fb('info','Διάλεξε πρώτα μία απάντηση σε κάθε απόσπασμα.');return;}
+    let n=0;s.qs.forEach((q,i)=>{const r=ch[i]===q.a;if(r)n++;const w=$('w'+i);w.className='why '+(r?'ok':'ko');w.innerHTML=q.e[ch[i]];
+      const o=document.querySelector(`.opt[data-i="${i}"][data-j="${ch[i]}"]`);o.className='opt '+(r?'ok':'ko');});
+    attempt(n===s.qs.length);
+    if(n===s.qs.length){lock=true;finish();return;}
+    fb('ko',`<b>${n} από ${s.qs.length}</b> σωστά. Διάβασε τα σχόλια κάτω από τις λάθος απαντήσεις και διάλεξε ξανά.`);};
+}
+
+/* ══ Εισαγωγή ══ */
+function intro(){
+  main().innerHTML=`<div class="sheet intro"><div class="kicker">Η υπόθεση</div><div class="ttl">Ένα πρωί χωρίς σκιά</div>
+  <p class="lead">Τη Δευτέρα το πρωί, ο αιωνόβιος πλάτανος στην αυλή του σχολείου δεν ήταν πια εκεί. Έμεινε μόνο ένα φρεσκοκομμένο κούτσουρο. Μέχρι το μεσημέρι το γραφείο της εφημερίδας γέμισε ανακοινώσεις, αναρτήσεις και σημειώματα. Όλα λένε τι <b>έγινε</b>, λίγα λένε <b>ποιος</b> το έκανε.</p>
+  <h5>Τα πρόσωπα</h5>
+  <div class="roles">
+   <div class="role me"><div class="ic">🔎</div><b>Εσύ · ρεπόρτερ</b><p>Βρίσκεις ποιος ευθύνεται και γράφεις το ρεπορτάζ.</p></div>
+   <div class="role"><div class="ic">✒️</div><b>Η αρχισυντάκτρια</b><p>Σου δίνει εντολές σε κάθε στάδιο.</p></div>
+   <div class="role"><div class="ic">📨</div><b>Οι πηγές</b><p>Ο Δήμος, ο Σύλλογος Γονέων, ο επιστάτης, ένα τοπικό site. Ο καθένας γράφει με τον δικό του τρόπο.</p></div>
+  </div>
+  <h5>Τα στάδια της έρευνας</h5>
+  <div class="proc">
+   <div class="pr"><div class="n">1–3</div><div><b>Διαβάζω τις πηγές</b><span>Ενεργητική ή παθητική; Πού είναι το ποιητικό αίτιο; Γιατί λείπει;</span></div></div>
+   <div class="pr"><div class="n">4</div><div><b>Μετατρέπω</b><span>Δύο εκδοχές για κάθε πρόταση: ποιος το έκανε / τι έγινε.</span></div></div>
+   <div class="pr"><div class="n">5–6</div><div><b>Δύσκολες προτάσεις</b><span>Δίπτωτα ρήματα και κατηγορούμενο στο αντικείμενο.</span></div></div>
+   <div class="pr"><div class="n">7</div><div><b>Τελικές διορθώσεις</b><span>Αναφορικό «που» και αποθετικά ρήματα.</span></div></div>
+   <div class="pr"><div class="n">8</div><div><b>Τα πρωτοσέλιδα</b><span>Ποιος διαλέγει ποια σύνταξη και γιατί;</span></div></div>
+   <div class="pr end"><div class="n">✓</div><div><b>Τύπωμα</b><span>Δύο άρθρα για το ίδιο γεγονός, δίπλα δίπλα.</span></div></div>
+  </div>
+  <h5>Πώς δουλεύεις</h5>
+  <ul class="how"><li>Διάβασε στο κίτρινο χαρτάκι τη θεωρία κάθε σταδίου.</li><li>Πάτησε ένα στοιχείο και μετά τη θέση του. Ξαναπατώντας το, το βγάζεις.</li><li>Με τον «Έλεγχο» βλέπεις τι είναι σωστό και γιατί. Το «Επόμενο» ανάβει όταν ολοκληρώσεις το στάδιο.</li></ul>
+  <div class="sign">— Η αρχισυντάκτρια</div></div>`;
+}
+
+/* ══ Τέλος: η σελίδα της εφημερίδας ══ */
+function fin(){
+  const first=firstTry.filter(x=>x===true).length;
+  main().innerHTML=`<div class="paper"><div class="mast"><h3>Η Φωνή της Αυλής</h3><div>Σχολική εφημερίδα · Δύο άρθρα, ένα γεγονός</div></div>
+  <div class="byline"><span>Ρεπορτάζ</span><span>Φύλλο αριθ. 12</span></div>
+  <p class="lead2">Το ίδιο γεγονός γράφτηκε δύο φορές. Το ένα το έγραψε ο Δήμος, το άλλο ο Σύλλογος Γονέων. Πρόσεξε τις <span class="hl">σημειωμένες</span> συντάξεις: <b>ποιος γράφει</b> εξηγεί <b>ποια σύνταξη διαλέγει</b>.</p>
+  <div class="twin">
+   <div class="art2 pas" id="artA"><i>Άρθρο Α · Από την ιστοσελίδα του Δήμου · Παθητική σύνταξη</i>
+    <h5>Απομακρύνθηκε επικίνδυνο δέντρο από την αυλή του σχολείου</h5>
+    <p>Τη Δευτέρα το πρωί <span class="hl">κόπηκε</span><span class="gh">από συνεργείο του Δήμου</span> ο αιωνόβιος πλάτανος στην αυλή του σχολείου. Το δέντρο <span class="hl">είχε χαρακτηριστεί</span><span class="gh">από τους γεωπόνους του Δήμου</span> επικίνδυνο, καθώς ο κορμός του είχε σαπίσει.</p>
+    <p>Η απόφαση για την απομάκρυνσή του <span class="hl">είχε ληφθεί</span><span class="gh">από τον Δήμο</span> ήδη από τον Οκτώβριο. Η έκθεση των γεωπόνων <span class="hl">διαβιβάστηκε</span><span class="gh">από τον Δήμο</span> στον Σύλλογο Γονέων. <span class="hl">Ανακοινώθηκε</span><span class="gh">από τον Δήμο</span> ότι στην ίδια θέση <span class="hl">θα φυτευτεί</span><span class="gh">από τον Δήμο</span> νέο δέντρο.</p>
+    <div class="sum"><b>Πρόθεση: να μη φανεί ο υπεύθυνος.</b> Ο Δήμος γράφει για μια δική του ενέργεια, αλλά ο ίδιος δεν εμφανίζεται πουθενά. Έξι παθητικά ρήματα, κανένα ποιητικό αίτιο: δεν λέγεται ποιος έκοψε, ποιος αποφάσισε, ούτε ότι η έκθεση στάλθηκε <i class="x">μετά</i> την κοπή. Στο προσκήνιο μένει μόνο «το επικίνδυνο δέντρο».</div>
+    <button class="btn reveal-btn" onclick="revealA(this)">🔎 Δείξε τα ποιητικά αίτια που λείπουν</button>
+   </div>
+   <div class="art2 act"><i>Άρθρο Β · Από την ανακοίνωση του Συλλόγου Γονέων · Ενεργητική σύνταξη</i>
+    <h5>Ο Δήμος έκοψε τον πλάτανο του σχολείου χωρίς να ενημερώσει τους γονείς</h5>
+    <p>Τη Δευτέρα το πρωί <span class="hl">συνεργείο του Δήμου έκοψε</span> τον αιωνόβιο πλάτανο στην αυλή του σχολείου. <span class="hl">Οι γεωπόνοι του Δήμου είχαν χαρακτηρίσει</span> το δέντρο επικίνδυνο ήδη από τον Οκτώβριο.</p>
+    <p><span class="hl">Ο Δήμος</span> όμως <span class="hl">δεν ενημέρωσε</span> ούτε τη διεύθυνση ούτε τους γονείς· <span class="hl">έστειλε</span> την έκθεση των γεωπόνων στον Σύλλογο μόλις την επομένη της κοπής. <span class="hl">Ο Σύλλογος ζητά</span> εξηγήσεις από τον αντιδήμαρχο.</p>
+    <div class="sum"><b>Πρόθεση: να φανεί καθαρά ο υπεύθυνος.</b> Ο Σύλλογος βάζει τον Δήμο στη θέση του <b>υποκειμένου</b> σε κάθε περίοδο: ο Δήμος έκοψε, ο Δήμος δεν ενημέρωσε, ο Δήμος έστειλε αργά. Η ενεργητική σύνταξη «δείχνει με το δάχτυλο».</div>
+   </div>
+  </div>
+  <div class="pull">Όποιος έχει την ευθύνη προτιμά την παθητική σύνταξη χωρίς ποιητικό αίτιο. Όποιος ζητά λόγο προτιμά την ενεργητική.</div>
+  <div class="checks">
+   <div class="ck"><b>✓ Διάθεση, όχι φωνή:</b> «έσπασε» = παθητική σημασία, «σέβονταν» = ενεργητική.</div>
+   <div class="ck"><b>✓ Ποιητικό αίτιο:</b> μόνο δίπλα σε παθητικό ρήμα· όχι το «από» του τόπου, του χρόνου, της ύλης.</div>
+   <div class="ck"><b>✓ Σιωπή:</b> ο δράστης λείπει όταν εννοείται, όταν είναι άγνωστος ή όταν κάποιος θέλει να τον κρύψει.</div>
+   <div class="ck"><b>✓ Μετατροπή:</b> ίδιος χρόνος, σωστές πτώσεις, κατηγορούμενο σε ονομαστική.</div>
+   <div class="ck"><b>✓ Ειδικές περιπτώσεις:</b> ρόλος του «που» · αποθετικά με «-τος» ή περίφραση.</div>
+   <div class="ck"><b>✓ Κριτική ματιά:</b> η σύνταξη δείχνει τι θέλει να τονίσει και τι να κρύψει ο συντάκτης.</div>
+  </div>
+  <div class="score">Στάδια που έλυσες με την πρώτη προσπάθεια: <b>${first} / ${N}</b></div>
+  <div class="row" style="justify-content:center"><button class="btn ghost" onclick="restart()">↺ Ξανά από την αρχή</button></div></div>`;
+}
+function revealA(btn){const a=$('artA');a.classList.toggle('reveal');btn.textContent=a.classList.contains('reveal')?'↺ Κρύψε ξανά τα ποιητικά αίτια':'🔎 Δείξε τα ποιητικά αίτια που λείπουν';fitZoom();}
+function restart(){step=0;maxStep=0;solved=Array(N).fill(false);firstTry=Array(N).fill(null);go(0);}
+go(-1);
+</script>
+</body>
+</html>
