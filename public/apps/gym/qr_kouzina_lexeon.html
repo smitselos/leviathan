@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Η κουζίνα των λέξεων · Δημιουργία λέξεων</title>
+<style>
+:root{--desk:#F1E7DA;--paper:#FFFDF8;--ink:#2a221b;--mut:#7d7062;--red:#B5452B;--red2:#F8E0D8;--green:#3C7A3A;--green2:#E2F0DC;--blue:#2F6690;--blue2:#E0ECF5;--line:#E6DACA;--amber:#C98A1E;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--desk);background-image:linear-gradient(45deg,rgba(181,69,43,.04) 25%,transparent 25%,transparent 75%,rgba(181,69,43,.04) 75%),linear-gradient(45deg,rgba(181,69,43,.04) 25%,transparent 25%,transparent 75%,rgba(181,69,43,.04) 75%);background-size:48px 48px;background-position:0 0,24px 24px;color:var(--ink);font-family:"Helvetica Neue",Arial,sans-serif;min-height:100vh}
+.top{max-width:920px;margin:0 auto;padding:22px 18px 8px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand small{display:block;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--red);font-weight:700}
+.brand h1{font-family:Georgia,serif;font-size:30px;line-height:1.1}
+.brand h1 em{color:var(--red)}
+.help{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;border-bottom:1px dotted var(--blue)}
+.stamps{display:flex;gap:22px;padding-bottom:16px}
+.stamp{width:40px;height:40px;border-radius:50%;border:2px dashed #bcae9a;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#bcae9a;font-size:16px;transition:all .3s;position:relative;cursor:default;background:#fff}
+.stamp.now{border-style:solid;border-color:var(--red);color:var(--red);transform:scale(1.08)}
+.stamp.ok{border-style:solid;border-color:var(--green);background:var(--green);color:#fff}
+.stamp.go{cursor:pointer}
+.stamp.gs{margin-left:14px}
+.stamp span{position:absolute;top:44px;left:50%;transform:translateX(-50%);font-family:Arial;font-size:10px;font-weight:600;color:var(--mut);white-space:nowrap}
+.wrap{max-width:920px;margin:0 auto;padding:10px 18px 40px;display:grid;grid-template-columns:250px 1fr;gap:18px}
+.note{background:#FFF6C9;border-radius:4px;padding:18px 16px;box-shadow:2px 3px 0 rgba(0,0,0,.08);transform:rotate(-1deg);align-self:start;position:sticky;top:14px}
+.note .st{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);font-weight:700}
+.note h2{font-family:Georgia,serif;font-size:21px;margin:4px 0 8px;line-height:1.2}
+.note p{font-size:14px;line-height:1.55}
+.note .kw{margin-top:10px;padding-top:8px;border-top:1px dashed #d9c879;font-size:13px;line-height:1.5}
+.note .grp{display:inline-block;font-size:11px;font-weight:700;color:#7a5d0e;background:#F7E79A;border-radius:10px;padding:2px 9px;margin-bottom:6px}
+.sheet{background:var(--paper);border-radius:10px;box-shadow:0 1px 0 #d8cbb6,0 10px 30px rgba(70,40,10,.13);padding:28px 32px;min-height:420px}
+.kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.ttl{font-family:Georgia,serif;font-size:24px;margin-bottom:14px}
+.ticket{position:relative;background:#fff;border:1px solid var(--line);border-top:5px solid var(--red);padding:12px 16px 12px 16px;margin:0 0 16px;font-family:"Courier New",monospace;font-size:15.5px;line-height:1.6;color:#4a2a1e;box-shadow:2px 3px 0 rgba(0,0,0,.05)}
+.ticket b.h{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;color:var(--red);margin-bottom:4px}
+.ticket .by{display:block;text-align:right;font-family:Georgia,serif;font-style:italic;font-size:13px;color:#8a3a2e;margin-top:6px}
+.fb{scroll-margin-bottom:100px;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:15px;line-height:1.55;display:none}
+.fb.ok{display:block;background:var(--green2);color:#24501f}
+.fb.ko{display:block;background:var(--red2);color:#7a2219}
+.fb.info{display:block;background:var(--blue2);color:#1d3f5c}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{background:var(--red);color:#fff;border:0;border-radius:6px;padding:10px 20px;font-size:15px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--red);border:2px solid var(--red)}
+.bank{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+.chip{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:20px;padding:6px 14px;font-weight:700;font-size:15px;cursor:pointer;user-select:none}
+.chip.sel{background:var(--blue);color:#fff}
+.chip.used{opacity:.3;pointer-events:none}
+.slot{display:inline-block;min-width:118px;border-bottom:2px solid var(--red);text-align:center;color:var(--red);cursor:pointer;font-family:Arial;font-size:15px;font-weight:700;padding:0 6px;min-height:1.4em;line-height:1.4;vertical-align:baseline}
+.slot[data-ph]:empty::before{content:attr(data-ph);color:#d7a59e;font-weight:600;font-size:12.5px}
+.slot.ok{border-color:var(--green);color:var(--green)}
+.slot.ko{border-color:var(--red);background:var(--red2)}
+.cut{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.board{background:#E9D3B4;border-radius:12px;padding:12px;text-align:center;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.board .w{font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:8px}
+.board .w small{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;color:#8a6a45;font-weight:700}
+.board .slot{display:block;margin:6px auto;min-width:0;width:90%;background:#fff;border:2px dashed #d7a59e;border-radius:8px;padding:4px}
+.board .slot.ok{border-style:solid}
+.board .plus{color:#8a6a45;font-weight:700}
+.sent{font-family:Georgia,serif;font-size:17.5px;line-height:2.3;margin:2px 0}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;min-height:10px}
+.card{background:#fff;border:2px solid var(--line);border-radius:8px;padding:7px 11px;font-family:Georgia,serif;font-size:15px;cursor:pointer;line-height:1.35;box-shadow:1px 2px 0 rgba(0,0,0,.05)}
+.card:hover{border-color:var(--blue)}
+.card.sel{border-color:var(--blue);background:var(--blue);color:#fff}
+.card.ok{border-color:var(--green);background:var(--green2);cursor:default}
+.card u{text-decoration:none;border-bottom:2px solid var(--amber);font-weight:700}
+.card .o{display:block;font-family:Arial;font-size:12px;color:var(--mut);margin-top:2px}
+.card.sel .o{color:#e6eef6}
+.bins{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.bins.two{grid-template-columns:1fr 1fr}
+.bin{border:2px dashed #d7cdb9;border-radius:12px;padding:8px;min-height:150px;cursor:pointer;background:rgba(255,255,255,.55);display:flex;flex-direction:column;gap:6px}
+.bin:hover{border-color:var(--blue);background:var(--blue2)}
+.bin h6{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);text-align:center;margin-bottom:2px}
+.bin .card{font-size:14px}
+.mcq{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.mcq .q{font-family:Georgia,serif;font-size:16.5px;margin-bottom:8px;line-height:1.5}
+.mcq .q small{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:2px}
+.mcq .q u{text-decoration:none;border-bottom:2px solid var(--amber);font-weight:700}
+.opts{display:grid;gap:8px}
+.opt{background:#fff;border:2px solid var(--line);border-radius:8px;padding:9px 12px 9px 38px;font-family:Georgia,serif;font-size:15.5px;cursor:pointer;position:relative;line-height:1.45}
+.opt::before{content:"";position:absolute;left:12px;top:11px;width:16px;height:16px;border:2px solid #bcae9a;border-radius:50%;background:#fff}
+.opt:hover{border-color:var(--blue)}
+.opt.on{border-color:var(--blue);background:var(--blue2)}
+.opt.on::before{background:var(--blue);border-color:var(--blue)}
+.opt.ok{border-color:var(--green);background:var(--green2)}.opt.ok::before{background:var(--green);border-color:var(--green)}
+.opt.ko{border-color:var(--red);background:var(--red2)}.opt.ko::before{border-color:var(--red)}
+.why{display:none;font-size:14px;line-height:1.5;margin-top:6px;padding:7px 10px;border-radius:6px}
+.why.ko{display:block;background:var(--red2);color:#7a2219}
+.why.ok{display:block;background:var(--green2);color:#24501f}
+.intro p.lead{font-family:Georgia,serif;font-size:17px;line-height:1.75;margin-bottom:16px}
+.intro h5{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin:20px 0 10px}
+.dict{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dict div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.dict b{display:block;font-family:Georgia,serif;font-size:16px;margin-bottom:2px}
+.proc{display:grid;gap:8px}
+.pr{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.pr .n{width:34px;height:34px;flex-shrink:0;border-radius:50%;border:2px dashed #bcae9a;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#8a7f69}
+.pr b{display:block;font-size:14px}
+.pr span{font-size:13.5px;color:#4a453c}
+.pr.end{background:var(--green2);border-color:#c5dfbb}.pr.end .n{border:2px solid var(--green);color:var(--green)}
+.how{list-style:none;display:grid;gap:7px}
+.how li{font-size:14px;line-height:1.5;padding-left:22px;position:relative}
+.how li::before{content:"•";position:absolute;left:6px;color:var(--red);font-weight:700}
+.sign{margin-top:18px;font-family:Georgia,serif;font-style:italic;text-align:right;color:#4a453c}
+.menu{background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 10px 30px rgba(70,40,10,.15);padding:28px 34px}
+.menu .mh{text-align:center;border-bottom:3px double var(--ink);padding-bottom:8px;margin-bottom:14px}
+.menu .mh h3{font-family:Georgia,serif;font-size:32px}
+.menu .mh div{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut)}
+.menu h4{font-family:Georgia,serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--red);text-align:center;margin:16px 0 8px}
+.dish{display:flex;align-items:baseline;gap:8px;font-family:Georgia,serif;font-size:17px;margin:5px 0}
+.dish .dots{flex:1;border-bottom:2px dotted #cdbfa8;transform:translateY(-4px)}
+.dish .rc{font-family:Arial;font-size:13px;color:var(--mut)}
+.dish .rc b{color:var(--red)}
+.maker{margin-top:20px;background:#FFF8EE;border:2px dashed #e2c9a5;border-radius:12px;padding:14px 16px}
+.maker h5{font-family:Georgia,serif;font-size:18px;margin-bottom:6px}
+.maker p{font-size:14px;line-height:1.5;color:#4a453c}
+.mk-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;align-items:center}
+.mk-row small{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;width:100%}
+.mk-out{font-family:Georgia,serif;font-size:26px;text-align:center;margin-top:10px;min-height:38px}
+.mk-out .p1,.mk-out .p3{color:var(--blue);font-weight:700}
+.mk-out .p2{color:#8a6a45;font-weight:700}
+.mk-out .p4{color:var(--red);font-weight:700}
+.mk-rc{text-align:center;font-size:13.5px;color:var(--mut)}
+.checks{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ck{background:var(--green2);border-radius:6px;padding:9px 12px;font-size:14px;line-height:1.4}
+.ck b{color:var(--green)}
+.score{font-family:Georgia,serif;font-size:15px;margin-top:14px;text-align:center;color:var(--mut)}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,253,248,.97);border-top:1px solid #d8cbb6;box-shadow:0 -4px 16px rgba(60,40,10,.08);z-index:20}
+.nav-in{max-width:920px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nav-mid{font-size:13px;color:var(--mut);text-align:center;flex:1}
+.nav-mid b{color:var(--ink)}
+.nm-h{font-size:11px}
+.nbtn{border:0;border-radius:6px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;min-width:120px}
+.nbtn.back{background:transparent;color:var(--mut);border:2px solid #d8cbb6}
+.nbtn.fwd{background:#cfc4b2;color:#fff;cursor:not-allowed}
+.nbtn.fwd.on{background:var(--green);cursor:pointer;animation:pulse 1.4s ease 2}
+.nbtn[hidden]{visibility:hidden;display:block}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(60,122,58,.25)}}
+footer{text-align:center;font-size:12px;color:var(--mut);padding:0 0 90px}
+.thBtn,.thBack,.note .cls{display:none}
+.prog{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:8px}
+.one .card{display:block;font-size:21px;padding:18px 14px;text-align:center;cursor:default;border-color:#d9c9b2}
+.one .card .o{font-size:13px;margin-top:6px}
+.colbtns{display:grid;gap:8px;margin-top:12px}
+.colbtn{background:#fff;border:2px solid var(--blue);color:var(--blue);border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer}
+.colbtn.ok{background:var(--green);border-color:var(--green);color:#fff}
+.colbtn.ko{background:var(--red2);border-color:var(--red);color:var(--red)}
+.colbtn:disabled{cursor:default}
+.tally{font-size:12.5px;color:var(--mut);margin-top:10px;text-align:center}
+.btn.go2{background:var(--green)}
+@media(max-width:720px){
+ .wrap{grid-template-columns:1fr;padding-top:4px}.sheet{padding:16px 14px;min-height:0}.brand h1{font-size:22px}
+ .note{display:none;position:fixed;left:10px;right:10px;top:12px;bottom:auto;max-height:72vh;overflow:auto;z-index:40;transform:none;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+ .note.open{display:block}
+ .note .cls{display:block;width:100%;margin-top:12px;background:#fff;border:2px solid #d9c879;border-radius:6px;padding:9px;font-weight:700;font-size:14px;color:#7a5d0e;cursor:pointer}
+ .thBack{position:fixed;inset:0;background:rgba(40,25,10,.35);z-index:35}
+ .thBack.open{display:block}
+ .thBtn{display:block;position:fixed;right:12px;bottom:78px;z-index:30;background:#FFF0A8;color:#5c4508;border:2px solid #d9c25a;border-radius:22px;padding:9px 15px;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer}
+ .thBtn[hidden]{display:none}
+ .top{padding:12px 14px 4px}.brand small,.help,footer,.kicker,.ticket .by,.ticket b.h,.nm-h{display:none}
+ .ttl{font-size:19px;margin-bottom:10px}
+ .ticket{font-size:14px;line-height:1.5;padding:9px 12px;margin-bottom:12px;border-top-width:4px}
+ .board .w{font-size:20px}.sent{font-size:16px;line-height:2.1}
+ .wrap{padding-bottom:150px}.bin{min-height:90px}
+ .stamp span{display:none}.stamps{padding-bottom:0;gap:5px;flex-wrap:wrap}.stamp.gs{margin-left:3px}.stamp{width:32px;height:32px;font-size:14px}
+ .bins,.bins.two,.cut,.dict,.checks{grid-template-columns:1fr}
+ .nbtn{min-width:0;padding:10px 14px;font-size:14px}.nav-mid{font-size:12px}.nm-x{display:none}
+ .menu{padding:20px 16px}.dish{flex-wrap:wrap}.dish .dots{display:none}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><small>Εστιατόριο «Το Μόρφημα» · Κουζίνα</small><h1>Η κουζίνα των <em>λέξεων</em></h1><span class="help" onclick="go(-1)">ⓘ Η ιστορία και οι οδηγίες</span></div>
+  <div class="stamps" id="stamps"></div>
+</div>
+<div class="wrap">
+  <aside class="note" id="note"></aside>
+  <main id="main"></main>
+</div>
+<div class="thBack" id="thBack" onclick="theory(false)"></div>
+<button class="thBtn" id="thBtn" onclick="theory(true)" hidden>📖 Θεωρία</button>
+<div class="nav"><div class="nav-in">
+  <button class="nbtn back" id="nBack" onclick="go(step-1)">← Πίσω</button>
+  <div class="nav-mid" id="nMid"></div>
+  <button class="nbtn fwd" id="nFwd" onclick="fwd()">Επόμενο →</button>
+</div></div>
+<footer>Νεοελληνική Γλώσσα Γυμνασίου · Δημιουργία λέξεων (παραγωγή – σύνθεση) · Α. &amp; Σ. Μητσέλος</footer>
+<script>
+function fitZoom(){var d=document.documentElement;d.style.zoom=1;var w=document.querySelector('.wrap'),n=document.querySelector('.nav');
+ if(!w){return;} var h=w.getBoundingClientRect().bottom+scrollY+(n?n.offsetHeight:0)-30;
+ var z=Math.min(1.9,innerWidth/1150,innerHeight/h);d.style.zoom=Math.max(1,z);}
+addEventListener('resize',fitZoom);
+
+const GROUPS=['Η δομή της λέξης','Η παραγωγή','Η σύνθεση','Άλλοι τρόποι δημιουργίας λέξεων'];
+
+const ST=[
+/* ── 1 ── */
+{g:0,m:'Θέμα και κατάληξη',sh:'Κόψιμο',type:'slots',layout:'cut',
+ title:'Κόψε τα υλικά σωστά',
+ def:'Οι περισσότερες λέξεις χωρίζονται σε <b>μορφήματα</b>. Τα δύο βασικά είναι το <b>θέμα</b>, που δίνει τη σημασία, και η <b>κατάληξη</b>, που δείχνει πτώση, αριθμό ή πρόσωπο.',
+ kw:'<b>Προσοχή:</b> τα μορφήματα <b>δεν</b> είναι συλλαβές. Το θέμα μένει ίδιο στην κλίση, αλλάζει μόνο η κατάληξη: ψωμ-ί, ψωμ-ιά.',
+ task:'Πρώτη δουλειά στον πάγκο: κόψε κάθε λέξη στα δύο βασικά της υλικά, θέμα και κατάληξη. Μην την κόψεις σε φέτες-συλλαβές! Πάτησε ένα κομμάτι και μετά το κενό. Έξι κομμάτια περισσεύουν.',
+ words:[['ψωμί','a','b'],['σούπα','c','d'],['κόβω','e','f']],
+ ph:{a:'θέμα',b:'κατάληξη',c:'θέμα',d:'κατάληξη',e:'θέμα',f:'κατάληξη'},
+ ans:{a:'ψωμ-',b:'-ί',c:'σούπ-',d:'-α',e:'κόβ-',f:'-ω'},
+ bank:['ψω-','ψωμ-','-μί','-ί','σούπ-','σού-','-πα','-α','κό-','-ω','κόβ-','-βω'],
+ why:{'ψω-':'Το «ψω-» είναι συλλαβή, όχι μόρφημα. Το θέμα είναι αυτό που μένει ίδιο σε όλη την κλίση: <b>ψωμ</b>-ί, <b>ψωμ</b>-ιά.',
+      '-μί':'Το «-μί» είναι συλλαβή. Η κατάληξη είναι μόνο το κομμάτι που αλλάζει στην κλίση: ψωμ-<b>ί</b>, ψωμ-<b>ιά</b>.',
+      'σού-':'Το «σού-» είναι συλλαβή. Θέμα είναι το «σούπ-», που μένει ίδιο: <b>σούπ</b>-α, <b>σούπ</b>-ες.',
+      '-πα':'Το «-πα» είναι συλλαβή. Κατάληξη είναι μόνο το «-α», που αλλάζει: σούπ-<b>α</b>, σούπ-<b>ες</b>.',
+      'κό-':'Το «κό-» είναι συλλαβή. Θέμα είναι το «κόβ-»: <b>κόβ</b>-ω, <b>κόβ</b>-εις.',
+      '-βω':'Το «-βω» είναι συλλαβή. Κατάληξη είναι μόνο το «-ω», που δείχνει το πρόσωπο: κόβ-<b>ω</b>, κόβ-<b>εις</b>.'},
+ slotMiss:{a:'Το θέμα κρατά τη σημασία και μένει ίδιο στην κλίση.',b:'Η κατάληξη είναι μόνο το κομμάτι που αλλάζει στην κλίση.',c:'Το θέμα κρατά τη σημασία και μένει ίδιο στην κλίση.',d:'Η κατάληξη είναι μόνο το κομμάτι που αλλάζει στην κλίση.',e:'Το θέμα κρατά τη σημασία και μένει ίδιο στην κλίση.',f:'Η κατάληξη δείχνει το πρόσωπο και αλλάζει: κόβ-ω, κόβ-εις.'},
+ ok:'Σωστά! Κόψαμε τις λέξεις σε <b>μορφήματα</b>, όχι σε συλλαβές. Το θέμα μένει, η κατάληξη αλλάζει: <b>ψωμ</b>-ί / <b>ψωμ</b>-ιά.'},
+
+/* ── 2 ── */
+{g:0,m:'Απλές, παράγωγες, σύνθετες',sh:'Ράφια',type:'sort',
+ title:'Τακτοποίησε τα ράφια',
+ def:'<b>Απλή</b> λέξη: θέμα + κατάληξη. <b>Παράγωγη</b>: έχει και <b>πρόθημα</b> ή <b>επίθημα</b>. <b>Σύνθετη</b>: έχει <b>δύο θέματα</b>, συνήθως ενωμένα με το συνδετικό -ο-.',
+ kw:'<b>Ερώτηση-κλειδί:</b> πόσα θέματα έχει η λέξη; Ένα θέμα με πρόθημα ή επίθημα → παράγωγη. Δύο θέματα → σύνθετη.',
+ task:'Ήρθε η παραγγελία από την αγορά. Βάλε κάθε υλικό στο σωστό ράφι: απλές, παράγωγες ή σύνθετες λέξεις. Πάτησε μια λέξη και μετά το ράφι.',
+ cols:['Απλές','Παράγωγες','Σύνθετες'],
+ cards:[{t:'λάδι',c:0},
+  {t:'μήλο',c:0},
+  {t:'ψωμάκι',c:1,e:'ψωμ-<b>άκ</b>-ι: ένα θέμα με το επίθημα -άκ- (υποκοριστικό). Άρα παράγωγη.'},
+  {t:'αλατιέρα',c:1,e:'αλατ-<b>ιέρ</b>-α: ένα θέμα (αλάτι) με επίθημα. Άρα παράγωγη.'},
+  {t:'ξεφλουδίζω',c:1,e:'<b>ξε</b>-φλουδ-ίζ-ω: ένα θέμα (φλούδα) με το πρόθημα ξε-. Άρα παράγωγη.'},
+  {t:'κρεατόπιτα',c:2,e:'κρεατ-ο-πίτ-α: δύο θέματα (κρέας + πίτα). Άρα σύνθετη.'},
+  {t:'ψωμοτύρι',c:2,e:'ψωμ-ο-τύρ-ι: δύο θέματα (ψωμί + τυρί). Άρα σύνθετη.'},
+  {t:'λαχανόκηπος',c:2,e:'λαχαν-ο-κήπ-ος: δύο θέματα (λάχανο + κήπος). Άρα σύνθετη.'}],
+ ok:'Σωστά! <b>Ένα</b> θέμα με πρόθημα ή επίθημα → παράγωγη. <b>Δύο</b> θέματα → σύνθετη.'},
+
+/* ── 3 ── */
+{g:1,m:'Τα προθήματα',sh:'Προθήματα',type:'mcq',
+ title:'Τα μπαχαρικά πριν από το θέμα',
+ def:'Τα <b>προθήματα</b> μπαίνουν <b>πριν</b> από το θέμα και αλλάζουν τη σημασία της λέξης. Π.χ. α-/αν- (στέρηση), ξε- (αντίθετη ενέργεια), δυσ- (δυσκολία), ευ- (ευκολία), συν- (μαζί).',
+ kw:'Οι προθέσεις (συν-, κατα-, δια-…) λειτουργούν ως <b>προθήματα</b>. Οι λέξεις με αυτές είναι <b>παράγωγες</b>, όχι σύνθετες.',
+ task:'Στις σημειώσεις της κουζίνας υπογράμμισα μερικά προθήματα. Τι «γεύση» δίνει το καθένα στη λέξη; Διάλεξε τη σωστή σημασία.',
+ qs:[{q:'Σήμερα η φασολάδα βγήκε <u>ά</u>νοστη.',
+      o:['στέρηση, άρνηση (χωρίς νοστιμιά)','υπερβολή (πολύ νόστιμη)','απομάκρυνση'],a:0,
+      e:['Σωστά: ά-νοστη = χωρίς νοστιμιά. Το α- δηλώνει στέρηση.','Το α- δεν δηλώνει υπερβολή· δηλώνει ότι κάτι <b>λείπει</b>.','Η απομάκρυνση δηλώνεται με το απο-. Το α- δηλώνει στέρηση.']},
+     {q:'Βγάλε το κοτόπουλο από την κατάψυξη να <u>ξε</u>παγώσει.',
+      o:['μαζί, συνοδεία','αντίθετη ενέργεια (το αντίθετο του «παγώνω»)','κάτω από, λιγότερο'],a:1,
+      e:['Το «μαζί» δηλώνεται με το συν-. Εδώ το ξε- αντιστρέφει την ενέργεια.','Σωστά: ξε-παγώνω = το αντίθετο του παγώνω, όπως ξε-κλειδώνω = το αντίθετο του κλειδώνω.','Αυτό δηλώνει το υπο-. Το ξε- εδώ αντιστρέφει την ενέργεια.']},
+     {q:'Τα φασόλια είναι <u>δύσ</u>πεπτα, ενώ το ρύζι είναι <u>εύ</u>πεπτο.',
+      o:['δυσ- = καλό, ευκολία · ευ- = δυσκολία','δυσ- = στέρηση · ευ- = υπερβολή','δυσ- = δυσκολία · ευ- = ευκολία'],a:2,
+      e:['Ανάποδα: το δυσ- δηλώνει δυσκολία, το ευ- ευκολία.','Το δυσ- και το ευ- είναι ζευγάρι αντίθετων: δυσκολία / ευκολία.','Σωστά: δύσ-πεπτο = χωνεύεται δύσκολα, εύ-πεπτο = χωνεύεται εύκολα.']},
+     {q:'Ο βοηθός σεφ <u>συν</u>εργάζεται με τη σεφ.',
+      o:['μαζί, συνοδεία','αντίθεση','αφαίρεση'],a:0,
+      e:['Σωστά: συν-εργάζομαι = εργάζομαι μαζί με κάποιον.','Την αντίθεση τη δηλώνει το αντι- (αντιλέγω). Το συν- δηλώνει «μαζί».','Την αφαίρεση τη δηλώνει το ξε-. Το συν- δηλώνει «μαζί».']}],
+ ok:'Σωστά! Κάθε πρόθημα προσθέτει μια σημασία στη λέξη: <b>ά</b>-νοστος, <b>ξε</b>-παγώνω, <b>δύσ</b>-πεπτος, <b>εύ</b>-πεπτος, <b>συν</b>-εργάζομαι.'},
+
+/* ── 4 ── */
+{g:1,m:'Τα επιθήματα',sh:'Επιθήματα',type:'slots',layout:'sent',
+ title:'Τα μπαχαρικά μετά το θέμα',
+ def:'Τα <b>επιθήματα</b> μπαίνουν <b>μετά</b> το θέμα, πριν από την κατάληξη. Δείχνουν π.χ. πρόσωπο που ενεργεί (-άς), τόπο (-ίδικο), ύλη (-ένιος), χρώμα κατά προσέγγιση (-ωπός), κάτι μικρό (-άκι). Με το -ίζω φτιάχνουμε ρήματα.',
+ kw:'Το επίθημα συχνά αλλάζει και το <b>μέρος του λόγου</b>: αλάτι (ουσιαστικό) → αλατ-ίζ-ω (ρήμα).',
+ task:'Συμπλήρωσε τις σημειώσεις της κουζίνας με την παράγωγη λέξη που ταιριάζει. Πρόσεξε τι ζητά κάθε κενό. Πάτησε μια λέξη και μετά το κενό. Έξι λέξεις περισσεύουν.',
+ html:'<p class="sent">1. Τα φρέσκα ψάρια μάς τα φέρνει κάθε πρωί ο [[a]].</p><p class="sent">2. Για το βράδυ παραγγείλαμε από το [[b]] της γωνίας.</p><p class="sent">3. Βάλε το φαγητό στη [[c]] κατσαρόλα.</p><p class="sent">4. Πρόσεξε· η σάλτσα έγινε [[d]], σχεδόν κίτρινη.</p><p class="sent">5. Σέρβιρε το γλυκό σε ένα [[e]].</p><p class="sent">6. Δοκίμασε τη σούπα και, αν χρειάζεται, να την [[f]].</p>',
+ ph:{a:'πρόσωπο',b:'τόπος',c:'ύλη',d:'χρώμα',e:'κάτι μικρό',f:'ρήμα'},
+ ans:{a:'ψαράς',b:'σουβλατζίδικο',c:'σιδερένια',d:'κιτρινωπή',e:'πιατάκι',f:'αλατίσεις'},
+ bank:['ψαράδικο','ψαράς','σουβλατζής','σουβλατζίδικο','σιδερωμένη','σιδερένια','κιτρινίζει','κιτρινωπή','πιατέλα','πιατάκι','αλατιέρα','αλατίσεις'],
+ why:{'ψαράδικο':'Το «ψαράδικο» είναι <b>τόπος</b> (-άδικο). Στο 1 ζητείται <b>πρόσωπο</b> που ενεργεί: ψαρ-<b>άς</b>.',
+      'σουβλατζής':'Ο «σουβλατζής» είναι <b>πρόσωπο</b>. Στο 2 ζητείται <b>τόπος</b>: σουβλατζ-<b>ίδικο</b>.',
+      'σιδερωμένη':'Το «σιδερωμένη» είναι μετοχή του «σιδερώνω» (όπως τα ρούχα!). Για <b>ύλη</b> χρειάζεται το -ένι(ος): σιδερ-<b>ένι</b>-α.',
+      'κιτρινίζει':'Το «κιτρινίζει» είναι ρήμα. Στο 4 χρειάζεται επίθετο με το -ωπός (χρώμα «κατά προσέγγιση»): κιτριν-<b>ωπ</b>-ή.',
+      'πιατέλα':'Η «πιατέλα» είναι μεγάλο πιάτο σερβιρίσματος. Για κάτι <b>μικρό</b> χρειάζεται υποκοριστικό: πιατ-<b>άκ</b>-ι.',
+      'αλατιέρα':'Η «αλατιέρα» είναι το δοχείο για το αλάτι (ουσιαστικό). Στο 6 χρειάζεται <b>ρήμα</b> με το -ίζ(ω): να την αλατ-<b>ίσ</b>-εις.'},
+ slotMiss:{a:'Πρόσωπο που ενεργεί / επάγγελμα: επίθημα -ά(ς).',b:'Τόπος: επίθημα -ίδικ(ο).',c:'Ύλη: επίθημα -ένι(ος).',d:'Χρώμα κατά προσέγγιση: επίθημα -ωπ(ός).',e:'Κάτι μικρό: υποκοριστικό επίθημα -άκ(ι).',f:'Ρήμα από ουσιαστικό: επίθημα -ίζ(ω).'},
+ ok:'Σωστά! Το επίθημα «μαγειρεύει» νέες λέξεις: ψαρ-<b>άς</b> (πρόσωπο), σουβλατζ-<b>ίδικο</b> (τόπος), σιδερ-<b>ένι</b>-α (ύλη), κιτριν-<b>ωπ</b>-ή (χρώμα), πιατ-<b>άκ</b>-ι (μικρό), αλατ-<b>ίζ</b>-ω (ρήμα).'},
+
+/* ── 5 ── */
+{g:2,m:'Το συνδετικό -ο-',sh:'Ενώσεις',type:'sort',
+ title:'Η μαγιά που δένει τα υλικά',
+ def:'<b>Σύνθεση</b>: ενώνουμε δύο θέματα σε μία λέξη. Συνήθως ανάμεσά τους μπαίνει το <b>συνδετικό -ο-</b> (κρεατ-<b>ο</b>-πίτα). Όταν το β΄ συνθετικό αρχίζει από <b>φωνήεν</b>, το -ο- συνήθως <b>παραλείπεται</b> (αγρι-άνθρωπος).',
+ kw:'<b>Κόλπο:</b> σχημάτισε τη σύνθετη λέξη φωναχτά. Αρχίζει το β΄ συνθετικό από φωνήεν; Τότε μάλλον δεν χρειάζεται -ο-.',
+ task:'Ετοιμάζουμε νέα πιάτα ενώνοντας δύο υλικά. Σε ποια σύνθετη λέξη θα μπει η «μαγιά» -ο- και σε ποια όχι; Σχημάτισε τη λέξη στο μυαλό σου, πάτησε το ζευγάρι και μετά τη στήλη.',
+ cols:['Με συνδετικό -ο-','Χωρίς συνδετικό -ο-'],
+ cards:[{t:'λάδι + ξίδι',c:0,e:'λαδ-<b>ό</b>-ξιδο: το β΄ συνθετικό (ξίδι) αρχίζει από σύμφωνο, άρα μπαίνει -ο-.'},
+  {t:'αυγό + λεμόνι',c:0,e:'αυγ-<b>ο</b>-λέμονο: το β΄ συνθετικό αρχίζει από σύμφωνο (λ-), άρα μπαίνει -ο-.'},
+  {t:'κρέας + πίτα',c:0,e:'κρεατ-<b>ό</b>-πιτα: το β΄ συνθετικό αρχίζει από σύμφωνο (π-), άρα μπαίνει -ο-.'},
+  {t:'πατάτα + σαλάτα',c:0,e:'πατατ-<b>ο</b>-σαλάτα: το β΄ συνθετικό αρχίζει από σύμφωνο (σ-), άρα μπαίνει -ο-.'},
+  {t:'άγριος + ελιά',c:1,e:'αγρι-ελιά: το β΄ συνθετικό αρχίζει από φωνήεν (ε-), άρα το -ο- παραλείπεται.'},
+  {t:'ψάρι + αγορά',c:1,e:'ψαρ-αγορά: το β΄ συνθετικό αρχίζει από φωνήεν (α-), άρα το -ο- παραλείπεται.'},
+  {t:'γλυκός + άνισο',c:1,e:'γλυκ-άνισο: το β΄ συνθετικό αρχίζει από φωνήεν (α-), άρα το -ο- παραλείπεται.'},
+  {t:'άγριος + αγκινάρα',c:1,e:'αγρι-αγκινάρα: το β΄ συνθετικό αρχίζει από φωνήεν (α-), άρα το -ο- παραλείπεται.'}],
+ ok:'Σωστά! Πριν από σύμφωνο: λαδ-<b>ό</b>-ξιδο, αυγ-<b>ο</b>-λέμονο. Πριν από φωνήεν το -ο- συνήθως φεύγει: αγρι-ελιά, ψαρ-αγορά.'},
+
+/* ── 6 ── */
+{g:2,m:'Σύνθετη ή με σύμφυμα;',sh:'Σύμφυμα',type:'sort',
+ title:'Κράτησε τη γεύση του;',
+ def:'Μια λέξη είναι <b>σύνθετη</b> όταν και τα δύο μέρη <b>κρατούν τη σημασία τους</b>. Όταν το ένα μέρος <b>έχει χάσει</b> την αρχική του σημασία και λειτουργεί σαν πρόθημα, λέγεται <b>σύμφυμα</b> και η λέξη είναι <b>παράγωγη</b>.',
+ kw:'<b>Ερώτηση-κλειδί:</b> σημαίνει εδώ το πρώτο μέρος αυτό που σημαίνει μόνο του; Το «ψιλο-» σημαίνει «ψιλός»; Το «θεο-» σημαίνει «θεός»;',
+ task:'Τα πρώτα μέρη αυτών των λέξεων μοιάζουν με αυτόνομες λέξεις. Σε ποιες κράτησαν τη «γεύση» τους (σύνθετη) και σε ποιες έγιναν απλώς «καρύκευμα» (σύμφυμα); Πάτησε μια πρόταση και μετά τη στήλη.',
+ cols:['Σύνθετη (κρατά τη σημασία)','Παράγωγη με σύμφυμα'],
+ cards:[{t:'<u>Χοντρο</u>κόβουμε τις πατάτες.',c:0,e:'Χοντρο-κόβω = κόβω σε <b>χοντρά</b> κομμάτια. Το «χοντρο-» κρατά τη σημασία του, άρα σύνθετη.'},
+  {t:'<u>Σιγο</u>βράζουμε τη σάλτσα.',c:0,e:'Σιγο-βράζω = βράζω <b>σιγά</b> (σε χαμηλή φωτιά). Το «σιγο-» κρατά τη σημασία του, άρα σύνθετη.'},
+  {t:'Ετοιμάσαμε <u>γλυκό</u>ξινη σάλτσα.',c:0,e:'Γλυκό-ξινη = και <b>γλυκιά</b> και ξινή. Και τα δύο μέρη κρατούν τη σημασία τους, άρα σύνθετη.'},
+  {t:'Για κολατσιό, <u>λαδό</u>ψωμο.',c:0,e:'Λαδό-ψωμο = ψωμί με <b>λάδι</b>. Και τα δύο μέρη κρατούν τη σημασία τους, άρα σύνθετη.'},
+  {t:'<u>Ψιλο</u>πείνασα· τι έχουμε;',c:1,e:'Ψιλο-πείνασα = πείνασα <b>λίγο</b>. Το «ψιλο-» δεν σημαίνει πια «ψιλός, λεπτός», άρα είναι σύμφυμα.'},
+  {t:'Το ψωμί <u>ψιλο</u>κάηκε.',c:1,e:'Ψιλο-κάηκε = κάηκε <b>λίγο</b>. Το «ψιλο-» δεν σημαίνει «ψιλός», άρα είναι σύμφυμα.'},
+  {t:'Το γλυκό ήταν <u>θεο</u>νόστιμο!',c:1,e:'Θεο-νόστιμο = <b>πάρα πολύ</b> νόστιμο. Το «θεο-» δεν σημαίνει «θεός», άρα είναι σύμφυμα.'}],
+ ok:'Σωστά! Το ίδιο κομμάτι μπορεί να κρατά τη σημασία του (χοντρο-κόβω) ή να τη χάνει (ψιλο-πείνασα = λίγο, θεο-νόστιμο = πολύ). Μόνο στη δεύτερη περίπτωση είναι σύμφυμα.'},
+
+/* ── 7 ── */
+{g:3,m:'Δάνεια, αντιδάνεια, μεταφραστικά',sh:'Δάνεια',type:'sort',
+ title:'Το ντουλάπι με τα εισαγόμενα',
+ def:'<b>Δάνειο</b>: λέξη ξένης προέλευσης. <b>Αντιδάνειο</b>: λέξη που ήρθε από ξένη γλώσσα, αλλά η προέλευσή της είναι <b>ελληνική</b>. <b>Μεταφραστικό δάνειο</b>: ξένη λέξη που τη <b>μεταφράσαμε</b> κομμάτι-κομμάτι με ελληνικές λέξεις.',
+ kw:'<b>Ερωτήσεις-κλειδιά:</b> Ήρθε έτοιμη από άλλη γλώσσα; Αν όχι → μεταφραστικό δάνειο. Αν ναι: έχει ελληνικές ρίζες; → αντιδάνειο. Δεν έχει; → δάνειο.',
+ task:'Τακτοποίησε το ντουλάπι με τα «εισαγόμενα». Κάτω από κάθε λέξη γράφει από πού ήρθε. Διάβασέ το και βάλε τη λέξη στο σωστό ράφι.',
+ cols:['Δάνεια','Αντιδάνεια','Μεταφραστικά δάνεια'],
+ cards:[{t:'γιαούρτι<span class="o">← τουρκικά: yoğurt</span>',c:0,e:'Ξένη λέξη με ξένη προέλευση: δάνειο.'},
+  {t:'τοστ<span class="o">← αγγλικά: toast</span>',c:0,e:'Ξένη λέξη με ξένη προέλευση: δάνειο.'},
+  {t:'μαγιονέζα<span class="o">← γαλλικά: mayonnaise</span>',c:0,e:'Ξένη λέξη με ξένη προέλευση: δάνειο.'},
+  {t:'πιάτο<span class="o">← ιταλικά: piatto, από το αρχαίο ελληνικό πλατύς</span>',c:1,e:'Ήρθε από τα ιταλικά, αλλά η ρίζα της είναι ελληνική (πλατύς): αντιδάνειο.'},
+  {t:'τηλέφωνο<span class="o">← αγγλικά: telephone, από τα ελληνικά τῆλε + φωνή</span>',c:1,e:'Φτιάχτηκε στα αγγλικά από ελληνικά κομμάτια: αντιδάνειο.'},
+  {t:'φανταστικός (= εξαιρετικός)<span class="o">← αγγλικά: fantastic, με νέα σημασία</span>',c:1,e:'Ελληνική λέξη που γύρισε από τα αγγλικά με νέα σημασία: αντιδάνειο.'},
+  {t:'ουρανοξύστης<span class="o">← αγγλικά: sky (ουρανός) + scraper (ξύστης)</span>',c:2,e:'Δεν πήραμε τη λέξη skyscraper αυτούσια· τη μεταφράσαμε κομμάτι-κομμάτι: μεταφραστικό δάνειο.'},
+  {t:'διαδίκτυο<span class="o">← αγγλικά: inter (δια) + net (δίκτυο)</span>',c:2,e:'Δεν πήραμε τη λέξη internet αυτούσια· τη μεταφράσαμε κομμάτι-κομμάτι: μεταφραστικό δάνειο.'}],
+ ok:'Σωστά! <b>Δάνειο</b>: ξένη λέξη. <b>Αντιδάνειο</b>: ελληνικό «υλικό» που γύρισε σπίτι. <b>Μεταφραστικό δάνειο</b>: ξένη «συνταγή» με ελληνικά υλικά.'},
+
+/* ── 8 ── */
+{g:3,m:'Ετεροίωση · αρκτικόλεξα · ένταξη δανείων',sh:'Φινάλε',type:'mcq',
+ title:'Τελευταίος έλεγχος πριν το σέρβις',
+ def:'<b>Ετεροίωση</b>: νέα λέξη από την ίδια ρίζα με διαφορετικό φωνήεν, συνήθως ε → ο (βρέχω – βροχή). <b>Αρκτικόλεξα</b>: λέξεις από τα αρχικά γράμματα μιας φράσης (ΟΗΕ). Τα <b>δάνεια</b> άλλοτε κλίνονται κανονικά και άλλοτε μένουν άκλιτα· μερικά δίνουν και νέες λέξεις με ελληνικά επιθήματα.',
+ kw:'Στην ετεροίωση <b>δεν</b> προσθέτουμε επίθημα για να αλλάξει η ρίζα· αλλάζει το <b>φωνήεν της ρίζας</b>: πλ<b>έ</b>κω – πλ<b>ο</b>κή.',
+ task:'Λίγο πριν ανοίξει το εστιατόριο, κάνε τον τελευταίο έλεγχο. Διάλεξε τη σωστή απάντηση σε κάθε ερώτηση.',
+ qs:[{q:'Ποιο ζευγάρι λέξεων δείχνει <b>ετεροίωση</b>;',
+      o:['ψήνω – ψήσιμο','πλέκω – πλοκή','γράφω – γραφή'],a:1,
+      e:['Εδώ η ρίζα μένει ίδια (ψη-) και προστίθεται επίθημα (-σιμο). Δεν αλλάζει φωνήεν.','Σωστά: η ρίζα αλλάζει φωνήεν, πλ<b>έ</b>κω → πλ<b>ο</b>κή (ε → ο).','Η ρίζα μένει ίδια (γραφ-)· δεν αλλάζει φωνήεν.']},
+     {q:'Στην απόδειξη του εστιατορίου γράφει <b>ΦΠΑ</b> (Φόρος Προστιθέμενης Αξίας). Τι είναι η λέξη ΦΠΑ;',
+      o:['αρκτικόλεξο','σύνθετη λέξη','δάνειο'],a:0,
+      e:['Σωστά: σχηματίστηκε από τα αρχικά γράμματα της φράσης Φόρος Προστιθέμενης Αξίας.','Η σύνθετη λέξη ενώνει θέματα (λαδ-ό-ξιδο). Το ΦΠΑ φτιάχτηκε από τα αρχικά γράμματα μιας φράσης.','Δεν ήρθε από ξένη γλώσσα. Φτιάχτηκε από τα αρχικά γράμματα μιας ελληνικής φράσης.']},
+     {q:'Από το δάνειο <b>τοστ</b> φτιάξαμε τη λέξη <b>τοστιέρα</b>. Πώς εντάχθηκε εδώ το δάνειο στα ελληνικά;',
+      o:['με σύνθεση','έμεινε άκλιτο','με παραγωγή: πήρε ελληνικό επίθημα'],a:2,
+      e:['Η σύνθεση ενώνει δύο θέματα. Εδώ υπάρχει ένα θέμα (τοστ) και ένα επίθημα (-ιέρα).','Το «τοστ» είναι πράγματι άκλιτο, αλλά η «τοστιέρα» είναι νέα λέξη που κλίνεται (οι τοστιέρες).','Σωστά: τοστ + -ιέρα → τοστιέρα, όπως αλάτι → αλατιέρα.']},
+     {q:'Ποια πρόταση για τα δάνεια είναι σωστή;',
+      o:['Το «γιαούρτι» κλίνεται κανονικά (τα γιαούρτια), ενώ το «τοστ» μένει άκλιτο (τα τοστ).','Και τα δύο μένουν άκλιτα.','Και τα δύο κλίνονται κανονικά (τα γιαούρτια, τα τόστια).'],a:0,
+      e:['Σωστά: κάποια δάνεια προσαρμόστηκαν στο ελληνικό κλιτικό σύστημα και κάποια όχι.','Το «γιαούρτι» κλίνεται κανονικά: το γιαούρτι – τα γιαούρτια.','Το «τοστ» μένει άκλιτο: το τοστ – τα τοστ.']}],
+ ok:'Σωστά! Η κουζίνα είναι έτοιμη. Πάτησε «Το μενού →» για να δεις τι μαγείρεψες.'}
+];
+const N=ST.length;
+
+let step=-1,maxStep=0,solved=Array(N).fill(false),firstTry=Array(N).fill(null);
+const $=id=>document.getElementById(id);
+const main=()=>$('main');
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function stamps(){ $('stamps').innerHTML=ST.map((s,i)=>{const can=i<=maxStep&&i!==step;const gs=i>0&&ST[i-1].g!==s.g;
+  return `<div class="stamp ${gs?'gs':''} ${solved[i]&&i!==step?'ok':i===step?'now':''} ${can?'go':''}" ${can?`onclick="go(${i})" title="Μετάβαση: ${s.m}"`:''}>${solved[i]&&i!==step?'✓':i+1}<span>${s.sh}</span></div>`;}).join(''); navbar(); }
+function navbar(){
+  const b=$('nBack'),f=$('nFwd'),m=$('nMid');
+  if(step<0){b.hidden=true;f.hidden=false;f.className='nbtn fwd on';f.textContent='Στην κουζίνα →';m.innerHTML='<b>Η ιστορία</b>';return;}
+  if(step>=N){b.hidden=false;f.hidden=true;m.innerHTML='<b>Το μενού τυπώθηκε</b>';return;}
+  b.hidden=false;f.hidden=false;
+  const ok=solved[step];f.className='nbtn fwd'+(ok?' on':'');
+  f.textContent=step===N-1?'Το μενού →':'Επόμενο →';
+  m.innerHTML=`Στάδιο <b>${step+1} / ${N}</b><span class="nm-x"> · ${ST[step].m}</span>`+(ok?'':'<br><span class="nm-h">ολοκλήρωσε το στάδιο για να συνεχίσεις</span>');
+}
+function theory(on){$('note').classList.toggle('open',on);$('thBack').classList.toggle('open',on);}
+function go(i){ theory(false); $('thBtn').hidden=(i<0||i>=N); if(i===-1){step=-1;stamps();note();intro();window.scrollTo({top:0});fitZoom();return;} if(i<0||i>maxStep)return; step=i; stamps(); note();
+  if(step>=N)fin(); else ((isM()&&!solved[step])?{slots:mSlots,sort:mSort,mcq:mMcq}:{slots:sSlots,sort:sSort,mcq:sMcq})[ST[step].type](ST[step]);
+  if(step<N&&solved[step])fb('ok',ST[step].ok); window.scrollTo({top:0}); fitZoom(); }
+function fwd(){ if(step<0){go(0);return;} if(step<N&&solved[step]) go(step+1); }
+function note(){
+  if(step<0){$('note').innerHTML='<div class="st">Πρώτη μέρα</div><h2>Βοηθός σεφ</h2><p>Σε αυτή την κουζίνα τα υλικά είναι <b>μορφήματα</b>, οι συνταγές είναι <b>τρόποι σχηματισμού</b> και τα πιάτα είναι… <b>λέξεις</b>.</p>';return;}
+  if(step>=N){$('note').innerHTML='<div class="st">Τέλος βάρδιας</div><h2>Μπράβο, σεφ!</h2><p>Έκοψες, αλάτισες, ένωσες και έφερες υλικά από όλο τον κόσμο. Το μενού είναι έτοιμο.</p><div class="kw"><b>Θυμήσου:</b> κάθε λέξη έχει τη «συνταγή» της. Για να τη βρεις, ρώτα: <b>από ποια υλικά είναι φτιαγμένη;</b></div>';return;}
+  const s=ST[step]; $('note').innerHTML=`<span class="grp">Βήμα ${s.g+1} · ${GROUPS[s.g]}</span><div class="st">Θεωρία</div><h2>${s.m}</h2><p>${s.def}</p><div class="kw">${s.kw}</div><button class="cls" onclick="theory(false)">✕ Κλείσιμο</button>`; }
+function attempt(ok){ if(firstTry[step]===null) firstTry[step]=ok; }
+function fb(cls,html){const f=$('fb');if(!f)return;f.className='fb '+cls;f.innerHTML=html;setTimeout(()=>f.scrollIntoView({behavior:'smooth',block:'nearest'}),60);}
+function finish(){ solved[step]=true; if(maxStep<step+1)maxStep=step+1; $('row').innerHTML=''; fb('ok',ST[step].ok); stamps(); fitZoom(); }
+function sheet(inner,btns){return `<div class="sheet"><div class="kicker">Στάδιο ${step+1} · ${ST[step].m}</div><div class="ttl">${ST[step].title}</div><div class="ticket"><b class="h">ΠΑΡΑΓΓΕΛΙΑ #${step+1}</b>${(isM()&&!solved[step])?ST[step].task.replace(/(π|Π)άτησε [^.]*? και μετά (τη στήλη|το ράφι)/,'$1άτησε τη σωστή στήλη για κάθε κάρτα'):ST[step].task}<span class="by">— Η σεφ</span></div>${inner}<div class="fb" id="fb"></div><div class="row" id="row">${solved[step]?'':btns}</div></div>`;}
+
+/* ══ Κομμάτια σε κενά ══ */
+function sSlots(s){
+  const keys=Object.keys(s.ans);const val={};let sel=null,lock=solved[step];
+  main().innerHTML=sheet('<div class="bank" id="B"></div><div id="T"></div>','<button class="btn" id="chk">Έλεγχος</button><button class="btn ghost" id="clr">Καθαρισμός</button>');
+  if(lock){const usedI=new Set();keys.forEach(k=>{const i=s.bank.findIndex((w,j)=>w===s.ans[k]&&!usedI.has(j));usedI.add(i);val[k]=i;});}
+  const isUsed=i=>Object.values(val).includes(i);
+  const tpl=s.layout==='cut'?'<div class="cut">'+s.words.map(w=>`<div class="board"><div class="w"><small>ΛΕΞΗ</small>${w[0]}</div>[[${w[1]}]]<span class="plus">+</span>[[${w[2]}]]</div>`).join('')+'</div>':s.html;
+  function drawBank(){const B=$('B');B.innerHTML='';if(lock){B.style.display='none';return;}
+    s.bank.forEach((w,i)=>{const c=document.createElement('span');c.className='chip'+(sel===i?' sel':'')+(isUsed(i)?' used':'');c.textContent=w;
+      c.onclick=()=>{if(lock)return;sel=sel===i?null:i;drawBank();};B.appendChild(c);});}
+  function drawT(){$('T').innerHTML=tpl.replace(/\[\[(\w)\]\]/g,(_,k)=>`<span class="slot${lock?' ok':''}" data-k="${k}" data-ph="${s.ph[k]}">${val[k]!==undefined?s.bank[val[k]]:''}</span>`);
+    $('T').querySelectorAll('.slot').forEach(sl=>sl.onclick=()=>{if(lock)return;const k=sl.dataset.k;
+      if(sel!==null){for(const x in val)if(val[x]===sel)delete val[x];val[k]=sel;sel=null;}else if(val[k]!==undefined)delete val[k];
+      $('fb').className='fb';drawBank();drawT();});}
+  drawBank();drawT();if(lock)return;
+  $('clr').onclick=()=>{for(const k in val)delete val[k];sel=null;$('fb').className='fb';drawBank();drawT();};
+  $('chk').onclick=()=>{if(keys.some(k=>val[k]===undefined)){fb('info','Συμπλήρωσε πρώτα όλα τα κενά.');return;}
+    let bad=[];keys.forEach(k=>{const sl=$('T').querySelector(`.slot[data-k="${k}"]`);const w=s.bank[val[k]];const r=w===s.ans[k];sl.classList.add(r?'ok':'ko');if(!r)bad.push([k,w]);});
+    attempt(!bad.length);
+    if(!bad.length){lock=true;drawBank();finish();return;}
+    const [k,w]=bad[0];fb('ko',`<b>${keys.length-bad.length} από ${keys.length}</b> σωστά. ${(s.why&&s.why[w])||s.slotMiss[k]} Πάτησε ένα κόκκινο κενό για να το αδειάσεις.`);};
+}
+
+/* ══ Ταξινόμηση σε στήλες ══ */
+function sSort(s){
+  const where={};let sel=null,lock=solved[step];const order=shuffle(s.cards.map((_,i)=>i));
+  if(lock)s.cards.forEach((c,i)=>where[i]=c.c);
+  const nb=s.cols.length;
+  main().innerHTML=sheet(`<div class="pool" id="P"></div><div class="bins ${nb===2?'two':''}" id="BN">${s.cols.map((c,j)=>`<div class="bin" data-j="${j}"><h6>${c}</h6></div>`).join('')}</div>`,'<button class="btn" id="chk">Έλεγχος</button>');
+  function card(i){const c=document.createElement('span');c.className='card'+(sel===i?' sel':'')+(lock?' ok':'');c.innerHTML=s.cards[i].t;
+    c.onclick=e=>{e.stopPropagation();if(lock)return;
+      if(where[i]!==undefined&&sel!==null&&sel!==i){where[sel]=where[i];sel=null;$('fb').className='fb';draw();return;}
+      sel=sel===i?null:i;draw();};return c;}
+  function draw(){const P=$('P');P.innerHTML='';order.forEach(i=>{if(where[i]===undefined)P.appendChild(card(i));});P.style.display=P.children.length?'flex':'none';
+    document.querySelectorAll('#BN .bin').forEach(b=>{const j=+b.dataset.j;b.querySelectorAll('.card').forEach(x=>x.remove());order.forEach(i=>{if(where[i]===j)b.appendChild(card(i));});
+      b.onclick=()=>{if(lock||sel===null)return;where[sel]=j;sel=null;$('fb').className='fb';draw();};});}
+  draw();if(lock)return;
+  $('chk').onclick=()=>{if(s.cards.some((_,i)=>where[i]===undefined)){fb('info','Τοποθέτησε πρώτα όλες τις κάρτες στις στήλες.');return;}
+    const bad=s.cards.map((c,i)=>i).filter(i=>where[i]!==s.cards[i].c);attempt(!bad.length);
+    if(!bad.length){lock=true;draw();finish();return;}
+    bad.forEach(i=>delete where[i]);draw();
+    const c=s.cards[bad[0]];const tx=c.t.replace(/<span class="o">.*?<\/span>/,'').replace(/<[^>]+>/g,'');
+    fb('ko',`<b>${s.cards.length-bad.length} από ${s.cards.length}</b> σωστά. Οι λάθος κάρτες γύρισαν πάνω. Βοήθεια για την πρώτη: «${tx}» ${c.e||'Ξανασκέψου: '+ST[step].kw.replace(/<[^>]+>/g,'')}`);};
+}
+
+/* ══ Ερωτήσεις επιλογής ══ */
+function sMcq(s){
+  const ch={};let lock=solved[step];
+  if(lock)s.qs.forEach((q,i)=>ch[i]=q.a);
+  main().innerHTML=sheet(s.qs.map((q,i)=>`<div class="mcq" id="q${i}"><div class="q"><small>Ερώτηση ${i+1}</small>${q.q}</div><div class="opts">${q.o.map((o,j)=>`<div class="opt" data-i="${i}" data-j="${j}">${o}</div>`).join('')}</div><div class="why" id="w${i}"></div></div>`).join(''),'<button class="btn" id="chk">Έλεγχος</button>');
+  function draw(){document.querySelectorAll('.mcq .opt').forEach(o=>{const i=+o.dataset.i,j=+o.dataset.j;o.className='opt'+(ch[i]===j?(lock?' ok':' on'):'');
+    o.onclick=()=>{if(lock)return;ch[i]=j;$('w'+i).className='why';draw();};});}
+  draw();if(lock)return;
+  $('chk').onclick=()=>{if(s.qs.some((_,i)=>ch[i]===undefined)){fb('info','Διάλεξε πρώτα μία απάντηση σε κάθε ερώτηση.');return;}
+    let n=0;s.qs.forEach((q,i)=>{const r=ch[i]===q.a;if(r)n++;const w=$('w'+i);w.className='why '+(r?'ok':'ko');w.innerHTML=q.e[ch[i]];
+      const o=document.querySelector(`.opt[data-i="${i}"][data-j="${ch[i]}"]`);o.className='opt '+(r?'ok':'ko');});
+    attempt(n===s.qs.length);
+    if(n===s.qs.length){lock=true;finish();return;}
+    fb('ko',`<b>${n} από ${s.qs.length}</b> σωστά. Διάβασε τα σχόλια κάτω από τις λάθος απαντήσεις και διάλεξε ξανά.`);};
+}
+
+/* ══ Κινητό: ένα στοιχείο τη φορά ══ */
+const isM=()=>matchMedia('(max-width:720px)').matches;
+function nextBtn(label,fn){$('row').innerHTML=`<button class="btn go2" id="nx">${label}</button>`;$('nx').onclick=fn;}
+function mSlots(s){
+  const items=s.layout==='cut'?s.words.map(w=>({html:`<div class="board"><div class="w"><small>ΛΕΞΗ</small>${w[0]}</div>[[${w[1]}]]<span class="plus">+</span>[[${w[2]}]]</div>`,keys:[w[1],w[2]]}))
+    :s.html.match(/<p class="sent">[\s\S]*?<\/p>/g).map(h=>({html:h.replace(/^<p class="sent">\d+\.\s*/,'<p class="sent">'),keys:[...h.matchAll(/\[\[(\w)\]\]/g)].map(m=>m[1])}));
+  const per=s.bank.length/items.length;const n=items.length;
+  const own=i=>[...Array(per)].map((_,j)=>i*per+j);
+  const groups=items.map((_,i)=>shuffle(per<4?own(i).concat(own((i+1)%n)):own(i)));
+  const unit=s.layout==='cut'?'Λέξη':'Πρόταση';
+  let idx=0,val={},sel=null,fails=false,done=false;
+  main().innerHTML=sheet('<div class="prog" id="PG"></div><div class="bank" id="B"></div><div id="T"></div>','<button class="btn" id="chk">Έλεγχος</button>');
+  const chkBtn=()=>{$('row').innerHTML='<button class="btn" id="chk">Έλεγχος</button>';$('chk').onclick=check;};
+  function draw(){const it=items[idx];$('PG').textContent=`${unit} ${idx+1} / ${items.length}`;
+    const B=$('B');B.innerHTML='';groups[idx].forEach(i=>{const c=document.createElement('span');c.className='chip'+(sel===i?' sel':'')+(Object.values(val).includes(i)?' used':'');c.textContent=s.bank[i];
+      c.onclick=()=>{if(done)return;sel=sel===i?null:i;draw();};B.appendChild(c);});
+    $('T').innerHTML=it.html.replace(/\[\[(\w)\]\]/g,(_,k)=>`<span class="slot${done?' ok':''}" data-k="${k}" data-ph="${s.ph[k]}">${val[k]!==undefined?s.bank[val[k]]:''}</span>`);
+    $('T').querySelectorAll('.slot').forEach(sl=>sl.onclick=()=>{if(done)return;const k=sl.dataset.k;
+      if(sel!==null){for(const x in val)if(val[x]===sel)delete val[x];val[k]=sel;sel=null;}else if(val[k]!==undefined)delete val[k];
+      $('fb').className='fb';draw();});}
+  function check(){const ks=items[idx].keys;if(ks.some(k=>val[k]===undefined)){fb('info','Συμπλήρωσε πρώτα τα κενά.');return;}
+    const bad=ks.filter(k=>s.bank[val[k]]!==s.ans[k]);
+    ks.forEach(k=>$('T').querySelector(`.slot[data-k="${k}"]`).classList.add(bad.includes(k)?'ko':'ok'));
+    if(bad.length){fails=true;const w=s.bank[val[bad[0]]];fb('ko',`${(s.why&&s.why[w])||s.slotMiss[bad[0]]} Πάτησε το κόκκινο κενό για να το αδειάσεις.`);return;}
+    done=true;draw();
+    if(idx===items.length-1){attempt(!fails);finish();return;}
+    fb('ok','Σωστά!');nextBtn(`Επόμενη ${unit.toLowerCase()} →`,()=>{idx++;val={};sel=null;done=false;$('fb').className='fb';chkBtn();draw();});}
+  $('chk').onclick=check;draw();
+}
+function mSort(s){
+  const order=shuffle(s.cards.map((_,i)=>i));let idx=0,fails=false,tries=0;const cnt=s.cols.map(()=>0);
+  main().innerHTML=sheet('<div class="prog" id="PG"></div><div class="one" id="ONE"></div><div class="colbtns" id="CB"></div><div class="tally" id="TL"></div>','');
+  function draw(){const c=s.cards[order[idx]];$('PG').textContent=`Κάρτα ${idx+1} / ${s.cards.length}`;
+    $('ONE').innerHTML=`<span class="card">${c.t}</span>`;
+    $('CB').innerHTML=s.cols.map((n,j)=>`<button class="colbtn" data-j="${j}">${n}</button>`).join('');
+    $('TL').innerHTML=s.cols.map((n,j)=>`${n}: <b>${cnt[j]}</b>`).join(' · ');
+    $('CB').querySelectorAll('.colbtn').forEach(b=>b.onclick=()=>pick(+b.dataset.j,b));}
+  function pick(j,b){const c=s.cards[order[idx]];
+    if(j!==c.c){fails=true;tries++;b.classList.add('ko');fb('ko',tries>1&&c.e?c.e:'Όχι εδώ. '+ST[step].kw);return;}
+    tries=0;cnt[j]++;$('CB').querySelectorAll('.colbtn').forEach(x=>{x.disabled=true;});b.classList.add('ok');
+    if(idx===s.cards.length-1){attempt(!fails);finish();return;}
+    fb('ok','Σωστά! '+(c.e||''));nextBtn('Επόμενη κάρτα →',()=>{idx++;$('row').innerHTML='';$('fb').className='fb';draw();});}
+  draw();
+}
+function mMcq(s){
+  let idx=0,fails=false;
+  main().innerHTML=sheet('<div class="prog" id="PG"></div><div id="Q"></div>','');
+  function draw(){const q=s.qs[idx];$('PG').textContent=`Ερώτηση ${idx+1} / ${s.qs.length}`;
+    $('Q').innerHTML=`<div class="mcq"><div class="q">${q.q}</div><div class="opts">${q.o.map((o,j)=>`<div class="opt" data-j="${j}">${o}</div>`).join('')}</div><div class="why" id="w0"></div></div>`;
+    let over=false;
+    $('Q').querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(over)return;const j=+o.dataset.j,r=j===q.a;
+      $('Q').querySelectorAll('.opt').forEach(x=>{if(!x.classList.contains('ko'))x.className='opt';});
+      o.className='opt '+(r?'ok':'ko');const w=$('w0');w.className='why '+(r?'ok':'ko');w.innerHTML=q.e[j]+(r?'':' Διάλεξε ξανά.');
+      if(!r){fails=true;return;}
+      over=true;
+      if(idx===s.qs.length-1){attempt(!fails);finish();return;}
+      nextBtn('Επόμενη ερώτηση →',()=>{idx++;$('row').innerHTML='';draw();});});}
+  draw();
+}
+
+/* ══ Εισαγωγή ══ */
+function intro(){
+  main().innerHTML=`<div class="sheet intro"><div class="kicker">Η ιστορία</div><div class="ttl">Πρώτη μέρα στην κουζίνα</div>
+  <p class="lead">Σήμερα ξεκινάς ως βοηθός στην κουζίνα του εστιατορίου «Το Μόρφημα». Εδώ δεν μαγειρεύουμε φαγητά αλλά <b>λέξεις</b>. Η σεφ θα σου δίνει παραγγελίες· εσύ θα κόβεις, θα αλατίζεις, θα ενώνεις υλικά και θα τακτοποιείς όσα ήρθαν από άλλες χώρες. Στο τέλος θα τυπωθεί το μενού, και θα φτιάξεις και το δικό σου πιάτο.</p>
+  <h5>Το λεξικό της κουζίνας</h5>
+  <div class="dict">
+   <div><b>Υλικά</b>τα μορφήματα: θέμα, κατάληξη, πρόθημα, επίθημα</div>
+   <div><b>Συνταγές</b>οι τρόποι σχηματισμού: παραγωγή, σύνθεση, δανεισμός κ.ά.</div>
+   <div><b>Πιάτα</b>οι λέξεις που φτιάχνουμε</div>
+  </div>
+  <h5>Οι σταθμοί της κουζίνας</h5>
+  <div class="proc">
+   <div class="pr"><div class="n">1–2</div><div><b>Ο πάγκος</b><span>Θέμα και κατάληξη · απλές, παράγωγες και σύνθετες λέξεις (Βήμα 1)</span></div></div>
+   <div class="pr"><div class="n">3–4</div><div><b>Τα μπαχαρικά</b><span>Προθήματα και επιθήματα: η παραγωγή (Βήμα 2)</span></div></div>
+   <div class="pr"><div class="n">5–6</div><div><b>Τα ανακατέματα</b><span>Το συνδετικό -ο- · σύνθετη λέξη ή σύμφυμα; (Βήμα 3)</span></div></div>
+   <div class="pr"><div class="n">7–8</div><div><b>Υλικά από όλο τον κόσμο</b><span>Δάνεια, αντιδάνεια, μεταφραστικά δάνεια · ετεροίωση · αρκτικόλεξα (Βήμα 4)</span></div></div>
+   <div class="pr end"><div class="n">✓</div><div><b>Το μενού</b><span>Όλα τα πιάτα με τη «συνταγή» τους, και ένα πιάτο που θα εφεύρεις εσύ.</span></div></div>
+  </div>
+  <h5>Πώς δουλεύεις</h5>
+  <ul class="how"><li>Διάβασε στο κίτρινο χαρτάκι τη θεωρία κάθε σταδίου.</li><li>Πάτησε ένα στοιχείο και μετά τη θέση του. Ξαναπατώντας το, το βγάζεις.</li><li>Με τον «Έλεγχο» βλέπεις τι είναι σωστό και γιατί. Το «Επόμενο» ανάβει όταν ολοκληρώσεις το στάδιο.</li></ul>
+  <div class="sign">— Η σεφ</div></div>`;
+}
+
+/* ══ Τέλος: το μενού ══ */
+const MK={a:[['τυρ','τυρί'],['μελ','μέλι'],['σοκολατ','σοκολάτα'],['σπανακ','σπανάκι']],b:[['πιτ','α','πίτα'],['ψωμ','ο','ψωμί'],['κρεμ','α','κρέμα']]};
+let mk={a:null,b:null};
+function dish(name,rc){return `<div class="dish"><span>${name}</span><span class="dots"></span><span class="rc">${rc}</span></div>`;}
+function fin(){
+  const first=firstTry.filter(x=>x===true).length;
+  main().innerHTML=`<div class="menu"><div class="mh"><h3>Το Μόρφημα</h3><div>Μενού ημέρας · κάθε πιάτο με τη συνταγή του</div></div>
+  <h4>Απλά πιάτα</h4>
+  ${dish('Ψωμί','ψωμ- + -ί · <b>θέμα + κατάληξη</b>')}
+  ${dish('Σούπα','σούπ- + -α · <b>θέμα + κατάληξη</b>')}
+  <h4>Παράγωγα πιάτα</h4>
+  ${dish('Ψωμάκι','ψωμ-<b>άκ</b>-ι · <b>επίθημα</b>')}
+  ${dish('Σουβλάκι από το σουβλατζίδικο','σουβλατζ-<b>ίδικ</b>-ο · <b>επίθημα τόπου</b>')}
+  ${dish('Ξεπαγωμένο κοτόπουλο','<b>ξε</b>-παγωμένο · <b>πρόθημα</b>')}
+  ${dish('Θεονόστιμο γλυκό','<b>θεο</b>-νόστιμο · <b>σύμφυμα</b>')}
+  <h4>Σύνθετα πιάτα</h4>
+  ${dish('Κρεατόπιτα','κρεατ-<b>ο</b>-πίτ-α · <b>θέμα + -ο- + θέμα</b>')}
+  ${dish('Σούπα αυγολέμονο','αυγ-<b>ο</b>-λέμον-ο · <b>θέμα + -ο- + θέμα</b>')}
+  ${dish('Σαλάτα με αγριαγκινάρες','αγρι-αγκινάρ-ες · <b>χωρίς -ο-</b>')}
+  ${dish('Γλυκόξινη σάλτσα','γλυκ-<b>ό</b>-ξιν-η · <b>θέμα + -ο- + θέμα</b>')}
+  <h4>Από όλο τον κόσμο</h4>
+  ${dish('Γιαούρτι','<b>δάνειο</b> · τουρκ. yoğurt')}
+  ${dish('Τοστ από την τοστιέρα','<b>δάνειο</b> + επίθημα -ιέρα')}
+  ${dish('Σερβίρεται σε πιάτο','<b>αντιδάνειο</b> · ιταλ. piatto ← πλατύς')}
+  <div class="maker"><h5>Το δικό σου πιάτο</h5><p>Η σεφ σού ζητά να εφεύρεις ένα νέο πιάτο. Διάλεξε ένα α΄ και ένα β΄ συνθετικό· το συνδετικό -ο- και η κατάληξη μπαίνουν μόνα τους.</p>
+   <div class="mk-row" id="mkA"><small>α΄ συνθετικό</small></div>
+   <div class="mk-row" id="mkB"><small>β΄ συνθετικό</small></div>
+   <div class="mk-out" id="mkOut"></div><div class="mk-rc" id="mkRc"></div></div>
+  <div class="checks">
+   <div class="ck"><b>✓ Μορφήματα, όχι συλλαβές:</b> ψωμ-ί, όχι ψω-μί.</div>
+   <div class="ck"><b>✓ Παράγωγη:</b> ένα θέμα + πρόθημα ή επίθημα (ξε-παγώνω, ψαρ-άς).</div>
+   <div class="ck"><b>✓ Σύνθετη:</b> δύο θέματα, συνήθως με -ο- (λαδ-ό-ξιδο)· χωρίς -ο- πριν από φωνήεν (αγρι-ελιά).</div>
+   <div class="ck"><b>✓ Σύμφυμα:</b> το μέρος χάνει τη σημασία του (ψιλο-πείνασα = λίγο).</div>
+   <div class="ck"><b>✓ Δάνεια:</b> ξένη λέξη · αντιδάνειο: ελληνικό υλικό που γύρισε · μεταφραστικό: ξένη συνταγή με ελληνικά υλικά.</div>
+   <div class="ck"><b>✓ Ετεροίωση · αρκτικόλεξα:</b> πλέκω – πλοκή · ΦΠΑ.</div>
+  </div>
+  <div class="score">Στάδια που έλυσες με την πρώτη προσπάθεια: <b>${first} / ${N}</b></div>
+  <div class="row" style="justify-content:center"><button class="btn ghost" onclick="restart()">↺ Ξανά από την αρχή</button></div></div>`;
+  mk={a:null,b:null};drawMk();
+}
+function drawMk(){
+  ['a','b'].forEach(p=>{const box=$(p==='a'?'mkA':'mkB');box.querySelectorAll('.chip').forEach(x=>x.remove());
+    MK[p].forEach((it,i)=>{const c=document.createElement('span');c.className='chip'+(mk[p]===i?' sel':'');c.textContent=it[it.length-1];c.onclick=()=>{mk[p]=i;drawMk();};box.appendChild(c);});});
+  const o=$('mkOut'),r=$('mkRc');
+  if(mk.a===null||mk.b===null){o.innerHTML='<span style="color:#bcae9a">διάλεξε δύο υλικά…</span>';r.textContent='';fitZoom();return;}
+  const A=MK.a[mk.a],B=MK.b[mk.b];
+  o.innerHTML=`<span class="p1">${A[0]}</span>-<span class="p2">ό</span>-<span class="p3">${B[0]}</span>-<span class="p4">${B[1]}</span>`;
+  r.innerHTML=`<b>${A[0]}ό${B[0]}${B[1]}</b> = ${A[1]} + ${B[2]} · σύνθετη λέξη: <b>θέμα + συνδετικό -ο- + θέμα + κατάληξη</b>`;
+  fitZoom();
+}
+function restart(){step=0;maxStep=0;solved=Array(N).fill(false);firstTry=Array(N).fill(null);go(0);}
+go(-1);
+</script>
+</body>
+</html>
