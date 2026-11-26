@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Το ρομπότ που τα παίρνει κατά λέξη · Η σημασία των λέξεων</title>
+<style>
+:root{--desk:#E8EDF4;--paper:#FFFFFF;--ink:#1c2230;--mut:#677088;--red:#4B4FC4;--red2:#FBE3E0;--green:#2E7D5B;--green2:#DDF1E7;--blue:#2F6690;--blue2:#E0ECF5;--line:#DCE2EC;--amber:#D08A1A;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--desk);background-image:radial-gradient(rgba(75,79,196,.10) 1px,transparent 1px);background-size:22px 22px;color:var(--ink);font-family:"Helvetica Neue",Arial,sans-serif;min-height:100vh}
+.top{max-width:920px;margin:0 auto;padding:22px 18px 8px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand small{display:block;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--red);font-weight:700}
+.brand h1{font-family:Georgia,serif;font-size:30px;line-height:1.1}
+.brand h1 em{color:var(--red)}
+.help{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;border-bottom:1px dotted var(--blue)}
+.stamps{display:flex;gap:22px;padding-bottom:16px}
+.stamp{width:40px;height:40px;border-radius:50%;border:2px dashed #bcae9a;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#bcae9a;font-size:16px;transition:all .3s;position:relative;cursor:default;background:#fff}
+.stamp.now{border-style:solid;border-color:var(--red);color:var(--red);transform:scale(1.08)}
+.stamp.ok{border-style:solid;border-color:var(--green);background:var(--green);color:#fff}
+.stamp.go{cursor:pointer}
+.stamp.gs{margin-left:14px}
+.stamp span{position:absolute;top:44px;left:50%;transform:translateX(-50%);font-family:Arial;font-size:10px;font-weight:600;color:var(--mut);white-space:nowrap}
+.wrap{max-width:920px;margin:0 auto;padding:10px 18px 40px;display:grid;grid-template-columns:250px 1fr;gap:18px}
+.note{background:#FFF6C9;border-radius:4px;padding:18px 16px;box-shadow:2px 3px 0 rgba(0,0,0,.08);transform:rotate(-1deg);align-self:start;position:sticky;top:14px}
+.note .st{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);font-weight:700}
+.note h2{font-family:Georgia,serif;font-size:21px;margin:4px 0 8px;line-height:1.2}
+.note p{font-size:14px;line-height:1.55}
+.note .kw{margin-top:10px;padding-top:8px;border-top:1px dashed #d9c879;font-size:13px;line-height:1.5}
+.note .grp{display:inline-block;font-size:11px;font-weight:700;color:#7a5d0e;background:#F7E79A;border-radius:10px;padding:2px 9px;margin-bottom:6px}
+.sheet{background:var(--paper);border-radius:10px;box-shadow:0 1px 0 #d8cbb6,0 10px 30px rgba(70,40,10,.13);padding:28px 32px;min-height:420px}
+.kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.ttl{font-family:Georgia,serif;font-size:24px;margin-bottom:14px}
+.ticket{position:relative;background:#fff;border:1px solid var(--line);border-top:5px solid var(--red);padding:12px 16px 12px 16px;margin:0 0 16px;font-family:"Courier New",monospace;font-size:15.5px;line-height:1.6;color:#4a2a1e;box-shadow:2px 3px 0 rgba(0,0,0,.05)}
+.ticket b.h{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;color:var(--red);margin-bottom:4px}
+.ticket .by{display:block;text-align:right;font-family:Georgia,serif;font-style:italic;font-size:13px;color:#8a3a2e;margin-top:6px}
+.fb{scroll-margin-bottom:100px;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:15px;line-height:1.55;display:none}
+.fb.ok{display:block;background:var(--green2);color:#24501f}
+.fb.ko{display:block;background:#FBE3E0;color:#7a2219}
+.fb.info{display:block;background:var(--blue2);color:#1d3f5c}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{background:var(--red);color:#fff;border:0;border-radius:6px;padding:10px 20px;font-size:15px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--red);border:2px solid var(--red)}
+.bank{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+.chip{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:20px;padding:6px 14px;font-weight:700;font-size:15px;cursor:pointer;user-select:none}
+.chip.sel{background:var(--blue);color:#fff}
+.chip.used{opacity:.3;pointer-events:none}
+.slot{display:inline-block;min-width:118px;border-bottom:2px solid var(--red);text-align:center;color:var(--red);cursor:pointer;font-family:Arial;font-size:15px;font-weight:700;padding:0 6px;min-height:1.4em;line-height:1.4;vertical-align:baseline}
+.slot[data-ph]:empty::before{content:attr(data-ph);color:#d7a59e;font-weight:600;font-size:12.5px}
+.slot.ok{border-color:var(--green);color:var(--green)}
+.slot.ko{border-color:var(--red);background:var(--red2)}
+.cut{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.board{background:#E9D3B4;border-radius:12px;padding:12px;text-align:center;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.board .w{font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:8px}
+.board .w small{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;color:#8a6a45;font-weight:700}
+.board .slot{display:block;margin:6px auto;min-width:0;width:90%;background:#fff;border:2px dashed #d7a59e;border-radius:8px;padding:4px}
+.board .slot.ok{border-style:solid}
+.board .plus{color:#8a6a45;font-weight:700}
+.sent{font-family:Georgia,serif;font-size:17.5px;line-height:2.3;margin:2px 0}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;min-height:10px}
+.card{background:#fff;border:2px solid var(--line);border-radius:8px;padding:7px 11px;font-family:Georgia,serif;font-size:15px;cursor:pointer;line-height:1.35;box-shadow:1px 2px 0 rgba(0,0,0,.05)}
+.card:hover{border-color:var(--blue)}
+.card.sel{border-color:var(--blue);background:var(--blue);color:#fff}
+.card.ok{border-color:var(--green);background:var(--green2);cursor:default}
+.card u{text-decoration:none;border-bottom:2px solid var(--amber);font-weight:700}
+.card .o{display:block;font-family:Arial;font-size:12px;color:var(--mut);margin-top:2px}
+.card.sel .o{color:#e6eef6}
+.bins{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.bins.two{grid-template-columns:1fr 1fr}
+.bin{border:2px dashed #d7cdb9;border-radius:12px;padding:8px;min-height:150px;cursor:pointer;background:rgba(255,255,255,.55);display:flex;flex-direction:column;gap:6px}
+.bin:hover{border-color:var(--blue);background:var(--blue2)}
+.bin h6{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);text-align:center;margin-bottom:2px}
+.bin .card{font-size:14px}
+.mcq{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.mcq .q{font-family:Georgia,serif;font-size:16.5px;margin-bottom:8px;line-height:1.5}
+.mcq .q small{display:block;font-family:Arial;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:2px}
+.mcq .q u{text-decoration:none;border-bottom:2px solid var(--amber);font-weight:700}
+.opts{display:grid;gap:8px}
+.opt{background:#fff;border:2px solid var(--line);border-radius:8px;padding:9px 12px 9px 38px;font-family:Georgia,serif;font-size:15.5px;cursor:pointer;position:relative;line-height:1.45}
+.opt::before{content:"";position:absolute;left:12px;top:11px;width:16px;height:16px;border:2px solid #bcae9a;border-radius:50%;background:#fff}
+.opt:hover{border-color:var(--blue)}
+.opt.on{border-color:var(--blue);background:var(--blue2)}
+.opt.on::before{background:var(--blue);border-color:var(--blue)}
+.opt.ok{border-color:var(--green);background:var(--green2)}.opt.ok::before{background:var(--green);border-color:var(--green)}
+.opt.ko{border-color:var(--red);background:var(--red2)}.opt.ko::before{border-color:var(--red)}
+.why{display:none;font-size:14px;line-height:1.5;margin-top:6px;padding:7px 10px;border-radius:6px}
+.why.ko{display:block;background:var(--red2);color:#7a2219}
+.why.ok{display:block;background:var(--green2);color:#24501f}
+.intro p.lead{font-family:Georgia,serif;font-size:17px;line-height:1.75;margin-bottom:16px}
+.intro h5{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin:20px 0 10px}
+.dict{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dict div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.dict b{display:block;font-family:Georgia,serif;font-size:16px;margin-bottom:2px}
+.proc{display:grid;gap:8px}
+.pr{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.pr .n{width:34px;height:34px;flex-shrink:0;border-radius:50%;border:2px dashed #bcae9a;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;color:#8a7f69}
+.pr b{display:block;font-size:14px}
+.pr span{font-size:13.5px;color:#4a453c}
+.pr.end{background:var(--green2);border-color:#c5dfbb}.pr.end .n{border:2px solid var(--green);color:var(--green)}
+.how{list-style:none;display:grid;gap:7px}
+.how li{font-size:14px;line-height:1.5;padding-left:22px;position:relative}
+.how li::before{content:"•";position:absolute;left:6px;color:var(--red);font-weight:700}
+.sign{margin-top:18px;font-family:Georgia,serif;font-style:italic;text-align:right;color:#4a453c}
+.menu{background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 10px 30px rgba(70,40,10,.15);padding:28px 34px}
+.menu .mh{text-align:center;border-bottom:3px double var(--ink);padding-bottom:8px;margin-bottom:14px}
+.menu .mh h3{font-family:Georgia,serif;font-size:32px}
+.menu .mh div{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut)}
+.menu h4{font-family:Georgia,serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--red);text-align:center;margin:16px 0 8px}
+.dish{display:flex;align-items:baseline;gap:8px;font-family:Georgia,serif;font-size:17px;margin:5px 0}
+.dish .dots{flex:1;border-bottom:2px dotted #cdbfa8;transform:translateY(-4px)}
+.dish .rc{font-family:Arial;font-size:13px;color:var(--mut)}
+.dish .rc b{color:var(--red)}
+.maker{margin-top:20px;background:#FFF8EE;border:2px dashed #e2c9a5;border-radius:12px;padding:14px 16px}
+.maker h5{font-family:Georgia,serif;font-size:18px;margin-bottom:6px}
+.maker p{font-size:14px;line-height:1.5;color:#4a453c}
+.mk-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;align-items:center}
+.mk-row small{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;width:100%}
+.mk-out{font-family:Georgia,serif;font-size:26px;text-align:center;margin-top:10px;min-height:38px}
+.mk-out .p1,.mk-out .p3{color:var(--blue);font-weight:700}
+.mk-out .p2{color:#8a6a45;font-weight:700}
+.mk-out .p4{color:var(--red);font-weight:700}
+.mk-rc{text-align:center;font-size:13.5px;color:var(--mut)}
+.checks{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ck{background:var(--green2);border-radius:6px;padding:9px 12px;font-size:14px;line-height:1.4}
+.ck b{color:var(--green)}
+.score{font-family:Georgia,serif;font-size:15px;margin-top:14px;text-align:center;color:var(--mut)}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,253,248,.97);border-top:1px solid #d8cbb6;box-shadow:0 -4px 16px rgba(60,40,10,.08);z-index:20}
+.nav-in{max-width:920px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nav-mid{font-size:13px;color:var(--mut);text-align:center;flex:1}
+.nav-mid b{color:var(--ink)}
+.nm-h{font-size:11px}
+.nbtn{border:0;border-radius:6px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;min-width:120px}
+.nbtn.back{background:transparent;color:var(--mut);border:2px solid #d8cbb6}
+.nbtn.fwd{background:#cfc4b2;color:#fff;cursor:not-allowed}
+.nbtn.fwd.on{background:var(--green);cursor:pointer;animation:pulse 1.4s ease 2}
+.nbtn[hidden]{visibility:hidden;display:block}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(60,122,58,.25)}}
+footer{text-align:center;font-size:12px;color:var(--mut);padding:0 0 90px}
+.thBtn,.thBack,.note .cls{display:none}
+.prog{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:8px}
+.one .card{display:block;font-size:21px;padding:18px 14px;text-align:center;cursor:default;border-color:#d9c9b2}
+.one .card .o{font-size:13px;margin-top:6px}
+.colbtns{display:grid;gap:8px;margin-top:12px}
+.colbtn{background:#fff;border:2px solid var(--blue);color:var(--blue);border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer}
+.colbtn.ok{background:var(--green);border-color:var(--green);color:#fff}
+.colbtn.ko{background:var(--red2);border-color:var(--red);color:var(--red)}
+.colbtn:disabled{cursor:default}
+.tally{font-size:12.5px;color:var(--mut);margin-top:10px;text-align:center}
+.btn.go2{background:var(--green)}
+@media(max-width:720px){
+ .wrap{grid-template-columns:1fr;padding-top:4px}.sheet{padding:16px 14px;min-height:0}.brand h1{font-size:22px}
+ .note{display:none;position:fixed;left:10px;right:10px;top:12px;bottom:auto;max-height:72vh;overflow:auto;z-index:40;transform:none;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+ .note.open{display:block}
+ .note .cls{display:block;width:100%;margin-top:12px;background:#fff;border:2px solid #d9c879;border-radius:6px;padding:9px;font-weight:700;font-size:14px;color:#7a5d0e;cursor:pointer}
+ .thBack{position:fixed;inset:0;background:rgba(40,25,10,.35);z-index:35}
+ .thBack.open{display:block}
+ .thBtn{display:block;position:fixed;right:12px;bottom:78px;z-index:30;background:#FFF0A8;color:#5c4508;border:2px solid #d9c25a;border-radius:22px;padding:9px 15px;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer}
+ .thBtn[hidden]{display:none}
+ .top{padding:12px 14px 4px}.brand small,.help,footer,.kicker,.ticket .by,.ticket b.h,.nm-h{display:none}
+ .ttl{font-size:19px;margin-bottom:10px}
+ .ticket{font-size:14px;line-height:1.5;padding:9px 12px;margin-bottom:12px;border-top-width:4px}
+ .board .w{font-size:20px}.sent{font-size:16px;line-height:2.1}
+ .wrap{padding-bottom:150px}.bin{min-height:90px}
+ .stamp span{display:none}.stamps{padding-bottom:0;gap:5px;flex-wrap:wrap}.stamp.gs{margin-left:3px}.stamp{width:32px;height:32px;font-size:14px}
+ .bins,.bins.two,.cut,.dict,.checks{grid-template-columns:1fr}
+ .nbtn{min-width:0;padding:10px 14px;font-size:14px}.nav-mid{font-size:12px}.nm-x{display:none}
+ .menu{padding:20px 16px}.dish{flex-wrap:wrap}.dish .dots{display:none}
+}
+
+.ticket{border-top-color:var(--red);font-family:"Helvetica Neue",Arial,sans-serif;color:#2b2f55;background:#F4F5FF}
+.bot{display:flex;gap:10px;align-items:flex-start;margin:0 0 12px}
+.bot .av{font-size:34px;line-height:1;flex-shrink:0}
+.bot .bub{position:relative;background:#EEF0FF;border:1px solid #d5d8fb;border-radius:14px;padding:9px 13px;font-family:Georgia,serif;font-style:italic;font-size:15.5px;line-height:1.5;color:#2b2f55}
+.bot .bub::before{content:"";position:absolute;left:-7px;top:12px;border:7px solid transparent;border-right-color:#d5d8fb;border-left:0}
+.bot .bub b.n{font-style:normal;font-family:Arial;font-size:11px;letter-spacing:1.5px;color:var(--red);display:block;margin-bottom:2px}
+.diploma{background:#fff;border:3px double #b8bde8;border-radius:6px;box-shadow:0 10px 30px rgba(30,30,80,.14);padding:26px 30px}
+.diploma .dh{text-align:center;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:14px}
+.diploma .seal{font-size:42px}
+.diploma h3{font-family:Georgia,serif;font-size:28px;line-height:1.2}
+.diploma .dh div{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);margin-top:4px}
+.dl{font-family:Georgia,serif;font-size:16px;margin-bottom:10px}
+.fix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fx{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#FAFBFF}
+.fx i{display:block;font-style:normal;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);font-weight:700}
+.fx b{display:block;font-family:Georgia,serif;font-size:15px;margin:2px 0 6px}
+.bf{display:grid;gap:4px;font-size:13.5px}
+.bef{color:#9a3b2c;text-decoration:line-through;text-decoration-color:rgba(154,59,44,.5)}
+.aft{color:var(--green);font-weight:700}
+.opt.ko,.colbtn.ko,.slot.ko{border-color:#C0392B!important;color:#9b2c1f}.opt.ko::before{border-color:#C0392B!important}.why.ko{color:#7a2219}
+@media(max-width:720px){.fix{grid-template-columns:1fr}.diploma{padding:18px 14px}.bot .bub{font-size:14.5px}.bot .av{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><small>Εργαστήριο ρομποτικής · Εκπαίδευση</small><h1>Το ρομπότ που τα παίρνει <em>κατά λέξη</em></h1><span class="help" onclick="go(-1)">ⓘ Η ιστορία και οι οδηγίες</span></div>
+  <div class="stamps" id="stamps"></div>
+</div>
+<div class="wrap">
+  <aside class="note" id="note"></aside>
+  <main id="main"></main>
+</div>
+<div class="thBack" id="thBack" onclick="theory(false)"></div>
+<button class="thBtn" id="thBtn" onclick="theory(true)" hidden>📖 Θεωρία</button>
+<div class="nav"><div class="nav-in">
+  <button class="nbtn back" id="nBack" onclick="go(step-1)">← Πίσω</button>
+  <div class="nav-mid" id="nMid"></div>
+  <button class="nbtn fwd" id="nFwd" onclick="fwd()">Επόμενο →</button>
+</div></div>
+<footer>Νεοελληνική Γλώσσα Γυμνασίου · Η σημασία των λέξεων · Α. &amp; Σ. Μητσέλος</footer>
+<script>
+function fitZoom(){var d=document.documentElement;d.style.zoom=1;var w=document.querySelector('.wrap'),n=document.querySelector('.nav');
+ if(!w){return;} var h=w.getBoundingClientRect().bottom+scrollY+(n?n.offsetHeight:0)-30;
+ var z=Math.min(1.9,innerWidth/1150,innerHeight/h);d.style.zoom=Math.max(1,z);}
+addEventListener('resize',fitZoom);
+const GROUPS=['Μονοσημία και πολυσημία','Κυριολεξία και μεταφορά','Η συνωνυμία','Η αντωνυμία','Υπερωνυμία και υπωνυμία'];
+
+const ST=[
+/* ── 1 ── */
+{g:0,m:'Ποια σημασία;',sh:'Σημασίες',type:'mcq',
+ bot:'Μου είπαν ότι «το ποντίκι δεν δουλεύει». Να του δώσω τυρί για να πάρει δύναμη;',
+ title:'Μία λέξη, πολλές σημασίες',
+ def:'<b>Πολύσημη</b> είναι η λέξη που έχει περισσότερες από μία σημασίες, οι οποίες συνδέονται μεταξύ τους. Ποια σημασία έχει κάθε φορά το καταλαβαίνουμε από τα <b>συμφραζόμενα</b>, δηλαδή από τις λέξεις γύρω της.',
+ kw:'<b>Κόλπο:</b> διάβασε ολόκληρη την πρόταση. Ποια σημασία «στέκει» με τις υπόλοιπες λέξεις;',
+ task:'Ο Ρόμπι ξέρει μόνο την πρώτη σημασία κάθε λέξης. Βοήθησέ τον: διάλεξε τι σημαίνει η υπογραμμισμένη λέξη σε κάθε πρόταση.',
+ qs:[{q:'Το <u>ποντίκι</u> του υπολογιστή δεν δουλεύει.',
+      o:['μικρό τρωκτικό','συσκευή με την οποία κινούμε τον δείκτη στην οθόνη','ο μυς στο μπράτσο'],a:1,
+      e:['Τα συμφραζόμενα («του υπολογιστή») δείχνουν ότι δεν πρόκειται για το ζώο.','Σωστά: «του υπολογιστή» δείχνει ότι μιλάμε για τη συσκευή.','Και αυτή είναι σημασία της λέξης (στην καθημερινή γλώσσα), αλλά εδώ τα συμφραζόμενα μιλούν για υπολογιστή.']},
+     {q:'Ο σερβιτόρος έφερε τα ποτήρια σε έναν <u>δίσκο</u>.',
+      o:['επίπεδο σκεύος για σερβίρισμα','μουσικός δίσκος','βαρύ όργανο που ρίχνουν οι αθλητές'],a:0,
+      e:['Σωστά: ο σερβιτόρος μεταφέρει τα ποτήρια πάνω σε δίσκο σερβιρίσματος.','Ο σερβιτόρος δεν μεταφέρει ποτήρια πάνω σε μουσικό δίσκο.','Η δισκοβολία δεν έχει σχέση με σερβιτόρο και ποτήρια.']},
+     {q:'Στην πρεμιέρα της ταινίας ήρθαν πολλά <u>αστέρια</u>.',
+      o:['ουράνια σώματα','σήματα βαθμολογίας (π.χ. ★★★)','διάσημοι ηθοποιοί'],a:2,
+      e:['Τα ουράνια σώματα δεν «έρχονται» σε πρεμιέρα ταινίας.','Τα αστεράκια βαθμολογίας δεν «έρχονται» κάπου.','Σωστά: «αστέρια» εδώ είναι οι διάσημοι ηθοποιοί που ήρθαν στην πρεμιέρα.']},
+     {q:'Διάβασε το τρίτο <u>κεφάλαιο</u> του βιβλίου.',
+      o:['ποσό χρημάτων για μια επιχείρηση','κεφαλαίο γράμμα','ενότητα ενός βιβλίου'],a:2,
+      e:['Αυτή είναι άλλη σημασία της λέξης, αλλά εδώ μιλάμε για βιβλίο.','Το κεφαλαίο γράμμα έχει άλλον τόνο (κεφαλαί<b>ο</b>) και δεν διαβάζεται «τρίτο του βιβλίου».','Σωστά: «το τρίτο κεφάλαιο του βιβλίου» είναι ενότητα του βιβλίου.']}],
+ ok:'Σωστά! Η ίδια λέξη έχει πολλές σημασίες, και τα <b>συμφραζόμενα</b> μάς δείχνουν ποια ισχύει κάθε φορά.'},
+
+/* ── 2 ── */
+{g:0,m:'Μονόσημες ή πολύσημες;',sh:'Είδη',type:'sort',
+ bot:'Άρα όλες οι λέξεις έχουν πολλές σημασίες; Τώρα φοβάμαι να ακούσω οποιαδήποτε λέξη!',
+ title:'Μία ή πολλές σημασίες;',
+ def:'<b>Μονόσημη</b> είναι η λέξη που έχει μία μόνο σημασία. Μονόσημοι είναι κυρίως οι <b>επιστημονικοί όροι</b>, γιατί η επιστήμη χρειάζεται σαφήνεια. <b>Πολύσημη</b> είναι η λέξη με περισσότερες σημασίες.',
+ kw:'<b>Ερώτηση-κλειδί:</b> μπορώ να φτιάξω δύο προτάσεις όπου η λέξη σημαίνει κάτι διαφορετικό; Αν ναι, είναι πολύσημη.',
+ task:'Ηρέμησε τον Ρόμπι: δεν είναι όλες οι λέξεις πολύσημες. Ξεχώρισε τις μονόσημες από τις πολύσημες. Πάτησε μια λέξη και μετά τη στήλη.',
+ cols:['Μονόσημες','Πολύσημες'],
+ cards:[{t:'οξυγόνο',c:0,e:'Επιστημονικός όρος της χημείας: έχει μία μόνο σημασία.'},
+  {t:'διάμετρος',c:0,e:'Όρος της γεωμετρίας: έχει μία μόνο σημασία.'},
+  {t:'ισόπλευρος',c:0,e:'Όρος της γεωμετρίας (ισόπλευρο τρίγωνο): έχει μία μόνο σημασία.'},
+  {t:'φτερό',c:1,e:'Φτερό πουλιού, φτερό αυτοκινήτου, φτερό για ξεσκόνισμα: πολλές σημασίες.'},
+  {t:'κεφάλαιο',c:1,e:'Κεφάλαιο βιβλίου, κεφάλαιο μιας επιχείρησης (χρήματα): πολλές σημασίες.'},
+  {t:'αστέρι',c:1,e:'Αστέρι του ουρανού, αστέρι του κινηματογράφου: πολλές σημασίες.'}],
+ ok:'Σωστά! Οι επιστημονικοί όροι είναι συνήθως <b>μονόσημοι</b>, ενώ πολλές λέξεις της καθημερινής γλώσσας είναι <b>πολύσημες</b>.'},
+
+/* ── 3 ── */
+{g:1,m:'Κατά λέξη ή μεταφορικά;',sh:'Μεταφορά',type:'sort',
+ bot:'Ο φίλος μου είπε ότι «τα λόγια σου με πλήγωσαν σαν μαχαίρι». Καλώ αμέσως ασθενοφόρο!',
+ title:'Κατά λέξη ή μεταφορικά;',
+ def:'<b>Κυριολεξία (δηλωτική σημασία)</b>: η κύρια σημασία της λέξης, αυτή που δίνει πρώτη το λεξικό. <b>Μεταφορά (συνυποδηλωτική σημασία)</b>: πρόσθετες σημασίες και αποχρώσεις, που δίνουν στον λόγο παραστατικότητα και συναίσθημα.',
+ kw:'<b>Κριτήριο:</b> διάβασε τη φράση «κατά λέξη». Αν δεν στέκει λογικά, η λέξη χρησιμοποιείται <b>μεταφορικά</b>.',
+ task:'Ο Ρόμπι παίρνει όλες τις φράσεις κατά λέξη και πανικοβάλλεται. Δείξε του σε ποιες προτάσεις η υπογραμμισμένη λέξη είναι κυριολεκτική και σε ποιες μεταφορική. Πάτησε μια πρόταση και μετά τη στήλη.',
+ cols:['Κυριολεκτικά','Μεταφορικά'],
+ cards:[{t:'Ο ήλιος <u>έλαμπε</u> όλη μέρα.',c:0,e:'Ο ήλιος πράγματι λάμπει: κυριολεξία.'},
+  {t:'Το πρόσωπό της <u>έλαμψε</u> από χαρά.',c:1,e:'Ένα πρόσωπο δεν εκπέμπει φως· η χαρά «φαίνεται» πάνω του: μεταφορά.'},
+  {t:'Έκοψα το ψωμί με το <u>μαχαίρι</u>.',c:0,e:'Ένα πραγματικό μαχαίρι κόβει ψωμί: κυριολεξία.'},
+  {t:'Τα λόγια του με πλήγωσαν σαν <u>μαχαίρι</u>.',c:1,e:'Τα λόγια δεν κόβουν· πληγώνουν τα συναισθήματα: μεταφορά.'},
+  {t:'Το σπίτι είναι χτισμένο από <u>πέτρα</u>.',c:0,e:'Πραγματική πέτρα, υλικό οικοδομής: κυριολεξία.'},
+  {t:'Έχει καρδιά από <u>πέτρα</u>.',c:1,e:'Η καρδιά δεν είναι από πέτρα· σημαίνει ότι ο άνθρωπος είναι σκληρός, ασυγκίνητος: μεταφορά.'},
+  {t:'Χθες έπεσε δυνατή <u>βροχή</u>.',c:0,e:'Πραγματική βροχή: κυριολεξία.'},
+  {t:'Δέχτηκε μια <u>βροχή</u> από συγχαρητήρια.',c:1,e:'Τα συγχαρητήρια δεν πέφτουν από τον ουρανό· «βροχή» σημαίνει «πάρα πολλά»: μεταφορά.'}],
+ ok:'Σωστά! Η ίδια λέξη μπορεί να χρησιμοποιηθεί <b>κυριολεκτικά</b> ή <b>μεταφορικά</b>. Αν η φράση «κατά λέξη» δεν στέκει, έχουμε μεταφορά.'},
+
+/* ── 4 ── */
+{g:1,m:'Τι σημαίνει η μεταφορά;',sh:'Νόημα',type:'mcq',
+ bot:'Η δασκάλα είπε ότι «η τάξη ήταν ένα μελίσσι». Πρέπει να φέρω μελισσοκόμο;',
+ title:'Τι εννοούν οι άνθρωποι;',
+ def:'Η <b>συνυποδηλωτική (μεταφορική)</b> σημασία κυριαρχεί στη λογοτεχνία και στα κείμενα που θέλουν να συγκινήσουν. Η <b>δηλωτική (κυριολεκτική)</b> σημασία κυριαρχεί στον επιστημονικό και στον δημοσιογραφικό λόγο, όπου χρειάζονται σαφήνεια και ακρίβεια.',
+ kw:'Για να βρεις τι σημαίνει μια μεταφορά, ρώτα: <b>ποιο χαρακτηριστικό</b> της λέξης μεταφέρεται εδώ; (μελίσσι → θόρυβος και κίνηση)',
+ task:'Εξήγησε στον Ρόμπι τι εννοούν οι άνθρωποι όταν μιλούν μεταφορικά. Διάλεξε τη σωστή απάντηση.',
+ qs:[{q:'«Η τάξη ήταν ένα <u>μελίσσι</u>.» Τι σημαίνει;',
+      o:['Η τάξη είχε μέλισσες.','Η τάξη ήταν γεμάτη θόρυβο και κίνηση.','Τα παιδιά έτρωγαν μέλι.'],a:1,
+      e:['Αυτή είναι η κατά λέξη ανάγνωση, που δεν στέκει. Από το μελίσσι «μεταφέρεται» ο θόρυβος και η κίνηση.','Σωστά: όπως σε ένα μελίσσι, υπήρχε βουητό και συνεχής κίνηση.','Η μεταφορά δεν έχει σχέση με το μέλι αλλά με τον θόρυβο και την κίνηση του μελισσιού.']},
+     {q:'«Ο αρχηγός είναι <u>βράχος</u> για την ομάδα.» Τι σημαίνει;',
+      o:['Είναι σταθερός και η ομάδα στηρίζεται πάνω του.','Είναι πολύ βαρύς.','Δεν μιλάει ποτέ.'],a:0,
+      e:['Σωστά: από τον βράχο «μεταφέρεται» η σταθερότητα και η δύναμη.','Η μεταφορά δεν αφορά το βάρος, αλλά τη σταθερότητα του βράχου.','Η μεταφορά δεν αφορά τη σιωπή, αλλά τη σταθερότητα του βράχου.']},
+     {q:'«Τον υποδέχτηκαν <u>ψυχρά</u>.» Τι σημαίνει;',
+      o:['Τον υποδέχτηκαν σε κρύο δωμάτιο.','Του πρόσφεραν κρύο νερό.','Τον υποδέχτηκαν χωρίς φιλικότητα και ζεστασιά.'],a:2,
+      e:['Αυτή είναι η κατά λέξη ανάγνωση. Εδώ «ψυχρά» αφορά τη συμπεριφορά.','Η λέξη δεν αφορά θερμοκρασία ποτού αλλά συμπεριφορά.','Σωστά: «ψυχρά» = χωρίς φιλικότητα. Το κρύο «μεταφέρεται» στη συμπεριφορά.']},
+     {q:'Ο Ρόμπι πρέπει να γράψει το <b>δελτίο καιρού</b>. Ποια διατύπωση ταιριάζει;',
+      o:['«Αύριο ο ήλιος θα λιώσει την πόλη.»','«Αύριο η θερμοκρασία θα φτάσει τους 38 βαθμούς.»','«Αύριο η πόλη θα γίνει φούρνος.»'],a:1,
+      e:['Εντυπωσιακή μεταφορά, αλλά το δελτίο καιρού χρειάζεται σαφήνεια και ακρίβεια, δηλαδή δηλωτική σημασία.','Σωστά: σε ένα δελτίο ειδήσεων ή καιρού κυριαρχεί η δηλωτική σημασία, με σαφήνεια και ακρίβεια.','Η μεταφορά ταιριάζει σε λογοτεχνικό κείμενο. Το δελτίο καιρού χρειάζεται δηλωτική σημασία.']}],
+ ok:'Σωστά! Η μεταφορά δίνει <b>παραστατικότητα και συναίσθημα</b>. Στα κείμενα που χρειάζονται <b>σαφήνεια</b> προτιμάμε τη δηλωτική σημασία.'},
+
+/* ── 5 ── */
+{g:2,m:'Το κατάλληλο συνώνυμο',sh:'Συνώνυμα',type:'mcq',
+ bot:'Έστειλα στον φίλο μου: «Πεινάω! Πάμε να γευματίσουμε;» Γιατί γελάει;',
+ title:'Η σωστή λέξη στη σωστή περίσταση',
+ def:'<b>Συνώνυμα</b> είναι οι λέξεις με ίδια ή παρόμοια σημασία. Σχεδόν ποτέ όμως δεν ταυτίζονται απόλυτα: διαφέρουν στο <b>σημασιολογικό εύρος</b>, στο <b>ύφος</b>, στη <b>συνυποδήλωση</b> ή στο <b>περιβάλλον</b> όπου εμφανίζονται.',
+ kw:'<b>Κριτήριο:</b> βάλε το συνώνυμο στη θέση της λέξης. Μένουν ίδια το νόημα και το ύφος; Τότε ταιριάζει.',
+ task:'Ο Ρόμπι ξέρει πολλά συνώνυμα, αλλά δεν ξέρει πότε ταιριάζει το καθένα. Διάλεξε το συνώνυμο που ταιριάζει σε κάθε περίσταση.',
+ qs:[{q:'Μήνυμα σε φίλο: «Πεινάω! Πάμε να ____;»',
+      o:['γευματίσουμε','φάμε','σιτιστούμε'],a:1,
+      e:['Το «γευματίζω» είναι επίσημο· σε μήνυμα σε φίλο ακούγεται αστείο. Αλλάζει το <b>ύφος</b>.','Σωστά: καθημερινή λέξη για καθημερινό μήνυμα.','Το «σιτίζομαι» είναι πολύ λόγιο και χρησιμοποιείται συνήθως για ιδρύματα ή ζώα. Δεν ταιριάζει στο <b>ύφος</b>.']},
+     {q:'Δελτίο καιρού: «Αύριο αναμένονται ____ βροχές στα δυτικά.»',
+      o:['ισχυρές','τρελές','φοβερές'],a:0,
+      e:['Σωστά: ουδέτερη, επίσημη λέξη, κατάλληλη για δελτίο καιρού.','Το «τρελές» είναι προφορικό και συναισθηματικό· δεν ταιριάζει στο <b>ύφος</b> ενός δελτίου.','Το «φοβερές» έχει συναισθηματική φόρτιση· αλλάζει τη <b>συνυποδήλωση</b>.']},
+     {q:'«Το ____ του σκύλου μας είναι μαύρο και γυαλιστερό.»',
+      o:['μαλλί','τρίχωμα','κόμη'],a:1,
+      e:['«Μαλλιά» λέμε κυρίως για ανθρώπους. Τα συνώνυμα δεν καλύπτουν ακριβώς τις ίδιες περιπτώσεις (<b>σημασιολογικό εύρος</b>).','Σωστά: για τα ζώα λέμε «τρίχωμα».','Η «κόμη» είναι λόγια, ποιητική λέξη για τα μαλλιά ανθρώπου.']},
+     {q:'Ο Ρόμπι θέλει να «διορθώσει» το σύνθημα «Ειρήνη, ειρήνη, μόνο ειρήνη!» με συνώνυμα. Τι του λες;',
+      o:['Σωστά, η επανάληψη δείχνει φτώχεια λεξιλογίου.','Η λέξη δεν έχει συνώνυμα.','Η επανάληψη είναι σκόπιμη: τονίζει τη λέξη (εμφατική επανάληψη).'],a:2,
+      e:['Δεν είναι κάθε επανάληψη λάθος. Εδώ επαναλαμβάνεται σκόπιμα, για να τονιστεί.','Δεν είναι αυτός ο λόγος. Η επανάληψη εδώ είναι σκόπιμη, για έμφαση.','Σωστά: η χρήση συνωνύμων δεν είναι κανόνας. Η εμφατική επανάληψη τονίζει τη λέξη.']}],
+ ok:'Σωστά! Δεν φτάνει να ξέρουμε συνώνυμα· διαλέγουμε αυτό που ταιριάζει στο <b>νόημα</b> και στο <b>ύφος</b> της περίστασης.'},
+
+/* ── 6 ── */
+{g:3,m:'Τα είδη των αντωνύμων',sh:'Αντίθεση',type:'sort',
+ bot:'Αφού το αντίθετο του «ψηλός» είναι «κοντός», τότε όποιος δεν είναι ψηλός είναι κοντός. Σωστά;',
+ title:'Τι είδους αντίθεση;',
+ def:'<b>Αντώνυμα</b> είναι οι λέξεις με αντίθετη σημασία. Τρία είδη: <b>αμοιβαίος αποκλεισμός</b> (ή το ένα ή το άλλο), <b>κλιμάκωση</b> (τα άκρα μιας κλίμακας, με ενδιάμεσα) και <b>αντιστροφή</b> (το ένα προϋποθέτει το άλλο).',
+ kw:'<b>Ερωτήσεις-κλειδιά:</b> Υπάρχει κάτι ενδιάμεσο; → κλιμάκωση. Αν δεν είναι το ένα, είναι αναγκαστικά το άλλο; → αποκλεισμός. Το ένα δεν υπάρχει χωρίς το άλλο; → αντιστροφή.',
+ task:'Δείξε στον Ρόμπι ότι δεν είναι όλες οι αντιθέσεις ίδιες. Βάλε κάθε ζευγάρι στο σωστό είδος. Πάτησε ένα ζευγάρι και μετά τη στήλη.',
+ cols:['Αμοιβαίος αποκλεισμός','Κλιμάκωση','Αντιστροφή'],
+ cards:[{t:'ζωντανός – νεκρός',c:0,e:'Αν δεν είσαι ζωντανός, είσαι νεκρός· δεν υπάρχει ενδιάμεσο: αμοιβαίος αποκλεισμός.'},
+  {t:'επιτρέπεται – απαγορεύεται',c:0,e:'Κάτι ή επιτρέπεται ή απαγορεύεται: αμοιβαίος αποκλεισμός.'},
+  {t:'αρσενικός – θηλυκός (σκύλος)',c:0,e:'Ένας σκύλος είναι ή αρσενικός ή θηλυκός: αμοιβαίος αποκλεισμός.'},
+  {t:'ψηλός – κοντός',c:1,e:'Υπάρχουν ενδιάμεσα («μετρίου ύψους»): κλιμάκωση. Άρα ο Ρόμπι έκανε λάθος!'},
+  {t:'ζεστός – κρύος',c:1,e:'Υπάρχουν ενδιάμεσα (χλιαρός, δροσερός): κλιμάκωση.'},
+  {t:'γρήγορος – αργός',c:1,e:'Υπάρχουν ενδιάμεσες ταχύτητες: κλιμάκωση.'},
+  {t:'αγοράζω – πουλώ',c:2,e:'Για να αγοράσει κάποιος, πρέπει κάποιος άλλος να πουλήσει: αντιστροφή.'},
+  {t:'δάσκαλος – μαθητής',c:2,e:'Δεν υπάρχει δάσκαλος χωρίς μαθητή: αντιστροφή.'},
+  {t:'δίνω – παίρνω',c:2,e:'Όταν κάποιος δίνει, κάποιος άλλος παίρνει: αντιστροφή.'}],
+ ok:'Σωστά! Στην <b>κλιμάκωση</b> υπάρχουν ενδιάμεσα (όποιος δεν είναι ψηλός δεν είναι αναγκαστικά κοντός). Στον <b>αποκλεισμό</b> όχι. Στην <b>αντιστροφή</b> το ένα προϋποθέτει το άλλο.'},
+
+/* ── 7 ── */
+{g:3,m:'Αντώνυμα και πολυσημία',sh:'Αντώνυμα',type:'mcq',
+ bot:'Το αντίθετο της «ψηλής φωνής» είναι η «κοντή φωνή». Το βρήκα μόνος μου!',
+ title:'Το αντίθετο… ποιας σημασίας;',
+ def:'Μια <b>πολύσημη</b> λέξη έχει διαφορετικό αντώνυμο για κάθε σημασία της. Τα αντώνυμα σχηματίζονται με <b>διαφορετική λέξη</b>, με το <b>στερητικό α-/αν-</b>, με <b>αντίθετα προθήματα</b> (εισ-/εξ-), με <b>ευ-/δυσ-</b> ή με <b>ξε-</b> στα ρήματα.',
+ kw:'Πριν βρεις το αντώνυμο, ρώτα: <b>ποια σημασία</b> έχει η λέξη σε αυτή τη φράση;',
+ task:'Διόρθωσε τα αντώνυμα του Ρόμπι. Διάλεξε τη σωστή απάντηση σε κάθε ερώτηση.',
+ qs:[{q:'Ποιο είναι το αντίθετο της <b>ψηλής φωνής</b>;',
+      o:['κοντή φωνή','χαμηλή (βαθιά) φωνή','μακριά φωνή'],a:1,
+      e:['Το «κοντός» είναι αντώνυμο του «ψηλός» για το ύψος ενός ανθρώπου, όχι για τη φωνή.','Σωστά: για τη φωνή, το «ψηλή» σημαίνει «οξεία» και το αντίθετό της είναι «χαμηλή, βαθιά».','Το «μακρύς» αφορά το μήκος, όχι τη φωνή.']},
+     {q:'Ποιο είναι το αντίθετο του <b>φρέσκου ψωμιού</b>;',
+      o:['ζεστό ψωμί','ώριμο ψωμί','μπαγιάτικο ψωμί'],a:2,
+      e:['Το φρέσκο ψωμί μπορεί να είναι και ζεστό· δεν είναι αντίθετα.','Το «ώριμος» λέγεται για φρούτα, όχι για ψωμί.','Σωστά: για το ψωμί, το αντίθετο του «φρέσκος» είναι «μπαγιάτικος».']},
+     {q:'Ο Ρόμπι λέει: «Το αντίθετο του <b>χρήσιμος</b> είναι <b>δύσχρηστος</b>.» Ποιο είναι το σωστό αντώνυμο;',
+      o:['άχρηστος (με το στερητικό α-)','δύσχρηστος (με το δυσ-)','ξεχρήσιμος (με το ξε-)'],a:0,
+      e:['Σωστά: ά-χρηστος = που δεν έχει χρησιμότητα. Το στερητικό α- δίνει το αντίθετο.','Το «δύσχρηστος» υπάρχει, αλλά σημαίνει «δύσκολος στη χρήση», όχι το αντίθετο του «χρήσιμος».','Η λέξη αυτή δεν υπάρχει· το ξε- σχηματίζει αντώνυμα ρημάτων (κλειδώνω – ξεκλειδώνω).']},
+     {q:'Στο ηλεκτρονικό ταχυδρομείο υπάρχουν <b>εισερχόμενα</b> και <b>εξερχόμενα</b> μηνύματα. Πώς σχηματίστηκε αυτό το ζεύγος αντωνύμων;',
+      o:['με το στερητικό α-','με αντίθετα προθήματα (εισ- / εξ-)','με διαφορετική λέξη'],a:1,
+      e:['Δεν υπάρχει στερητικό α-. Η αντίθεση βρίσκεται στα προθήματα εισ- / εξ-.','Σωστά: εισ-έρχομαι (μπαίνω) / εξ-έρχομαι (βγαίνω): αντίθετα προθήματα.','Το θέμα της λέξης είναι ίδιο (-ερχόμενα)· αλλάζει μόνο το πρόθημα.']}],
+ ok:'Σωστά! Πρώτα βρίσκουμε <b>ποια σημασία</b> έχει η λέξη και μετά το αντώνυμο αυτής της σημασίας.'},
+
+/* ── 8 ── */
+{g:4,m:'Γένος, είδος… ή μέρος;',sh:'Φάκελοι',type:'sort',
+ bot:'Η μνήμη μου είναι χάος! Το «συρτάρι» το έβαλα στα έπιπλα και το «κουκούτσι» στα φρούτα.',
+ title:'Οι φάκελοι της μνήμης',
+ def:'<b>Υπερώνυμο (γένος)</b>: λέξη με γενική σημασία, που περιλαμβάνει άλλες (έπιπλο). <b>Υπώνυμο (είδος)</b>: λέξη με ειδικότερη σημασία, που περιλαμβάνεται στη γενικότερη (καρέκλα, κρεβάτι).',
+ kw:'<b>Προσοχή: είδος ή μέρος;</b> Το συρτάρι δεν είναι είδος επίπλου· είναι <b>μέρος</b> του. Ρώτα: «Το Χ είναι ένα είδος Ψ;»',
+ task:'Τακτοποίησε τους φακέλους στη μνήμη του Ρόμπι. Βάλε κάθε λέξη στο σωστό υπερώνυμο ή στον φάκελο «Μέρος, όχι είδος». Πάτησε μια λέξη και μετά τη στήλη.',
+ cols:['Έπιπλα','Φρούτα','Μέρος, όχι είδος'],
+ cards:[{t:'καρέκλα',c:0,e:'Η καρέκλα είναι ένα είδος επίπλου: υπώνυμο του «έπιπλο».'},
+  {t:'ντουλάπα',c:0,e:'Η ντουλάπα είναι ένα είδος επίπλου: υπώνυμο του «έπιπλο».'},
+  {t:'κρεβάτι',c:0,e:'Το κρεβάτι είναι ένα είδος επίπλου: υπώνυμο του «έπιπλο».'},
+  {t:'μήλο',c:1,e:'Το μήλο είναι ένα είδος φρούτου: υπώνυμο του «φρούτο».'},
+  {t:'κεράσι',c:1,e:'Το κεράσι είναι ένα είδος φρούτου: υπώνυμο του «φρούτο».'},
+  {t:'πορτοκάλι',c:1,e:'Το πορτοκάλι είναι ένα είδος φρούτου: υπώνυμο του «φρούτο».'},
+  {t:'συρτάρι',c:2,e:'Το συρτάρι δεν είναι είδος επίπλου· είναι μέρος ενός επίπλου.'},
+  {t:'κουκούτσι',c:2,e:'Το κουκούτσι δεν είναι είδος φρούτου· είναι μέρος του φρούτου.'},
+  {t:'φλούδα',c:2,e:'Η φλούδα δεν είναι είδος φρούτου· είναι μέρος του φρούτου.'}],
+ ok:'Σωστά! Υπώνυμα είναι τα <b>είδη</b> ενός γένους, όχι τα <b>μέρη</b> του. Ρωτάμε πάντα: «Είναι ένα είδος…;»'},
+
+/* ── 9 ── */
+{g:4,m:'Πού χρησιμεύουν τα υπερώνυμα',sh:'Χρήσεις',type:'mcq',
+ bot:'«Στο πάρκο είδα σπουργίτια, περιστέρια, κοτσύφια, καρδερίνες, σπουργίτια…» Γιατί βαριούνται όλοι όταν μιλάω;',
+ title:'Λιγότερες λέξεις, πιο καθαρός λόγος',
+ def:'Τα υπερώνυμα χρησιμεύουν: στην <b>πύκνωση</b> (πολλά υπώνυμα → ένα υπερώνυμο), στον <b>ορισμό</b> μιας έννοιας (γένος + ειδοποιός διαφορά), στη <b>διαίρεση</b> ενός θέματος σε είδη και στη <b>συνοχή</b> (αποφεύγουμε την επανάληψη).',
+ kw:'Μια λέξη μπορεί να είναι <b>ταυτόχρονα</b> υπώνυμο και υπερώνυμο, ανάλογα με το επίπεδο: ζώα → πουλιά → αετός.',
+ task:'Μάθε στον Ρόμπι να χρησιμοποιεί τα υπερώνυμα. Διάλεξε τη σωστή απάντηση σε κάθε ερώτηση.',
+ qs:[{q:'Πώς μπορεί ο Ρόμπι να <b>πυκνώσει</b> τη φράση «Στο πάρκο είδα σπουργίτια, περιστέρια και κοτσύφια»;',
+      o:['Στο πάρκο είδα πουλιά.','Στο πάρκο είδα ζωντανούς οργανισμούς.','Στο πάρκο είδα κατοικίδια.'],a:0,
+      e:['Σωστά: το «πουλιά» είναι το υπερώνυμο που περιλαμβάνει και τα τρία.','Πολύ γενικό: χάνεται σχεδόν όλη η πληροφορία. Διαλέγουμε το πιο κοντινό υπερώνυμο.','Λάθος γένος: τα σπουργίτια και τα κοτσύφια δεν είναι κατοικίδια.']},
+     {q:'Ποια λέξη είναι <b>ταυτόχρονα</b> υπώνυμο του «ζώα» και υπερώνυμο του «αετός»;',
+      o:['φτερά','πουλιά','ουρανός'],a:1,
+      e:['Τα φτερά είναι μέρος του πουλιού, όχι είδος ζώου.','Σωστά: τα πουλιά είναι είδος ζώων, και ο αετός είναι είδος πουλιού.','Ο ουρανός δεν είναι είδος ζώου.']},
+     {q:'«Χθες είδα μια κωμωδία. ____ ήταν πολύ αστεία.» Ποιο ταιριάζει για να μην επαναληφθεί η λέξη;',
+      o:['Η τηλεόραση','Η ταινία','Η κωμωδία'],a:1,
+      e:['Η τηλεόραση δεν είναι υπερώνυμο της κωμωδίας· είναι η συσκευή.','Σωστά: το υπερώνυμο «ταινία» «ξαναθυμίζει» την κωμωδία χωρίς επανάληψη (συνοχή).','Είναι η ίδια λέξη: επανάληψη, που εδώ δεν χρειάζεται.']},
+     {q:'Ο Ρόμπι θέλει να δώσει τον <b>ορισμό</b>: «Το τραπέζι είναι ____ με επίπεδη επιφάνεια και πόδια, πάνω στο οποίο τρώμε ή γράφουμε.»',
+      o:['ένα ξύλο','ένα δωμάτιο','ένα έπιπλο'],a:2,
+      e:['Το ξύλο είναι υλικό, όχι το γένος στο οποίο ανήκει το τραπέζι.','Το τραπέζι δεν είναι είδος δωματίου.','Σωστά: ορισμός = γένος (έπιπλο) + ειδοποιός διαφορά (επίπεδη επιφάνεια, πόδια, χρήση).']}],
+ ok:'Σωστά! Με τα υπερώνυμα <b>πυκνώνουμε</b>, <b>ορίζουμε</b> και αποφεύγουμε την <b>επανάληψη</b>. Ο Ρόμπι είναι έτοιμος για το δίπλωμα!'}
+];
+const N=ST.length;
+
+let step=-1,maxStep=0,solved=Array(N).fill(false),firstTry=Array(N).fill(null);
+const $=id=>document.getElementById(id);
+const main=()=>$('main');
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function stamps(){ $('stamps').innerHTML=ST.map((s,i)=>{const can=i<=maxStep&&i!==step;const gs=i>0&&ST[i-1].g!==s.g;
+  return `<div class="stamp ${gs?'gs':''} ${solved[i]&&i!==step?'ok':i===step?'now':''} ${can?'go':''}" ${can?`onclick="go(${i})" title="Μετάβαση: ${s.m}"`:''}>${solved[i]&&i!==step?'✓':i+1}<span>${s.sh}</span></div>`;}).join(''); navbar(); }
+function navbar(){
+  const b=$('nBack'),f=$('nFwd'),m=$('nMid');
+  if(step<0){b.hidden=true;f.hidden=false;f.className='nbtn fwd on';f.textContent='Ξεκινάμε →';m.innerHTML='<b>Η ιστορία</b>';return;}
+  if(step>=N){b.hidden=false;f.hidden=true;m.innerHTML='<b>Ο Ρόμπι πήρε το δίπλωμα</b>';return;}
+  b.hidden=false;f.hidden=false;
+  const ok=solved[step];f.className='nbtn fwd'+(ok?' on':'');
+  f.textContent=step===N-1?'Το δίπλωμα →':'Επόμενο →';
+  m.innerHTML=`Στάδιο <b>${step+1} / ${N}</b><span class="nm-x"> · ${ST[step].m}</span>`+(ok?'':'<br><span class="nm-h">ολοκλήρωσε το στάδιο για να συνεχίσεις</span>');
+}
+function theory(on){$('note').classList.toggle('open',on);$('thBack').classList.toggle('open',on);}
+function go(i){ theory(false); $('thBtn').hidden=(i<0||i>=N); if(i===-1){step=-1;stamps();note();intro();window.scrollTo({top:0});fitZoom();return;} if(i<0||i>maxStep)return; step=i; stamps(); note();
+  if(step>=N)fin(); else ((isM()&&!solved[step])?{slots:mSlots,sort:mSort,mcq:mMcq}:{slots:sSlots,sort:sSort,mcq:sMcq})[ST[step].type](ST[step]);
+  if(step<N&&solved[step])fb('ok',ST[step].ok); window.scrollTo({top:0}); fitZoom(); }
+function fwd(){ if(step<0){go(0);return;} if(step<N&&solved[step]) go(step+1); }
+function note(){
+  if(step<0){$('note').innerHTML='<div class="st">Νέα αποστολή</div><h2>Εκπαιδευτής ρομπότ</h2><p>Ο Ρόμπι ξέρει μόνο την <b>πρώτη σημασία</b> κάθε λέξης. Εσύ θα του μάθεις ότι οι λέξεις έχουν πολλές σημασίες, ότι μιλάμε και μεταφορικά, και ότι κάθε λέξη έχει τη θέση της.</p>';return;}
+  if(step>=N){$('note').innerHTML='<div class="st">Αποστολή ολοκληρώθηκε</div><h2>Μπράβο, εκπαιδευτή!</h2><p>Ο Ρόμπι δεν παίρνει πια τα πάντα κατά λέξη.</p><div class="kw"><b>Θυμήσου:</b> η σημασία μιας λέξης κρίνεται πάντα μέσα στα <b>συμφραζόμενα</b>.</div>';return;}
+  const s=ST[step]; $('note').innerHTML=`<span class="grp">Βήμα ${s.g+1} · ${GROUPS[s.g]}</span><div class="st">Θεωρία</div><h2>${s.m}</h2><p>${s.def}</p><div class="kw">${s.kw}</div><button class="cls" onclick="theory(false)">✕ Κλείσιμο</button>`; }
+function attempt(ok){ if(firstTry[step]===null) firstTry[step]=ok; }
+function fb(cls,html){const f=$('fb');if(!f)return;f.className='fb '+cls;f.innerHTML=html;setTimeout(()=>f.scrollIntoView({behavior:'smooth',block:'nearest'}),60);}
+function finish(){ solved[step]=true; if(maxStep<step+1)maxStep=step+1; $('row').innerHTML=''; fb('ok',ST[step].ok); stamps(); fitZoom(); }
+function sheet(inner,btns){return `<div class="sheet"><div class="kicker">Στάδιο ${step+1} · ${ST[step].m}</div><div class="ttl">${ST[step].title}</div><div class="bot"><div class="av">🤖</div><div class="bub"><b class="n">ΡΟΜΠΙ</b>${ST[step].bot}</div></div><div class="ticket"><b class="h">ΑΠΟΣΤΟΛΗ #${step+1}</b>${(isM()&&!solved[step])?ST[step].task.replace(/(π|Π)άτησε [^.]*? και μετά (τη στήλη|το ράφι)/,'$1άτησε τη σωστή στήλη για κάθε κάρτα'):ST[step].task}<span class="by">— Η μηχανικός</span></div>${inner}<div class="fb" id="fb"></div><div class="row" id="row">${solved[step]?'':btns}</div></div>`;}
+
+/* ══ Κομμάτια σε κενά ══ */
+function sSlots(s){
+  const keys=Object.keys(s.ans);const val={};let sel=null,lock=solved[step];
+  main().innerHTML=sheet('<div class="bank" id="B"></div><div id="T"></div>','<button class="btn" id="chk">Έλεγχος</button><button class="btn ghost" id="clr">Καθαρισμός</button>');
+  if(lock){const usedI=new Set();keys.forEach(k=>{const i=s.bank.findIndex((w,j)=>w===s.ans[k]&&!usedI.has(j));usedI.add(i);val[k]=i;});}
+  const isUsed=i=>Object.values(val).includes(i);
+  const tpl=s.layout==='cut'?'<div class="cut">'+s.words.map(w=>`<div class="board"><div class="w"><small>ΛΕΞΗ</small>${w[0]}</div>[[${w[1]}]]<span class="plus">+</span>[[${w[2]}]]</div>`).join('')+'</div>':s.html;
+  function drawBank(){const B=$('B');B.innerHTML='';if(lock){B.style.display='none';return;}
+    s.bank.forEach((w,i)=>{const c=document.createElement('span');c.className='chip'+(sel===i?' sel':'')+(isUsed(i)?' used':'');c.textContent=w;
+      c.onclick=()=>{if(lock)return;sel=sel===i?null:i;drawBank();};B.appendChild(c);});}
+  function drawT(){$('T').innerHTML=tpl.replace(/\[\[(\w)\]\]/g,(_,k)=>`<span class="slot${lock?' ok':''}" data-k="${k}" data-ph="${s.ph[k]}">${val[k]!==undefined?s.bank[val[k]]:''}</span>`);
+    $('T').querySelectorAll('.slot').forEach(sl=>sl.onclick=()=>{if(lock)return;const k=sl.dataset.k;
+      if(sel!==null){for(const x in val)if(val[x]===sel)delete val[x];val[k]=sel;sel=null;}else if(val[k]!==undefined)delete val[k];
+      $('fb').className='fb';drawBank();drawT();});}
+  drawBank();drawT();if(lock)return;
+  $('clr').onclick=()=>{for(const k in val)delete val[k];sel=null;$('fb').className='fb';drawBank();drawT();};
+  $('chk').onclick=()=>{if(keys.some(k=>val[k]===undefined)){fb('info','Συμπλήρωσε πρώτα όλα τα κενά.');return;}
+    let bad=[];keys.forEach(k=>{const sl=$('T').querySelector(`.slot[data-k="${k}"]`);const w=s.bank[val[k]];const r=w===s.ans[k];sl.classList.add(r?'ok':'ko');if(!r)bad.push([k,w]);});
+    attempt(!bad.length);
+    if(!bad.length){lock=true;drawBank();finish();return;}
+    const [k,w]=bad[0];fb('ko',`<b>${keys.length-bad.length} από ${keys.length}</b> σωστά. ${(s.why&&s.why[w])||s.slotMiss[k]} Πάτησε ένα κόκκινο κενό για να το αδειάσεις.`);};
+}
+
+/* ══ Ταξινόμηση σε στήλες ══ */
+function sSort(s){
+  const where={};let sel=null,lock=solved[step];const order=shuffle(s.cards.map((_,i)=>i));
+  if(lock)s.cards.forEach((c,i)=>where[i]=c.c);
+  const nb=s.cols.length;
+  main().innerHTML=sheet(`<div class="pool" id="P"></div><div class="bins ${nb===2?'two':''}" id="BN">${s.cols.map((c,j)=>`<div class="bin" data-j="${j}"><h6>${c}</h6></div>`).join('')}</div>`,'<button class="btn" id="chk">Έλεγχος</button>');
+  function card(i){const c=document.createElement('span');c.className='card'+(sel===i?' sel':'')+(lock?' ok':'');c.innerHTML=s.cards[i].t;
+    c.onclick=e=>{e.stopPropagation();if(lock)return;
+      if(where[i]!==undefined&&sel!==null&&sel!==i){where[sel]=where[i];sel=null;$('fb').className='fb';draw();return;}
+      sel=sel===i?null:i;draw();};return c;}
+  function draw(){const P=$('P');P.innerHTML='';order.forEach(i=>{if(where[i]===undefined)P.appendChild(card(i));});P.style.display=P.children.length?'flex':'none';
+    document.querySelectorAll('#BN .bin').forEach(b=>{const j=+b.dataset.j;b.querySelectorAll('.card').forEach(x=>x.remove());order.forEach(i=>{if(where[i]===j)b.appendChild(card(i));});
+      b.onclick=()=>{if(lock||sel===null)return;where[sel]=j;sel=null;$('fb').className='fb';draw();};});}
+  draw();if(lock)return;
+  $('chk').onclick=()=>{if(s.cards.some((_,i)=>where[i]===undefined)){fb('info','Τοποθέτησε πρώτα όλες τις κάρτες στις στήλες.');return;}
+    const bad=s.cards.map((c,i)=>i).filter(i=>where[i]!==s.cards[i].c);attempt(!bad.length);
+    if(!bad.length){lock=true;draw();finish();return;}
+    bad.forEach(i=>delete where[i]);draw();
+    const c=s.cards[bad[0]];const tx=c.t.replace(/<span class="o">.*?<\/span>/,'').replace(/<[^>]+>/g,'');
+    fb('ko',`<b>${s.cards.length-bad.length} από ${s.cards.length}</b> σωστά. Οι λάθος κάρτες γύρισαν πάνω. Βοήθεια για την πρώτη: «${tx}» ${c.e||'Ξανασκέψου: '+ST[step].kw.replace(/<[^>]+>/g,'')}`);};
+}
+
+/* ══ Ερωτήσεις επιλογής ══ */
+function sMcq(s){
+  const ch={};let lock=solved[step];
+  if(lock)s.qs.forEach((q,i)=>ch[i]=q.a);
+  main().innerHTML=sheet(s.qs.map((q,i)=>`<div class="mcq" id="q${i}"><div class="q"><small>Ερώτηση ${i+1}</small>${q.q}</div><div class="opts">${q.o.map((o,j)=>`<div class="opt" data-i="${i}" data-j="${j}">${o}</div>`).join('')}</div><div class="why" id="w${i}"></div></div>`).join(''),'<button class="btn" id="chk">Έλεγχος</button>');
+  function draw(){document.querySelectorAll('.mcq .opt').forEach(o=>{const i=+o.dataset.i,j=+o.dataset.j;o.className='opt'+(ch[i]===j?(lock?' ok':' on'):'');
+    o.onclick=()=>{if(lock)return;ch[i]=j;$('w'+i).className='why';draw();};});}
+  draw();if(lock)return;
+  $('chk').onclick=()=>{if(s.qs.some((_,i)=>ch[i]===undefined)){fb('info','Διάλεξε πρώτα μία απάντηση σε κάθε ερώτηση.');return;}
+    let n=0;s.qs.forEach((q,i)=>{const r=ch[i]===q.a;if(r)n++;const w=$('w'+i);w.className='why '+(r?'ok':'ko');w.innerHTML=q.e[ch[i]];
+      const o=document.querySelector(`.opt[data-i="${i}"][data-j="${ch[i]}"]`);o.className='opt '+(r?'ok':'ko');});
+    attempt(n===s.qs.length);
+    if(n===s.qs.length){lock=true;finish();return;}
+    fb('ko',`<b>${n} από ${s.qs.length}</b> σωστά. Διάβασε τα σχόλια κάτω από τις λάθος απαντήσεις και διάλεξε ξανά.`);};
+}
+
+/* ══ Κινητό: ένα στοιχείο τη φορά ══ */
+const isM=()=>matchMedia('(max-width:720px)').matches;
+function nextBtn(label,fn){$('row').innerHTML=`<button class="btn go2" id="nx">${label}</button>`;$('nx').onclick=fn;}
+function mSlots(s){
+  const items=s.layout==='cut'?s.words.map(w=>({html:`<div class="board"><div class="w"><small>ΛΕΞΗ</small>${w[0]}</div>[[${w[1]}]]<span class="plus">+</span>[[${w[2]}]]</div>`,keys:[w[1],w[2]]}))
+    :s.html.match(/<p class="sent">[\s\S]*?<\/p>/g).map(h=>({html:h.replace(/^<p class="sent">\d+\.\s*/,'<p class="sent">'),keys:[...h.matchAll(/\[\[(\w)\]\]/g)].map(m=>m[1])}));
+  const per=s.bank.length/items.length;const n=items.length;
+  const own=i=>[...Array(per)].map((_,j)=>i*per+j);
+  const groups=items.map((_,i)=>shuffle(per<4?own(i).concat(own((i+1)%n)):own(i)));
+  const unit=s.layout==='cut'?'Λέξη':'Πρόταση';
+  let idx=0,val={},sel=null,fails=false,done=false;
+  main().innerHTML=sheet('<div class="prog" id="PG"></div><div class="bank" id="B"></div><div id="T"></div>','<button class="btn" id="chk">Έλεγχος</button>');
+  const chkBtn=()=>{$('row').innerHTML='<button class="btn" id="chk">Έλεγχος</button>';$('chk').onclick=check;};
+  function draw(){const it=items[idx];$('PG').textContent=`${unit} ${idx+1} / ${items.length}`;
+    const B=$('B');B.innerHTML='';groups[idx].forEach(i=>{const c=document.createElement('span');c.className='chip'+(sel===i?' sel':'')+(Object.values(val).includes(i)?' used':'');c.textContent=s.bank[i];
+      c.onclick=()=>{if(done)return;sel=sel===i?null:i;draw();};B.appendChild(c);});
+    $('T').innerHTML=it.html.replace(/\[\[(\w)\]\]/g,(_,k)=>`<span class="slot${done?' ok':''}" data-k="${k}" data-ph="${s.ph[k]}">${val[k]!==undefined?s.bank[val[k]]:''}</span>`);
+    $('T').querySelectorAll('.slot').forEach(sl=>sl.onclick=()=>{if(done)return;const k=sl.dataset.k;
+      if(sel!==null){for(const x in val)if(val[x]===sel)delete val[x];val[k]=sel;sel=null;}else if(val[k]!==undefined)delete val[k];
+      $('fb').className='fb';draw();});}
+  function check(){const ks=items[idx].keys;if(ks.some(k=>val[k]===undefined)){fb('info','Συμπλήρωσε πρώτα τα κενά.');return;}
+    const bad=ks.filter(k=>s.bank[val[k]]!==s.ans[k]);
+    ks.forEach(k=>$('T').querySelector(`.slot[data-k="${k}"]`).classList.add(bad.includes(k)?'ko':'ok'));
+    if(bad.length){fails=true;const w=s.bank[val[bad[0]]];fb('ko',`${(s.why&&s.why[w])||s.slotMiss[bad[0]]} Πάτησε το κόκκινο κενό για να το αδειάσεις.`);return;}
+    done=true;draw();
+    if(idx===items.length-1){attempt(!fails);finish();return;}
+    fb('ok','Σωστά!');nextBtn(`Επόμενη ${unit.toLowerCase()} →`,()=>{idx++;val={};sel=null;done=false;$('fb').className='fb';chkBtn();draw();});}
+  $('chk').onclick=check;draw();
+}
+function mSort(s){
+  const order=shuffle(s.cards.map((_,i)=>i));let idx=0,fails=false,tries=0;const cnt=s.cols.map(()=>0);
+  main().innerHTML=sheet('<div class="prog" id="PG"></div><div class="one" id="ONE"></div><div class="colbtns" id="CB"></div><div class="tally" id="TL"></div>','');
+  function draw(){const c=s.cards[order[idx]];$('PG').textContent=`Κάρτα ${idx+1} / ${s.cards.length}`;
+    $('ONE').innerHTML=`<span class="card">${c.t}</span>`;
+    $('CB').innerHTML=s.cols.map((n,j)=>`<button class="colbtn" data-j="${j}">${n}</button>`).join('');
+    $('TL').innerHTML=s.cols.map((n,j)=>`${n}: <b>${cnt[j]}</b>`).join(' · ');
+    $('CB').querySelectorAll('.colbtn').forEach(b=>b.onclick=()=>pick(+b.dataset.j,b));}
+  function pick(j,b){const c=s.cards[order[idx]];
+    if(j!==c.c){fails=true;tries++;b.classList.add('ko');fb('ko',tries>1&&c.e?c.e:'Όχι εδώ. '+ST[step].kw);return;}
+    tries=0;cnt[j]++;$('CB').querySelectorAll('.colbtn').forEach(x=>{x.disabled=true;});b.classList.add('ok');
+    if(idx===s.cards.length-1){attempt(!fails);finish();return;}
+    fb('ok','Σωστά! '+(c.e||''));nextBtn('Επόμενη κάρτα →',()=>{idx++;$('row').innerHTML='';$('fb').className='fb';draw();});}
+  draw();
+}
+function mMcq(s){
+  let idx=0,fails=false;
+  main().innerHTML=sheet('<div class="prog" id="PG"></div><div id="Q"></div>','');
+  function draw(){const q=s.qs[idx];$('PG').textContent=`Ερώτηση ${idx+1} / ${s.qs.length}`;
+    $('Q').innerHTML=`<div class="mcq"><div class="q">${q.q}</div><div class="opts">${q.o.map((o,j)=>`<div class="opt" data-j="${j}">${o}</div>`).join('')}</div><div class="why" id="w0"></div></div>`;
+    let over=false;
+    $('Q').querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(over)return;const j=+o.dataset.j,r=j===q.a;
+      $('Q').querySelectorAll('.opt').forEach(x=>{if(!x.classList.contains('ko'))x.className='opt';});
+      o.className='opt '+(r?'ok':'ko');const w=$('w0');w.className='why '+(r?'ok':'ko');w.innerHTML=q.e[j]+(r?'':' Διάλεξε ξανά.');
+      if(!r){fails=true;return;}
+      over=true;
+      if(idx===s.qs.length-1){attempt(!fails);finish();return;}
+      nextBtn('Επόμενη ερώτηση →',()=>{idx++;$('row').innerHTML='';draw();});});}
+  draw();
+}
+
+
+/* ══ Εισαγωγή ══ */
+function intro(){
+  main().innerHTML=`<div class="sheet intro"><div class="kicker">Η ιστορία</div><div class="ttl">Γνώρισε τον Ρόμπι</div>
+  <div class="bot"><div class="av">🤖</div><div class="bub">Γεια σου! Είμαι ο Ρόμπι, ο νέος βοηθός της τάξης. Ξέρω χιλιάδες λέξεις… αλλά μόνο την πρώτη σημασία της καθεμιάς. Χθες η δασκάλα είπε «ρίξτε μια ματιά στο βιβλίο» και πέταξα το βιβλίο στο πάτωμα!</div></div>
+  <p class="lead">Ο Ρόμπι παίρνει τα πάντα <b>κατά λέξη</b>. Δεν καταλαβαίνει ότι μια λέξη έχει πολλές σημασίες, ότι μιλάμε και μεταφορικά, ότι τα συνώνυμα δεν ταιριάζουν παντού. Η μηχανικός του εργαστηρίου σού αναθέτει να τον «εκπαιδεύσεις». Αν τα καταφέρεις, ο Ρόμπι θα πάρει το <b>δίπλωμα κατανόησης σημασιών</b>.</p>
+  <h5>Τα στάδια της εκπαίδευσης</h5>
+  <div class="proc">
+   <div class="pr"><div class="n">1–2</div><div><b>Μία λέξη, πολλές σημασίες</b><span>Μονόσημες και πολύσημες λέξεις · τα συμφραζόμενα (Βήμα 1)</span></div></div>
+   <div class="pr"><div class="n">3–4</div><div><b>Κατά λέξη ή μεταφορικά;</b><span>Δηλωτική και συνυποδηλωτική σημασία (Βήμα 2)</span></div></div>
+   <div class="pr"><div class="n">5</div><div><b>Η σωστή λέξη στη σωστή περίσταση</b><span>Τα συνώνυμα: νόημα και ύφος (Βήμα 3)</span></div></div>
+   <div class="pr"><div class="n">6–7</div><div><b>Το αντίθετο… ποιου;</b><span>Είδη αντωνύμων · αντώνυμα πολύσημων λέξεων (Βήμα 4)</span></div></div>
+   <div class="pr"><div class="n">8–9</div><div><b>Οι φάκελοι της μνήμης</b><span>Υπερώνυμα και υπώνυμα (Βήμα 5)</span></div></div>
+   <div class="pr end"><div class="n">✓</div><div><b>Το δίπλωμα</b><span>Ο Ρόμπι ξαναλέει τις φράσεις του, αυτή τη φορά σωστά.</span></div></div>
+  </div>
+  <h5>Πώς δουλεύεις</h5>
+  <ul class="how"><li>Τη θεωρία κάθε σταδίου τη βρίσκεις στο κίτρινο χαρτάκι (στο κινητό: κουμπί «📖 Θεωρία»).</li><li>Πάτησε ένα στοιχείο και μετά τη θέση του. Ξαναπατώντας το, το βγάζεις.</li><li>Με τον «Έλεγχο» βλέπεις τι είναι σωστό και γιατί. Το «Επόμενο» ανάβει όταν ολοκληρώσεις το στάδιο.</li></ul>
+  <div class="sign">— Η μηχανικός του εργαστηρίου</div></div>`;
+}
+
+/* ══ Τέλος: το δίπλωμα ══ */
+const FIX=[
+ ['Πολυσημία','«Το ποντίκι δεν δουλεύει.»','Να του δώσω τυρί;','Θα ελέγξω τη συσκευή του υπολογιστή.'],
+ ['Μεταφορά','«Τα λόγια του με πλήγωσαν σαν μαχαίρι.»','Καλώ ασθενοφόρο!','Λυπάμαι που σε στενοχώρησε.'],
+ ['Μεταφορά','«Η τάξη ήταν ένα μελίσσι.»','Φέρνω μελισσοκόμο!','Είχε πολύ θόρυβο και κίνηση.'],
+ ['Συνωνυμία','Μήνυμα σε φίλο','«Πάμε να γευματίσουμε;»','«Πάμε να φάμε;»'],
+ ['Αντωνυμία','Το αντίθετο της «ψηλής φωνής»','«κοντή φωνή»','«χαμηλή, βαθιά φωνή»'],
+ ['Υπερωνυμία','Τι είδε στο πάρκο','«σπουργίτια, περιστέρια, κοτσύφια…»','«πουλιά»']];
+function fin(){
+  const first=firstTry.filter(x=>x===true).length;
+  main().innerHTML=`<div class="diploma"><div class="dh"><div class="seal">🤖</div><h3>Δίπλωμα κατανόησης σημασιών</h3><div>Ο Ρόμπι ολοκλήρωσε την εκπαίδευσή του</div></div>
+  <p class="dl">Πριν από την εκπαίδευση ο Ρόμπι έπαιρνε τα πάντα κατά λέξη. Δες τι απαντά τώρα:</p>
+  <div class="fix">${FIX.map(f=>`<div class="fx"><i>${f[0]}</i><b>${f[1]}</b><div class="bf"><span class="bef">Πριν: ${f[2]}</span><span class="aft">Τώρα: ${f[3]}</span></div></div>`).join('')}</div>
+  <div class="checks">
+   <div class="ck"><b>✓ Πολυσημία:</b> τη σημασία τη δείχνουν τα συμφραζόμενα· οι επιστημονικοί όροι είναι μονόσημοι.</div>
+   <div class="ck"><b>✓ Μεταφορά:</b> αν η φράση «κατά λέξη» δεν στέκει, η λέξη χρησιμοποιείται μεταφορικά.</div>
+   <div class="ck"><b>✓ Δηλωτική σημασία:</b> σε ειδήσεις και επιστήμη, για σαφήνεια· η μεταφορά στη λογοτεχνία, για συναίσθημα.</div>
+   <div class="ck"><b>✓ Συνώνυμα:</b> ταιριάζουν μόνο αν μένουν ίδια το νόημα και το ύφος.</div>
+   <div class="ck"><b>✓ Αντώνυμα:</b> αποκλεισμός, κλιμάκωση, αντιστροφή · κάθε σημασία έχει το δικό της αντώνυμο.</div>
+   <div class="ck"><b>✓ Υπερώνυμα:</b> είδη, όχι μέρη · χρήσιμα στην πύκνωση, στον ορισμό και στη συνοχή.</div>
+  </div>
+  <div class="score">Στάδια που έλυσες με την πρώτη προσπάθεια: <b>${first} / ${N}</b></div>
+  <div class="row" style="justify-content:center"><button class="btn ghost" onclick="restart()">↺ Ξανά από την αρχή</button></div></div>`;
+}
+function restart(){step=0;maxStep=0;solved=Array(N).fill(false);firstTry=Array(N).fill(null);go(0);}
+
+/* ══ Άνοιγμα από QR: …html#3 ανοίγει απευθείας το στάδιο 3 ══ */
+(function(){const h=parseInt((location.hash||'').replace('#',''),10);
+  if(h>=1&&h<=N){maxStep=h-1;go(h-1);} else go(-1);})();
+
+</script>
+</body>
+</html>
